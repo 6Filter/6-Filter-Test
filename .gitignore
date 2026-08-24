@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.local
+.env*.local
+data/
+john text
+john text.txt
+docs/API_KEY_BEST_PRACTICES.md
+docs/GIT_AND_GITIGNORE.md
+docs/PRIMUS_FULL_FLOW.md

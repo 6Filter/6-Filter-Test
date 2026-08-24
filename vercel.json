@@ -1,0 +1,22 @@
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/claude.js": {
+      "maxDuration": 60
+    },
+    "api/ideas.js": {
+      "maxDuration": 180
+    },
+    "api/ideas/[id].js": {
+      "maxDuration": 30
+    },
+    "api/ideas/[id]/escalate.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
