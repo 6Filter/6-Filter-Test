@@ -122,7 +122,7 @@ const server = createServer(async (req, res) => {
     const ideaMatch = url.match(/^\/api\/ideas\/([^/]+)$/);
     if (ideaMatch) {
       res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       await handleIdeaById(req, res, decodeURIComponent(ideaMatch[1]), {
         sendJson,

@@ -3,11 +3,12 @@ import {
   Sparkles, Gauge, TrendingUp, FlaskConical, X, Send,
   RefreshCw, Copy, Check, Lock, AlertTriangle, Loader2,
   ImagePlus, ArrowRight, ArrowLeft, History, Volume2,
-  Zap, Wrench, Expand, Scale, Tag, Cpu, ChevronDown, Flag
+  Zap, Wrench, Expand, Scale, Tag, Cpu, ChevronDown, Flag, Trash2
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, statusOf, toneOf } from "./scoringUi.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { DIVISION_OPTIONS, DIVISION_NET_MARGIN, detectDivision, nearestFixedPricePoint } from "../lib/npdMaster.js";
+import { resolveBrandFit } from "../lib/ckBrands.js";
 
 async function callClaude(userText, system, image = null) {
   const ctrl = new AbortController();
@@ -91,6 +92,13 @@ async function fetchIdeaById(id) {
   const res = await fetch(`/api/ideas/${encodeURIComponent(id)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load idea.");
+  return data;
+}
+
+async function deleteIdeaFromLog(id) {
+  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not delete this run.");
   return data;
 }
 
@@ -213,6 +221,7 @@ export default function App() {
   const [escalateEvidence, setEscalateEvidence] = useState("");
   const [escalateLoading, setEscalateLoading] = useState(false);
   const [escalateError, setEscalateError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   const fileRef = useRef(null);
   const activeDims = ideaType === "process" ? PROCESS_DIMS : PRODUCT_DIMS;
@@ -225,6 +234,30 @@ export default function App() {
     setProductHistory(products);
     setProcessHistory(processes);
     return { products, processes };
+  }
+
+  async function confirmDeleteRun(h, source = "compose") {
+    if (!h?.id || deletingId) return;
+    const ok = window.confirm("Remove this run from the production log? This cannot be undone.");
+    if (!ok) return;
+    setDeletingId(h.id);
+    if (source === "log") setLogError("");
+    else setError("");
+    try {
+      await deleteIdeaFromLog(h.id);
+      setProductHistory((rows) => rows.filter((r) => r.id !== h.id));
+      setProcessHistory((rows) => rows.filter((r) => r.id !== h.id));
+      if (result?.id === h.id) {
+        setResult(null);
+        setView(source === "log" ? "log" : "compose");
+      }
+    } catch (e) {
+      const msg = e.message || "Could not delete this run.";
+      if (source === "log") setLogError(msg);
+      else setError(msg);
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   useEffect(() => {
@@ -278,6 +311,7 @@ export default function App() {
 
   const composeHistory = (ideaType === "process" ? processHistory : productHistory).slice(0, 6);
   const logHistory = logFilter === "process" ? processHistory : productHistory;
+  const liveBrandFit = ideaType === "product" ? resolveBrandFit(idea) : null;
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
@@ -585,6 +619,17 @@ export default function App() {
                         </option>
                       ))}
                     </select>
+                    {liveBrandFit?.mismatch && (
+                      <p className="npd-brand-warn">{liveBrandFit.reason}</p>
+                    )}
+                    {!liveBrandFit?.mismatch && liveBrandFit?.suggestedBrand && liveBrandFit?.categoryLabel && (
+                      <p className="npd-brand-ok">
+                        {liveBrandFit.categoryLabel} sits under {liveBrandFit.suggestedBrand}
+                        {liveBrandFit.mentionedBrands?.length
+                          ? ` · named: ${liveBrandFit.mentionedBrands.join(", ")}`
+                          : ""}.
+                      </p>
+                    )}
                   </label>
                   <label className="field">
                     <span className="lbl">Declared net margin % <em>required</em></span>
@@ -733,22 +778,34 @@ export default function App() {
                   const max = phase1MaxOf(h);
                   const t = toneOf(h.phase1, max);
                   const isOpening = openingId === h.id;
+                  const isDeleting = deletingId === h.id;
                   return (
-                    <button
-                      key={h.id}
-                      type="button"
-                      className="hist-row"
-                      onClick={() => openHistory(h, "compose")}
-                      disabled={loading}
-                    >
-                      <span className="hist-score" style={{ color: t.color }}>
-                        {isOpening ? <Loader2 size={14} className="spin" /> : Number(h.phase1 || 0).toFixed(0)}
-                      </span>
-                      <span className="hist-weight">
-                        {ideaTypeOf(h) === "process" ? "PROC" : (h.ideaWeight || "—")}
-                      </span>
-                      <span className="hist-idea">{h.idea}</span>
-                    </button>
+                    <div key={h.id} className="hist-row-wrap">
+                      <button
+                        type="button"
+                        className="hist-row"
+                        onClick={() => openHistory(h, "compose")}
+                        disabled={loading || Boolean(deletingId)}
+                      >
+                        <span className="hist-score" style={{ color: t.color }}>
+                          {isOpening ? <Loader2 size={14} className="spin" /> : Number(h.phase1 || 0).toFixed(0)}
+                        </span>
+                        <span className="hist-weight">
+                          {ideaTypeOf(h) === "process" ? "PROC" : (h.ideaWeight || "—")}
+                        </span>
+                        <span className="hist-idea">{h.idea}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="hist-del"
+                        aria-label="Delete this run from the log"
+                        title="Delete from log"
+                        disabled={loading || Boolean(deletingId)}
+                        onClick={() => confirmDeleteRun(h, "compose")}
+                      >
+                        {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
                   );
                 })}
                 <button type="button" className="hist-more" onClick={() => openLogTab(ideaType)}>
@@ -768,7 +825,7 @@ export default function App() {
               <div>
                 <h2 className="log-title">Validation log</h2>
                 <p className="log-sub">
-                  Separate histories for Product and Process. Click a row to open the full scorecard.
+                  Separate histories for Product and Process. Click a row to open the scorecard, or the trash icon to remove it from the log.
                 </p>
               </div>
               <button type="button" className="ghost" onClick={() => openLogTab(logFilter)} disabled={logLoading}>
@@ -813,32 +870,44 @@ export default function App() {
                   const t = toneOf(h.phase1, max);
                   const st = statusOf(h.phase1, max);
                   const isOpening = openingId === h.id;
+                  const isDeleting = deletingId === h.id;
                   const isProcess = ideaTypeOf(h) === "process";
                   const verdict = h.overallVerdict;
                   return (
-                    <button
-                      key={h.id}
-                      type="button"
-                      className="log-row"
-                      onClick={() => openHistory(h, "log")}
-                      disabled={loading}
-                    >
-                      <span className="log-score" style={{ color: t.color }}>
-                        {isOpening ? <Loader2 size={16} className="spin" /> : Number(h.phase1 || 0).toFixed(1)}
-                      </span>
-                      {isProcess ? (
-                        <span className={`log-status log-status-${st.key}`}>{st.label}</span>
-                      ) : (
-                        <span className={`log-status log-status-${overallHeaderKey(verdict) || st.key}`}>
-                          {verdict ? overallLabel(verdict) : st.label}
+                    <div key={h.id} className="log-row-wrap">
+                      <button
+                        type="button"
+                        className="log-row"
+                        onClick={() => openHistory(h, "log")}
+                        disabled={loading || Boolean(deletingId)}
+                      >
+                        <span className="log-score" style={{ color: t.color }}>
+                          {isOpening ? <Loader2 size={16} className="spin" /> : Number(h.phase1 || 0).toFixed(1)}
                         </span>
-                      )}
-                      <span className="log-weight">
-                        {isProcess ? `/${max}` : (h.gramClass || h.ideaWeight || "—")}
-                      </span>
-                      <span className="log-idea">{h.idea}</span>
-                      <span className="log-date">{formatLogDate(h.ts)}</span>
-                    </button>
+                        {isProcess ? (
+                          <span className={`log-status log-status-${st.key}`}>{st.label}</span>
+                        ) : (
+                          <span className={`log-status log-status-${overallHeaderKey(verdict) || st.key}`}>
+                            {verdict ? overallLabel(verdict) : st.label}
+                          </span>
+                        )}
+                        <span className="log-weight">
+                          {isProcess ? `/${max}` : (h.gramClass || h.ideaWeight || "—")}
+                        </span>
+                        <span className="log-idea">{h.idea}</span>
+                        <span className="log-date">{formatLogDate(h.ts)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="log-del"
+                        aria-label="Delete this run from the log"
+                        title="Delete from log"
+                        disabled={loading || Boolean(deletingId)}
+                        onClick={() => confirmDeleteRun(h, "log")}
+                      >
+                        {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -959,6 +1028,9 @@ function FilterStrip({ result }) {
             {expanded && (
               <div className="filter-body">
                 <p>{filterReason(filter) || "No reason recorded."}</p>
+                {filter.brandFit?.reason && (
+                  <p className="filter-brand">{filter.brandFit.reason}</p>
+                )}
                 {filter.evidenceSummary && filter.evidenceSummary !== filterReason(filter) && (
                   <p>{filter.evidenceSummary}</p>
                 )}
@@ -1117,6 +1189,12 @@ function Readout({ result, onEscalate }) {
       <div className="sc-body">
         <div className="sc-type-pill">{hasNpd ? "Product idea · 4-Filter NPD" : "Product idea · Phase 1"}</div>
         <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
+
+        {result.brandFit?.mismatch && (
+          <div className="npd-banner npd-banner-fail">
+            Brand line miss: {result.brandFit.reason}
+          </div>
+        )}
 
         {hasNpd && <FilterStrip result={result} />}
 
@@ -1319,7 +1397,8 @@ const CSS = `
 .log-sub{margin:0;font-size:13px;color:var(--muted);max-width:520px;line-height:1.45;}
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
 .log-list{display:flex;flex-direction:column;border-top:1px solid var(--line-soft);}
-.log-row{display:grid;grid-template-columns:56px 92px 52px minmax(0,1fr) 140px;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line-soft);padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
+.log-row-wrap{border-bottom:1px solid var(--line-soft);}
+.log-row{display:grid;grid-template-columns:56px 92px 52px minmax(0,1fr) 140px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .log-row:hover{background:var(--bg-soft);}
 .log-row:disabled{opacity:.6;cursor:wait;}
 .log-score{font-family:var(--fm);font-weight:700;font-size:18px;}
@@ -1355,6 +1434,9 @@ const CSS = `
 .primus textarea::placeholder,.primus input::placeholder{color:var(--muted-2);}
 .npd-fields{margin:0 0 8px;}
 .npd-hint{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.45;}
+.npd-brand-warn{margin:6px 0 0;font-size:12px;color:#C53D3D;line-height:1.4;}
+.npd-brand-ok{margin:6px 0 0;font-size:12px;color:#1F8A55;line-height:1.4;}
+.filter-brand{margin-top:8px;font-size:12.5px;color:#C53D3D;line-height:1.4;}
 .npd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:0 0 8px;}
 .npd-grid .field{margin-bottom:0;}
 .npd-grid .span-2{grid-column:1 / -1;}
@@ -1416,12 +1498,16 @@ const CSS = `
 
 .hist{margin-top:16px;padding-top:4px;}
 .hist-h{display:flex;align-items:center;gap:7px;font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:9px;}
-.hist-row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--line-soft);padding:10px 2px;cursor:pointer;border-radius:8px;transition:background .15s;}
+.hist-row-wrap,.log-row-wrap{display:flex;align-items:center;gap:2px;}
+.hist-row{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left;background:none;border:none;border-top:1px solid var(--line-soft);padding:10px 2px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .hist-row:hover{background:var(--bg-soft);}
 .hist-row:hover .hist-idea{color:var(--ink-deep);}
 .hist-score{font-family:var(--fm);font-weight:600;font-size:15px;min-width:26px;color:var(--ink);}
 .hist-weight{font-family:var(--fm);font-size:10px;color:var(--ink);min-width:38px;letter-spacing:.04em;}
 .hist-idea{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-del,.log-del{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:none;border:none;border-radius:8px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;}
+.hist-del:hover,.log-del:hover{color:#C53D3D;background:rgba(228,87,87,.1);}
+.hist-del:disabled,.log-del:disabled{opacity:.5;cursor:wait;}
 
 .scorecard{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,108,180,.12);border:1px solid var(--line);color:var(--ink);font-family:var(--fd);}
 .sc-header{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 22px;color:#fff;}

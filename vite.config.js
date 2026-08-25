@@ -97,7 +97,7 @@ function apiPlugin(env) {
         const ideaMatch = url.match(/^\/api\/ideas\/([^/]+)$/);
         if (ideaMatch) {
           res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+          res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
           res.setHeader("Access-Control-Allow-Headers", "Content-Type");
           const { handleIdeaById: handleById } = await import("./lib/ideasApi.js");
           await handleById(req, res, decodeURIComponent(ideaMatch[1]), {
