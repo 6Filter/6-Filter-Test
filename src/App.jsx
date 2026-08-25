@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -11,6 +11,8 @@ import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
 import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
+import { inferImageMediaType } from "../lib/mediaType.js";
+import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 
 async function callModel(userText, system, image = null, provider = "claude") {
   const ctrl = new AbortController();
@@ -115,6 +117,13 @@ async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
   if (!res.ok) throw new Error(data.error || "Could not escalate.");
   return data;
 }
+
+const FILTER_RULES = [
+  { n: "01", title: "High success possibility & opportunity to grow", rule: "The proposition must declare attribute, benchmark, gap, and parity." },
+  { n: "02", title: "Net margin", rule: "Must meet the minimum net margin set for its division." },
+  { n: "03", title: "Price resilient", rule: "Modelled volume loss cannot exceed 10%." },
+  { n: "04", title: "Survives technology & habit shift", rule: "Format must stay relevant for the next five to ten years." },
+];
 
 const NPD_FILTERS = [
   { key: "filter1", num: "01", title: "Opportunity to Grow", hint: "Attribute · benchmark · gap", icon: TrendingUp },
@@ -232,6 +241,7 @@ export default function App() {
   const [llmProvider, setLlmProvider] = useState("claude");
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [loadSec, setLoadSec] = useState(0);
+  const [hasCalibration, setHasCalibration] = useState(true);
 
   const fileRef = useRef(null);
 
@@ -283,6 +293,12 @@ export default function App() {
         if (Array.isArray(data.providers) && data.providers.length) {
           setProviderStatus(data.providers);
         }
+      })
+      .catch(() => {});
+    fetch("/api/calibration")
+      .then((r) => r.json())
+      .then((data) => {
+        if (typeof data.hasAny === "boolean") setHasCalibration(data.hasAny);
       })
       .catch(() => {});
   }, []);
@@ -361,13 +377,16 @@ export default function App() {
       setError("Keep the file under 8 MB.");
       return;
     }
+    const isImage = mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(name);
     const reader = new FileReader();
     reader.onload = () =>
       setAttachment({
         name: f.name,
-        mediaType: f.type || (name.endsWith(".pdf") ? "application/pdf" : name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : name.endsWith(".doc") ? "application/msword" : "application/octet-stream"),
+        mediaType: isImage
+          ? inferImageMediaType(f.name, f.type)
+          : f.type || (name.endsWith(".pdf") ? "application/pdf" : name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : name.endsWith(".doc") ? "application/msword" : "application/octet-stream"),
         data: String(reader.result).split(",")[1],
-        preview: String(f.type || "").startsWith("image/") ? reader.result : null,
+        preview: isImage ? reader.result : null,
       });
     reader.readAsDataURL(f);
   };
@@ -551,15 +570,15 @@ export default function App() {
           : null;
 
   return (
-    <div className="primus">
+    <div className={`primus ${view === "result" ? "screen-verdict" : "screen-brief"}`}>
       <style>{CSS}</style>
 
       <header className="masthead">
         <button type="button" className="brand-btn" onClick={() => setView("compose")} aria-label="Go to validate">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
-            <div className="eyebrow">CavinKare · NPD screening</div>
-            <h1>6 Filter Test</h1>
+            <div className="eyebrow">PRIMUS SCREENING</div>
+            <h1>Primus.ai</h1>
           </div>
         </button>
         <nav className="top-nav" aria-label="Main">
@@ -657,6 +676,11 @@ export default function App() {
                 <p className="npd-hint">
                   Price and market-leader points are the brief. Division, margin, volume loss, attribute, and benchmark are inferred on the server.
                 </p>
+                {!hasCalibration && (
+                  <p className="ci-nudge ci-nudge-compose">
+                    Have Nielsen/Kantar data for a related category? Running a blind calibration first is the single highest-leverage thing you can do here.
+                  </p>
+                )}
                 {liveBrandFit?.mismatch && (
                   <p className="npd-brand-warn">{liveBrandFit.reason}</p>
                 )}
@@ -736,26 +760,43 @@ export default function App() {
               {loading ? (
                 <>
                   <Loader2 size={17} className="spin" />
-                  {ideaType === "product"
-                    ? loadSec > 0
-                      ? `Screening · ${loadSec}s`
-                      : "Screening…"
-                    : loadSec > 0
-                      ? `Validating · ${loadSec}s`
-                      : "Validating…"}
+                  {openingId
+                    ? "Opening…"
+                    : ideaType === "product"
+                      ? loadSec > 0
+                        ? `Screening · ${loadSec}s`
+                        : "Screening…"
+                      : loadSec > 0
+                        ? `Validating · ${loadSec}s`
+                        : "Validating…"}
                 </>
               ) : (
                 <>
-                  <Gauge size={17} /> {ideaType === "product" ? "Run NPD screen" : "Run validation"}
+                  <Gauge size={17} /> {ideaType === "product" ? "Run screen" : "Run validation"}
                 </>
               )}
             </button>
             {loading && ideaType === "product" && (
               <p className="run-hint">Scoring and research are running together.</p>
             )}
+
+            <div className="filter-rules">
+              <div className="filter-rules-h">The four filters</div>
+              {FILTER_RULES.map((r) => (
+                <div className="filter-rule" key={r.n}>
+                  <span className="filter-rule-n">{r.n}</span>
+                  <div>
+                    <b>{r.title}</b>
+                    <p>{r.rule}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
-          <aside className="panel side">
+          <aside className="compose-aside">
+            <PhonePreview mode="brief" idea={idea} ideaType={ideaType} />
+            <div className="panel side">
             <div className="panel-tab">Recent screens</div>
             {composeHistory.length === 0 && (
               <p className="side-note">Screened ideas will land here. Scoring runs on the server — this panel is only history.</p>
@@ -809,6 +850,7 @@ export default function App() {
                 </button>
               </div>
             )}
+            </div>
           </aside>
         </main>
       )}
@@ -907,14 +949,18 @@ export default function App() {
       )}
 
       {view === "result" && result && (
-        <main className="result">
-          <Readout result={result} onEscalate={() => {
+        <main className="result result-wide">
+          <Readout
+            result={result}
+            onEscalate={() => {
             const failed = result?.failedFilters || [];
             setEscalateFilter(failed[0] || "");
             setEscalateEvidence("");
             setEscalateError("");
             setEscalateOpen(true);
-          }} />
+          }}
+            onNewScreen={reset}
+          />
           <div className="verdict-actions">
             <button type="button" className="ghost" onClick={goBack}>
               <ArrowLeft size={15} /> {returnView === "log" ? "Back to log" : "Back to NPD Screen"}
@@ -989,6 +1035,218 @@ export default function App() {
   );
 }
 
+function formatCr(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "—";
+  return `₹${x.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr`;
+}
+
+function formatPctSigned(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "—";
+  const pct = x * 100;
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`;
+}
+
+function growthBadgeLabel(classification) {
+  const s = String(classification || "");
+  if (s.startsWith("VOLUME-LED")) return "VOLUME-LED";
+  if (s.startsWith("PRICE-LED")) return "PRICE-LED";
+  if (s.startsWith("MIXED")) return "MIXED";
+  return "";
+}
+
+function CategoryIntelPanel({ filter, kind }) {
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState("");
+  const recon = filter?.reconciliation || {};
+  const engines = Array.isArray(recon.engines) && recon.engines.length
+    ? recon.engines
+    : (Array.isArray(filter?.enginesRun) ? filter.enginesRun.map((e) => ({
+        engineId: e.engineId,
+        value: e.estimateCr,
+        weakness: e.weakness,
+        deviationPct: null,
+      })) : []);
+  const notRun = Array.isArray(filter?.enginesNotRun) ? filter.enginesNotRun : [];
+  const growth = filter?.growthDecomposition || {};
+  const badge = growthBadgeLabel(growth.classification);
+  const filings = Array.isArray(filter?.trademarkFilingsFound) ? filter.trademarkFilingsFound : [];
+  const notes = Array.isArray(filter?.calibrationNotes) ? filter.calibrationNotes : [];
+
+  async function exportWorkbook() {
+    const runId = filter?.sizingRunId;
+    if (!runId) return;
+    setExporting(true);
+    setExportErr("");
+    try {
+      const res = await fetch(`/api/category-sizing/export/${encodeURIComponent(runId)}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Export failed.");
+      }
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `category-sizing-${String(runId).slice(0, 8)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(href);
+    } catch (e) {
+      setExportErr(e.message || "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <div className="ci-panel">
+      <h4 className="ci-h">Category Intelligence</h4>
+
+      {kind === "filter1" && (
+        <>
+          <p className="ci-archetype">
+            <strong>{filter.categoryArchetype || "Unclassified archetype"}</strong>
+            {filter.growthStage ? ` · growth stage: ${filter.growthStage}` : ""}
+          </p>
+          <p className="ci-engines">
+            Ran: {(filter.enginesRun || []).map((e) => e.engineId).join(", ") || "none"}.
+            {notRun.length > 0 && (
+              <> Not run: {notRun.map((e) => `${e.engineId} (${e.reason || "missing input"})`).join("; ")}.</>
+            )}
+          </p>
+          {notes.map((n) => (
+            <p className="ci-cal-note" key={n}>{n}</p>
+          ))}
+
+          <table className="ci-table">
+            <thead>
+              <tr>
+                <th>Engine</th>
+                <th>Estimate</th>
+                <th>Dev. from median</th>
+                <th>Weakness for this category</th>
+              </tr>
+            </thead>
+            <tbody>
+              {engines.length === 0 ? (
+                <tr><td colSpan={4}>No grounded engines — nothing to reconcile.</td></tr>
+              ) : engines.map((e) => (
+                <tr key={e.engineId}>
+                  <td>{e.engineId}</td>
+                  <td>{formatCr(e.value ?? e.estimateCr)}</td>
+                  <td>{formatPctSigned(e.deviationPct)}</td>
+                  <td>{e.weakness || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <p className="ci-range">
+            Published range {formatCr(recon.p10Cr ?? recon.p10)} – <strong>{formatCr(recon.p50Cr ?? recon.p50)}</strong> – {formatCr(recon.p90Cr ?? recon.p90)}
+            {recon.status ? ` · ${recon.status}` : ""}
+            {recon.spreadPct != null && Number.isFinite(Number(recon.spreadPct))
+              ? ` · spread ${(Number(recon.spreadPct) * 100).toFixed(0)}%`
+              : ""}
+          </p>
+
+          {badge && (
+            <span className={`ci-badge ci-badge-${badge.toLowerCase()}`}>{badge}</span>
+          )}
+          {growth.classification && <p className="ci-growth">{growth.classification}</p>}
+        </>
+      )}
+
+      {kind === "filter4" && (
+        <>
+          <p className="ci-archetype">
+            Format trend: <strong>{filter.formatTrendDirection || "unclassified"}</strong>
+            {filter.earlyWarningSignal ? ` · early warning: ${filter.earlyWarningSignal}` : ""}
+          </p>
+          {filter.digitalProxySignal && <p><strong>Digital proxy.</strong> {filter.digitalProxySignal}</p>}
+          {filter.analogTransferSignal && <p><strong>Analog transfer.</strong> {filter.analogTransferSignal}</p>}
+          {filings.length > 0 && (
+            <table className="ci-table">
+              <thead>
+                <tr><th>Applicant</th><th>Filed</th><th>Note</th></tr>
+              </thead>
+              <tbody>
+                {filings.map((f, i) => (
+                  <tr key={`${f.applicant || "tm"}-${i}`}>
+                    <td>{f.applicant || "—"}</td>
+                    <td>{f.filedDate || "—"}</td>
+                    <td>{f.note || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      <div className="ci-limits">
+        <strong>What free data can&apos;t tell you here</strong>
+        <p>{filter.whatCouldNotBeEstablished || "Not stated."}</p>
+      </div>
+
+      {kind === "filter1" && filter.calibrationNudge && (
+        <p className="ci-nudge">
+          Have Nielsen/Kantar data for a related category? Running a blind calibration first is the single highest-leverage thing you can do here.
+        </p>
+      )}
+
+      {kind === "filter1" && filter.sizingRunId && (
+        <button type="button" className="ci-export" onClick={exportWorkbook} disabled={exporting}>
+          {exporting ? <Loader2 size={14} className="spin" /> : <Download size={14} />}
+          {exporting ? "Exporting…" : "Export to sizing workbook"}
+        </button>
+      )}
+      {exportErr && <p className="ci-export-err">{exportErr}</p>}
+    </div>
+  );
+}
+
+function PhonePreview({ mode, idea, ideaType, result }) {
+  if (mode === "verdict" && result) {
+    const hero = heroVerdict(result);
+    const score = scoreOutOf100(result);
+    const cards = isProcessResult(result) ? [] : gateCardsFor(result);
+    return (
+      <div className="phone phone-dark" aria-hidden="true">
+        <div className="phone-notch" />
+        <div className="phone-body">
+          <div className="phone-eyebrow">Verdict</div>
+          <div className={`phone-word phone-word-${hero.tone}`}>{hero.word}</div>
+          <div className="phone-score">{score}<span>/100</span></div>
+          <p className="phone-idea">{String(result.idea || "").slice(0, 80)}</p>
+          <ul className="phone-dots">
+            {cards.map((c) => (
+              <li key={c.n}>
+                <i className={`dot dot-${c.badge.toLowerCase()}`} />
+                <span>{c.n} {c.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="phone phone-cream" aria-hidden="true">
+      <div className="phone-notch" />
+      <div className="phone-body">
+        <div className="phone-eyebrow">Primus screening</div>
+        <p className="phone-idea">{idea?.trim() || (ideaType === "process" ? "Process idea" : "Product idea")}</p>
+        <ul className="phone-rules">
+          {FILTER_RULES.map((r) => (
+            <li key={r.n}><span>{r.n}</span> {r.title}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 function FilterStrip({ result }) {
   const [openKey, setOpenKey] = useState(null);
   return (
@@ -1027,6 +1285,9 @@ function FilterStrip({ result }) {
                 {meta.key === "filter3" && (
                   <p className="filter-proxy">Points-beat is a 10-point proxy, not a substitute for the Filter 6 lab/consumer panel.</p>
                 )}
+                {(meta.key === "filter1" || meta.key === "filter4") && (
+                  <CategoryIntelPanel filter={filter} kind={meta.key} />
+                )}
                 {sources.length > 0 && (
                   <ul className="filter-sources">
                     {sources.map((s) => (
@@ -1045,7 +1306,7 @@ function FilterStrip({ result }) {
   );
 }
 
-function Readout({ result, onEscalate }) {
+function Readout({ result, onEscalate, onNewScreen }) {
   const process = isProcessResult(result);
   const incomplete = process
     ? !(result?.efficiency && result?.feasibility && result?.scalability)
@@ -1156,8 +1417,20 @@ function Readout({ result, onEscalate }) {
   const revenueInfo = revenueDisplayFor(result);
   const ideaWeight = result.gramClass || revenueInfo.weight;
   const hasNpd = Boolean(result.overallVerdict || result.filter1 || result.filter2);
-  const verdict = overallPassFail(result);
-  const headerKey = verdict.key === "passed" ? "approved" : verdict.key === "failed" ? "rejected" : "promising";
+  const hero = heroVerdict(result);
+  const score = scoreOutOf100(result);
+  const cards = hasNpd ? gateCardsFor(result) : [];
+  const moves = hasNpd ? deriveMoves({
+    filter1: result.filter1,
+    filter2: result.filter2,
+    filter3: result.filter3,
+    filter4: result.filter4,
+  }) : [];
+  const whyTitle = result.overallVerdict === "FAIL" ? "Why it failed" : "Why it succeeded";
+  const whyItems = NPD_FILTERS
+    .map((f) => filterReason(result[f.key]))
+    .filter(Boolean);
+  const npd = result.npdInputs || {};
   const investmentGrid =
     result.investmentGrid ||
     buildInvestmentGrid(
@@ -1167,69 +1440,99 @@ function Readout({ result, onEscalate }) {
     );
 
   return (
-    <article className="scorecard">
-      <header className={`sc-header sc-header-${headerKey}`}>
-        <div className="sc-score-block">
-          <span className="sc-label">01 · Verdict</span>
-          <span className="sc-score sc-verdict-word">{verdict.label}</span>
+    <div className="verdict-shell">
+      <section className={`verdict-hero verdict-hero-${hero.tone}`}>
+        <div className="vh-left">
+          <button type="button" className="vh-new" onClick={onNewScreen}>← New screen</button>
+          <div className="vh-eyebrow">Verdict</div>
+          <div className="vh-word">{hero.word}</div>
+          <p className="vh-summary">{result.oneLiner || result.analysisSummary || ""}</p>
         </div>
-        <div className="sc-status-block">
-          <span className="sc-label">{hasNpd ? "Gram class" : `Score / ${maxPts}`}</span>
-          <span className="sc-status-pill">{hasNpd ? (ideaWeight || "—") : safePts.toFixed(1)}</span>
+        <div className="vh-right">
+          <div className="vh-score">{score}<span>/100</span></div>
+          <p className="vh-idea">{result.idea}</p>
+          <p className="vh-meta">
+            {npd.pricePerUnit != null ? `₹${npd.pricePerUnit}` : "—"}
+            {npd.pointsBeat != null ? ` · leader ${npd.pointsBeat} pts` : ""}
+            {npd.division ? ` · ${npd.division}` : ""}
+            {ideaWeight ? ` · ${ideaWeight}` : ""}
+          </p>
         </div>
-      </header>
+      </section>
 
-      <div className="sc-body">
-        <div className="sc-type-pill">{hasNpd ? "Product idea · 4-Filter NPD" : "Product idea · Phase 1"} · {result.llmLabel || "Claude"}</div>
-        <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
-        <VerdictStory result={result} />
+      {hasNpd && (
+        <section className="gate-ladder">
+          {cards.map((c) => (
+            <article className={`gate-card gate-${c.badge.toLowerCase()}`} key={c.n}>
+              <div className="gate-top">
+                <span className="gate-n">{c.n}</span>
+                <span className={`gate-badge gate-badge-${c.badge.toLowerCase()}`}>{c.badge}</span>
+              </div>
+              <h3>{c.title}</h3>
+              <p className="gate-metric">{c.metric}</p>
+              <div className="gate-bar"><i style={{ width: `${c.barW}%` }} /></div>
+              <p className="gate-threshold">{c.threshold}</p>
+              <p className="gate-detail">{c.detail}</p>
+            </article>
+          ))}
+        </section>
+      )}
 
-        {result.brandFit?.mismatch && (
-          <div className="npd-banner npd-banner-fail">
-            Brand line miss: {result.brandFit.reason}
-          </div>
-        )}
+      <div className="verdict-desk">
+        <div className="verdict-main">
+          {result.brandFit?.mismatch && (
+            <div className="npd-banner npd-banner-fail">
+              Brand line miss: {result.brandFit.reason}
+            </div>
+          )}
 
-        {hasNpd && <FilterStrip result={result} />}
+          <div className="why-grid">
+            <div className="why-panel">
+              <h3>{whyTitle}</h3>
+              {whyItems.length === 0 ? (
+                <p className="vs-empty">No filter notes recorded.</p>
+              ) : (
+                <ul>
+                  {whyItems.map((item) => (
+                    <li key={item}>— {item}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="why-panel">
+              <h3>What would change the verdict</h3>
+              {moves.length === 0 ? (
+                <p className="vs-empty">No mechanical moves from the current numbers.</p>
+              ) : (
+                <ul className="moves-list">
+                  {moves.map((m) => (
+                    <li key={m.tag + m.text}>
+                      <span className="move-tag">{m.tag}</span>
+                      {m.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
 
-        {hasNpd && result.overallVerdict === "CLEARED" && (
-          <div className="npd-banner npd-banner-cleared">
-            Ready for prototype (Filter 6 lab/consumer/pack) — outside this tool's scope.
-          </div>
-        )}
-        {hasNpd && result.overallVerdict === "NEEDS_INPUT" && (
-          <div className="npd-banner npd-banner-needs">
-            Evidence gap, not a fail. Re-run with a clearer idea, price, or leader points.
-            <ul>
-              {NPD_FILTERS.filter((f) => result[f.key]?.verdict === "NEEDS_INPUT").map((f) => (
-                <li key={f.key}><b>{f.title}:</b> {filterReason(result[f.key])}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {hasNpd && result.overallVerdict === "FAIL" && (
-          <div className="npd-banner npd-banner-fail">
-            Capped at 10g. A failed filter cannot earn a higher weight class.
-            {result.escalationStatus === "escalated" && (
-              <p className="npd-escalated">Exception raised to CKR — AI verdict unchanged.</p>
-            )}
-          </div>
-        )}
+          {hasNpd && <FilterStrip result={result} />}
 
-        <div className="sc-metrics">
-          <div className="sc-metric">
-            <span className="sc-metric-label">Novelty</span>
-            <span className="sc-metric-val">{scoreToFive(result.novelty.score)}/5</span>
+          <VerdictStory result={result} />
+          <div className="sc-metrics">
+            <div className="sc-metric">
+              <span className="sc-metric-label">Novelty</span>
+              <span className="sc-metric-val">{scoreToFive(result.novelty.score)}/5</span>
+            </div>
+            <div className="sc-metric">
+              <span className="sc-metric-label">Relevance</span>
+              <span className="sc-metric-val">{scoreToFive(result.market.score)}/5</span>
+            </div>
+            <div className="sc-metric">
+              <span className="sc-metric-label">Evidence</span>
+              <span className="sc-metric-val">{scoreToFive(result.evidence.score)}/5</span>
+            </div>
           </div>
-          <div className="sc-metric">
-            <span className="sc-metric-label">Relevance</span>
-            <span className="sc-metric-val">{scoreToFive(result.market.score)}/5</span>
-          </div>
-          <div className="sc-metric">
-            <span className="sc-metric-label">Evidence</span>
-            <span className="sc-metric-val">{scoreToFive(result.evidence.score)}/5</span>
-          </div>
-        </div>
 
         <div className="sc-finance">
           <div className="sc-finance-row">
@@ -1338,29 +1641,47 @@ function Readout({ result, onEscalate }) {
             <Flag size={15} /> Raise exception → escalate to CKR
           </button>
         )}
+        </div>
+        <aside className="verdict-phone-col">
+          <PhonePreview mode="verdict" result={result} />
+        </aside>
       </div>
-    </article>
+    </div>
   );
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 .primus *{box-sizing:border-box;}
+.screen-brief {
+  --bg: #F5F2EA; --card: #FBFAF7; --panel: #FBFAF7; --panel-2: #EFEBE1; --border: #E4DECF; --border-2: #DCD5C6;
+  --ink: #14202B; --ink-deep: #14202B; --muted: #5A6673; --muted-2: #7C8592; --muted-3: #8A93A0; --faint: #B5AF9F;
+  --accent: #0C558F; --accent-hover: #08406D; --accent-on: #FBFAF7;
+  --pass: #1F7A4C; --fail: #B23A2E; --watch: #B0771F;
+  --bg-soft: #EFEBE1; --line: #E4DECF; --line-soft: #DCD5C6;
+  --gold: #0C558F; --gold-ink: #FBFAF7; --teal: #0C558F; --coral: #B23A2E; --sky: #0C558F;
+}
+.screen-verdict {
+  --bg: #0B1B2A; --card: #12283C; --panel: #12283C; --panel-2: #163044;
+  --ink: #F0EEE7; --ink-deep: #F0EEE7; --ink-muted-85: rgba(240,238,231,.85);
+  --ink-muted-65: rgba(240,238,231,.65); --ink-muted-55: rgba(240,238,231,.55);
+  --ink-muted-45: rgba(240,238,231,.45); --border: rgba(240,238,231,.14);
+  --pass: #63C08D; --fail: #F08A7A; --watch: #E3B25C;
+  --hero-cleared: #14513A; --hero-fail: #5C2320; --hero-watch: #5C4A20;
+  --muted: rgba(240,238,231,.65); --muted-2: rgba(240,238,231,.45); --muted-3: rgba(240,238,231,.45);
+  --bg-soft: #163044; --line: rgba(240,238,231,.14); --line-soft: rgba(240,238,231,.08);
+  --accent: #63C08D; --accent-on: #0B1B2A; --coral: #F08A7A;
+  --gold: #E3B25C; --gold-ink: #0B1B2A; --teal: #63C08D; --sky: #63C08D;
+}
 .primus{
-  --bg:#FAF9F5; --bg-soft:#F3F1EA; --ink:#006CB4; --ink-deep:#00568F; --muted:#4F7FA8; --muted-2:#7AA0BE;
-  --line:#E5E2D8; --line-soft:#EEEBE3; --panel:#FFFFFF; --panel-2:#F5F3EC;
-  --gold:#006CB4; --gold-ink:#FFFFFF; --teal:#0088C7; --coral:#E45757; --sky:#006CB4;
-  --fd:'Space Grotesk',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
-  --shadow:0 10px 30px rgba(0,108,180,.07); --shadow-hover:0 14px 36px rgba(0,108,180,.1);
-  font-family:var(--fd); color:var(--ink); background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(0,108,180,.06), transparent 55%),
-    radial-gradient(ellipse 70% 40% at 100% 0%, rgba(212,160,23,.05), transparent 50%),
-    var(--bg);
+  --fd:'Plus Jakarta Sans',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
+  --shadow:0 10px 30px rgba(20,32,43,.07); --shadow-hover:0 14px 36px rgba(20,32,43,.1);
+  font-family:var(--fd); color:var(--ink); background: var(--bg);
   min-height:100%; padding:32px 28px 48px; line-height:1.5;
 }
 .primus h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:2px 0 0;color:var(--ink);}
 .primus h1 .dot{color:var(--ink-deep);}
-.eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
 .masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 32px;animation:rise .45s ease both;}
 .page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;}
 .page-back{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--fd);transition:background .15s,border-color .15s;}
@@ -1386,6 +1707,94 @@ const CSS = `
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 0 var(--ink);animation:pl 2s infinite;}
 @keyframes pl{0%{box-shadow:0 0 0 0 rgba(0,108,180,.45);}70%{box-shadow:0 0 0 7px rgba(0,108,180,0);}100%{box-shadow:0 0 0 0 rgba(0,108,180,0);}}
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+.screen-brief .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
+.screen-brief .brandmark{background:var(--card);border-color:var(--accent);}
+.screen-brief .type-toggle{background:var(--panel-2);border-color:var(--border);}
+.screen-brief .type-tab.active{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(20,32,43,.08);}
+.screen-brief textarea.idea-input,.screen-brief textarea,.screen-brief input{background:var(--card);border-color:var(--border);color:var(--ink);}
+.screen-brief .run{background:var(--accent);color:var(--accent-on);border-radius:999px;box-shadow:none;}
+.screen-brief .run:hover{background:var(--accent-hover);filter:none;}
+.screen-brief .pulse{background:var(--pass);box-shadow:none;animation:none;}
+.screen-verdict .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
+.screen-verdict .brandmark{background:var(--card);border-color:var(--ink);}
+.screen-verdict .pulse{background:var(--pass);animation:none;}
+.screen-verdict .masthead,.screen-verdict .page-back,.screen-verdict .nav-tab{color:var(--ink);}
+.screen-verdict .nav-tab:hover{background:rgba(240,238,231,.06);}
+.screen-verdict .nav-tab.active{background:rgba(240,238,231,.08);border-color:var(--border);}
+.screen-verdict .model-switch{background:rgba(240,238,231,.08);border-color:var(--border);color:var(--ink);}
+.screen-verdict .page-back:hover{background:rgba(240,238,231,.08);border-color:var(--border);}
+.compose-aside{display:flex;flex-direction:column;gap:16px;}
+.phone-dots li{display:flex;align-items:center;}
+.result-wide{max-width:1280px;margin:0 auto;}
+.filter-rules{margin:8px 0 12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;}
+.filter-rules-h{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-3);margin-bottom:6px;}
+.filter-rule{display:flex;gap:12px;padding:6px 0;border-top:1px solid var(--border);}
+.filter-rule:first-of-type{border-top:none;padding-top:0;}
+.filter-rule-n{font-family:var(--fm);font-size:11px;color:var(--muted-3);min-width:22px;}
+.filter-rule b{display:block;font-size:13px;}
+.filter-rule p{margin:2px 0 0;font-size:12px;color:var(--muted-2);}
+.phone{width:100%;max-width:280px;margin:0 auto 18px;border-radius:28px;padding:12px 12px 18px;border:1px solid var(--border);}
+.phone-cream{background:var(--card);color:var(--ink);}
+.phone-dark{background:#0B1B2A;color:#F0EEE7;border-color:rgba(240,238,231,.14);}
+.phone-notch{width:72px;height:8px;border-radius:999px;background:currentColor;opacity:.18;margin:4px auto 12px;}
+.phone-eyebrow{font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+.phone-idea{font-size:12px;line-height:1.4;margin:0 0 10px;max-height:48px;overflow:hidden;}
+.phone-rules,.phone-dots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:11px;}
+.phone-rules span,.phone-dots span{font-family:var(--fm);opacity:.7;margin-right:6px;}
+.phone-word{font-size:28px;font-weight:800;letter-spacing:-.03em;}
+.phone-word-cleared{color:#63C08D;}
+.phone-word-fail{color:#F08A7A;}
+.phone-word-watch{color:#E3B25C;}
+.phone-score{font-size:22px;font-weight:800;}
+.phone-score span{font-size:11px;font-weight:500;opacity:.55;margin-left:4px;}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;}
+.dot-pass{background:#63C08D;}
+.dot-fail{background:#F08A7A;}
+.dot-watch{background:#E3B25C;}
+.verdict-hero{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;border-radius:20px;padding:28px 32px;margin-bottom:18px;color:#F0EEE7;}
+.verdict-hero-cleared{background:var(--hero-cleared);}
+.verdict-hero-fail{background:var(--hero-fail);}
+.verdict-hero-watch{background:var(--hero-watch);}
+.vh-new{background:rgba(240,238,231,.12);border:1px solid rgba(240,238,231,.2);color:#F0EEE7;border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;font-family:var(--fm);}
+.vh-eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;margin:16px 0 6px;}
+.vh-word{font-size:86px;font-weight:800;line-height:.9;letter-spacing:-.04em;}
+.vh-summary{font-size:15px;line-height:1.45;opacity:.85;max-width:520px;}
+.vh-score{display:flex;align-items:baseline;gap:4px;font-size:clamp(72px, 12vw, 190px);font-weight:800;line-height:.85;letter-spacing:-.05em;white-space:nowrap;}
+.vh-score span{font-size:18px;font-weight:500;opacity:.55;margin-left:6px;}
+.vh-idea{margin:12px 0 6px;font-size:14px;line-height:1.4;}
+.vh-meta{font-family:var(--fm);font-size:11px;opacity:.55;margin:0;}
+.gate-ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.gate-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;}
+.gate-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.gate-n{font-family:var(--fm);font-size:11px;color:var(--ink-muted-45);}
+.gate-badge{font-size:9px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:999px;color:#0B1B2A;}
+.gate-badge-pass{background:var(--pass);}
+.gate-badge-fail{background:var(--fail);}
+.gate-badge-watch{background:var(--watch);}
+.gate-card h3{margin:0 0 8px;font-size:14px;font-weight:700;}
+.gate-metric{margin:0 0 10px;font-size:13px;font-weight:700;}
+.gate-pass .gate-metric{color:var(--pass);}
+.gate-fail .gate-metric{color:var(--fail);}
+.gate-watch .gate-metric{color:var(--watch);}
+.gate-bar{height:4px;background:rgba(240,238,231,.12);border-radius:999px;overflow:hidden;margin-bottom:8px;}
+.gate-pass .gate-bar i{background:var(--pass);}
+.gate-fail .gate-bar i{background:var(--fail);}
+.gate-watch .gate-bar i{background:var(--watch);}
+.gate-bar i{display:block;height:100%;}
+.gate-threshold{font-family:var(--fm);font-size:10px;color:var(--ink-muted-45);margin:0 0 6px;}
+.gate-detail{font-size:12px;color:var(--ink-muted-65);margin:0;line-height:1.4;}
+.verdict-desk{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start;}
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px;}
+.why-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;}
+.why-panel h3{margin:0 0 10px;font-family:var(--fm);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
+.why-panel ul{margin:0;padding:0;list-style:none;}
+.why-panel li{font-size:13px;line-height:1.45;margin:0 0 8px;color:var(--ink-muted-85);}
+.moves-list li{display:flex;gap:8px;align-items:flex-start;}
+.move-tag{font-family:var(--fm);font-size:9px;letter-spacing:.08em;background:rgba(240,238,231,.12);padding:3px 6px;border-radius:6px;flex-shrink:0;}
+.screen-verdict .scorecard,.screen-verdict .sc-body,.screen-verdict .sc-finance,.screen-verdict .sc-inv,.screen-verdict .sc-analysis,.screen-verdict .sc-pivot,.screen-verdict .filter-tile,.screen-verdict .ci-panel{background:var(--card);color:var(--ink);border-color:var(--border);}
+.screen-verdict .sc-title,.screen-verdict .filter-body{color:var(--ink);}
+.screen-verdict .ci-table th{background:rgba(240,238,231,.06);color:var(--ink-muted-45);}
 
 .grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,.85fr);gap:24px;align-items:start;animation:rise .5s ease .05s both;}
 .result{max-width:720px;margin:0 auto;animation:rise .45s ease both;}
@@ -1428,7 +1837,7 @@ const CSS = `
 .lbl em{font-style:normal;color:var(--muted);text-transform:none;letter-spacing:0;font-family:var(--fd);font-size:11px;}
 .primus textarea,.primus input,.primus select{width:100%;background:var(--bg-soft);border:1px solid var(--line);border-radius:14px;color:var(--ink);font-family:var(--fd);font-size:15px;padding:14px 16px;resize:vertical;outline:none;transition:border-color .15s,box-shadow .15s,background .15s;line-height:1.55;}
 .primus select{resize:none;cursor:pointer;}
-.primus textarea.idea-input{min-height:220px;font-size:15.5px;padding:18px 20px;}
+.primus textarea.idea-input{min-height:160px;font-size:15.5px;padding:18px 20px;}
 .primus textarea:focus,.primus input:focus,.primus select:focus{border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(0,108,180,.16);}
 .primus textarea::placeholder,.primus input::placeholder{color:var(--muted-2);}
 .npd-fields{margin:0 0 8px;}
@@ -1458,6 +1867,25 @@ const CSS = `
 .filter-proxy{font-size:11.5px;color:var(--muted)!important;}
 .filter-sources{margin:0;padding-left:16px;}
 .filter-sources a{color:var(--ink);word-break:break-all;}
+.ci-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);}
+.ci-h{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:var(--fm);}
+.ci-archetype,.ci-engines,.ci-growth,.ci-cal-note{margin:0 0 8px;font-size:12.5px;line-height:1.45;}
+.ci-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:0 0 10px;}
+.ci-table th,.ci-table td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+.ci-table th{background:rgba(0,108,180,.08);font-family:var(--fm);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+.ci-range{margin:0 0 8px;font-size:12.5px;}
+.ci-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;padding:4px 8px;border-radius:999px;margin:0 0 8px;}
+.ci-badge-volume-led{background:rgba(36,168,102,.14);color:#1F8A55;}
+.ci-badge-price-led{background:rgba(228,87,87,.14);color:#C53D3D;}
+.ci-badge-mixed{background:rgba(201,162,39,.18);color:#8A6E12;}
+.ci-limits{background:rgba(0,108,180,.06);border:1px solid rgba(0,108,180,.16);border-radius:10px;padding:10px 12px;margin:8px 0;}
+.ci-limits p{margin:4px 0 0!important;}
+.ci-nudge{background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.28);color:#8A6E12;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;margin:8px 0;}
+.ci-nudge-compose{margin:0 0 12px;}
+.ci-export{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-family:var(--fd);font-size:12.5px;cursor:pointer;}
+.ci-export:hover{border-color:var(--ink);}
+.ci-export:disabled{opacity:.6;cursor:default;}
+.ci-export-err{color:#C53D3D;font-size:12px;margin:6px 0 0;}
 .npd-banner{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin:0 0 16px;}
 .npd-banner ul{margin:8px 0 0;padding-left:18px;}
 .npd-banner-cleared{background:rgba(36,168,102,.1);border:1px solid rgba(36,168,102,.25);color:#1F8A55;}
@@ -1476,7 +1904,7 @@ const CSS = `
 .ghost{display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:9px 14px;font-family:var(--fd);font-size:13px;cursor:pointer;transition:.15s;}
 .ghost:hover{border-color:var(--ink);background:#fff;}
 .ghost.sq{padding:9px;}
-.run{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#006CB4,#0088C7);color:#fff;border:none;border-radius:12px;padding:15px;font-family:var(--fd);font-weight:600;font-size:15px;cursor:pointer;transition:transform .15s,filter .15s,box-shadow .15s;box-shadow:0 8px 18px rgba(0,108,180,.28);margin-top:auto;}
+.run{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#006CB4,#0088C7);color:#fff;border:none;border-radius:12px;padding:15px;font-family:var(--fd);font-weight:600;font-size:15px;cursor:pointer;transition:transform .15s,filter .15s,box-shadow .15s;box-shadow:0 8px 18px rgba(0,108,180,.28);margin-top:12px;}
 .run-hint{margin:8px 0 0;text-align:center;font-size:12px;color:var(--muted);font-family:var(--fm);}
 .run:hover{filter:brightness(1.05);transform:translateY(-1px);}
 .run:active{transform:none;}
@@ -1574,6 +2002,9 @@ const CSS = `
 .sc-pivot{background:#F5FAFE;border:1px solid var(--line);border-radius:12px;padding:16px;}
 .sc-pivot-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin-bottom:8px;}
 .sc-pivot p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-deep);}
+.screen-verdict .sc-analysis,.screen-verdict .sc-pivot,.screen-verdict .sc-tag,.screen-verdict .sc-metric,.screen-verdict .escalate-btn{background:var(--card);border:1px solid var(--border);color:var(--ink);}
+.screen-verdict .sc-analysis-text,.screen-verdict .sc-pivot p{color:var(--ink-muted-85);}
+.screen-verdict .sc-audio{color:var(--ink);}
 
 .verdict-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap;}
 
@@ -1588,6 +2019,11 @@ const CSS = `
 @media(max-width:820px){
   .grid{grid-template-columns:1fr;gap:18px;}
   .result{max-width:100%;padding:0 4px;}
+  .verdict-hero{grid-template-columns:1fr;padding:22px;}
+  .vh-word{font-size:56px;}
+  .vh-score{font-size:72px;}
+  .gate-ladder,.why-grid,.verdict-desk{grid-template-columns:1fr;}
+  .verdict-phone-col,.compose-aside .phone{display:none;}
   .primus{padding:18px 16px 32px;}
   .masthead{margin-bottom:20px;flex-wrap:wrap;max-width:100%;}
   .page-back-bar{max-width:100%;}

@@ -13,6 +13,7 @@
     "node": "22.x"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.383.0",
     "mammoth": "^1.12.1",
     "pg": "^8.23.0",

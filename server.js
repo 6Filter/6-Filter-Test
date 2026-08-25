@@ -13,6 +13,7 @@ import {
   handleIdeasCollection,
 } from "./lib/ideasApi.js";
 import { handleLlmGenerate, handleProviders } from "./lib/llmApi.js";
+import { handleCategoryIntelRequest } from "./lib/categoryIntelligence/http.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "dist");
@@ -126,6 +127,13 @@ const server = createServer(async (req, res) => {
       });
       return;
     }
+
+    const intelHandled = await handleCategoryIntelRequest(req, res, url, {
+      readBody: readJsonBody,
+      sendJson,
+      redactSecrets,
+    });
+    if (intelHandled) return;
 
     await serveStatic(req, res);
   } catch (e) {

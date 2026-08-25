@@ -129,6 +129,20 @@ function apiPlugin(env) {
           return;
         }
 
+        try {
+          const { handleCategoryIntelRequest } = await import("./lib/categoryIntelligence/http.js");
+          const intelHandled = await handleCategoryIntelRequest(req, res, url, {
+            readBody: readJsonBody,
+            sendJson,
+            redactSecrets,
+          });
+          if (intelHandled) return;
+        } catch (e) {
+          const status = e.status && Number.isInteger(e.status) ? e.status : 500;
+          sendJson(res, status, { error: redactSecrets(e.message) });
+          return;
+        }
+
         next();
       });
     },

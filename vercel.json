@@ -17,6 +17,21 @@
     },
     "api/ideas/[id]/escalate.js": {
       "maxDuration": 30
+    },
+    "api/category-sizing/run.js": {
+      "maxDuration": 180
+    },
+    "api/format-trend/run.js": {
+      "maxDuration": 180
+    },
+    "api/category-sizing/[runId]/engine/[engineId].js": {
+      "maxDuration": 30
+    },
+    "api/category-sizing/export/[runId].js": {
+      "maxDuration": 30
+    },
+    "api/calibration.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
