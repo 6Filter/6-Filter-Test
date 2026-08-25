@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Sparkles, Gauge, TrendingUp, FlaskConical, X, Send,
-  RefreshCw, Copy, Check, Lock, AlertTriangle, Loader2,
+  Gauge, TrendingUp, X, Send,
+  RefreshCw, Copy, Check, AlertTriangle, Loader2,
   ImagePlus, ArrowRight, ArrowLeft, History, Volume2,
-  Zap, Wrench, Expand, Scale, Tag, Cpu, ChevronDown, Flag, Trash2
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, statusOf, toneOf } from "./scoringUi.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
@@ -140,26 +140,6 @@ function overallLabel(verdict) {
   return verdict || "";
 }
 
-// ---- scoring config ----
-const PRODUCT_DIMS = [
-  { key: "novelty",  label: "Novelty",          weight: 0.40, max: 24, icon: Sparkles,     blurb: "Uniqueness vs. market & competition" },
-  { key: "market",   label: "Market Relevance", weight: 0.30, max: 18, icon: TrendingUp,   blurb: "Alignment with consumer trends" },
-  { key: "evidence", label: "Evidence Strength",weight: 0.30, max: 18, icon: FlaskConical, blurb: "Data quality & research backing" },
-];
-
-const PROCESS_DIMS = [
-  { key: "efficiency",  label: "Efficiency Gain", weight: 0.50, max: 20, icon: Zap,    blurb: "Estimated time/cost reduction" },
-  { key: "feasibility", label: "Feasibility",     weight: 0.30, max: 12, icon: Wrench, blurb: "Ease of implementation" },
-  { key: "scalability", label: "Scalability",     weight: 0.20, max: 8,  icon: Expand, blurb: "Applicability across teams/projects" },
-];
-
-const PROCESS_PHASE2 = [
-  { label: "Actual Efficiency Gain", weight: "40%", blurb: "Measured time/cost savings" },
-  { label: "Adoption Rate", weight: "30%", blurb: "% of team using new process" },
-  { label: "Quality Improvement", weight: "20%", blurb: "Error reduction, accuracy increase" },
-  { label: "User Satisfaction", weight: "10%", blurb: "Team feedback scores" },
-];
-
 function isProcessResult(r) {
   return r?.ideaType === "process" || Boolean(r?.efficiency && r?.feasibility && r?.scalability);
 }
@@ -222,7 +202,6 @@ export default function App() {
   const [loadSec, setLoadSec] = useState(0);
 
   const fileRef = useRef(null);
-  const activeDims = ideaType === "process" ? PROCESS_DIMS : PRODUCT_DIMS;
 
   async function refreshHistories() {
     const [products, processes] = await Promise.all([
@@ -709,38 +688,9 @@ export default function App() {
           </section>
 
           <aside className="panel side">
-            <div className="panel-tab">{ideaType === "product" ? "Recent screens" : "Scoring matrix · Phase 1"}</div>
-            {ideaType === "process" && (
-              <>
-            <p className="side-note">
-                Phase 1 is the LLM pass — <b>40 of 100</b> final points. Phase 2 (Luminar implementation, 60) unlocks after greenlight.
-            </p>
-            <div className="matrix">
-                <>
-              {activeDims.map((d) => (
-                <div className="matrix-row" key={d.key}>
-                  <d.icon size={16} />
-                  <div>
-                    <div className="mr-top"><b>{d.label}</b><span>{Math.round(d.weight * 100)}%</span></div>
-                    <div className="mr-blurb">{d.blurb} · up to {d.max} pts</div>
-                  </div>
-                </div>
-              ))}
-                {PROCESS_PHASE2.map((d) => (
-                  <div className="matrix-row phase2" key={d.label}>
-                    <Lock size={16} />
-                    <div>
-                      <div className="mr-top"><b>{d.label}</b><span>{d.weight}</span></div>
-                      <div className="mr-blurb">Phase 2 — {d.blurb}</div>
-                    </div>
-                  </div>
-                ))}
-                </>
-            </div>
-              </>
-            )}
-            {ideaType === "product" && composeHistory.length === 0 && (
-              <p className="side-note">Screened ideas will land here. Gates run on the server — this panel is only history.</p>
+            <div className="panel-tab">Recent screens</div>
+            {composeHistory.length === 0 && (
+              <p className="side-note">Screened ideas will land here. Scoring runs on the server — this panel is only history.</p>
             )}
 
             {composeHistory.length > 0 && (
