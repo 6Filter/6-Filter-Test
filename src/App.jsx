@@ -9,20 +9,21 @@ import { revenueDisplayFor, scoreToFive, statusOf, toneOf } from "./scoringUi.js
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { DIVISION_OPTIONS, DIVISION_NET_MARGIN, detectDivision, nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
+import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 
-async function callClaude(userText, system, image = null) {
+async function callModel(userText, system, image = null, provider = "claude") {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 90000);
   try {
     const res = await fetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userText, system, image }),
+      body: JSON.stringify({ userText, system, image, provider }),
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.error || `Claude API failed (${res.status}).`);
+      throw new Error(data.error || `Model API failed (${res.status}).`);
     }
     return data.text ?? "";
   } catch (e) {
@@ -58,7 +59,7 @@ function formatLogDate(ts) {
   });
 }
 
-async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd = {}) {
+async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd = {}, provider = "claude") {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ideaType === "product" ? 180000 : 90000);
   try {
@@ -68,6 +69,7 @@ async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd
       body: JSON.stringify({
         idea,
         ideaType,
+        provider,
         image: image
           ? { name: image.name, mediaType: image.mediaType, data: image.data }
           : null,
@@ -222,6 +224,8 @@ export default function App() {
   const [escalateLoading, setEscalateLoading] = useState(false);
   const [escalateError, setEscalateError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [llmProvider, setLlmProvider] = useState("claude");
+  const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
 
   const fileRef = useRef(null);
   const activeDims = ideaType === "process" ? PROCESS_DIMS : PRODUCT_DIMS;
@@ -262,6 +266,20 @@ export default function App() {
 
   useEffect(() => {
     refreshHistories().catch(() => {});
+    try {
+      const stored = localStorage.getItem("primus-llm-provider");
+      if (stored) setLlmProvider(normalizeProvider(stored));
+    } catch {
+      /* ignore */
+    }
+    fetch("/api/providers")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.providers) && data.providers.length) {
+          setProviderStatus(data.providers);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -345,7 +363,7 @@ export default function App() {
                 volumeLossPctAtFixedPoint === "" ? null : Number(volumeLossPctAtFixedPoint),
             }
           : {};
-      const full = await analyzeAndStoreIdea(idea.trim(), image, ideaType, npd);
+      const full = await analyzeAndStoreIdea(idea.trim(), image, ideaType, npd, llmProvider);
       setResult(full);
       const summary = {
         id: full.id,
@@ -357,6 +375,8 @@ export default function App() {
         overallVerdict: full.overallVerdict || null,
         ideaType: full.ideaType || ideaType,
         phase1Max: full.phase1Max || (ideaType === "process" ? 40 : 60),
+        llmProvider: full.llmProvider || llmProvider,
+        llmLabel: full.llmLabel || providerLabel(llmProvider),
       };
       if ((full.ideaType || ideaType) === "process") {
         setProcessHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
@@ -436,7 +456,7 @@ export default function App() {
         `PRIMUS PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
     }
     try {
-      setMsgText((await callClaude(text, system)).trim());
+      setMsgText((await callModel(text, system, null, llmProvider)).trim());
     } catch {
       setMsgText("Couldn't draft the message — try again.");
     } finally {
@@ -519,10 +539,31 @@ export default function App() {
             <History size={14} /> Log
           </button>
         </nav>
-        <div className="live">
+        <label className="model-switch" title="Compare NPD results across models. Keys stay on the server.">
           <span className="pulse" />
-          Claude
-        </div>
+          <span className="model-switch-lbl">Model</span>
+          <select
+            value={llmProvider}
+            onChange={(e) => {
+              const next = normalizeProvider(e.target.value);
+              setLlmProvider(next);
+              try {
+                localStorage.setItem("primus-llm-provider", next);
+              } catch {
+                /* ignore */
+              }
+            }}
+            aria-label="LLM provider"
+          >
+            {providerStatus.map((p) => (
+              <option key={p.id} value={p.id} disabled={p.configured === false}>
+                {p.label}
+                {p.id === "claude" ? " · default" : ""}
+                {p.configured === false ? " · not configured" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
       </header>
 
       {backLabel && (
@@ -793,6 +834,7 @@ export default function App() {
                         <span className="hist-weight">
                           {ideaTypeOf(h) === "process" ? "PROC" : (h.ideaWeight || "—")}
                         </span>
+                        <span className="hist-model">{h.llmLabel || "Claude"}</span>
                         <span className="hist-idea">{h.idea}</span>
                       </button>
                       <button
@@ -894,6 +936,7 @@ export default function App() {
                         <span className="log-weight">
                           {isProcess ? `/${max}` : (h.gramClass || h.ideaWeight || "—")}
                         </span>
+                        <span className="log-model">{h.llmLabel || "Claude"}</span>
                         <span className="log-idea">{h.idea}</span>
                         <span className="log-date">{formatLogDate(h.ts)}</span>
                       </button>
@@ -1100,7 +1143,7 @@ function Readout({ result, onEscalate }) {
         </header>
 
         <div className="sc-body">
-          <div className="sc-type-pill">Process idea · Phase 1</div>
+          <div className="sc-type-pill">Process idea · Phase 1 · {result.llmLabel || "Claude"}</div>
           <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
 
           <div className="sc-metrics">
@@ -1187,7 +1230,7 @@ function Readout({ result, onEscalate }) {
       </header>
 
       <div className="sc-body">
-        <div className="sc-type-pill">{hasNpd ? "Product idea · 4-Filter NPD" : "Product idea · Phase 1"}</div>
+        <div className="sc-type-pill">{hasNpd ? "Product idea · 4-Filter NPD" : "Product idea · Phase 1"} · {result.llmLabel || "Claude"}</div>
         <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
 
         {result.brandFit?.mismatch && (
@@ -1384,6 +1427,11 @@ const CSS = `
 .nav-tab:hover{color:var(--ink);background:rgba(0,108,180,.06);}
 .nav-tab.active{color:var(--ink);background:rgba(0,108,180,.1);border-color:rgba(0,108,180,.22);}
 .live{font-family:var(--fm);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:7px;background:rgba(0,108,180,.08);border:1px solid rgba(0,108,180,.22);padding:7px 12px;border-radius:999px;}
+.model-switch{display:flex;align-items:center;gap:8px;background:rgba(0,108,180,.08);border:1px solid rgba(0,108,180,.22);padding:5px 10px 5px 12px;border-radius:999px;font-family:var(--fm);color:var(--ink);}
+.model-switch-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.model-switch select{appearance:none;background:transparent;border:none;color:var(--ink);font-family:var(--fd);font-size:13px;font-weight:600;padding:2px 18px 2px 0;cursor:pointer;max-width:150px;}
+.model-switch select:focus{outline:none;}
+.hist-model,.log-model{font-family:var(--fm);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);background:rgba(0,108,180,.08);border-radius:999px;padding:2px 7px;flex-shrink:0;}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 0 var(--ink);animation:pl 2s infinite;}
 @keyframes pl{0%{box-shadow:0 0 0 0 rgba(0,108,180,.45);}70%{box-shadow:0 0 0 7px rgba(0,108,180,0);}100%{box-shadow:0 0 0 0 rgba(0,108,180,0);}}
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
@@ -1398,7 +1446,7 @@ const CSS = `
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
 .log-list{display:flex;flex-direction:column;border-top:1px solid var(--line-soft);}
 .log-row-wrap{border-bottom:1px solid var(--line-soft);}
-.log-row{display:grid;grid-template-columns:56px 92px 52px minmax(0,1fr) 140px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
+.log-row{display:grid;grid-template-columns:56px 92px 52px 72px minmax(0,1fr) 140px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .log-row:hover{background:var(--bg-soft);}
 .log-row:disabled{opacity:.6;cursor:wait;}
 .log-score{font-family:var(--fm);font-weight:700;font-size:18px;}
@@ -1583,7 +1631,7 @@ const CSS = `
   .primus textarea.idea-input{min-height:160px;}
   .top-nav{order:3;width:100%;margin:8px 0 0;margin-right:0;}
   .log-row{grid-template-columns:48px 78px minmax(0,1fr);gap:8px;}
-  .log-weight,.log-date{display:none;}
+  .log-weight,.log-date,.log-model{display:none;}
   .npd-grid{grid-template-columns:1fr;}
   .filter-strip{grid-template-columns:1fr;}
 }

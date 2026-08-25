@@ -6,13 +6,13 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { callAnthropic } from "./lib/callAnthropic.js";
 import { readJsonBody, redactSecrets, sendJson } from "./lib/http.js";
 import {
   handleIdeaById,
   handleIdeaEscalate,
   handleIdeasCollection,
 } from "./lib/ideasApi.js";
+import { handleLlmGenerate, handleProviders } from "./lib/llmApi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "dist");
@@ -70,27 +70,23 @@ const server = createServer(async (req, res) => {
   const url = req.url?.split("?")[0] || "";
 
   try {
+    if (url === "/api/providers") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handleProviders(req, res, { sendJson });
+      return;
+    }
+
     if (url === "/api/claude") {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-      if (req.method === "OPTIONS") {
-        res.statusCode = 204;
-        res.end();
-        return;
-      }
-      if (req.method !== "POST") {
-        sendJson(res, 405, { error: "Method not allowed" });
-        return;
-      }
-      const payload = await readJsonBody(req);
-      const { userText, system, image } = payload;
-      if (!userText || !system) {
-        sendJson(res, 400, { error: "userText and system are required." });
-        return;
-      }
-      const { text } = await callAnthropic({ userText, system, image: image || null });
-      sendJson(res, 200, { text });
+      await handleLlmGenerate(req, res, {
+        readBody: readJsonBody,
+        sendJson,
+        redactSecrets,
+      });
       return;
     }
 

@@ -1,6 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { callAnthropic } from "./lib/callAnthropic.js";
 import { readJsonBody, redactSecrets, sendJson } from "./lib/http.js";
 
 function readBody(req) {
@@ -18,11 +17,25 @@ function readBody(req) {
   });
 }
 
+const ENV_KEYS = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_MODEL",
+  "GEMINI_API_KEY",
+  "GEMINI_MODEL",
+  "GROQ_API_KEY",
+  "GROQ_MODEL",
+  "DEEPSEEK_API_KEY",
+  "DEEPSEEK_MODEL",
+  "OPENAI_API_KEY",
+  "OPENAI_MODEL",
+  "DATABASE_URL",
+  "POSTGRES_URL",
+];
+
 function applyEnv(env) {
-  if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
-  if (env.ANTHROPIC_MODEL) process.env.ANTHROPIC_MODEL = env.ANTHROPIC_MODEL;
-  if (env.DATABASE_URL) process.env.DATABASE_URL = env.DATABASE_URL;
-  if (env.POSTGRES_URL) process.env.POSTGRES_URL = env.POSTGRES_URL;
+  for (const key of ENV_KEYS) {
+    if (env[key]) process.env[key] = env[key];
+  }
   if (env.VITE_ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY) {
     process.env.ANTHROPIC_API_KEY = env.VITE_ANTHROPIC_API_KEY;
   }
@@ -40,6 +53,15 @@ function apiPlugin(env) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split("?")[0] || "";
 
+        if (url === "/api/providers") {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handleProviders } = await import("./lib/llmApi.js");
+          await handleProviders(req, res, { sendJson });
+          return;
+        }
+
         if (url === "/api/claude") {
           if (req.method === "OPTIONS") {
             res.statusCode = 204;
@@ -53,13 +75,13 @@ function apiPlugin(env) {
           try {
             const raw = await readBody(req);
             const payload = raw ? JSON.parse(raw) : {};
-            const { userText, system, image } = payload;
-            if (!userText || !system) {
-              sendJson(res, 400, { error: "userText and system are required." });
-              return;
-            }
-            const { text } = await callAnthropic({ userText, system, image: image || null });
-            sendJson(res, 200, { text });
+            req.body = payload;
+            const { handleLlmGenerate } = await import("./lib/llmApi.js");
+            await handleLlmGenerate(req, res, {
+              readBody: readJsonBody,
+              sendJson,
+              redactSecrets,
+            });
           } catch (e) {
             const status = e.status && Number.isInteger(e.status) ? e.status : 500;
             sendJson(res, status, { error: redactSecrets(e.message) });

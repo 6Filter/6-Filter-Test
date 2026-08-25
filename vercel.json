@@ -6,6 +6,9 @@
     "api/claude.js": {
       "maxDuration": 60
     },
+    "api/providers.js": {
+      "maxDuration": 10
+    },
     "api/ideas.js": {
       "maxDuration": 180
     },
