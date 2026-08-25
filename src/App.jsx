@@ -11,7 +11,7 @@ import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
 import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
-import { inferImageMediaType } from "../lib/mediaType.js";
+import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 
 async function callModel(userText, system, image = null, provider = "claude") {
@@ -118,12 +118,64 @@ async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
   return data;
 }
 
-const FILTER_RULES = [
-  { n: "01", title: "High success possibility & opportunity to grow", rule: "The proposition must declare attribute, benchmark, gap, and parity." },
-  { n: "02", title: "Net margin", rule: "Must meet the minimum net margin set for its division." },
-  { n: "03", title: "Price resilient", rule: "Modelled volume loss cannot exceed 10%." },
-  { n: "04", title: "Survives technology & habit shift", rule: "Format must stay relevant for the next five to ten years." },
-];
+function isImageUpload(name, mime) {
+  return (
+    String(mime || "").startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|bmp|heic|heif|tif|tiff|avif|svg)$/i.test(String(name || ""))
+  );
+}
+
+async function rasterizeImageFile(file) {
+  const bitmap = await createImageBitmap(file);
+  const MAX = 1568;
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height, 1));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  if (typeof bitmap.close === "function") bitmap.close();
+  const dataUrl = canvas.toDataURL("image/png");
+  const data = sanitizeImageBase64(dataUrl);
+  if (!data) throw new Error("empty png");
+  return {
+    name: String(file.name || "upload").replace(/\.[^.]+$/, "") + ".png",
+    mediaType: "image/png",
+    data,
+    preview: dataUrl,
+  };
+}
+
+function readFileAsAttachment(file, isImage) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that file."));
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const data = sanitizeImageBase64(result.includes("base64,") ? result : result.split(",")[1] || "");
+      resolve({
+        name: file.name,
+        mediaType: isImage
+          ? sniffImageMediaType(data, file.name, file.type)
+          : file.type ||
+            (String(file.name).toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : String(file.name).toLowerCase().endsWith(".docx")
+                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                : String(file.name).toLowerCase().endsWith(".doc")
+                  ? "application/msword"
+                  : "application/octet-stream"),
+        data,
+        preview: isImage ? result : null,
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 const NPD_FILTERS = [
   { key: "filter1", num: "01", title: "Opportunity to Grow", hint: "Attribute · benchmark · gap", icon: TrendingUp },
@@ -357,38 +409,41 @@ export default function App() {
   const logHistory = logFilter === "process" ? processHistory : productHistory;
   const liveBrandFit = ideaType === "product" ? resolveBrandFit(idea) : null;
 
-  const onFile = (e) => {
+  const onFile = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
     const name = String(f.name || "").toLowerCase();
     const mime = String(f.type || "").toLowerCase();
     const ok =
-      mime.startsWith("image/") ||
+      isImageUpload(name, mime) ||
       mime === "application/pdf" ||
       mime === "application/msword" ||
       mime.includes("wordprocessingml") ||
-      /\.(png|jpe?g|gif|webp|bmp|pdf|docx?)$/i.test(name);
+      /\.(pdf|docx?)$/i.test(name);
     if (!ok) {
-      setError("Upload a PDF, Word file (.doc / .docx), or image.");
+      setError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
       setError("Keep the file under 8 MB.");
       return;
     }
-    const isImage = mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(name);
-    const reader = new FileReader();
-    reader.onload = () =>
-      setAttachment({
-        name: f.name,
-        mediaType: isImage
-          ? inferImageMediaType(f.name, f.type)
-          : f.type || (name.endsWith(".pdf") ? "application/pdf" : name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : name.endsWith(".doc") ? "application/msword" : "application/octet-stream"),
-        data: String(reader.result).split(",")[1],
-        preview: isImage ? reader.result : null,
-      });
-    reader.readAsDataURL(f);
+    setError("");
+    const isImage = isImageUpload(name, mime);
+    try {
+      if (isImage) {
+        try {
+          setAttachment(await rasterizeImageFile(f));
+        } catch {
+          setAttachment(await readFileAsAttachment(f, true));
+        }
+      } else {
+        setAttachment(await readFileAsAttachment(f, false));
+      }
+    } catch {
+      setError("Could not read that file. Try a JPG or PNG.");
+    }
   };
 
   async function analyze() {
@@ -779,19 +834,6 @@ export default function App() {
             {loading && ideaType === "product" && (
               <p className="run-hint">Scoring and research are running together.</p>
             )}
-
-            <div className="filter-rules">
-              <div className="filter-rules-h">The four filters</div>
-              {FILTER_RULES.map((r) => (
-                <div className="filter-rule" key={r.n}>
-                  <span className="filter-rule-n">{r.n}</span>
-                  <div>
-                    <b>{r.title}</b>
-                    <p>{r.rule}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </section>
 
           <aside className="compose-aside">
@@ -1237,11 +1279,6 @@ function PhonePreview({ mode, idea, ideaType, result }) {
       <div className="phone-body">
         <div className="phone-eyebrow">Primus screening</div>
         <p className="phone-idea">{idea?.trim() || (ideaType === "process" ? "Process idea" : "Product idea")}</p>
-        <ul className="phone-rules">
-          {FILTER_RULES.map((r) => (
-            <li key={r.n}><span>{r.n}</span> {r.title}</li>
-          ))}
-        </ul>
       </div>
     </div>
   );
