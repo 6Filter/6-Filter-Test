@@ -1,4 +1,4 @@
-# Primus.ai — Production Scope & Process Flow
+# 6 Filter Test — Production Scope & Process Flow
 
 **Audience:** Internal product, engineering, and IT stakeholders  
 **Purpose:** Scope the current Primus.ai tool and process flow for production readiness  
@@ -9,7 +9,7 @@
 
 ## 1. Product summary
 
-**Primus.ai** is CavinKare’s Product Validation Architect. Field / product teams submit an FMCG idea; the system runs a Phase-1 LLM validation, scores Novelty / Market Relevance / Evidence, estimates revenue and gram weight, and stores the result for later review.
+**6 Filter Test** is CavinKare’s NPD screening engine. Field / product teams submit an FMCG idea; the system runs a Phase-1 LLM validation, scores Novelty / Market Relevance / Evidence, estimates revenue and gram weight, and stores the result for later review.
 
 | Phase | Scope | Points |
 |-------|--------|--------|

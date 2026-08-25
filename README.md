@@ -1,7 +1,7 @@
-# Primus - Product Validation Architect
+# 6 Filter Test
 
-A local, runnable version of the Primus product-idea scoring tool.
-It calls the Anthropic API live to score ideas on Novelty / Market Relevance / Evidence Strength.
+NPD screening for CavinKare product and process ideas.
+It scores ideas through the 4-filter weightage engine (plus process Phase-1) using the selected LLM.
 
 ## Run it in 3 steps
 

@@ -1,4 +1,4 @@
-# Primus Backend API — Ideas + Analysis
+# 6 Filter Test Backend API — Ideas + Analysis
 
 ## Overview
 

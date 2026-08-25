@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
-  ImagePlus, ArrowRight, ArrowLeft, History, Volume2,
+  FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
   Scale, Tag, Cpu, ChevronDown, Flag, Trash2
 } from "lucide-react";
-import { revenueDisplayFor, scoreToFive, statusOf, toneOf } from "./scoringUi.js";
+import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
+import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
@@ -126,18 +127,49 @@ function filterReason(filter) {
   return String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim();
 }
 
-function overallHeaderKey(verdict) {
-  if (verdict === "CLEARED") return "approved";
-  if (verdict === "NEEDS_INPUT") return "promising";
-  if (verdict === "FAIL") return "rejected";
-  return null;
-}
-
-function overallLabel(verdict) {
-  if (verdict === "CLEARED") return "Cleared";
-  if (verdict === "NEEDS_INPUT") return "Needs input";
-  if (verdict === "FAIL") return "Fail";
-  return verdict || "";
+function VerdictStory({ result }) {
+  const deductions = deductionsFor(result);
+  const mistakes = mistakesFor(result);
+  return (
+    <ol className="verdict-seq">
+      <li>
+        <span className="vs-step">02</span>
+        <div>
+          <h3>Where marks were deducted</h3>
+          {deductions.length === 0 ? (
+            <p className="vs-empty">No marks deducted on the scored dimensions.</p>
+          ) : (
+            <ul>
+              {deductions.map((row) => (
+                <li key={row.title}>
+                  <div className="vs-row-top">
+                    <b>{row.title}</b>
+                    <span className="vs-marks">{row.marks}</span>
+                  </div>
+                  {row.detail ? <p>{row.detail}</p> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </li>
+      <li>
+        <span className="vs-step">03</span>
+        <div>
+          <h3>Mistakes</h3>
+          {mistakes.length === 0 ? (
+            <p className="vs-empty">No specific mistakes recorded.</p>
+          ) : (
+            <ul className="vs-mistakes">
+              {mistakes.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </li>
+    </ol>
+  );
 }
 
 function isProcessResult(r) {
@@ -171,7 +203,7 @@ export default function App() {
   const [view, setView] = useState("compose");
   const [ideaType, setIdeaType] = useState("product");
   const [idea, setIdea] = useState("");
-  const [image, setImage] = useState(null);
+  const [attachment, setAttachment] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -311,16 +343,42 @@ export default function App() {
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
+    e.target.value = "";
     if (!f) return;
+    const name = String(f.name || "").toLowerCase();
+    const mime = String(f.type || "").toLowerCase();
+    const ok =
+      mime.startsWith("image/") ||
+      mime === "application/pdf" ||
+      mime === "application/msword" ||
+      mime.includes("wordprocessingml") ||
+      /\.(png|jpe?g|gif|webp|bmp|pdf|docx?)$/i.test(name);
+    if (!ok) {
+      setError("Upload a PDF, Word file (.doc / .docx), or image.");
+      return;
+    }
+    if (f.size > 8 * 1024 * 1024) {
+      setError("Keep the file under 8 MB.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () =>
-      setImage({ name: f.name, mediaType: f.type, data: String(reader.result).split(",")[1], preview: reader.result });
+      setAttachment({
+        name: f.name,
+        mediaType: f.type || (name.endsWith(".pdf") ? "application/pdf" : name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : name.endsWith(".doc") ? "application/msword" : "application/octet-stream"),
+        data: String(reader.result).split(",")[1],
+        preview: String(f.type || "").startsWith("image/") ? reader.result : null,
+      });
     reader.readAsDataURL(f);
   };
 
   async function analyze() {
-    if (!idea.trim()) {
-      setError(ideaType === "process" ? "Describe the process idea first." : "Describe the product idea first.");
+    if (!idea.trim() && !attachment) {
+      setError(
+        ideaType === "process"
+          ? "Describe the process idea or upload a PDF, Word file, or image."
+          : "Describe the product idea or upload a PDF, Word file, or image."
+      );
       return;
     }
     if (ideaType === "product") {
@@ -344,7 +402,7 @@ export default function App() {
               pricePerUnit: pricePerUnit === "" ? null : Number(pricePerUnit),
             }
           : {};
-      const full = await analyzeAndStoreIdea(idea.trim(), image, ideaType, npd, llmProvider);
+      const full = await analyzeAndStoreIdea(idea.trim(), attachment, ideaType, npd, llmProvider);
       setResult(full);
       const summary = {
         id: full.id,
@@ -426,7 +484,7 @@ export default function App() {
         `Draft a short message to my manager submitting this process idea for review. Under 110 words. ` +
         `Confident but not overselling; end with a clear ask to review and greenlight a Luminar pilot.\n\n` +
         `PROCESS IDEA: ${result.idea}\nPOSITIONING: ${result.oneLiner}\n` +
-        `PRIMUS PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Efficiency ${e}, Feasibility ${f}, Scalability ${s}).`;
+        `6 FILTER TEST PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Efficiency ${e}, Feasibility ${f}, Scalability ${s}).`;
     } else {
       const n = result.novelty.score, m = result.market.score, ev = result.evidence.score;
       system = "You draft concise, confident internal messages for a product manager submitting an idea to their manager. Sentence case, no fluff, no emoji.";
@@ -434,7 +492,7 @@ export default function App() {
         `Draft a short message to my manager submitting this product idea for review. Under 110 words. ` +
         `Confident but not overselling; end with a clear ask to review and greenlight the next validation phase.\n\n` +
         `IDEA: ${result.idea}\nPOSITIONING: ${result.oneLiner}\n` +
-        `PRIMUS PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
+        `6 FILTER TEST PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
     }
     try {
       setMsgText((await callModel(text, system, null, llmProvider)).trim());
@@ -500,8 +558,8 @@ export default function App() {
         <button type="button" className="brand-btn" onClick={() => setView("compose")} aria-label="Go to validate">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
-            <div className="eyebrow">Primus Insights · Product Validation Architect</div>
-            <h1>Primus<span className="dot">.</span>ai</h1>
+            <div className="eyebrow">CavinKare · NPD screening</div>
+            <h1>6 Filter Test</h1>
           </div>
         </button>
         <nav className="top-nav" aria-label="Main">
@@ -586,10 +644,10 @@ export default function App() {
               <textarea
                 className="idea-input"
                 rows={8} value={idea} onChange={(e) => setIdea(e.target.value)}
-                placeholder={
+                    placeholder={
                   ideaType === "process"
-                    ? "e.g. Automate weekly sales reporting with a shared Luminar checklist — cut 4 hours of manual consolidation per team."
-                    : "e.g. A dry shampoo bar for Indian summers — no aerosol, sweat-activated freshness, refill-first packaging."
+                    ? "Type the process idea, or upload a PDF / Word file / image with the insight."
+                    : "Type the product idea, or upload a PDF / Word file / image with the insight."
                 }
               />
             </label>
@@ -652,12 +710,22 @@ export default function App() {
             )}
 
             <div className="media-row">
-              <input ref={fileRef} type="file" accept="image/*" onChange={onFile} hidden />
-              {!image ? (
-                <button className="ghost" onClick={() => fileRef.current?.click()}><ImagePlus size={15} /> Add media</button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.doc,.docx,image/*"
+                onChange={onFile}
+                hidden
+              />
+              {!attachment ? (
+                <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
+                  <FileUp size={15} /> Upload PDF, Word, or image
+                </button>
               ) : (
-                <span className="chip file"><img src={image.preview} alt="" />{image.name}
-                  <button onClick={() => setImage(null)}><X size={12} /></button>
+                <span className="chip file">
+                  {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
+                  {attachment.name}
+                  <button type="button" onClick={() => setAttachment(null)}><X size={12} /></button>
                 </span>
               )}
             </div>
@@ -796,11 +864,10 @@ export default function App() {
                 {logHistory.map((h) => {
                   const max = phase1MaxOf(h);
                   const t = toneOf(h.phase1, max);
-                  const st = statusOf(h.phase1, max);
                   const isOpening = openingId === h.id;
                   const isDeleting = deletingId === h.id;
+                  const pf = overallPassFail(h);
                   const isProcess = ideaTypeOf(h) === "process";
-                  const verdict = h.overallVerdict;
                   return (
                     <div key={h.id} className="log-row-wrap">
                       <button
@@ -812,13 +879,7 @@ export default function App() {
                         <span className="log-score" style={{ color: t.color }}>
                           {isOpening ? <Loader2 size={16} className="spin" /> : Number(h.phase1 || 0).toFixed(1)}
                         </span>
-                        {isProcess ? (
-                          <span className={`log-status log-status-${st.key}`}>{st.label}</span>
-                        ) : (
-                          <span className={`log-status log-status-${overallHeaderKey(verdict) || st.key}`}>
-                            {verdict ? overallLabel(verdict) : st.label}
-                          </span>
-                        )}
+                        <span className={`log-status log-status-${pf.key}`}>{pf.label}</span>
                         <span className="log-weight">
                           {isProcess ? `/${max}` : (h.gramClass || h.ideaWeight || "—")}
                         </span>
@@ -881,7 +942,7 @@ export default function App() {
                 <button className="run" onClick={copyMsg}>
                   {copied ? (<><Check size={16} /> Copied</>) : (<><Copy size={16} /> Copy message</>)}
                 </button>
-                <p className="modal-foot">Review before sending — Primus won't message your manager for you.</p>
+                <p className="modal-foot">Review before sending — 6 Filter Test won't message your manager for you.</p>
               </>
             )}
           </div>
@@ -1001,7 +1062,6 @@ function Readout({ result, onEscalate }) {
   const pts = Number(result.phase1);
   const safePts = Number.isFinite(pts) ? pts : 0;
   const maxPts = phase1MaxOf(result);
-  const status = statusOf(safePts, maxPts);
   const tags = Array.isArray(result.categoryTags)
     ? result.categoryTags.map((t) => String(t || "")).filter(Boolean)
     : [];
@@ -1015,22 +1075,25 @@ function Readout({ result, onEscalate }) {
   };
 
   if (process) {
+    const verdict = overallPassFail(result);
+    const headerKey = verdict.key === "passed" ? "approved" : verdict.key === "failed" ? "rejected" : "promising";
     return (
       <article className="scorecard">
-        <header className={`sc-header sc-header-${status.key}`}>
+        <header className={`sc-header sc-header-${headerKey}`}>
           <div className="sc-score-block">
-            <span className="sc-label">Score / {maxPts}</span>
-            <span className="sc-score">{safePts.toFixed(1)}</span>
+            <span className="sc-label">01 · Verdict</span>
+            <span className="sc-score sc-verdict-word">{verdict.label}</span>
           </div>
           <div className="sc-status-block">
-            <span className="sc-label">Status</span>
-            <span className="sc-status-pill">{status.label}</span>
+            <span className="sc-label">Score / {maxPts}</span>
+            <span className="sc-status-pill">{safePts.toFixed(1)}</span>
           </div>
         </header>
 
         <div className="sc-body">
           <div className="sc-type-pill">Process idea · Phase 1 · {result.llmLabel || "Claude"}</div>
           <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
+          <VerdictStory result={result} />
 
           <div className="sc-metrics">
             <div className="sc-metric">
@@ -1093,7 +1156,8 @@ function Readout({ result, onEscalate }) {
   const revenueInfo = revenueDisplayFor(result);
   const ideaWeight = result.gramClass || revenueInfo.weight;
   const hasNpd = Boolean(result.overallVerdict || result.filter1 || result.filter2);
-  const headerKey = overallHeaderKey(result.overallVerdict) || status.key;
+  const verdict = overallPassFail(result);
+  const headerKey = verdict.key === "passed" ? "approved" : verdict.key === "failed" ? "rejected" : "promising";
   const investmentGrid =
     result.investmentGrid ||
     buildInvestmentGrid(
@@ -1106,18 +1170,19 @@ function Readout({ result, onEscalate }) {
     <article className="scorecard">
       <header className={`sc-header sc-header-${headerKey}`}>
         <div className="sc-score-block">
-          <span className="sc-label">{hasNpd ? "Gram class" : `Score / ${maxPts}`}</span>
-          <span className="sc-score">{hasNpd ? (ideaWeight || "—") : safePts.toFixed(1)}</span>
+          <span className="sc-label">01 · Verdict</span>
+          <span className="sc-score sc-verdict-word">{verdict.label}</span>
         </div>
         <div className="sc-status-block">
-          <span className="sc-label">{hasNpd ? "Overall verdict" : "Status"}</span>
-          <span className="sc-status-pill">{hasNpd ? overallLabel(result.overallVerdict) : status.label}</span>
+          <span className="sc-label">{hasNpd ? "Gram class" : `Score / ${maxPts}`}</span>
+          <span className="sc-status-pill">{hasNpd ? (ideaWeight || "—") : safePts.toFixed(1)}</span>
         </div>
       </header>
 
       <div className="sc-body">
         <div className="sc-type-pill">{hasNpd ? "Product idea · 4-Filter NPD" : "Product idea · Phase 1"} · {result.llmLabel || "Claude"}</div>
         <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
+        <VerdictStory result={result} />
 
         {result.brandFit?.mismatch && (
           <div className="npd-banner npd-banner-fail">
@@ -1337,9 +1402,9 @@ const CSS = `
 .log-row:disabled{opacity:.6;cursor:wait;}
 .log-score{font-family:var(--fm);font-weight:700;font-size:18px;}
 .log-status{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;width:fit-content;}
-.log-status-approved{background:rgba(36,168,102,.12);color:#1F8A55;}
-.log-status-promising{background:rgba(201,162,39,.16);color:#8A6E12;}
-.log-status-rejected{background:rgba(228,87,87,.12);color:#C53D3D;}
+.log-status-approved,.log-status-passed{background:rgba(36,168,102,.12);color:#1F8A55;}
+.log-status-promising,.log-status-needs{background:rgba(201,162,39,.16);color:#8A6E12;}
+.log-status-rejected,.log-status-failed{background:rgba(228,87,87,.12);color:#C53D3D;}
 .log-weight{font-family:var(--fm);font-size:11px;color:var(--ink);letter-spacing:.04em;}
 .log-idea{font-size:13.5px;color:var(--ink-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .log-date{font-size:11.5px;color:var(--muted);text-align:right;font-family:var(--fm);}
@@ -1451,6 +1516,18 @@ const CSS = `
 .sc-header-approved{background:linear-gradient(135deg,#2FBE7A,#24A866);color:#fff;}
 .sc-label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.9;margin-bottom:4px;font-weight:500;}
 .sc-score{display:block;font-size:44px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.sc-verdict-word{font-size:36px;letter-spacing:-.03em;}
+.verdict-seq{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-direction:column;gap:12px;}
+.verdict-seq>li{display:flex;gap:12px;background:var(--bg-soft);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+.vs-step{flex-shrink:0;font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--ink);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;}
+.verdict-seq h3{margin:0 0 8px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);}
+.verdict-seq ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;}
+.verdict-seq ul li p{margin:4px 0 0;font-size:12.5px;color:var(--ink-deep);line-height:1.45;}
+.vs-row-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;}
+.vs-marks{font-family:var(--fm);font-size:11px;color:var(--ink);flex-shrink:0;}
+.vs-mistakes li{font-size:13px;color:var(--ink-deep);line-height:1.45;padding-left:14px;position:relative;}
+.vs-mistakes li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--coral);}
+.vs-empty{margin:0;font-size:13px;color:var(--muted);}
 .sc-status-block{text-align:right;}
 .sc-status-pill{display:inline-block;background:rgba(0,0,0,.18);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;letter-spacing:.02em;margin-top:18px;}
 .sc-header-promising .sc-status-pill{background:rgba(92,74,10,.14);color:#5C4A0A;}

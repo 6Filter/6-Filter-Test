@@ -1,4 +1,4 @@
-# Primus.ai — Logic Briefing for IT Team
+# 6 Filter Test — Logic Briefing for IT Team
 
 **Purpose:** Explain how Primus works end-to-end for IT / engineering stakeholders  
 **Live app:** Vercel (e.g. `https://primus-ai-nine.vercel.app`)  
@@ -8,7 +8,7 @@
 
 ## 1. What the tool does (one paragraph)
 
-Primus.ai is an FMCG **Product Validation Architect**. A user enters a product idea. The **server** calls **Claude (Anthropic)** to score Novelty, Market Relevance, and Evidence. The app then calculates a **Phase-1 score out of 60**, status (Approved / Promising / Rejected), revenue band, and gram classification (10g / 100g / 1000g). The full result is saved in **PostgreSQL** and can be reopened from the **Log** tab.
+6 Filter Test is an FMCG **NPD screening engine**. A user enters a product idea. The **server** calls **Claude (Anthropic)** to score Novelty, Market Relevance, and Evidence. The app then calculates a **Phase-1 score out of 60**, status (Approved / Promising / Rejected), revenue band, and gram classification (10g / 100g / 1000g). The full result is saved in **PostgreSQL** and can be reopened from the **Log** tab.
 
 Phase 1 = **60 of 100** final points. Phase 2 (consumer validation, 40 points) is future scope.
 

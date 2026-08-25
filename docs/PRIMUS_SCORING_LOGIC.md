@@ -1,4 +1,4 @@
-# Primus.ai — Product Validation Logic & Scoring System
+# 6 Filter Test — Product Validation Logic & Scoring System
 
 ## Current model — 4-Filter NPD Weightage Engine (product ideas)
 
@@ -69,7 +69,7 @@ The following documents the original Phase-1 LLM scoring path. For **product** i
 
 ## Overview
 
-Primus.ai is CavinKare’s **Product Validation Architect**. It scores FMCG product ideas for the Indian market using Claude (Anthropic).
+6 Filter Test is CavinKare’s **NPD screening engine**. It scores FMCG product ideas for the Indian market using Claude (Anthropic).
 
 - **Phase 1** (this app): LLM scoring — **60 of 100** final points  
 - **Phase 2** (future): Consumer validation — **40 of 100** points  
@@ -81,7 +81,7 @@ Users enter a product idea (optional image). Claude scores three dimensions. The
 ## End-to-end flow
 
 1. User enters product idea (+ optional media).
-2. App calls **Claude** (`claude-sonnet-4-5-20250929`) with the Primus scoring prompt.
+2. App calls **Claude** (`claude-sonnet-4-5-20250929`) with the 6 Filter Test scoring prompt.
 3. Claude returns JSON: Novelty / Market / Evidence (0–100), critique, revenue, TAM, improvements.
 4. App validates the response and applies local formulas:
    - Phase-1 score out of 60

@@ -1,4 +1,4 @@
-# Primus.ai — Investment vs Revenue Quadrant
+# 6 Filter Test — Investment vs Revenue Quadrant
 
 **Status:** Built (v1) — scorecard shows 2×2 grid  
 **Audience:** Product, Finance, Engineering  
