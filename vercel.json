@@ -18,6 +18,9 @@
     "api/ideas/[id]/escalate.js": {
       "maxDuration": 30
     },
+    "api/ideas/[id]/export.js": {
+      "maxDuration": 30
+    },
     "api/category-sizing/run.js": {
       "maxDuration": 180
     },

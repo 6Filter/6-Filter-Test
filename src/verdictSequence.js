@@ -1,3 +1,4 @@
+import { hideFilterTalk } from "../lib/publicCopy.js";
 import { scoreToFive, statusOf } from "./scoringUi.js";
 
 const PRODUCT_DIMS = [
@@ -13,10 +14,10 @@ const PROCESS_DIMS = [
 ];
 
 const FILTERS = [
-  { key: "filter1", label: "Filter 1 — Opportunity to Grow" },
-  { key: "filter2", label: "Filter 2 — Net Margin Gate" },
-  { key: "filter3", label: "Filter 3 — Price Resilient" },
-  { key: "filter4", label: "Filter 4 — Tech & Habit Shift" },
+  { key: "filter1", label: "Opportunity to Grow" },
+  { key: "filter2", label: "Net Margin Gate" },
+  { key: "filter3", label: "Price Resilient" },
+  { key: "filter4", label: "Tech & Habit Shift" },
 ];
 
 function isProcess(result) {
@@ -24,7 +25,9 @@ function isProcess(result) {
 }
 
 function filterReason(filter) {
-  return String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim();
+  return hideFilterTalk(
+    String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim()
+  );
 }
 
 export function overallPassFail(result) {
@@ -51,7 +54,7 @@ export function deductionsFor(result) {
     rows.push({
       title: d.label,
       marks: `−${deducted} of ${d.maxPts} pts · ${scoreToFive(score100)}/5`,
-      detail: String(dim?.rationale || "").trim(),
+      detail: hideFilterTalk(String(dim?.rationale || "").trim()),
     });
   }
 

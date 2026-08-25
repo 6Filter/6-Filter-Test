@@ -10,6 +10,7 @@ import { readJsonBody, redactSecrets, sendJson } from "./lib/http.js";
 import {
   handleIdeaById,
   handleIdeaEscalate,
+  handleIdeaExport,
   handleIdeasCollection,
 } from "./lib/ideasApi.js";
 import { handleLlmGenerate, handleProviders } from "./lib/llmApi.js";
@@ -97,6 +98,18 @@ const server = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       await handleIdeasCollection(req, res, {
         readBody: readJsonBody,
+        sendJson,
+        redactSecrets,
+      });
+      return;
+    }
+
+    const exportMatch = url.match(/^\/api\/ideas\/([^/]+)\/export$/);
+    if (exportMatch) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handleIdeaExport(req, res, decodeURIComponent(exportMatch[1]), {
         sendJson,
         redactSecrets,
       });

@@ -1,6 +1,6 @@
 # 6 Filter Test — Logic Briefing for IT Team
 
-**Purpose:** Explain how Primus works end-to-end for IT / engineering stakeholders  
+**Purpose:** Explain how 6 Filter Test works end-to-end for IT / engineering stakeholders  
 **Live app:** Vercel (e.g. `https://primus-ai-nine.vercel.app`)  
 **Repo:** `https://github.com/johngeorgegejo-dev/Primus-AI`
 
@@ -46,11 +46,11 @@ Phase 1 = **60 of 100** final points. Phase 2 (consumer validation, 40 points) i
 
 ## 3. User / process flow
 
-1. User opens Primus → **Validate** tab  
+1. User opens 6 Filter Test → **Validate** tab  
 2. Enters idea (+ optional image) → **Run validation**  
 3. Browser calls `POST /api/ideas`  
 4. Server:
-   - Calls Claude with Primus scoring prompt  
+   - Calls Claude with the 6 Filter Test scoring prompt  
    - Parses JSON scores  
    - Computes Phase-1, status, revenue, gram weight  
    - Inserts row into Postgres `ideas`  
@@ -159,7 +159,7 @@ After any env change → **Redeploy** on Vercel.
 
 ## 8. Security model (for IT review)
 
-| Topic | How Primus handles it |
+| Topic | How 6 Filter Test handles it |
 |-------|------------------------|
 | LLM key | Server-only; never in frontend bundle |
 | Git | `.env.local` gitignored; secrets not in repo |
@@ -201,7 +201,7 @@ Requires local `.env.local` with `ANTHROPIC_API_KEY` (+ optional `DATABASE_URL`)
 
 ## 11. Talking points for IT meeting
 
-1. **Primus is a Vite React app on Vercel** with serverless APIs.  
+1. **6 Filter Test is a Vite React app on Vercel** with serverless APIs.  
 2. **Claude runs only on the server**; key is in Vercel env.  
 3. **Every validation is stored in PostgreSQL** (Neon).  
 4. **Scoring rules are deterministic in code** after Claude returns 0–100 dimensions.  

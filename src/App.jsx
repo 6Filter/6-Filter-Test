@@ -12,6 +12,7 @@ import { nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
 import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
+import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 
 async function callModel(userText, system, image = null, provider = "claude") {
@@ -185,7 +186,9 @@ const NPD_FILTERS = [
 ];
 
 function filterReason(filter) {
-  return String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim();
+  return hideFilterTalk(
+    String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim()
+  );
 }
 
 function VerdictStory({ result }) {
@@ -590,7 +593,7 @@ export default function App() {
   async function submitEscalate() {
     if (!result?.id) return;
     if (!escalateFilter) {
-      setEscalateError("Name the specific filter being disputed.");
+      setEscalateError("Name the specific check being disputed.");
       return;
     }
     if (!escalateEvidence.trim()) {
@@ -632,8 +635,8 @@ export default function App() {
         <button type="button" className="brand-btn" onClick={() => setView("compose")} aria-label="Go to validate">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
-            <div className="eyebrow">PRIMUS SCREENING</div>
-            <h1>Primus.ai</h1>
+            <div className="eyebrow">NPD SCREENING</div>
+            <h1>6 Filter Test</h1>
           </div>
         </button>
         <nav className="top-nav" aria-label="Main">
@@ -726,6 +729,33 @@ export default function App() {
               />
             </label>
 
+            <div className="attach-block">
+              <span className="lbl">Or attach idea / insight</span>
+              <div className="media-row">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,image/*"
+                  onChange={onFile}
+                  hidden
+                />
+                {!attachment ? (
+                  <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
+                    <FileUp size={15} /> Upload PDF, Word, or image
+                  </button>
+                ) : (
+                  <span className="chip file">
+                    {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
+                    {attachment.name}
+                    <button type="button" onClick={() => setAttachment(null)}><X size={12} /></button>
+                  </span>
+                )}
+              </div>
+              <p className="attach-hint">
+                PDF, Word (.doc / .docx), or image (JPG, PNG, GIF, WebP). You can run the screen from the file alone.
+              </p>
+            </div>
+
             {ideaType === "product" && (
               <div className="npd-fields">
                 <p className="npd-hint">
@@ -787,27 +817,6 @@ export default function App() {
                 </div>
               </div>
             )}
-
-            <div className="media-row">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,.doc,.docx,image/*"
-                onChange={onFile}
-                hidden
-              />
-              {!attachment ? (
-                <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
-                  <FileUp size={15} /> Upload PDF, Word, or image
-                </button>
-              ) : (
-                <span className="chip file">
-                  {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
-                  {attachment.name}
-                  <button type="button" onClick={() => setAttachment(null)}><X size={12} /></button>
-                </span>
-              )}
-            </div>
 
             {error && <div className="err"><AlertTriangle size={14} /> {error}</div>}
 
@@ -1045,12 +1054,12 @@ export default function App() {
               <button className="ghost sq" onClick={() => setEscalateOpen(false)} disabled={escalateLoading}><X size={16} /></button>
             </div>
             <p className="modal-foot" style={{ textAlign: "left", margin: "0 0 14px" }}>
-              This does not change the AI verdict. It flags the record for human review. Name the failed filter and the evidence you dispute.
+              This does not change the AI verdict. It flags the record for human review. Name the failed check and the evidence you dispute.
             </p>
             <label className="field">
-              <span className="lbl">Failed filter</span>
+              <span className="lbl">Failed check</span>
               <select value={escalateFilter} onChange={(e) => setEscalateFilter(e.target.value)}>
-                <option value="">Select a filter</option>
+                <option value="">Select a check</option>
                 {(result.failedFilters || []).map((f) => (
                   <option key={f} value={f}>{f}</option>
                 ))}
@@ -1248,11 +1257,65 @@ function CategoryIntelPanel({ filter, kind }) {
   );
 }
 
+function ReportExportButtons({ result, variant = "card" }) {
+  const [busy, setBusy] = useState(null);
+  const [err, setErr] = useState("");
+  if (!result?.id) return null;
+
+  async function download(format) {
+    setBusy(format);
+    setErr("");
+    try {
+      const res = await fetch(
+        `/api/ideas/${encodeURIComponent(result.id)}/export?format=${encodeURIComponent(format)}`
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Export failed (${res.status}).`);
+      }
+      const blob = await res.blob();
+      const ext = format === "docx" ? "docx" : "pdf";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `6-filter-test-${String(result.id).slice(0, 8)}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      setErr(e.message || "Could not export the report.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className={`report-export report-export-${variant}`}>
+      <button
+        type="button"
+        className="report-export-btn"
+        disabled={Boolean(busy)}
+        onClick={() => download("pdf")}
+      >
+        <Download size={14} /> {busy === "pdf" ? "Preparing PDF…" : "Download PDF"}
+      </button>
+      <button
+        type="button"
+        className="report-export-btn"
+        disabled={Boolean(busy)}
+        onClick={() => download("docx")}
+      >
+        <FileText size={14} /> {busy === "docx" ? "Preparing Word…" : "Download Word"}
+      </button>
+      {err ? <p className="report-export-err">{err}</p> : null}
+    </div>
+  );
+}
+
 function PhonePreview({ mode, idea, ideaType, result }) {
   if (mode === "verdict" && result) {
     const hero = heroVerdict(result);
     const score = scoreOutOf100(result);
-    const cards = isProcessResult(result) ? [] : gateCardsFor(result);
     return (
       <div className="phone phone-dark" aria-hidden="true">
         <div className="phone-notch" />
@@ -1261,14 +1324,6 @@ function PhonePreview({ mode, idea, ideaType, result }) {
           <div className={`phone-word phone-word-${hero.tone}`}>{hero.word}</div>
           <div className="phone-score">{score}<span>/100</span></div>
           <p className="phone-idea">{String(result.idea || "").slice(0, 80)}</p>
-          <ul className="phone-dots">
-            {cards.map((c) => (
-              <li key={c.n}>
-                <i className={`dot dot-${c.badge.toLowerCase()}`} />
-                <span>{c.n} {c.title}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     );
@@ -1277,7 +1332,7 @@ function PhonePreview({ mode, idea, ideaType, result }) {
     <div className="phone phone-cream" aria-hidden="true">
       <div className="phone-notch" />
       <div className="phone-body">
-        <div className="phone-eyebrow">Primus screening</div>
+        <div className="phone-eyebrow">6 Filter Test</div>
         <p className="phone-idea">{idea?.trim() || (ideaType === "process" ? "Process idea" : "Product idea")}</p>
       </div>
     </div>
@@ -1320,7 +1375,7 @@ function FilterStrip({ result }) {
                   <p>{filter.evidenceSummary}</p>
                 )}
                 {meta.key === "filter3" && (
-                  <p className="filter-proxy">Points-beat is a 10-point proxy, not a substitute for the Filter 6 lab/consumer panel.</p>
+                  <p className="filter-proxy">Points-beat is a 10-point proxy, not a substitute for the lab/consumer panel.</p>
                 )}
                 {(meta.key === "filter1" || meta.key === "filter4") && (
                   <CategoryIntelPanel filter={filter} kind={meta.key} />
@@ -1391,6 +1446,7 @@ function Readout({ result, onEscalate, onNewScreen }) {
         <div className="sc-body">
           <div className="sc-type-pill">Process idea · Phase 1 · {result.llmLabel || "Claude"}</div>
           <h2 className="sc-title">{String(result.idea || "").toUpperCase()}</h2>
+          <ReportExportButtons result={result} variant="card" />
           <VerdictStory result={result} />
 
           <div className="sc-metrics">
@@ -1483,11 +1539,12 @@ function Readout({ result, onEscalate, onNewScreen }) {
           <button type="button" className="vh-new" onClick={onNewScreen}>← New screen</button>
           <div className="vh-eyebrow">Verdict</div>
           <div className="vh-word">{hero.word}</div>
-          <p className="vh-summary">{result.oneLiner || result.analysisSummary || ""}</p>
+          <p className="vh-summary">{hideFilterTalk(result.oneLiner || result.analysisSummary || "")}</p>
+          <ReportExportButtons result={result} variant="hero" />
         </div>
         <div className="vh-right">
           <div className="vh-score">{score}<span>/100</span></div>
-          <p className="vh-idea">{result.idea}</p>
+          <p className="vh-idea">{hideFilterTalk(result.idea)}</p>
           <p className="vh-meta">
             {npd.pricePerUnit != null ? `₹${npd.pricePerUnit}` : "—"}
             {npd.pointsBeat != null ? ` · leader ${npd.pointsBeat} pts` : ""}
@@ -1509,67 +1566,65 @@ function Readout({ result, onEscalate, onNewScreen }) {
               <p className="gate-metric">{c.metric}</p>
               <div className="gate-bar"><i style={{ width: `${c.barW}%` }} /></div>
               <p className="gate-threshold">{c.threshold}</p>
-              <p className="gate-detail">{c.detail}</p>
+              <p className="gate-detail">{hideFilterTalk(c.detail)}</p>
             </article>
           ))}
         </section>
       )}
 
-      <div className="verdict-desk">
-        <div className="verdict-main">
-          {result.brandFit?.mismatch && (
-            <div className="npd-banner npd-banner-fail">
-              Brand line miss: {result.brandFit.reason}
-            </div>
+      <div className="verdict-grid">
+        {result.brandFit?.mismatch && (
+          <div className="npd-banner npd-banner-fail verdict-span">
+            Brand line miss: {result.brandFit.reason}
+          </div>
+        )}
+
+        <div className="why-panel">
+          <h3>{whyTitle}</h3>
+          {whyItems.length === 0 ? (
+            <p className="vs-empty">No notes recorded.</p>
+          ) : (
+            <ul>
+              {whyItems.map((item) => (
+                <li key={item}>— {item}</li>
+              ))}
+            </ul>
           )}
+        </div>
+        <div className="why-panel">
+          <h3>What would change the verdict</h3>
+          {moves.length === 0 ? (
+            <p className="vs-empty">No mechanical moves from the current numbers.</p>
+          ) : (
+            <ul className="moves-list">
+              {moves.map((m) => (
+                <li key={m.tag + m.text}>
+                  <span className="move-tag">{m.tag}</span>
+                  {hideFilterTalk(m.text)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-          <div className="why-grid">
-            <div className="why-panel">
-              <h3>{whyTitle}</h3>
-              {whyItems.length === 0 ? (
-                <p className="vs-empty">No filter notes recorded.</p>
-              ) : (
-                <ul>
-                  {whyItems.map((item) => (
-                    <li key={item}>— {item}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="why-panel">
-              <h3>What would change the verdict</h3>
-              {moves.length === 0 ? (
-                <p className="vs-empty">No mechanical moves from the current numbers.</p>
-              ) : (
-                <ul className="moves-list">
-                  {moves.map((m) => (
-                    <li key={m.tag + m.text}>
-                      <span className="move-tag">{m.tag}</span>
-                      {m.text}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          {hasNpd && <FilterStrip result={result} />}
-
+        <div className="verdict-span">
           <VerdictStory result={result} />
-          <div className="sc-metrics">
-            <div className="sc-metric">
-              <span className="sc-metric-label">Novelty</span>
-              <span className="sc-metric-val">{scoreToFive(result.novelty.score)}/5</span>
-            </div>
-            <div className="sc-metric">
-              <span className="sc-metric-label">Relevance</span>
-              <span className="sc-metric-val">{scoreToFive(result.market.score)}/5</span>
-            </div>
-            <div className="sc-metric">
-              <span className="sc-metric-label">Evidence</span>
-              <span className="sc-metric-val">{scoreToFive(result.evidence.score)}/5</span>
-            </div>
+        </div>
+
+        <div className="sc-metrics verdict-span">
+          <div className="sc-metric">
+            <span className="sc-metric-label">Novelty</span>
+            <span className="sc-metric-val">{scoreToFive(result.novelty.score)}/5</span>
           </div>
+          <div className="sc-metric">
+            <span className="sc-metric-label">Relevance</span>
+            <span className="sc-metric-val">{scoreToFive(result.market.score)}/5</span>
+          </div>
+          <div className="sc-metric">
+            <span className="sc-metric-label">Evidence</span>
+            <span className="sc-metric-val">{scoreToFive(result.evidence.score)}/5</span>
+          </div>
+        </div>
 
         <div className="sc-finance">
           <div className="sc-finance-row">
@@ -1652,36 +1707,32 @@ function Readout({ result, onEscalate, onNewScreen }) {
         </div>
 
         {tags.length > 0 && (
-          <div className="sc-tags">
+          <div className="sc-tags verdict-span">
             {tags.map((t) => (
               <span key={t} className="sc-tag"># {t.toUpperCase()}</span>
             ))}
           </div>
         )}
 
-        <div className="sc-analysis">
-          <p className="sc-analysis-text">"{result.analysisSummary || result.oneLiner || ""}"</p>
+        <div className="sc-analysis verdict-span">
+          <p className="sc-analysis-text">"{hideFilterTalk(result.analysisSummary || result.oneLiner || "")}"</p>
           <button type="button" className="sc-audio" onClick={playBriefing}>
             <Volume2 size={14} /> Audio Briefing
           </button>
         </div>
 
         {result.refinementPivot && (
-          <div className="sc-pivot">
+          <div className="sc-pivot verdict-span">
             <div className="sc-pivot-label">Refinement Pivot</div>
-            <p>{result.refinementPivot}</p>
+            <p>{hideFilterTalk(result.refinementPivot)}</p>
           </div>
         )}
 
         {hasNpd && result.overallVerdict === "FAIL" && result.canEscalateToCKR && result.escalationStatus !== "escalated" && (
-          <button type="button" className="escalate-btn" onClick={onEscalate}>
+          <button type="button" className="escalate-btn verdict-span" onClick={onEscalate}>
             <Flag size={15} /> Raise exception → escalate to CKR
           </button>
         )}
-        </div>
-        <aside className="verdict-phone-col">
-          <PhonePreview mode="verdict" result={result} />
-        </aside>
       </div>
     </div>
   );
@@ -1821,9 +1872,16 @@ const CSS = `
 .gate-bar i{display:block;height:100%;}
 .gate-threshold{font-family:var(--fm);font-size:10px;color:var(--ink-muted-45);margin:0 0 6px;}
 .gate-detail{font-size:12px;color:var(--ink-muted-65);margin:0;line-height:1.4;}
-.verdict-desk{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start;}
+.verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;}
+.verdict-grid > .verdict-span,
+.verdict-grid > .sc-metrics,
+.verdict-grid > .sc-analysis,
+.verdict-grid > .sc-pivot,
+.verdict-grid > .sc-tags,
+.verdict-grid > .escalate-btn{grid-column:1 / -1;}
+.verdict-grid > .why-panel{display:flex;flex-direction:column;height:100%;}
 .why-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px;}
-.why-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;}
+.why-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;min-height:100%;}
 .why-panel h3{margin:0 0 10px;font-family:var(--fm);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
 .why-panel ul{margin:0;padding:0;list-style:none;}
 .why-panel li{font-size:13px;line-height:1.45;margin:0 0 8px;color:var(--ink-muted-85);}
@@ -1835,6 +1893,7 @@ const CSS = `
 
 .grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,.85fr);gap:24px;align-items:start;animation:rise .5s ease .05s both;}
 .result{max-width:720px;margin:0 auto;animation:rise .45s ease both;}
+.result.result-wide{max-width:1280px;}
 .log-page{max-width:1080px;margin:0 auto;animation:rise .45s ease both;}
 .log-panel{padding-top:28px;}
 .log-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
@@ -1936,7 +1995,15 @@ const CSS = `
 .chip button{background:none;border:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:2px;border-radius:50%;}
 .chip button:hover{color:var(--coral);}
 .chip.file img{width:20px;height:20px;border-radius:5px;object-fit:cover;margin-right:2px;}
-.media-row{margin:4px 0 20px;}
+.attach-block{margin:4px 0 18px;padding:14px 16px;background:var(--panel-2);border:1px dashed var(--line);border-radius:14px;}
+.attach-block .lbl{display:block;margin-bottom:8px;}
+.attach-hint{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.45;}
+.media-row{margin:0;}
+.report-export{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0;}
+.report-export-btn{display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fd);}
+.report-export-btn:disabled{opacity:.6;cursor:default;}
+.report-export-hero .report-export-btn{background:rgba(240,238,231,.12);border:1px solid rgba(240,238,231,.22);color:#F0EEE7;}
+.report-export-err{width:100%;margin:4px 0 0;font-size:12px;color:var(--coral);}
 
 .ghost{display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:9px 14px;font-family:var(--fd);font-size:13px;cursor:pointer;transition:.15s;}
 .ghost:hover{border-color:var(--ink);background:#fff;}
@@ -2021,8 +2088,12 @@ const CSS = `
 .inv-cell strong{font-size:12px;color:var(--ink);}
 .inv-cell span{font-size:11px;color:var(--muted);}
 .inv-cell.active{background:#D6ECFA;border-color:#006CB4;box-shadow:0 0 0 2px rgba(0,108,180,.2);}
-.inv-cell.active strong{color:var(--ink-deep);}
-.inv-cell.active span{color:var(--ink);font-weight:600;}
+.inv-cell.active strong{color:#14202B;}
+.inv-cell.active span{color:#14202B;font-weight:600;}
+.screen-verdict .inv-cell.active{background:#E8F4FC;border-color:#7EB7D9;box-shadow:none;}
+.screen-verdict .inv-cell.active strong,.screen-verdict .inv-cell.active span{color:#14202B;}
+.screen-verdict .sc-finance-tam p,.screen-verdict .sc-inv-guidance,.screen-verdict .sc-inv-meta p{color:var(--ink-muted-85);}
+.screen-verdict .sc-inv-badge{background:rgba(240,238,231,.12);color:var(--ink);border-color:var(--border);}
 .sc-inv-meta{display:grid;gap:10px;border-top:1px solid var(--line-soft);padding-top:12px;}
 .sc-inv-meta p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink-deep);}
 @media (max-width:520px){
@@ -2059,8 +2130,8 @@ const CSS = `
   .verdict-hero{grid-template-columns:1fr;padding:22px;}
   .vh-word{font-size:56px;}
   .vh-score{font-size:72px;}
-  .gate-ladder,.why-grid,.verdict-desk{grid-template-columns:1fr;}
-  .verdict-phone-col,.compose-aside .phone{display:none;}
+  .gate-ladder,.why-grid,.verdict-grid{grid-template-columns:1fr;}
+  .compose-aside .phone{display:none;}
   .primus{padding:18px 16px 32px;}
   .masthead{margin-bottom:20px;flex-wrap:wrap;max-width:100%;}
   .page-back-bar{max-width:100%;}

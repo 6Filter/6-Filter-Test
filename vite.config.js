@@ -102,6 +102,19 @@ function apiPlugin(env) {
           return;
         }
 
+        const exportMatch = url.match(/^\/api\/ideas\/([^/]+)\/export$/);
+        if (exportMatch) {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handleIdeaExport } = await import("./lib/ideasApi.js");
+          await handleIdeaExport(req, res, decodeURIComponent(exportMatch[1]), {
+            sendJson,
+            redactSecrets,
+          });
+          return;
+        }
+
         const escalateMatch = url.match(/^\/api\/ideas\/([^/]+)\/escalate$/);
         if (escalateMatch) {
           res.setHeader("Access-Control-Allow-Origin", "*");

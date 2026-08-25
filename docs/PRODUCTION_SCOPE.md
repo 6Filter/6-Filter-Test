@@ -1,7 +1,7 @@
 # 6 Filter Test — Production Scope & Process Flow
 
 **Audience:** Internal product, engineering, and IT stakeholders  
-**Purpose:** Scope the current Primus.ai tool and process flow for production readiness  
+**Purpose:** Scope the current 6 Filter Test tool and process flow for production readiness  
 **Status:** Live on Vercel with Claude + PostgreSQL  
 **Related docs:** `PRIMUS_FULL_FLOW.md`, `PRIMUS_SCORING_LOGIC.md`, `BACKEND_API.md`, `API_KEY_BEST_PRACTICES.md`
 
@@ -21,7 +21,8 @@
 ## 2. In scope (current production tool)
 
 ### User-facing
-- Submit product idea (text + optional image)
+- Submit product idea (text, or PDF / Word / image)
+- Download the final report as PDF or Word
 - Run Phase-1 validation via Claude
 - View scorecard (score /60, status, matrix X/5, revenue, classification, TAM, critique, pivot)
 - Audio briefing (browser speech)
@@ -32,7 +33,7 @@
 ### Backend
 - `POST /api/ideas` — analyze + save
 - `GET /api/ideas` — list history
-- `GET /api/ideas/:id` — load one result
+- `GET /api/ideas/:id/export?format=pdf|docx` — download the screen report
 - `POST /api/claude` — Claude proxy (manager draft)
 - Anthropic key server-side only (`ANTHROPIC_API_KEY`)
 - PostgreSQL persistence (`DATABASE_URL`)
@@ -60,7 +61,7 @@
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌──────────────┐
-│ Field / PM  │────►│ Primus UI        │────►│ /api/ideas  │────►│ Claude       │
+│ Field / PM  │────►│ 6 Filter Test UI │────►│ /api/ideas  │────►│ Claude       │
 │ submits idea│     │ Validate tab     │     │ (Vercel)    │     │ (Anthropic)  │
 └─────────────┘     └──────────────────┘     └──────┬──────┘     └──────┬───────┘
                                                     │                   │
@@ -84,7 +85,7 @@
 
 ### User process (Phase 1)
 
-1. Open Primus (Vercel URL)  
+1. Open 6 Filter Test (Vercel URL)  
 2. Enter field insight / product idea (+ optional media)  
 3. Click **Run validation**  
 4. Review scorecard (score, status, revenue, classification, TAM, critique, pivot)  
