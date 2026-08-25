@@ -623,13 +623,8 @@ export default function App() {
                 {liveBrandFit?.mismatch && (
                   <p className="npd-brand-warn">{liveBrandFit.reason}</p>
                 )}
-                {!liveBrandFit?.mismatch && liveBrandFit?.suggestedBrand && liveBrandFit?.categoryLabel && (
-                  <p className="npd-brand-ok">
-                    {liveBrandFit.categoryLabel} sits under {liveBrandFit.suggestedBrand}
-                    {liveBrandFit.mentionedBrands?.length
-                      ? ` · named: ${liveBrandFit.mentionedBrands.join(", ")}`
-                      : ""}.
-                  </p>
+                {!liveBrandFit?.mismatch && liveBrandFit?.reason && (
+                  <p className="npd-brand-ok">{liveBrandFit.reason}</p>
                 )}
                 <div className="npd-grid">
                   <label className="field">
@@ -1012,7 +1007,7 @@ function FilterStrip({ result }) {
             {expanded && (
               <div className="filter-body">
                 <p>{filterReason(filter) || "No reason recorded."}</p>
-                {filter.brandFit?.reason && (
+                {filter.brandFit?.mismatch && filter.brandFit?.reason && (
                   <p className="filter-brand">{filter.brandFit.reason}</p>
                 )}
                 {filter.evidenceSummary && filter.evidenceSummary !== filterReason(filter) && (
