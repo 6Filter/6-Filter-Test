@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, statusOf, toneOf } from "./scoringUi.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
-import { DIVISION_OPTIONS, DIVISION_NET_MARGIN, detectDivision, nearestFixedPricePoint } from "../lib/npdMaster.js";
+import { nearestFixedPricePoint } from "../lib/npdMaster.js";
 import { resolveBrandFit } from "../lib/ckBrands.js";
 import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 
@@ -201,16 +201,9 @@ export default function App() {
   const [logError, setLogError] = useState("");
   const [logFilter, setLogFilter] = useState("product");
 
-  const [attribute, setAttribute] = useState("");
-  const [benchmarkName, setBenchmarkName] = useState("");
-  const [isPureCommodity, setIsPureCommodity] = useState(false);
-  const [division, setDivision] = useState("Personal Care");
-  const [divisionTouched, setDivisionTouched] = useState(false);
-  const [declaredNetMarginPct, setDeclaredNetMarginPct] = useState("");
   const [benchmarkExists, setBenchmarkExists] = useState(false);
   const [pointsBeat, setPointsBeat] = useState("");
   const [pricePerUnit, setPricePerUnit] = useState("");
-  const [volumeLossPctAtFixedPoint, setVolumeLossPctAtFixedPoint] = useState("");
 
   const [msgOpen, setMsgOpen] = useState(false);
   const [msgLoading, setMsgLoading] = useState(false);
@@ -226,6 +219,7 @@ export default function App() {
   const [deletingId, setDeletingId] = useState(null);
   const [llmProvider, setLlmProvider] = useState("claude");
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
+  const [loadSec, setLoadSec] = useState(0);
 
   const fileRef = useRef(null);
   const activeDims = ideaType === "process" ? PROCESS_DIMS : PRODUCT_DIMS;
@@ -283,9 +277,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (ideaType !== "product" || divisionTouched) return;
-    setDivision(detectDivision(idea));
-  }, [idea, ideaType, divisionTouched]);
+    if (!loading) {
+      setLoadSec(0);
+      return;
+    }
+    setLoadSec(0);
+    const tick = setInterval(() => setLoadSec((s) => s + 1), 1000);
+    return () => clearInterval(tick);
+  }, [loading]);
 
   function goBack() {
     if (view === "result") {
@@ -345,22 +344,25 @@ export default function App() {
       setError(ideaType === "process" ? "Describe the process idea first." : "Describe the product idea first.");
       return;
     }
+    if (ideaType === "product") {
+      if (pricePerUnit === "" || !Number.isFinite(Number(pricePerUnit)) || Number(pricePerUnit) <= 0) {
+        setError("Enter a price per unit.");
+        return;
+      }
+      if (benchmarkExists && (pointsBeat === "" || !Number.isFinite(Number(pointsBeat)))) {
+        setError("Enter how many points this idea beats the market leader (0–10).");
+        return;
+      }
+    }
     setLoading(true); setError("");
 
     try {
       const npd =
         ideaType === "product"
           ? {
-              attribute,
-              benchmarkName,
-              isPureCommodity,
-              division,
-              declaredNetMarginPct: declaredNetMarginPct === "" ? null : Number(declaredNetMarginPct),
               benchmarkExists,
-              pointsBeat: pointsBeat === "" ? null : Number(pointsBeat),
+              pointsBeat: benchmarkExists && pointsBeat !== "" ? Number(pointsBeat) : null,
               pricePerUnit: pricePerUnit === "" ? null : Number(pricePerUnit),
-              volumeLossPctAtFixedPoint:
-                volumeLossPctAtFixedPoint === "" ? null : Number(volumeLossPctAtFixedPoint),
             }
           : {};
       const full = await analyzeAndStoreIdea(idea.trim(), image, ideaType, npd, llmProvider);
@@ -616,73 +618,20 @@ export default function App() {
             {ideaType === "product" && (
               <div className="npd-fields">
                 <p className="npd-hint">
-                  4-Filter NPD Screen (Filters 1–4). Blank price or margin is a missing-evidence fail — not a silent default.
+                  Price and market-leader points are the brief. Division, margin, volume loss, attribute, and benchmark are inferred on the server.
                 </p>
+                {liveBrandFit?.mismatch && (
+                  <p className="npd-brand-warn">{liveBrandFit.reason}</p>
+                )}
+                {!liveBrandFit?.mismatch && liveBrandFit?.suggestedBrand && liveBrandFit?.categoryLabel && (
+                  <p className="npd-brand-ok">
+                    {liveBrandFit.categoryLabel} sits under {liveBrandFit.suggestedBrand}
+                    {liveBrandFit.mentionedBrands?.length
+                      ? ` · named: ${liveBrandFit.mentionedBrands.join(", ")}`
+                      : ""}.
+                  </p>
+                )}
                 <div className="npd-grid">
-                  <label className="field">
-                    <span className="lbl">Purchase attribute <em>optional</em></span>
-                    <input
-                      value={attribute}
-                      onChange={(e) => setAttribute(e.target.value)}
-                      placeholder="The one thing a buyer decides on"
-                    />
-                  </label>
-                  <label className="field">
-                    <span className="lbl">Benchmark <em>optional — AI finds one if blank</em></span>
-                    <input
-                      value={benchmarkName}
-                      onChange={(e) => setBenchmarkName(e.target.value)}
-                      placeholder="Strongest named competitor"
-                    />
-                  </label>
-                  <label className="npd-check span-2">
-                    <input
-                      type="checkbox"
-                      checked={isPureCommodity}
-                      onChange={(e) => setIsPureCommodity(e.target.checked)}
-                    />
-                    Pure commodity (undifferentiated — skip formulation gap until mixing/function is added)
-                  </label>
-
-                  <label className="field">
-                    <span className="lbl">Division <em>auto-detected — override if wrong</em></span>
-                    <select
-                      value={division}
-                      onChange={(e) => {
-                        setDivisionTouched(true);
-                        setDivision(e.target.value);
-                      }}
-                    >
-                      {DIVISION_OPTIONS.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                          {DIVISION_NET_MARGIN[d] == null ? " · Finance review" : ` · ≥${DIVISION_NET_MARGIN[d]}%`}
-                        </option>
-                      ))}
-                    </select>
-                    {liveBrandFit?.mismatch && (
-                      <p className="npd-brand-warn">{liveBrandFit.reason}</p>
-                    )}
-                    {!liveBrandFit?.mismatch && liveBrandFit?.suggestedBrand && liveBrandFit?.categoryLabel && (
-                      <p className="npd-brand-ok">
-                        {liveBrandFit.categoryLabel} sits under {liveBrandFit.suggestedBrand}
-                        {liveBrandFit.mentionedBrands?.length
-                          ? ` · named: ${liveBrandFit.mentionedBrands.join(", ")}`
-                          : ""}.
-                      </p>
-                    )}
-                  </label>
-                  <label className="field">
-                    <span className="lbl">Declared net margin % <em>required</em></span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={declaredNetMarginPct}
-                      onChange={(e) => setDeclaredNetMarginPct(e.target.value)}
-                      placeholder="Team's launch margin, not an AI guess"
-                    />
-                  </label>
-
                   <label className="field">
                     <span className="lbl">Price per unit (₹) <em>required</em></span>
                     <input
@@ -690,7 +639,7 @@ export default function App() {
                       inputMode="decimal"
                       value={pricePerUnit}
                       onChange={(e) => setPricePerUnit(e.target.value)}
-                      placeholder="e.g. 10"
+                      placeholder="e.g. 99"
                     />
                     {pricePerUnit !== "" && nearestFixedPricePoint(Number(pricePerUnit)) != null && (
                       <span className="npd-inline-hint">
@@ -698,28 +647,20 @@ export default function App() {
                       </span>
                     )}
                   </label>
-                  <label className="field">
-                    <span className="lbl">Volume loss % at that point <em>required · ≤10% passes</em></span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={volumeLossPctAtFixedPoint}
-                      onChange={(e) => setVolumeLossPctAtFixedPoint(e.target.value)}
-                      placeholder="Projected volume loss if price crosses the point"
-                    />
-                  </label>
-
                   <label className="npd-check span-2">
                     <input
                       type="checkbox"
                       checked={benchmarkExists}
-                      onChange={(e) => setBenchmarkExists(e.target.checked)}
+                      onChange={(e) => {
+                        setBenchmarkExists(e.target.checked);
+                        if (!e.target.checked) setPointsBeat("");
+                      }}
                     />
-                    A market leader already exists (must beat it by ≥2 points on a 10-point scale — lab-test proxy)
+                    A market leader already exists — how many points will this idea beat it on a 10-point scale?
                   </label>
                   {benchmarkExists && (
                     <label className="field span-2">
-                      <span className="lbl">Points beat vs leader (0–10) <em>required if a leader exists</em></span>
+                      <span className="lbl">Points vs market leader (0–10) <em>required if a leader exists</em></span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -728,7 +669,7 @@ export default function App() {
                         step="0.1"
                         value={pointsBeat}
                         onChange={(e) => setPointsBeat(e.target.value)}
-                        placeholder="Honest estimate, or leave blank for missing-evidence fail"
+                        placeholder="Must beat the leader by ≥2"
                       />
                     </label>
                   )}
@@ -750,40 +691,36 @@ export default function App() {
             {error && <div className="err"><AlertTriangle size={14} /> {error}</div>}
 
             <button className="run" onClick={analyze} disabled={loading}>
-              {loading ? (<><Loader2 size={17} className="spin" /> {ideaType === "product" ? "Screening…" : "Validating…"}</>) : (<><Gauge size={17} /> {ideaType === "product" ? "Run NPD screen" : "Run validation"}</>)}
+              {loading ? (
+                <>
+                  <Loader2 size={17} className="spin" />
+                  {ideaType === "product"
+                    ? loadSec > 0
+                      ? `Screening · ${loadSec}s`
+                      : "Screening…"
+                    : loadSec > 0
+                      ? `Validating · ${loadSec}s`
+                      : "Validating…"}
+                </>
+              ) : (
+                <>
+                  <Gauge size={17} /> {ideaType === "product" ? "Run NPD screen" : "Run validation"}
+                </>
+              )}
             </button>
+            {loading && ideaType === "product" && (
+              <p className="run-hint">Scoring and research are running together.</p>
+            )}
           </section>
 
           <aside className="panel side">
-            <div className="panel-tab">{ideaType === "product" ? "4-Filter NPD engine" : "Scoring matrix · Phase 1"}</div>
+            <div className="panel-tab">{ideaType === "product" ? "Recent screens" : "Scoring matrix · Phase 1"}</div>
+            {ideaType === "process" && (
+              <>
             <p className="side-note">
-              {ideaType === "process" ? (
-                <>Phase 1 is the LLM pass — <b>40 of 100</b> final points. Phase 2 (Luminar implementation, 60) unlocks after greenlight.</>
-              ) : (
-                <>Gram class is earned only if Filters 1–4 all pass. A single fail caps the idea at <b>10g</b>. Filters 5–6 (revenue target, prototype lab) are outside this tool.</>
-              )}
+                Phase 1 is the LLM pass — <b>40 of 100</b> final points. Phase 2 (Luminar implementation, 60) unlocks after greenlight.
             </p>
             <div className="matrix">
-              {ideaType === "product" ? (
-                <>
-                  {NPD_FILTERS.map((d) => (
-                    <div className="matrix-row" key={d.key}>
-                      <d.icon size={16} />
-                      <div>
-                        <div className="mr-top"><b>{d.num} {d.title}</b></div>
-                        <div className="mr-blurb">{d.hint}</div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="matrix-row phase2">
-                    <Lock size={16} />
-                    <div>
-                      <div className="mr-top"><b>Filter 6 · Prototype lab</b><span>out of scope</span></div>
-                      <div className="mr-blurb">Consumer / pack gate stays with the NPD team</div>
-                    </div>
-                  </div>
-                </>
-              ) : (
                 <>
               {activeDims.map((d) => (
                 <div className="matrix-row" key={d.key}>
@@ -804,8 +741,12 @@ export default function App() {
                   </div>
                 ))}
                 </>
-              )}
             </div>
+              </>
+            )}
+            {ideaType === "product" && composeHistory.length === 0 && (
+              <p className="side-note">Screened ideas will land here. Gates run on the server — this panel is only history.</p>
+            )}
 
             {composeHistory.length > 0 && (
               <div className="hist">
@@ -1248,7 +1189,7 @@ function Readout({ result, onEscalate }) {
         )}
         {hasNpd && result.overallVerdict === "NEEDS_INPUT" && (
           <div className="npd-banner npd-banner-needs">
-            Evidence gap, not a fail. Fill the missing fields on the NPD Screen and re-run.
+            Evidence gap, not a fail. Re-run with a clearer idea, price, or leader points.
             <ul>
               {NPD_FILTERS.filter((f) => result[f.key]?.verdict === "NEEDS_INPUT").map((f) => (
                 <li key={f.key}><b>{f.title}:</b> {filterReason(result[f.key])}</li>
@@ -1526,6 +1467,7 @@ const CSS = `
 .ghost:hover{border-color:var(--ink);background:#fff;}
 .ghost.sq{padding:9px;}
 .run{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#006CB4,#0088C7);color:#fff;border:none;border-radius:12px;padding:15px;font-family:var(--fd);font-weight:600;font-size:15px;cursor:pointer;transition:transform .15s,filter .15s,box-shadow .15s;box-shadow:0 8px 18px rgba(0,108,180,.28);margin-top:auto;}
+.run-hint{margin:8px 0 0;text-align:center;font-size:12px;color:var(--muted);font-family:var(--fm);}
 .run:hover{filter:brightness(1.05);transform:translateY(-1px);}
 .run:active{transform:none;}
 .run:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
