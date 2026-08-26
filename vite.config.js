@@ -102,6 +102,36 @@ function apiPlugin(env) {
           return;
         }
 
+        const supportingDocItemMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc\/([^/]+)$/);
+        if (supportingDocItemMatch) {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handleSupportingDocById } = await import("./lib/ideasApi.js");
+          await handleSupportingDocById(
+            req,
+            res,
+            decodeURIComponent(supportingDocItemMatch[1]),
+            decodeURIComponent(supportingDocItemMatch[2]),
+            { sendJson, redactSecrets }
+          );
+          return;
+        }
+
+        const supportingDocMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc$/);
+        if (supportingDocMatch) {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handleSupportingDoc } = await import("./lib/ideasApi.js");
+          await handleSupportingDoc(req, res, decodeURIComponent(supportingDocMatch[1]), {
+            readBody: readJsonBody,
+            sendJson,
+            redactSecrets,
+          });
+          return;
+        }
+
         const exportMatch = url.match(/^\/api\/ideas\/([^/]+)\/export$/);
         if (exportMatch) {
           res.setHeader("Access-Control-Allow-Origin", "*");

@@ -12,6 +12,8 @@ import {
   handleIdeaEscalate,
   handleIdeaExport,
   handleIdeasCollection,
+  handleSupportingDoc,
+  handleSupportingDocById,
 } from "./lib/ideasApi.js";
 import { handleLlmGenerate, handleProviders } from "./lib/llmApi.js";
 import { handleCategoryIntelRequest } from "./lib/categoryIntelligence/http.js";
@@ -97,6 +99,34 @@ const server = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       await handleIdeasCollection(req, res, {
+        readBody: readJsonBody,
+        sendJson,
+        redactSecrets,
+      });
+      return;
+    }
+
+    const supportingDocItemMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc\/([^/]+)$/);
+    if (supportingDocItemMatch) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handleSupportingDocById(
+        req,
+        res,
+        decodeURIComponent(supportingDocItemMatch[1]),
+        decodeURIComponent(supportingDocItemMatch[2]),
+        { sendJson, redactSecrets }
+      );
+      return;
+    }
+
+    const supportingDocMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc$/);
+    if (supportingDocMatch) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handleSupportingDoc(req, res, decodeURIComponent(supportingDocMatch[1]), {
         readBody: readJsonBody,
         sendJson,
         redactSecrets,

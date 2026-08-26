@@ -21,6 +21,12 @@
     "api/ideas/[id]/export.js": {
       "maxDuration": 30
     },
+    "api/ideas/[id]/supporting-doc.js": {
+      "maxDuration": 30
+    },
+    "api/ideas/[id]/supporting-doc/[docId].js": {
+      "maxDuration": 30
+    },
     "api/category-sizing/run.js": {
       "maxDuration": 180
     },

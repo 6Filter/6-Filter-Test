@@ -119,6 +119,43 @@ async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
   return data;
 }
 
+async function uploadSupportingDoc(id, doc) {
+  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: doc.name, mediaType: doc.mediaType, data: doc.data }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not attach that document.");
+  return data;
+}
+
+async function removeSupportingDoc(id, docId) {
+  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc/${encodeURIComponent(docId)}`, { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not remove that document.");
+  return data;
+}
+
+const SUPPORTING_DOC_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+const SUPPORTING_DOC_TYPE_ERR = "Supporting documents must be PDF or Word (.pdf, .doc, .docx).";
+const SUPPORTING_DOC_SIZE_ERR = "That file is too large — 8 MB max.";
+const SUPPORTING_DOC_MAX_BYTES = 8 * 1024 * 1024;
+
+function sniffSupportingMediaType(file) {
+  const t = String(file?.type || "").toLowerCase();
+  if (SUPPORTING_DOC_TYPES.has(t)) return t;
+  const n = String(file?.name || "").toLowerCase();
+  if (n.endsWith(".pdf")) return "application/pdf";
+  if (n.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (n.endsWith(".doc")) return "application/msword";
+  return "";
+}
+
 function isImageUpload(name, mime) {
   return (
     String(mime || "").startsWith("image/") ||
@@ -260,6 +297,16 @@ function hasFullScorecard(r) {
     );
   }
   return r.novelty?.score != null && r.market?.score != null && r.evidence?.score != null;
+}
+
+function formatDurationMs(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return "—";
+  const totalSec = Math.round(n / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (m <= 0) return `${s}s`;
+  return `${m}m ${s}s`;
 }
 
 
@@ -411,6 +458,24 @@ export default function App() {
   const composeHistory = (ideaType === "process" ? processHistory : productHistory).slice(0, 6);
   const logHistory = logFilter === "process" ? processHistory : productHistory;
   const liveBrandFit = ideaType === "product" ? resolveBrandFit(idea) : null;
+  const ideasScreenedCount = productHistory.length + processHistory.length;
+  const productWithVerdict = productHistory.filter((h) => h.overallVerdict);
+  const passRateLabel = productWithVerdict.length
+    ? `${Math.round(
+        (productWithVerdict.filter((h) => h.overallVerdict === "CLEARED").length /
+          productWithVerdict.length) *
+          100
+      )}%`
+    : "—";
+  const timedRuns = [...productHistory, ...processHistory].filter((h) => {
+    const n = Number(h.durationMs);
+    return Number.isFinite(n) && n > 0;
+  });
+  const avgScreenTimeLabel = timedRuns.length
+    ? formatDurationMs(
+        timedRuns.reduce((sum, h) => sum + Number(h.durationMs), 0) / timedRuns.length
+      )
+    : "—";
 
   const onFile = async (e) => {
     const f = e.target.files?.[0];
@@ -469,6 +534,7 @@ export default function App() {
       }
     }
     setLoading(true); setError("");
+    const startedAt = performance.now();
 
     try {
       const npd =
@@ -493,6 +559,7 @@ export default function App() {
         phase1Max: full.phase1Max || (ideaType === "process" ? 40 : 60),
         llmProvider: full.llmProvider || llmProvider,
         llmLabel: full.llmLabel || providerLabel(llmProvider),
+        durationMs: Math.round(performance.now() - startedAt),
       };
       if ((full.ideaType || ideaType) === "process") {
         setProcessHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
@@ -571,8 +638,11 @@ export default function App() {
         `IDEA: ${result.idea}\nPOSITIONING: ${result.oneLiner}\n` +
         `6 FILTER TEST PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
     }
+    const docNote = result.overallVerdict === "CLEARED" && result.supportingDocs?.length
+      ? `\nSUPPORTING RESEARCH ATTACHED: ${result.supportingDocs.map((d) => d.name).join(", ")}. Mention in one line that supporting research is attached.`
+      : "";
     try {
-      setMsgText((await callModel(text, system, null, llmProvider)).trim());
+      setMsgText((await callModel(text + docNote, system, null, llmProvider)).trim());
     } catch {
       setMsgText("Couldn't draft the message — try again.");
     } finally {
@@ -616,6 +686,24 @@ export default function App() {
     }
   }
 
+  async function onUploadSupportingDoc(doc) {
+    if (!result?.id) throw new Error("This idea has not been saved yet.");
+    const updated = await uploadSupportingDoc(result.id, doc);
+    setResult(updated);
+    setProductHistory((h) =>
+      h.map((row) => (row.id === updated.id ? { ...row, supportingDocs: updated.supportingDocs || [] } : row))
+    );
+  }
+
+  async function onRemoveSupportingDoc(docId) {
+    if (!result?.id) throw new Error("This idea has not been saved yet.");
+    const updated = await removeSupportingDoc(result.id, docId);
+    setResult(updated);
+    setProductHistory((h) =>
+      h.map((row) => (row.id === updated.id ? { ...row, supportingDocs: updated.supportingDocs || [] } : row))
+    );
+  }
+
   const backLabel =
     view === "result"
       ? returnView === "log"
@@ -628,7 +716,7 @@ export default function App() {
           : null;
 
   return (
-    <div className={`primus ${view === "result" ? "screen-verdict" : "screen-brief"}`}>
+    <div className={`primus ${view === "result" ? "screen-verdict" : view === "log" ? "screen-log" : "screen-brief"}`}>
       <style>{CSS}</style>
 
       <header className="masthead">
@@ -691,6 +779,31 @@ export default function App() {
       )}
 
       {view === "compose" && (
+        <>
+        <section className="brief-hero">
+          <div className="brief-hero-text">
+            <div className="eyebrow">NPD SCREENING · V4</div>
+            <h2 className="brief-hero-h">Every idea meets the same four gates.</h2>
+            <p className="brief-hero-sub">
+              No exceptions, no vibes. Opportunity, margin, price, and technology shift,
+              checked the same way every time.
+            </p>
+          </div>
+          <div className="brief-stats">
+            <div className="brief-stat">
+              <div className="brief-stat-lbl">Ideas screened</div>
+              <div className="brief-stat-val">{ideasScreenedCount}</div>
+            </div>
+            <div className="brief-stat">
+              <div className="brief-stat-lbl">Pass rate</div>
+              <div className="brief-stat-val brief-stat-pass">{passRateLabel}</div>
+            </div>
+            <div className="brief-stat">
+              <div className="brief-stat-lbl">Avg screen time</div>
+              <div className="brief-stat-val">{avgScreenTimeLabel}</div>
+            </div>
+          </div>
+        </section>
         <main className="grid">
           <section className="panel console">
             <div className="panel-tab">01 — Brief</div>
@@ -904,6 +1017,7 @@ export default function App() {
             </div>
           </aside>
         </main>
+        </>
       )}
 
       {view === "log" && (
@@ -1011,6 +1125,8 @@ export default function App() {
             setEscalateOpen(true);
           }}
             onNewScreen={reset}
+            onUploadSupportingDoc={onUploadSupportingDoc}
+            onRemoveSupportingDoc={onRemoveSupportingDoc}
           />
           <div className="verdict-actions">
             <button type="button" className="ghost" onClick={goBack}>
@@ -1039,7 +1155,23 @@ export default function App() {
                 <button className="run" onClick={copyMsg}>
                   {copied ? (<><Check size={16} /> Copied</>) : (<><Copy size={16} /> Copy message</>)}
                 </button>
-                <p className="modal-foot">Review before sending — 6 Filter Test won't message your manager for you.</p>
+                {result?.overallVerdict === "CLEARED" && result.supportingDocs?.length > 0 && (
+                  <div className="supporting-doc-list">
+                    {result.supportingDocs.map((d) => (
+                      <span key={d.id} className="chip file">
+                        <FileText size={15} /> {d.name}
+                        <a href={`/api/ideas/${encodeURIComponent(result.id)}/supporting-doc/${encodeURIComponent(d.id)}`}>
+                          <Download size={12} />
+                        </a>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="modal-foot">
+                  {result?.overallVerdict === "CLEARED" && result.supportingDocs?.length > 0
+                    ? `Attach the file${result.supportingDocs.length > 1 ? "s" : ""} above when you send this — 6 Filter Test won't message your manager for you.`
+                    : "Review before sending — 6 Filter Test won't message your manager for you."}
+                </p>
               </>
             )}
           </div>
@@ -1398,7 +1530,84 @@ function FilterStrip({ result }) {
   );
 }
 
-function Readout({ result, onEscalate, onNewScreen }) {
+function SupportingResearch({ result, onUpload, onRemove }) {
+  const fileRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const docs = result.supportingDocs || [];
+
+  async function onFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setErr("");
+    if (!sniffSupportingMediaType(file)) {
+      setErr(SUPPORTING_DOC_TYPE_ERR);
+      return;
+    }
+    if (file.size > SUPPORTING_DOC_MAX_BYTES) {
+      setErr(SUPPORTING_DOC_SIZE_ERR);
+      return;
+    }
+    setBusy(true);
+    try {
+      const parsed = await readFileAsAttachment(file, false);
+      if (!SUPPORTING_DOC_TYPES.has(String(parsed.mediaType || "").toLowerCase())) {
+        throw new Error(SUPPORTING_DOC_TYPE_ERR);
+      }
+      await onUpload(parsed);
+    } catch (ex) {
+      setErr(ex.message || "Could not attach that document.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeDoc(docId) {
+    setErr("");
+    setBusy(true);
+    try {
+      await onRemove(docId);
+    } catch (ex) {
+      setErr(ex.message || "Could not remove that document.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="supporting-research">
+      <div className="lbl">Supporting research</div>
+      <p className="supporting-hint">
+        Attach a market research study or any research backing this idea — it goes
+        with the idea when you forward it to your supervisor.
+      </p>
+      <div className="media-row">
+        <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" onChange={onFile} hidden />
+        <button type="button" className="ghost" onClick={() => fileRef.current?.click()} disabled={busy}>
+          <FileUp size={15} /> {busy ? "Attaching…" : "Attach PDF or Word"}
+        </button>
+      </div>
+      {err && <div className="err"><AlertTriangle size={14} /> {err}</div>}
+      {docs.length > 0 && (
+        <div className="supporting-doc-list">
+          {docs.map((d) => (
+            <span key={d.id} className="chip file">
+              <FileText size={15} />
+              {d.name}
+              <a href={`/api/ideas/${encodeURIComponent(result.id)}/supporting-doc/${encodeURIComponent(d.id)}`} title="Download">
+                <Download size={12} />
+              </a>
+              <button type="button" onClick={() => removeDoc(d.id)} disabled={busy}><X size={12} /></button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRemoveSupportingDoc }) {
   const process = isProcessResult(result);
   const incomplete = process
     ? !(result?.efficiency && result?.feasibility && result?.scalability)
@@ -1541,6 +1750,13 @@ function Readout({ result, onEscalate, onNewScreen }) {
           <div className="vh-word">{hero.word}</div>
           <p className="vh-summary">{hideFilterTalk(result.oneLiner || result.analysisSummary || "")}</p>
           <ReportExportButtons result={result} variant="hero" />
+          {result.overallVerdict === "CLEARED" && (
+            <SupportingResearch
+              result={result}
+              onUpload={onUploadSupportingDoc}
+              onRemove={onRemoveSupportingDoc}
+            />
+          )}
         </div>
         <div className="vh-right">
           <div className="vh-score">{score}<span>/100</span></div>
@@ -1742,6 +1958,17 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 .primus *{box-sizing:border-box;}
 .screen-brief {
+  --bg: #0A0A09; --card: #131311; --panel: #131311; --panel-2: #1B1916;
+  --border: rgba(236,234,227,.08); --border-2: rgba(236,234,227,.14);
+  --ink: #ECEAE3; --ink-deep: #ECEAE3;
+  --muted: rgba(236,234,227,.55); --muted-2: rgba(236,234,227,.45);
+  --muted-3: rgba(236,234,227,.4); --faint: rgba(236,234,227,.3);
+  --accent: #E3A93F; --accent-hover: #EDBB5C; --accent-on: #0A0A09;
+  --pass: #6FBF73; --fail: #E2716B; --watch: #E3A93F; --coral: #E2716B;
+  --bg-soft: #1B1916; --line: rgba(236,234,227,.08); --line-soft: rgba(236,234,227,.05);
+  --accent-rgb: 227,169,63; --pass-rgb: 111,191,115; --fail-rgb: 226,113,107; --ink-rgb: 236,234,227;
+}
+.screen-log {
   --bg: #F5F2EA; --card: #FBFAF7; --panel: #FBFAF7; --panel-2: #EFEBE1; --border: #E4DECF; --border-2: #DCD5C6;
   --ink: #14202B; --ink-deep: #14202B; --muted: #5A6673; --muted-2: #7C8592; --muted-3: #8A93A0; --faint: #B5AF9F;
   --accent: #0C558F; --accent-hover: #08406D; --accent-on: #FBFAF7;
@@ -1760,6 +1987,7 @@ const CSS = `
   --bg-soft: #163044; --line: rgba(240,238,231,.14); --line-soft: rgba(240,238,231,.08);
   --accent: #63C08D; --accent-on: #0B1B2A; --coral: #F08A7A;
   --gold: #E3B25C; --gold-ink: #0B1B2A; --teal: #63C08D; --sky: #63C08D;
+  --accent-rgb: 99,192,141; --pass-rgb: 99,192,141; --fail-rgb: 240,138,122; --ink-rgb: 240,238,231;
 }
 .primus{
   --fd:'Plus Jakarta Sans',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
@@ -1799,11 +2027,33 @@ const CSS = `
 .screen-brief .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
 .screen-brief .brandmark{background:var(--card);border-color:var(--accent);}
 .screen-brief .type-toggle{background:var(--panel-2);border-color:var(--border);}
-.screen-brief .type-tab.active{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(20,32,43,.08);}
 .screen-brief textarea.idea-input,.screen-brief textarea,.screen-brief input{background:var(--card);border-color:var(--border);color:var(--ink);}
 .screen-brief .run{background:var(--accent);color:var(--accent-on);border-radius:999px;box-shadow:none;}
 .screen-brief .run:hover{background:var(--accent-hover);filter:none;}
 .screen-brief .pulse{background:var(--pass);box-shadow:none;animation:none;}
+.screen-brief .nav-tab:hover{background:rgba(var(--accent-rgb),.08);}
+.screen-brief .nav-tab.active{background:rgba(var(--accent-rgb),.14);border-color:rgba(var(--accent-rgb),.35);}
+.screen-brief .live{background:rgba(var(--pass-rgb),.12);border-color:rgba(var(--pass-rgb),.3);}
+.screen-brief .model-switch{background:rgba(var(--ink-rgb),.06);border-color:rgba(var(--ink-rgb),.14);}
+.screen-brief .hist-model,.screen-brief .log-model{background:rgba(var(--ink-rgb),.08);}
+.screen-brief textarea:focus,.screen-brief input:focus,.screen-brief select:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.22);}
+.screen-brief .type-tab.active{background:var(--card);color:var(--ink);box-shadow:none;border:1px solid var(--border);}
+.screen-brief .page-back:hover{background:var(--card);border-color:rgba(var(--accent-rgb),.35);}
+.screen-brief .ci-nudge{background:rgba(var(--accent-rgb),.12);border-color:rgba(var(--accent-rgb),.3);color:#F0C868;}
+.screen-brief .npd-brand-warn{color:#F0958D;}
+.screen-brief .npd-brand-ok{color:#8FD79A;}
+.screen-brief .ghost:hover{background:var(--card);border-color:rgba(var(--accent-rgb),.35);}
+.screen-brief .err{background:rgba(var(--fail-rgb),.12);border-color:rgba(var(--fail-rgb),.32);}
+.brief-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;max-width:1280px;margin:0 auto 28px;flex-wrap:wrap;}
+.brief-hero-text{display:flex;flex-direction:column;gap:10px;max-width:560px;}
+.brief-hero-h{font-size:28px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin:0;line-height:1.25;}
+.brief-hero-sub{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0;}
+.brief-stats{display:flex;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.brief-stat{padding:14px 20px;border-right:1px solid var(--border);}
+.brief-stat:last-child{border-right:none;}
+.brief-stat-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-3);}
+.brief-stat-val{font-size:19px;font-weight:600;color:var(--ink);margin-top:4px;}
+.brief-stat-pass{color:var(--pass);}
 .screen-verdict .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
 .screen-verdict .brandmark{background:var(--card);border-color:var(--ink);}
 .screen-verdict .pulse{background:var(--pass);animation:none;}
@@ -1935,6 +2185,7 @@ const CSS = `
 .primus select{resize:none;cursor:pointer;}
 .primus textarea.idea-input{min-height:160px;font-size:15.5px;padding:18px 20px;}
 .primus textarea:focus,.primus input:focus,.primus select:focus{border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(0,108,180,.16);}
+.screen-brief textarea:focus,.screen-brief input:focus,.screen-brief select:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.22);}
 .primus textarea::placeholder,.primus input::placeholder{color:var(--muted-2);}
 .npd-fields{margin:0 0 8px;}
 .npd-hint{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.45;}
@@ -1997,6 +2248,13 @@ const CSS = `
 .chip.file img{width:20px;height:20px;border-radius:5px;object-fit:cover;margin-right:2px;}
 .attach-block{margin:4px 0 18px;padding:14px 16px;background:var(--panel-2);border:1px dashed var(--line);border-radius:14px;}
 .attach-block .lbl{display:block;margin-bottom:8px;}
+.supporting-research{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.supporting-hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin:2px 0 10px;}
+.supporting-doc-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.supporting-doc-list .chip a{display:inline-flex;color:inherit;}
+.verdict-hero .supporting-research{border-top-color:rgba(240,238,231,.18);}
+.verdict-hero .supporting-hint,.verdict-hero .supporting-research .lbl{color:rgba(240,238,231,.7);}
+.verdict-hero .supporting-research .ghost,.verdict-hero .supporting-doc-list .chip{background:rgba(240,238,231,.12);border-color:rgba(240,238,231,.22);color:#F0EEE7;}
 .attach-hint{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.45;}
 .media-row{margin:0;}
 .report-export{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0;}
@@ -2014,7 +2272,7 @@ const CSS = `
 .run:active{transform:none;}
 .run:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
 .run.inline{width:auto;padding:12px 20px;margin-top:0;}
-.err{display:flex;align-items:center;gap:8px;color:var(--coral);background:rgba(228,87,87,.08);border:1px solid rgba(228,87,87,.2);border-radius:10px;padding:10px 12px;font-size:13px;margin:2px 0 14px;}
+.err{display:flex;align-items:center;gap:8px;color:var(--fail);background:rgba(228,87,87,.08);border:1px solid rgba(228,87,87,.2);border-radius:10px;padding:10px 12px;font-size:13px;margin:2px 0 14px;}
 .spin{animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg);}}
 
 .side-note{font-size:12.5px;color:var(--muted);margin:6px 0 14px;line-height:1.45;}
