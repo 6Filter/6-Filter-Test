@@ -12,6 +12,7 @@ import {
   handleIdeaEscalate,
   handleIdeaExport,
   handleIdeasCollection,
+  handleRecordOutcome,
   handleSupportingDoc,
   handleSupportingDocById,
 } from "./lib/ideasApi.js";
@@ -152,6 +153,19 @@ const server = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       await handleIdeaEscalate(req, res, decodeURIComponent(escalateMatch[1]), {
+        readBody: readJsonBody,
+        sendJson,
+        redactSecrets,
+      });
+      return;
+    }
+
+    const outcomeMatch = url.match(/^\/api\/ideas\/([^/]+)\/record-outcome$/);
+    if (outcomeMatch) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handleRecordOutcome(req, res, decodeURIComponent(outcomeMatch[1]), {
         readBody: readJsonBody,
         sendJson,
         redactSecrets,

@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -116,6 +116,17 @@ async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not escalate.");
+  return data;
+}
+
+async function recordIdeaOutcome(id, { actualNetMarginPct, actualRevenueCr }) {
+  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/record-outcome`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actualNetMarginPct, actualRevenueCr }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not record outcome.");
   return data;
 }
 
@@ -377,6 +388,11 @@ export default function App() {
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [loadSec, setLoadSec] = useState(0);
   const [hasCalibration, setHasCalibration] = useState(true);
+  const [outcomeOpenId, setOutcomeOpenId] = useState(null);
+  const [outcomeMargin, setOutcomeMargin] = useState("");
+  const [outcomeRevenue, setOutcomeRevenue] = useState("");
+  const [outcomeBusy, setOutcomeBusy] = useState(false);
+  const [outcomeMsg, setOutcomeMsg] = useState("");
 
   const fileRef = useRef(null);
 
@@ -716,6 +732,39 @@ export default function App() {
       setEscalateError(e.message || "Could not escalate.");
     } finally {
       setEscalateLoading(false);
+    }
+  }
+
+  function openOutcomeForm(h) {
+    setOutcomeOpenId((id) => (id === h.id ? null : h.id));
+    setOutcomeMargin("");
+    setOutcomeRevenue("");
+    setOutcomeMsg("");
+  }
+
+  async function submitOutcome(h) {
+    if (!h?.id || outcomeBusy) return;
+    const margin = outcomeMargin.trim() === "" ? null : Number(outcomeMargin);
+    const revenue = outcomeRevenue.trim() === "" ? null : Number(outcomeRevenue);
+    if ((margin == null || !Number.isFinite(margin)) && (revenue == null || !Number.isFinite(revenue))) {
+      setOutcomeMsg("Enter actual net margin, actual revenue, or both.");
+      return;
+    }
+    setOutcomeBusy(true);
+    setOutcomeMsg("");
+    try {
+      const data = await recordIdeaOutcome(h.id, {
+        actualNetMarginPct: Number.isFinite(margin) ? margin : null,
+        actualRevenueCr: Number.isFinite(revenue) ? revenue : null,
+      });
+      const n = Array.isArray(data.saved) ? data.saved.length : 1;
+      setOutcomeMsg(`Saved ${n} calibration ${n === 1 ? "row" : "rows"}.`);
+      setOutcomeMargin("");
+      setOutcomeRevenue("");
+    } catch (e) {
+      setOutcomeMsg(e.message || "Could not record outcome.");
+    } finally {
+      setOutcomeBusy(false);
     }
   }
 
@@ -1126,7 +1175,8 @@ export default function App() {
                   const pf = overallPassFail(h);
                   const isProcess = ideaTypeOf(h) === "process";
                   return (
-                    <div key={h.id} className="log-row-wrap">
+                    <div key={h.id} className="log-item">
+                    <div className="log-row-wrap">
                       <button
                         type="button"
                         className="log-row"
@@ -1144,6 +1194,18 @@ export default function App() {
                         <span className="log-idea">{h.idea}</span>
                         <span className="log-date">{formatLogDate(h.ts)}</span>
                       </button>
+                      {!isProcess && (
+                        <button
+                          type="button"
+                          className="log-outcome-btn"
+                          aria-label="Record actual outcome"
+                          title="Record actual outcome"
+                          disabled={loading || Boolean(deletingId) || outcomeBusy}
+                          onClick={() => openOutcomeForm(h)}
+                        >
+                          <ClipboardList size={15} />
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="log-del"
@@ -1154,6 +1216,43 @@ export default function App() {
                       >
                         {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
                       </button>
+                    </div>
+                    {!isProcess && outcomeOpenId === h.id && (
+                      <form
+                        className="log-outcome"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          submitOutcome(h);
+                        }}
+                      >
+                        <div className="log-outcome-fields">
+                          <label>
+                            <span>Actual net margin (%)</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={outcomeMargin}
+                              onChange={(e) => setOutcomeMargin(e.target.value)}
+                              placeholder="optional"
+                            />
+                          </label>
+                          <label>
+                            <span>Actual revenue Y1–3 (₹ Cr)</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={outcomeRevenue}
+                              onChange={(e) => setOutcomeRevenue(e.target.value)}
+                              placeholder="optional"
+                            />
+                          </label>
+                          <button type="submit" className="log-outcome-save" disabled={outcomeBusy}>
+                            {outcomeBusy ? <Loader2 size={14} className="spin" /> : "Save"}
+                          </button>
+                        </div>
+                        {outcomeMsg && <p className="log-outcome-msg">{outcomeMsg}</p>}
+                      </form>
+                    )}
                     </div>
                   );
                 })}
@@ -1504,7 +1603,7 @@ function PhonePreview({ mode, idea, ideaType, result }) {
         <div className="phone-body">
           <div className="phone-eyebrow">Verdict</div>
           <div className={`phone-word phone-word-${hero.tone}`}>{hero.word}</div>
-          <div className="phone-score">{score}<span>/100</span></div>
+          <div className="phone-score">{score}</div>
           <p className="phone-idea">{String(result.idea || "").slice(0, 80)}</p>
         </div>
       </div>
@@ -1809,7 +1908,7 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
           )}
         </div>
         <div className="vh-right">
-          <div className="vh-score">{score}<span>/100</span></div>
+          <div className="vh-score">{score}</div>
           <p className="vh-idea">{hideFilterTalk(result.idea)}</p>
           <p className="vh-meta">
             {npd.pricePerUnit != null ? `₹${npd.pricePerUnit}` : "—"}
@@ -1821,6 +1920,9 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
                 : ""}
             {ideaWeight ? ` · ${ideaWeight}` : ""}
           </p>
+          {result.revenueCalibrationNote ? (
+            <p className="gram-cal-note">{result.revenueCalibrationNote}</p>
+          ) : null}
         </div>
       </section>
 
@@ -1837,6 +1939,8 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
               <div className="gate-bar"><i style={{ width: `${c.barW}%` }} /></div>
               <p className="gate-threshold">{c.threshold}</p>
               <p className="gate-detail">{hideFilterTalk(c.detail)}</p>
+              {c.plausibility ? <p className="gate-plausibility">{hideFilterTalk(c.plausibility)}</p> : null}
+              {c.calibrationNote ? <p className="gate-cal-note">{hideFilterTalk(c.calibrationNote)}</p> : null}
             </article>
           ))}
         </section>
@@ -1905,6 +2009,9 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
             <div className="sc-finance-item">
               <span className="sc-fin-label">Classification</span>
               <span className="sc-fin-val">{ideaWeight || "—"}</span>
+              {result.revenueCalibrationNote ? (
+                <span className="gram-cal-note">{result.revenueCalibrationNote}</span>
+              ) : null}
             </div>
           </div>
           <div className="sc-finance-tam">
@@ -2177,6 +2284,10 @@ const CSS = `
 .gate-bar i{display:block;height:100%;}
 .gate-threshold{font-family:var(--fm);font-size:10px;color:var(--ink-muted-45);margin:0 0 6px;}
 .gate-detail{font-size:12px;color:var(--ink-muted-65);margin:0;line-height:1.4;}
+.gate-plausibility{margin:8px 0 0;font-size:12px;line-height:1.4;color:var(--watch);}
+.gate-cal-note,.gram-cal-note{margin:6px 0 0;font-size:11px;line-height:1.4;color:var(--muted);font-family:var(--fm);}
+.vh-right .gram-cal-note{opacity:.85;max-width:280px;}
+.sc-finance-item .gram-cal-note{display:block;margin-top:6px;}
 .verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;}
 .verdict-grid > .verdict-span,
 .verdict-grid > .sc-metrics,
@@ -2206,7 +2317,7 @@ const CSS = `
 .log-sub{margin:0;font-size:13px;color:var(--muted);max-width:520px;line-height:1.45;}
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
 .log-list{display:flex;flex-direction:column;border-top:1px solid var(--line-soft);}
-.log-row-wrap{border-bottom:1px solid var(--line-soft);}
+.log-item{border-bottom:1px solid var(--line-soft);}
 .log-row{display:grid;grid-template-columns:56px 92px 52px 72px minmax(0,1fr) 140px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .log-row:hover{background:var(--bg-soft);}
 .log-row:disabled{opacity:.6;cursor:wait;}
@@ -2351,9 +2462,17 @@ const CSS = `
 .hist-score{font-family:var(--fm);font-weight:600;font-size:15px;min-width:26px;color:var(--ink);}
 .hist-weight{font-family:var(--fm);font-size:10px;color:var(--ink);min-width:38px;letter-spacing:.04em;}
 .hist-idea{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hist-del,.log-del{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:none;border:none;border-radius:8px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;}
+.hist-del,.log-del,.log-outcome-btn{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:none;border:none;border-radius:8px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;}
 .hist-del:hover,.log-del:hover{color:#C53D3D;background:rgba(228,87,87,.1);}
-.hist-del:disabled,.log-del:disabled{opacity:.5;cursor:wait;}
+.log-outcome-btn:hover{color:var(--ink);background:var(--bg-soft);}
+.hist-del:disabled,.log-del:disabled,.log-outcome-btn:disabled{opacity:.5;cursor:wait;}
+.log-outcome{padding:0 4px 14px 56px;}
+.log-outcome-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;}
+.log-outcome-fields label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);}
+.log-outcome-fields input{width:100%;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:var(--fd);font-size:13px;padding:8px 10px;}
+.log-outcome-save{background:var(--ink);color:var(--accent-on);border:none;border-radius:10px;padding:9px 14px;font-family:var(--fd);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:36px;}
+.log-outcome-save:disabled{opacity:.6;cursor:wait;}
+.log-outcome-msg{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.4;}
 
 .scorecard{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,108,180,.12);border:1px solid var(--line);color:var(--ink);font-family:var(--fd);}
 .sc-header{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 22px;color:#fff;}
@@ -2454,6 +2573,8 @@ const CSS = `
   .top-nav{order:3;width:100%;margin:8px 0 0;margin-right:0;}
   .log-row{grid-template-columns:48px 78px minmax(0,1fr);gap:8px;}
   .log-weight,.log-date,.log-model{display:none;}
+  .log-outcome{padding:0 4px 12px;}
+  .log-outcome-fields{grid-template-columns:1fr;}
   .npd-grid{grid-template-columns:1fr;}
   .filter-strip{grid-template-columns:1fr;}
 }
