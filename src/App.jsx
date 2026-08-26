@@ -222,6 +222,39 @@ const NPD_FILTERS = [
   { key: "filter4", num: "04", title: "Tech & Habit Shift", hint: "5–10 year format trend", icon: Cpu },
 ];
 
+const FILTER_LEDGER = [
+  {
+    n: "01",
+    title: "Opportunity to Grow",
+    body: "Does the idea name a real attribute, a real competitor to beat, and a real gap — in a category either still growing, or worth taking share in? (Pure commodities like toned milk are exempt from the differentiation part.)",
+  },
+  {
+    n: "02",
+    title: "Net Margin",
+    body: "Is there a credible path to the division's minimum margin at launch — one that still survives where quick-commerce margin demands are heading in three years, not just today's terms?",
+  },
+  {
+    n: "03",
+    title: "Price Resilient",
+    body: "Can price rise to cover inflation without more than 10% volume loss at the fixed psychological price points (₹1, ₹2, ₹5, ₹10…)?",
+  },
+  {
+    n: "04",
+    title: "Tech & Habit Shift",
+    body: "Is the format on the rising side of any shift (bar→liquid, retail→quick-commerce, etc.), with no visible 5–10 year obsolescence risk?",
+  },
+  {
+    n: "05",
+    title: "Revenue Target",
+    body: "Is there a credible number for division revenue by year 3 — credibility only, not a capex/plant/supply-chain plan?",
+  },
+  {
+    n: "06",
+    title: "Product & Packaging Merit Gate",
+    body: "Does an actual prototype beat the real benchmark by 2+ points on a 10-point scale in an internal lab test, then hold that same 2-point beat with 60%+ of a 30-person consumer panel (each a genuine user of the benchmark brand, judged from memory, no benchmark shown), while the pack separately beats the strongest of the top 3 competitor packs on shelf standout? All three (lab, consumer, pack) have to clear — no retests, no near-misses.",
+  },
+];
+
 function filterReason(filter) {
   return hideFilterTalk(
     String(filter?.verdictReason || filter?.reason || filter?.evidenceSummary || "").trim()
@@ -783,10 +816,9 @@ export default function App() {
         <section className="brief-hero">
           <div className="brief-hero-text">
             <div className="eyebrow">NPD SCREENING · V4</div>
-            <h2 className="brief-hero-h">Every idea meets the same four gates.</h2>
+            <h2 className="brief-hero-h">Every idea is asked the same questions.</h2>
             <p className="brief-hero-sub">
-              No exceptions, no vibes. Opportunity, margin, price, and technology shift,
-              checked the same way every time.
+              No exceptions, no vibes. The checks below are what each one is really asking.
             </p>
           </div>
           <div className="brief-stats">
@@ -1015,6 +1047,18 @@ export default function App() {
               </div>
             )}
             </div>
+            <section className="filter-rules" aria-label="What each check asks">
+              <div className="filter-rules-h">What each check asks</div>
+              {FILTER_LEDGER.map((row) => (
+                <div className="filter-rule" key={row.n}>
+                  <span className="filter-rule-n">{row.n}</span>
+                  <div>
+                    <b>{row.title}</b>
+                    <p>{row.body}</p>
+                  </div>
+                </div>
+              ))}
+            </section>
           </aside>
         </main>
         </>
@@ -2066,13 +2110,13 @@ const CSS = `
 .compose-aside{display:flex;flex-direction:column;gap:16px;}
 .phone-dots li{display:flex;align-items:center;}
 .result-wide{max-width:1280px;margin:0 auto;}
-.filter-rules{margin:8px 0 12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;}
-.filter-rules-h{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-3);margin-bottom:6px;}
-.filter-rule{display:flex;gap:12px;padding:6px 0;border-top:1px solid var(--border);}
-.filter-rule:first-of-type{border-top:none;padding-top:0;}
-.filter-rule-n{font-family:var(--fm);font-size:11px;color:var(--muted-3);min-width:22px;}
-.filter-rule b{display:block;font-size:13px;}
-.filter-rule p{margin:2px 0 0;font-size:12px;color:var(--muted-2);}
+.filter-rules{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;}
+.filter-rules-h{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-3);margin-bottom:8px;}
+.filter-rule{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--border);}
+.filter-rules-h + .filter-rule{border-top:none;padding-top:2px;}
+.filter-rule-n{font-family:var(--fm);font-size:11px;color:var(--accent);min-width:22px;padding-top:1px;}
+.filter-rule b{display:block;font-size:13px;color:var(--ink);font-weight:600;}
+.filter-rule p{margin:3px 0 0;font-size:12px;color:rgba(var(--ink-rgb),.72);line-height:1.5;}
 .phone{width:100%;max-width:280px;margin:0 auto 18px;border-radius:28px;padding:12px 12px 18px;border:1px solid var(--border);}
 .phone-cream{background:var(--card);color:var(--ink);}
 .phone-dark{background:#0B1B2A;color:#F0EEE7;border-color:rgba(240,238,231,.14);}
