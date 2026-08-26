@@ -2044,6 +2044,7 @@ const CSS = `
 .screen-brief .npd-brand-ok{color:#8FD79A;}
 .screen-brief .ghost:hover{background:var(--card);border-color:rgba(var(--accent-rgb),.35);}
 .screen-brief .err{background:rgba(var(--fail-rgb),.12);border-color:rgba(var(--fail-rgb),.32);}
+.screen-brief .panel-tab{color:var(--accent-on);background:var(--ink);}
 .brief-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;max-width:1280px;margin:0 auto 28px;flex-wrap:wrap;}
 .brief-hero-text{display:flex;flex-direction:column;gap:10px;max-width:560px;}
 .brief-hero-h{font-size:28px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin:0;line-height:1.25;}
