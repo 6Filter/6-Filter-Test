@@ -917,6 +917,12 @@ export default function App() {
                 {!liveBrandFit?.mismatch && liveBrandFit?.reason && (
                   <p className="npd-brand-ok">{liveBrandFit.reason}</p>
                 )}
+                {!liveBrandFit?.mismatch && !liveBrandFit?.reason && idea.trim().length > 12 && (
+                  <p className="npd-brand-neutral">
+                    No CavinKare brand or category detected from the text alone — this may be
+                    outside the current portfolio. The full screen checks with research.
+                  </p>
+                )}
                 <div className="npd-grid">
                   <label className="field">
                     <span className="lbl">Price per unit (₹) <em>required</em></span>
@@ -1808,7 +1814,11 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
           <p className="vh-meta">
             {npd.pricePerUnit != null ? `₹${npd.pricePerUnit}` : "—"}
             {npd.pointsBeat != null ? ` · leader ${npd.pointsBeat} pts` : ""}
-            {npd.division ? ` · ${npd.division}` : ""}
+            {npd.division
+              ? ` · ${npd.division}`
+              : npd.divisionFit?.isNewCategory
+                ? ` · ${npd.divisionFit.generalCategory} (new category)`
+                : ""}
             {ideaWeight ? ` · ${ideaWeight}` : ""}
           </p>
         </div>
@@ -1988,7 +1998,7 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
           </div>
         )}
 
-        {hasNpd && result.overallVerdict === "FAIL" && result.canEscalateToCKR && result.escalationStatus !== "escalated" && (
+        {hasNpd && (result.overallVerdict === "FAIL" || result.overallVerdict === "NEEDS_INPUT") && result.canEscalateToCKR && result.escalationStatus !== "escalated" && (
           <button type="button" className="escalate-btn verdict-span" onClick={onEscalate}>
             <Flag size={15} /> Raise exception → escalate to CKR
           </button>
@@ -2236,6 +2246,7 @@ const CSS = `
 .npd-hint{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.45;}
 .npd-brand-warn{margin:6px 0 0;font-size:12px;color:#C53D3D;line-height:1.4;}
 .npd-brand-ok{margin:6px 0 0;font-size:12px;color:#1F8A55;line-height:1.4;}
+.npd-brand-neutral{margin:6px 0 0;font-size:12px;color:var(--muted);line-height:1.4;}
 .filter-brand{margin-top:8px;font-size:12.5px;color:#C53D3D;line-height:1.4;}
 .npd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:0 0 8px;}
 .npd-grid .field{margin-bottom:0;}
