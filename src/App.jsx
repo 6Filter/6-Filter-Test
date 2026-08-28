@@ -14,6 +14,7 @@ import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
+import SpecPage from "./SpecPage.jsx";
 
 async function callModel(userText, system, image = null, provider = "claude") {
   const ctrl = new AbortController();
@@ -355,18 +356,15 @@ function formatDurationMs(ms) {
 
 
 export default function App() {
-  const [view, setView] = useState("compose");
-  const [ideaType, setIdeaType] = useState("product");
+  const [view, setView] = useState("spec");
   const [idea, setIdea] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [productHistory, setProductHistory] = useState([]);
-  const [processHistory, setProcessHistory] = useState([]);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState("");
-  const [logFilter, setLogFilter] = useState("product");
 
   const [benchmarkExists, setBenchmarkExists] = useState(false);
   const [pointsBeat, setPointsBeat] = useState("");
@@ -397,13 +395,9 @@ export default function App() {
   const fileRef = useRef(null);
 
   async function refreshHistories() {
-    const [products, processes] = await Promise.all([
-      fetchIdeaHistory(50, "product"),
-      fetchIdeaHistory(50, "process"),
-    ]);
+    const products = await fetchIdeaHistory(50, "product");
     setProductHistory(products);
-    setProcessHistory(processes);
-    return { products, processes };
+    return { products };
   }
 
   async function confirmDeleteRun(h, source = "compose") {
@@ -416,7 +410,6 @@ export default function App() {
     try {
       await deleteIdeaFromLog(h.id);
       setProductHistory((rows) => rows.filter((r) => r.id !== h.id));
-      setProcessHistory((rows) => rows.filter((r) => r.id !== h.id));
       if (result?.id === h.id) {
         setResult(null);
         setView(source === "log" ? "log" : "compose");
@@ -455,6 +448,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
+  useEffect(() => {
     if (!loading) {
       setLoadSec(0);
       return;
@@ -467,14 +464,14 @@ export default function App() {
   function goBack() {
     if (view === "result") {
       if (returnView === "log") {
-        openLogTab(ideaTypeOf(result) === "process" ? "process" : "product");
+        openLogTab();
       } else {
         setView("compose");
       }
       return;
     }
     if (view === "log") {
-      setView("compose");
+      setView("spec");
       return;
     }
     if (result) {
@@ -483,14 +480,7 @@ export default function App() {
     }
   }
 
-  async function openLogTab(preferredType) {
-    const nextFilter =
-      preferredType === "process" || preferredType === "product"
-        ? preferredType
-        : ideaType === "process"
-          ? "process"
-          : "product";
-    setLogFilter(nextFilter);
+  async function openLogTab() {
     setReturnView("log");
     setView("log");
     setLogError("");
@@ -504,10 +494,10 @@ export default function App() {
     }
   }
 
-  const composeHistory = (ideaType === "process" ? processHistory : productHistory).slice(0, 6);
-  const logHistory = logFilter === "process" ? processHistory : productHistory;
-  const liveBrandFit = ideaType === "product" ? resolveBrandFit(idea) : null;
-  const ideasScreenedCount = productHistory.length + processHistory.length;
+  const composeHistory = productHistory.slice(0, 6);
+  const logHistory = productHistory;
+  const liveBrandFit = resolveBrandFit(idea);
+  const ideasScreenedCount = productHistory.length;
   const productWithVerdict = productHistory.filter((h) => h.overallVerdict);
   const passRateLabel = productWithVerdict.length
     ? `${Math.round(
@@ -516,7 +506,7 @@ export default function App() {
           100
       )}%`
     : "—";
-  const timedRuns = [...productHistory, ...processHistory].filter((h) => {
+  const timedRuns = productHistory.filter((h) => {
     const n = Number(h.durationMs);
     return Number.isFinite(n) && n > 0;
   });
@@ -565,36 +555,27 @@ export default function App() {
 
   async function analyze() {
     if (!idea.trim() && !attachment) {
-      setError(
-        ideaType === "process"
-          ? "Describe the process idea or upload a PDF, Word file, or image."
-          : "Describe the product idea or upload a PDF, Word file, or image."
-      );
+      setError("Describe the product idea or upload a PDF, Word file, or image.");
       return;
     }
-    if (ideaType === "product") {
-      if (pricePerUnit === "" || !Number.isFinite(Number(pricePerUnit)) || Number(pricePerUnit) <= 0) {
-        setError("Enter a price per unit.");
-        return;
-      }
-      if (benchmarkExists && (pointsBeat === "" || !Number.isFinite(Number(pointsBeat)))) {
-        setError("Enter how many points this idea beats the market leader (0–10).");
-        return;
-      }
+    if (pricePerUnit === "" || !Number.isFinite(Number(pricePerUnit)) || Number(pricePerUnit) <= 0) {
+      setError("Enter a price per unit.");
+      return;
+    }
+    if (benchmarkExists && (pointsBeat === "" || !Number.isFinite(Number(pointsBeat)))) {
+      setError("Enter how many points this idea beats the market leader (0–10).");
+      return;
     }
     setLoading(true); setError("");
     const startedAt = performance.now();
 
     try {
-      const npd =
-        ideaType === "product"
-          ? {
-              benchmarkExists,
-              pointsBeat: benchmarkExists && pointsBeat !== "" ? Number(pointsBeat) : null,
-              pricePerUnit: pricePerUnit === "" ? null : Number(pricePerUnit),
-            }
-          : {};
-      const full = await analyzeAndStoreIdea(idea.trim(), attachment, ideaType, npd, llmProvider);
+      const npd = {
+        benchmarkExists,
+        pointsBeat: benchmarkExists && pointsBeat !== "" ? Number(pointsBeat) : null,
+        pricePerUnit: pricePerUnit === "" ? null : Number(pricePerUnit),
+      };
+      const full = await analyzeAndStoreIdea(idea.trim(), attachment, "product", npd, llmProvider);
       setResult(full);
       const summary = {
         id: full.id,
@@ -604,17 +585,13 @@ export default function App() {
         ideaWeight: full.gramClass || full.ideaWeight,
         gramClass: full.gramClass || null,
         overallVerdict: full.overallVerdict || null,
-        ideaType: full.ideaType || ideaType,
-        phase1Max: full.phase1Max || (ideaType === "process" ? 40 : 60),
+        ideaType: "product",
+        phase1Max: full.phase1Max || 60,
         llmProvider: full.llmProvider || llmProvider,
         llmLabel: full.llmLabel || providerLabel(llmProvider),
         durationMs: Math.round(performance.now() - startedAt),
       };
-      if ((full.ideaType || ideaType) === "process") {
-        setProcessHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
-      } else {
-        setProductHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
-      }
+      setProductHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
       setReturnView("compose");
       setView("result");
     } catch (e) {
@@ -635,8 +612,6 @@ export default function App() {
     setReturnView(source === "log" ? "log" : "compose");
     setError("");
     setLogError("");
-    if (ideaTypeOf(h) === "process") setLogFilter("process");
-    else setLogFilter("product");
 
     try {
       // Log / recent-run rows are summaries — only skip fetch when full scorecard is already present.
@@ -670,7 +645,7 @@ export default function App() {
     const max = phase1MaxOf(result);
     let system;
     let text;
-    if (process) {
+    if (process && result?.efficiency && result?.feasibility && result?.scalability) {
       const e = result.efficiency.score, f = result.feasibility.score, s = result.scalability.score;
       system = "You draft concise, confident internal messages for a process owner submitting a process idea to their manager. Sentence case, no fluff, no emoji.";
       text =
@@ -787,26 +762,38 @@ export default function App() {
   }
 
   const backLabel =
-    view === "result"
-      ? returnView === "log"
-        ? "Back to log"
-        : "Back to NPD Screen"
-      : view === "log"
-        ? "Back to NPD Screen"
-        : result
-          ? "Back to scorecard"
-          : null;
+    view === "spec"
+      ? null
+      : view === "result"
+        ? returnView === "log"
+          ? "Back to log"
+          : "Back to NPD Screen"
+        : view === "log"
+          ? "Back to spec"
+          : result
+            ? "Back to scorecard"
+            : null;
+
+  const screenClass =
+    view === "result" ? "screen-verdict" : view === "log" ? "screen-log" : view === "spec" ? "screen-spec" : "screen-brief";
 
   return (
-    <div className={`primus ${view === "result" ? "screen-verdict" : view === "log" ? "screen-log" : "screen-brief"}`}>
+    <div className={`primus ${screenClass}`}>
       <style>{CSS}</style>
 
       <header className="masthead">
-        <button type="button" className="brand-btn" onClick={() => setView("compose")} aria-label="Go to validate">
+        <button type="button" className="brand-btn" onClick={() => setView("spec")} aria-label="Go to screening spec">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
             <div className="eyebrow">NPD SCREENING</div>
-            <h1>6 Filter Test</h1>
+            {view === "spec" ? (
+              <h1 className="spec-wordmark">
+                6 Filters Screening Spec
+                <ChevronDown size={18} className="spec-chevron" aria-hidden="true" />
+              </h1>
+            ) : (
+              <h1>6 Filter Test</h1>
+            )}
           </div>
         </button>
         <nav className="top-nav" aria-label="Main">
@@ -860,6 +847,10 @@ export default function App() {
         </div>
       )}
 
+      {view === "spec" && (
+        <SpecPage onEnterProposition={() => setView("compose")} />
+      )}
+
       {view === "compose" && (
         <>
         <section className="brief-hero">
@@ -889,37 +880,12 @@ export default function App() {
           <section className="panel console">
             <div className="panel-tab">01 — Brief</div>
 
-            <div className="type-toggle" role="tablist" aria-label="Idea type">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={ideaType === "product"}
-                className={`type-tab${ideaType === "product" ? " active" : ""}`}
-                onClick={() => setIdeaType("product")}
-              >
-                Product idea
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={ideaType === "process"}
-                className={`type-tab${ideaType === "process" ? " active" : ""}`}
-                onClick={() => setIdeaType("process")}
-              >
-                Process idea
-              </button>
-            </div>
-
             <label className="field">
-              <span className="lbl">{ideaType === "process" ? "Process idea" : "Product idea"}</span>
+              <span className="lbl">Product idea</span>
               <textarea
                 className="idea-input"
                 rows={8} value={idea} onChange={(e) => setIdea(e.target.value)}
-                    placeholder={
-                  ideaType === "process"
-                    ? "Type the process idea, or upload a PDF / Word file / image with the insight."
-                    : "Type the product idea, or upload a PDF / Word file / image with the insight."
-                }
+                    placeholder="Type the product idea, or upload a PDF / Word file / image with the insight."
               />
             </label>
 
@@ -950,8 +916,7 @@ export default function App() {
               </p>
             </div>
 
-            {ideaType === "product" && (
-              <div className="npd-fields">
+            <div className="npd-fields">
                 <p className="npd-hint">
                   Price and market-leader points are the brief. Division, margin, volume loss, attribute, and benchmark are inferred on the server.
                 </p>
@@ -1016,7 +981,6 @@ export default function App() {
                   )}
                 </div>
               </div>
-            )}
 
             {error && <div className="err"><AlertTriangle size={14} /> {error}</div>}
 
@@ -1026,27 +990,23 @@ export default function App() {
                   <Loader2 size={17} className="spin" />
                   {openingId
                     ? "Opening…"
-                    : ideaType === "product"
-                      ? loadSec > 0
-                        ? `Screening · ${loadSec}s`
-                        : "Screening…"
-                      : loadSec > 0
-                        ? `Validating · ${loadSec}s`
-                        : "Validating…"}
+                    : loadSec > 0
+                      ? `Screening · ${loadSec}s`
+                      : "Screening…"}
                 </>
               ) : (
                 <>
-                  <Gauge size={17} /> {ideaType === "product" ? "Run screen" : "Run validation"}
+                  <Gauge size={17} /> Run screen
                 </>
               )}
             </button>
-            {loading && ideaType === "product" && (
+            {loading && (
               <p className="run-hint">Scoring and research are running together.</p>
             )}
           </section>
 
           <aside className="compose-aside">
-            <PhonePreview mode="brief" idea={idea} ideaType={ideaType} />
+            <PhonePreview mode="brief" idea={idea} ideaType="product" />
             <div className="panel side">
             <div className="panel-tab">Recent screens</div>
             {composeHistory.length === 0 && (
@@ -1056,7 +1016,7 @@ export default function App() {
             {composeHistory.length > 0 && (
               <div className="hist">
                 <div className="hist-h">
-                  <History size={13} /> Recent {ideaType === "process" ? "process" : "product"} runs
+                  <History size={13} /> Recent product runs
                 </div>
                 {error && view === "compose" && (
                   <div className="err hist-err"><AlertTriangle size={14} /> {error}</div>
@@ -1078,7 +1038,7 @@ export default function App() {
                           {isOpening ? <Loader2 size={14} className="spin" /> : Number(h.phase1 || 0).toFixed(0)}
                         </span>
                         <span className="hist-weight">
-                          {ideaTypeOf(h) === "process" ? "PROC" : (h.ideaWeight || "—")}
+                          {h.ideaWeight || "—"}
                         </span>
                         <span className="hist-model">{h.llmLabel || "Claude"}</span>
                         <span className="hist-idea">{h.idea}</span>
@@ -1096,8 +1056,8 @@ export default function App() {
                     </div>
                   );
                 })}
-                <button type="button" className="hist-more" onClick={() => openLogTab(ideaType)}>
-                  View {ideaType === "process" ? "process" : "product"} log <ArrowRight size={13} />
+                <button type="button" className="hist-more" onClick={openLogTab}>
+                  View product log <ArrowRight size={13} />
                 </button>
               </div>
             )}
@@ -1127,43 +1087,22 @@ export default function App() {
               <div>
                 <h2 className="log-title">Validation log</h2>
                 <p className="log-sub">
-                  Separate histories for Product and Process. Click a row to open the scorecard, or the trash icon to remove it from the log.
+                  Click a row to open the scorecard, or the trash icon to remove it from the log.
                 </p>
               </div>
-              <button type="button" className="ghost" onClick={() => openLogTab(logFilter)} disabled={logLoading}>
+              <button type="button" className="ghost" onClick={openLogTab} disabled={logLoading}>
                 {logLoading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
                 Refresh
               </button>
             </div>
 
-            <div className="type-toggle log-type-toggle" role="tablist" aria-label="Log type">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={logFilter === "product"}
-                className={`type-tab${logFilter === "product" ? " active" : ""}`}
-                onClick={() => setLogFilter("product")}
-              >
-                Product log ({productHistory.length})
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={logFilter === "process"}
-                className={`type-tab${logFilter === "process" ? " active" : ""}`}
-                onClick={() => setLogFilter("process")}
-              >
-                Process log ({processHistory.length})
-              </button>
-            </div>
-
             {logError && <div className="err"><AlertTriangle size={14} /> {logError}</div>}
 
-            {logLoading && productHistory.length === 0 && processHistory.length === 0 ? (
+            {logLoading && productHistory.length === 0 ? (
               <div className="log-empty"><Loader2 size={18} className="spin" /> Loading history…</div>
             ) : logHistory.length === 0 ? (
               <div className="log-empty">
-                No {logFilter === "process" ? "process" : "product"} ideas yet. Run a {logFilter} validation first.
+                No product ideas yet. Run a screen first.
               </div>
             ) : (
               <div className="log-list">
@@ -2118,6 +2057,18 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 .primus *{box-sizing:border-box;}
+.screen-spec {
+  --bg: #170C25; --card: #191919; --panel: #22113A; --panel-2: #2A1841;
+  --border: rgba(243,234,248,.12); --border-2: rgba(243,234,248,.18);
+  --ink: #F3EAF8; --ink-deep: #F3EAF8;
+  --muted: rgba(243,234,248,.65); --muted-2: rgba(243,234,248,.5);
+  --muted-3: rgba(243,234,248,.45); --faint: rgba(243,234,248,.32);
+  --accent: #C9AEEF; --accent-hover: #D9C4F5; --accent-on: #170C25;
+  --pass: #7EDCA8; --fail: #E2716B; --watch: #E8B563; --coral: #D9A0C9;
+  --bg-soft: #22113A; --line: rgba(243,234,248,.12); --line-soft: rgba(243,234,248,.08);
+  --accent-rgb: 201,174,239; --pass-rgb: 126,220,168; --fail-rgb: 226,113,107; --ink-rgb: 243,234,248;
+  padding: 0;
+}
 .screen-brief {
   --bg: #0A0A09; --card: #131311; --panel: #131311; --panel-2: #1B1916;
   --border: rgba(236,234,227,.08); --border-2: rgba(236,234,227,.14);
@@ -2185,6 +2136,19 @@ const CSS = `
 @keyframes pl{0%{box-shadow:0 0 0 0 rgba(0,108,180,.45);}70%{box-shadow:0 0 0 7px rgba(0,108,180,0);}100%{box-shadow:0 0 0 0 rgba(0,108,180,0);}}
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 
+.screen-spec .masthead{
+  background:#191919;max-width:none;width:100%;margin:0;border-radius:0;border:none;
+  padding:12px 28px;position:relative;z-index:40;flex-wrap:nowrap;
+}
+.screen-spec .brandmark{background:#22113A;border-color:#C9AEEF;box-shadow:none;}
+.screen-spec .brandmark .star{color:#C9AEEF;}
+.screen-spec .spec-wordmark{display:flex;align-items:center;gap:8px;font-size:18px;letter-spacing:-.3px;white-space:nowrap;}
+.screen-spec .spec-chevron{opacity:.7;flex-shrink:0;}
+.screen-spec .top-nav,.screen-spec .model-switch{flex-shrink:0;}
+.screen-spec .nav-tab:hover{background:rgba(201,174,239,.1);color:#F3EAF8;}
+.screen-spec .nav-tab.active{background:rgba(201,174,239,.16);border-color:rgba(201,174,239,.35);color:#F3EAF8;}
+.screen-spec .model-switch{background:rgba(243,234,248,.08);border-color:rgba(243,234,248,.16);}
+.screen-spec .pulse{background:#7EDCA8;animation:none;}
 .screen-brief .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
 .screen-brief .brandmark{background:var(--card);border-color:var(--accent);}
 .screen-brief .type-toggle{background:var(--panel-2);border-color:var(--border);}
