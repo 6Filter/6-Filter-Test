@@ -8,8 +8,6 @@ import {
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
-import { nearestFixedPricePoint } from "../lib/npdMaster.js";
-import { resolveBrandFit } from "../lib/ckBrands.js";
 import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { hideFilterTalk } from "../lib/publicCopy.js";
@@ -227,44 +225,138 @@ function readFileAsAttachment(file, isImage) {
   });
 }
 
+function ProductIdeaModal({ open, onClose, onSubmit, busy, error }) {
+  const [idea, setIdea] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [localError, setLocalError] = useState("");
+  const fileRef = useRef(null);
+
+  if (!open) return null;
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const name = String(file.name || "").toLowerCase();
+    const mime = String(file.type || "").toLowerCase();
+    const ok =
+      isImageUpload(name, mime) ||
+      mime === "application/pdf" ||
+      mime === "application/msword" ||
+      mime.includes("wordprocessingml") ||
+      /\.(pdf|docx?)$/i.test(name);
+    if (!ok) {
+      setLocalError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setLocalError("Keep the file under 8 MB.");
+      return;
+    }
+    setLocalError("");
+    const isImage = isImageUpload(name, mime);
+    try {
+      if (isImage) {
+        try {
+          setAttachment(await rasterizeImageFile(file));
+        } catch {
+          setAttachment(await readFileAsAttachment(file, true));
+        }
+      } else {
+        setAttachment(await readFileAsAttachment(file, false));
+      }
+    } catch {
+      setLocalError("Could not read that file. Try a JPG or PNG.");
+    }
+  }
+
+  function handleSubmit() {
+    if (!idea.trim() && !attachment) {
+      setLocalError("Describe the product idea or upload a PDF, Word file, or image.");
+      return;
+    }
+    if (pricePerUnit === "" || !Number.isFinite(Number(pricePerUnit)) || Number(pricePerUnit) <= 0) {
+      setLocalError("Enter a price per unit.");
+      return;
+    }
+    setLocalError("");
+    onSubmit({ idea: idea.trim(), attachment, pricePerUnit });
+  }
+
+  const shownError = localError || error;
+
+  return (
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Enter your proposition"
+      onClick={() => !busy && onClose()}
+    >
+      <div className="modal product-idea-modal" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="ghost sq product-idea-close"
+          aria-label="Close"
+          disabled={busy}
+          onClick={onClose}
+        >
+          <X size={16} />
+        </button>
+        <label className="lbl">Product idea</label>
+        <textarea
+          value={idea}
+          onChange={(e) => setIdea(e.target.value)}
+          placeholder="Type the product idea, or upload a PDF / Word file / image with the insight."
+          rows={6}
+          disabled={busy}
+        />
+
+        <label className="lbl">Or attach idea / insight</label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+          onChange={handleFile}
+          hidden
+        />
+        {!attachment ? (
+          <button type="button" className="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+            <FileUp size={15} /> Upload PDF, Word, or image
+          </button>
+        ) : (
+          <span className="chip file">
+            {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
+            {attachment.name}
+            <button type="button" disabled={busy} onClick={() => setAttachment(null)}><X size={12} /></button>
+          </span>
+        )}
+
+        <label className="lbl">Price per unit (₹)</label>
+        <input
+          type="number"
+          value={pricePerUnit}
+          onChange={(e) => setPricePerUnit(e.target.value)}
+          placeholder="e.g. 99"
+          disabled={busy}
+        />
+
+        {shownError && <div className="err"><AlertTriangle size={14} /> {shownError}</div>}
+
+        <button type="button" className="run" disabled={busy} onClick={handleSubmit}>
+          <Gauge size={17} /> {busy ? "Screening…" : "Run screen"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const NPD_FILTERS = [
   { key: "filter1", num: "01", title: "Opportunity to Grow", hint: "Attribute · benchmark · gap", icon: TrendingUp },
   { key: "filter2", num: "02", title: "Net Margin Gate", hint: "Division floor at launch", icon: Scale },
   { key: "filter3", num: "03", title: "Price Resilient", hint: "2-pt proxy · volume loss ≤10%", icon: Tag },
   { key: "filter4", num: "04", title: "Tech & Habit Shift", hint: "5–10 year format trend", icon: Cpu },
-];
-
-const FILTER_LEDGER = [
-  {
-    n: "01",
-    title: "Opportunity to Grow",
-    body: "Does the idea name a real attribute, a real competitor to beat, and a real gap — in a category either still growing, or worth taking share in? (Pure commodities like toned milk are exempt from the differentiation part.)",
-  },
-  {
-    n: "02",
-    title: "Net Margin",
-    body: "Is there a credible path to the division's minimum margin at launch — one that still survives where quick-commerce margin demands are heading in three years, not just today's terms?",
-  },
-  {
-    n: "03",
-    title: "Price Resilient",
-    body: "Can price rise to cover inflation without more than 10% volume loss at the fixed psychological price points (₹1, ₹2, ₹5, ₹10…)?",
-  },
-  {
-    n: "04",
-    title: "Tech & Habit Shift",
-    body: "Is the format on the rising side of any shift (bar→liquid, retail→quick-commerce, etc.), with no visible 5–10 year obsolescence risk?",
-  },
-  {
-    n: "05",
-    title: "Revenue Target",
-    body: "Is there a credible number for division revenue by year 3 — credibility only, not a capex/plant/supply-chain plan?",
-  },
-  {
-    n: "06",
-    title: "Product & Packaging Merit Gate",
-    body: "Does an actual prototype beat the real benchmark by 2+ points on a 10-point scale in an internal lab test, then hold that same 2-point beat with 60%+ of a 30-person consumer panel (each a genuine user of the benchmark brand, judged from memory, no benchmark shown), while the pack separately beats the strongest of the top 3 competitor packs on shelf standout? All three (lab, consumer, pack) have to clear — no retests, no near-misses.",
-  },
 ];
 
 function filterReason(filter) {
@@ -344,21 +436,9 @@ function hasFullScorecard(r) {
   return r.novelty?.score != null && r.market?.score != null && r.evidence?.score != null;
 }
 
-function formatDurationMs(ms) {
-  const n = Number(ms);
-  if (!Number.isFinite(n) || n < 0) return "—";
-  const totalSec = Math.round(n / 1000);
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  if (m <= 0) return `${s}s`;
-  return `${m}m ${s}s`;
-}
-
-
 export default function App() {
   const [view, setView] = useState("spec");
-  const [idea, setIdea] = useState("");
-  const [attachment, setAttachment] = useState(null);
+  const [productModalOpen, setProductModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -366,15 +446,11 @@ export default function App() {
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState("");
 
-  const [benchmarkExists, setBenchmarkExists] = useState(false);
-  const [pointsBeat, setPointsBeat] = useState("");
-  const [pricePerUnit, setPricePerUnit] = useState("");
-
   const [msgOpen, setMsgOpen] = useState(false);
   const [msgLoading, setMsgLoading] = useState(false);
   const [msgText, setMsgText] = useState("");
   const [copied, setCopied] = useState(false);
-  const [returnView, setReturnView] = useState("compose");
+  const [returnView, setReturnView] = useState("spec");
   const [openingId, setOpeningId] = useState(null);
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [escalateFilter, setEscalateFilter] = useState("");
@@ -384,15 +460,11 @@ export default function App() {
   const [deletingId, setDeletingId] = useState(null);
   const [llmProvider, setLlmProvider] = useState("claude");
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
-  const [loadSec, setLoadSec] = useState(0);
-  const [hasCalibration, setHasCalibration] = useState(true);
   const [outcomeOpenId, setOutcomeOpenId] = useState(null);
   const [outcomeMargin, setOutcomeMargin] = useState("");
   const [outcomeRevenue, setOutcomeRevenue] = useState("");
   const [outcomeBusy, setOutcomeBusy] = useState(false);
   const [outcomeMsg, setOutcomeMsg] = useState("");
-
-  const fileRef = useRef(null);
 
   async function refreshHistories() {
     const products = await fetchIdeaHistory(50, "product");
@@ -400,7 +472,7 @@ export default function App() {
     return { products };
   }
 
-  async function confirmDeleteRun(h, source = "compose") {
+  async function confirmDeleteRun(h, source = "spec") {
     if (!h?.id || deletingId) return;
     const ok = window.confirm("Remove this run from the production log? This cannot be undone.");
     if (!ok) return;
@@ -412,7 +484,7 @@ export default function App() {
       setProductHistory((rows) => rows.filter((r) => r.id !== h.id));
       if (result?.id === h.id) {
         setResult(null);
-        setView(source === "log" ? "log" : "compose");
+        setView(source === "log" ? "log" : "spec");
       }
     } catch (e) {
       const msg = e.message || "Could not delete this run.";
@@ -439,34 +511,18 @@ export default function App() {
         }
       })
       .catch(() => {});
-    fetch("/api/calibration")
-      .then((r) => r.json())
-      .then((data) => {
-        if (typeof data.hasAny === "boolean") setHasCalibration(data.hasAny);
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
 
-  useEffect(() => {
-    if (!loading) {
-      setLoadSec(0);
-      return;
-    }
-    setLoadSec(0);
-    const tick = setInterval(() => setLoadSec((s) => s + 1), 1000);
-    return () => clearInterval(tick);
-  }, [loading]);
-
   function goBack() {
     if (view === "result") {
       if (returnView === "log") {
         openLogTab();
       } else {
-        setView("compose");
+        setView("spec");
       }
       return;
     }
@@ -475,7 +531,7 @@ export default function App() {
       return;
     }
     if (result) {
-      setReturnView("compose");
+      setReturnView("spec");
       setView("result");
     }
   }
@@ -494,85 +550,20 @@ export default function App() {
     }
   }
 
-  const composeHistory = productHistory.slice(0, 6);
   const logHistory = productHistory;
-  const liveBrandFit = resolveBrandFit(idea);
-  const ideasScreenedCount = productHistory.length;
-  const productWithVerdict = productHistory.filter((h) => h.overallVerdict);
-  const passRateLabel = productWithVerdict.length
-    ? `${Math.round(
-        (productWithVerdict.filter((h) => h.overallVerdict === "CLEARED").length /
-          productWithVerdict.length) *
-          100
-      )}%`
-    : "—";
-  const timedRuns = productHistory.filter((h) => {
-    const n = Number(h.durationMs);
-    return Number.isFinite(n) && n > 0;
-  });
-  const avgScreenTimeLabel = timedRuns.length
-    ? formatDurationMs(
-        timedRuns.reduce((sum, h) => sum + Number(h.durationMs), 0) / timedRuns.length
-      )
-    : "—";
 
-  const onFile = async (e) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    const name = String(f.name || "").toLowerCase();
-    const mime = String(f.type || "").toLowerCase();
-    const ok =
-      isImageUpload(name, mime) ||
-      mime === "application/pdf" ||
-      mime === "application/msword" ||
-      mime.includes("wordprocessingml") ||
-      /\.(pdf|docx?)$/i.test(name);
-    if (!ok) {
-      setError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
-      return;
-    }
-    if (f.size > 8 * 1024 * 1024) {
-      setError("Keep the file under 8 MB.");
-      return;
-    }
+  function openProductModal() {
     setError("");
-    const isImage = isImageUpload(name, mime);
-    try {
-      if (isImage) {
-        try {
-          setAttachment(await rasterizeImageFile(f));
-        } catch {
-          setAttachment(await readFileAsAttachment(f, true));
-        }
-      } else {
-        setAttachment(await readFileAsAttachment(f, false));
-      }
-    } catch {
-      setError("Could not read that file. Try a JPG or PNG.");
-    }
-  };
+    setProductModalOpen(true);
+  }
 
-  async function analyze() {
-    if (!idea.trim() && !attachment) {
-      setError("Describe the product idea or upload a PDF, Word file, or image.");
-      return;
-    }
-    if (pricePerUnit === "" || !Number.isFinite(Number(pricePerUnit)) || Number(pricePerUnit) <= 0) {
-      setError("Enter a price per unit.");
-      return;
-    }
-    if (benchmarkExists && (pointsBeat === "" || !Number.isFinite(Number(pointsBeat)))) {
-      setError("Enter how many points this idea beats the market leader (0–10).");
-      return;
-    }
-    setLoading(true); setError("");
+  async function submitProductIdea({ idea, attachment, pricePerUnit }) {
+    setLoading(true);
+    setError("");
     const startedAt = performance.now();
 
     try {
       const npd = {
-        benchmarkExists,
-        pointsBeat: benchmarkExists && pointsBeat !== "" ? Number(pointsBeat) : null,
         pricePerUnit: pricePerUnit === "" ? null : Number(pricePerUnit),
       };
       const full = await analyzeAndStoreIdea(idea.trim(), attachment, "product", npd, llmProvider);
@@ -592,7 +583,8 @@ export default function App() {
         durationMs: Math.round(performance.now() - startedAt),
       };
       setProductHistory((h) => [summary, ...h.filter((x) => x.id !== summary.id)].slice(0, 50));
-      setReturnView("compose");
+      setProductModalOpen(false);
+      setReturnView("spec");
       setView("result");
     } catch (e) {
       setError(e.message || "Validation failed. Try again.");
@@ -601,7 +593,7 @@ export default function App() {
     }
   }
 
-  async function openHistory(h, source = "compose") {
+  async function openHistory(h, source = "spec") {
     if (!h?.id && !hasFullScorecard(h)) {
       const msg = "That run has no saved id. Re-run validation to open it.";
       if (source === "log") setLogError(msg);
@@ -609,7 +601,7 @@ export default function App() {
       return;
     }
 
-    setReturnView(source === "log" ? "log" : "compose");
+    setReturnView(source === "log" ? "log" : "spec");
     setError("");
     setLogError("");
 
@@ -682,7 +674,13 @@ export default function App() {
     setCopied(true); setTimeout(() => setCopied(false), 1600);
   };
 
-  const reset = () => { setResult(null); setReturnView("compose"); setView("compose"); };
+  const reset = () => {
+    setResult(null);
+    setError("");
+    setReturnView("spec");
+    setView("spec");
+    setProductModalOpen(true);
+  };
 
   async function submitEscalate() {
     if (!result?.id) return;
@@ -767,7 +765,7 @@ export default function App() {
       : view === "result"
         ? returnView === "log"
           ? "Back to log"
-          : "Back to NPD Screen"
+          : "Back to spec"
         : view === "log"
           ? "Back to spec"
           : result
@@ -782,7 +780,7 @@ export default function App() {
       <style>{CSS}</style>
 
       <header className="masthead">
-        <button type="button" className="brand-btn" onClick={() => setView("spec")} aria-label="Go to screening spec">
+        <button type="button" className="brand-btn" onClick={() => { setProductModalOpen(false); setView("spec"); }} aria-label="Go to screening spec">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
             <div className="eyebrow">NPD SCREENING</div>
@@ -799,8 +797,8 @@ export default function App() {
         <nav className="top-nav" aria-label="Main">
           <button
             type="button"
-            className={`nav-tab${view === "compose" || view === "result" ? " active" : ""}`}
-            onClick={() => setView("compose")}
+            className={`nav-tab${productModalOpen || view === "result" ? " active" : ""}`}
+            onClick={openProductModal}
           >
             NPD Screen
           </button>
@@ -848,236 +846,16 @@ export default function App() {
       )}
 
       {view === "spec" && (
-        <SpecPage onEnterProposition={() => setView("compose")} />
+        <SpecPage onEnterProposition={openProductModal} />
       )}
 
-      {view === "compose" && (
-        <>
-        <section className="brief-hero">
-          <div className="brief-hero-text">
-            <div className="eyebrow">NPD SCREENING · V4</div>
-            <h2 className="brief-hero-h">Every idea is asked the same questions.</h2>
-            <p className="brief-hero-sub">
-              No exceptions, no vibes. The checks below are what each one is really asking.
-            </p>
-          </div>
-          <div className="brief-stats">
-            <div className="brief-stat">
-              <div className="brief-stat-lbl">Ideas screened</div>
-              <div className="brief-stat-val">{ideasScreenedCount}</div>
-            </div>
-            <div className="brief-stat">
-              <div className="brief-stat-lbl">Pass rate</div>
-              <div className="brief-stat-val brief-stat-pass">{passRateLabel}</div>
-            </div>
-            <div className="brief-stat">
-              <div className="brief-stat-lbl">Avg screen time</div>
-              <div className="brief-stat-val">{avgScreenTimeLabel}</div>
-            </div>
-          </div>
-        </section>
-        <main className="grid">
-          <section className="panel console">
-            <div className="panel-tab">01 — Brief</div>
-
-            <label className="field">
-              <span className="lbl">Product idea</span>
-              <textarea
-                className="idea-input"
-                rows={8} value={idea} onChange={(e) => setIdea(e.target.value)}
-                    placeholder="Type the product idea, or upload a PDF / Word file / image with the insight."
-              />
-            </label>
-
-            <div className="attach-block">
-              <span className="lbl">Or attach idea / insight</span>
-              <div className="media-row">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,image/*"
-                  onChange={onFile}
-                  hidden
-                />
-                {!attachment ? (
-                  <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
-                    <FileUp size={15} /> Upload PDF, Word, or image
-                  </button>
-                ) : (
-                  <span className="chip file">
-                    {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
-                    {attachment.name}
-                    <button type="button" onClick={() => setAttachment(null)}><X size={12} /></button>
-                  </span>
-                )}
-              </div>
-              <p className="attach-hint">
-                PDF, Word (.doc / .docx), or image (JPG, PNG, GIF, WebP). You can run the screen from the file alone.
-              </p>
-            </div>
-
-            <div className="npd-fields">
-                <p className="npd-hint">
-                  Price and market-leader points are the brief. Division, margin, volume loss, attribute, and benchmark are inferred on the server.
-                </p>
-                {!hasCalibration && (
-                  <p className="ci-nudge ci-nudge-compose">
-                    Have Nielsen/Kantar data for a related category? Running a blind calibration first is the single highest-leverage thing you can do here.
-                  </p>
-                )}
-                {liveBrandFit?.mismatch && (
-                  <p className="npd-brand-warn">{liveBrandFit.reason}</p>
-                )}
-                {!liveBrandFit?.mismatch && liveBrandFit?.reason && (
-                  <p className="npd-brand-ok">{liveBrandFit.reason}</p>
-                )}
-                {!liveBrandFit?.mismatch && !liveBrandFit?.reason && idea.trim().length > 12 && (
-                  <p className="npd-brand-neutral">
-                    No CavinKare brand or category detected from the text alone — this may be
-                    outside the current portfolio. The full screen checks with research.
-                  </p>
-                )}
-                <div className="npd-grid">
-                  <label className="field">
-                    <span className="lbl">Price per unit (₹) <em>required</em></span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={pricePerUnit}
-                      onChange={(e) => setPricePerUnit(e.target.value)}
-                      placeholder="e.g. 99"
-                    />
-                    {pricePerUnit !== "" && nearestFixedPricePoint(Number(pricePerUnit)) != null && (
-                      <span className="npd-inline-hint">
-                        Nearest fixed point: ₹{nearestFixedPricePoint(Number(pricePerUnit))}
-                      </span>
-                    )}
-                  </label>
-                  <label className="npd-check span-2">
-                    <input
-                      type="checkbox"
-                      checked={benchmarkExists}
-                      onChange={(e) => {
-                        setBenchmarkExists(e.target.checked);
-                        if (!e.target.checked) setPointsBeat("");
-                      }}
-                    />
-                    A market leader already exists — how many points will this idea beat it on a 10-point scale?
-                  </label>
-                  {benchmarkExists && (
-                    <label className="field span-2">
-                      <span className="lbl">Points vs market leader (0–10) <em>required if a leader exists</em></span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        value={pointsBeat}
-                        onChange={(e) => setPointsBeat(e.target.value)}
-                        placeholder="Must beat the leader by ≥2"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-            {error && <div className="err"><AlertTriangle size={14} /> {error}</div>}
-
-            <button className="run" onClick={analyze} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 size={17} className="spin" />
-                  {openingId
-                    ? "Opening…"
-                    : loadSec > 0
-                      ? `Screening · ${loadSec}s`
-                      : "Screening…"}
-                </>
-              ) : (
-                <>
-                  <Gauge size={17} /> Run screen
-                </>
-              )}
-            </button>
-            {loading && (
-              <p className="run-hint">Scoring and research are running together.</p>
-            )}
-          </section>
-
-          <aside className="compose-aside">
-            <PhonePreview mode="brief" idea={idea} ideaType="product" />
-            <div className="panel side">
-            <div className="panel-tab">Recent screens</div>
-            {composeHistory.length === 0 && (
-              <p className="side-note">Screened ideas will land here. Scoring runs on the server — this panel is only history.</p>
-            )}
-
-            {composeHistory.length > 0 && (
-              <div className="hist">
-                <div className="hist-h">
-                  <History size={13} /> Recent product runs
-                </div>
-                {error && view === "compose" && (
-                  <div className="err hist-err"><AlertTriangle size={14} /> {error}</div>
-                )}
-                {composeHistory.map((h) => {
-                  const max = phase1MaxOf(h);
-                  const t = toneOf(h.phase1, max);
-                  const isOpening = openingId === h.id;
-                  const isDeleting = deletingId === h.id;
-                  return (
-                    <div key={h.id} className="hist-row-wrap">
-                      <button
-                        type="button"
-                        className="hist-row"
-                        onClick={() => openHistory(h, "compose")}
-                        disabled={loading || Boolean(deletingId)}
-                      >
-                        <span className="hist-score" style={{ color: t.color }}>
-                          {isOpening ? <Loader2 size={14} className="spin" /> : Number(h.phase1 || 0).toFixed(0)}
-                        </span>
-                        <span className="hist-weight">
-                          {h.ideaWeight || "—"}
-                        </span>
-                        <span className="hist-model">{h.llmLabel || "Claude"}</span>
-                        <span className="hist-idea">{h.idea}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="hist-del"
-                        aria-label="Delete this run from the log"
-                        title="Delete from log"
-                        disabled={loading || Boolean(deletingId)}
-                        onClick={() => confirmDeleteRun(h, "compose")}
-                      >
-                        {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
-                      </button>
-                    </div>
-                  );
-                })}
-                <button type="button" className="hist-more" onClick={openLogTab}>
-                  View product log <ArrowRight size={13} />
-                </button>
-              </div>
-            )}
-            </div>
-            <section className="filter-rules" aria-label="What each check asks">
-              <div className="filter-rules-h">What each check asks</div>
-              {FILTER_LEDGER.map((row) => (
-                <div className="filter-rule" key={row.n}>
-                  <span className="filter-rule-n">{row.n}</span>
-                  <div>
-                    <b>{row.title}</b>
-                    <p>{row.body}</p>
-                  </div>
-                </div>
-              ))}
-            </section>
-          </aside>
-        </main>
-        </>
-      )}
+      <ProductIdeaModal
+        open={productModalOpen}
+        onClose={() => !loading && setProductModalOpen(false)}
+        onSubmit={submitProductIdea}
+        busy={loading}
+        error={error}
+      />
 
       {view === "log" && (
         <main className="log-page">
@@ -1528,33 +1306,6 @@ function ReportExportButtons({ result, variant = "card" }) {
         <FileText size={14} /> {busy === "docx" ? "Preparing Word…" : "Download Word"}
       </button>
       {err ? <p className="report-export-err">{err}</p> : null}
-    </div>
-  );
-}
-
-function PhonePreview({ mode, idea, ideaType, result }) {
-  if (mode === "verdict" && result) {
-    const hero = heroVerdict(result);
-    const score = scoreOutOf100(result);
-    return (
-      <div className="phone phone-dark" aria-hidden="true">
-        <div className="phone-notch" />
-        <div className="phone-body">
-          <div className="phone-eyebrow">Verdict</div>
-          <div className={`phone-word phone-word-${hero.tone}`}>{hero.word}</div>
-          <div className="phone-score">{score}</div>
-          <p className="phone-idea">{String(result.idea || "").slice(0, 80)}</p>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="phone phone-cream" aria-hidden="true">
-      <div className="phone-notch" />
-      <div className="phone-body">
-        <div className="phone-eyebrow">6 Filter Test</div>
-        <p className="phone-idea">{idea?.trim() || (ideaType === "process" ? "Process idea" : "Product idea")}</p>
-      </div>
     </div>
   );
 }
@@ -2514,7 +2265,21 @@ const CSS = `
 .verdict-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap;}
 
 .modal-bg{position:fixed;inset:0;background:rgba(0,86,143,.35);backdrop-filter:blur(4px);display:grid;place-items:center;padding:22px;z-index:50;}
+.modal-overlay{position:fixed;inset:0;background:rgba(23,12,37,.72);backdrop-filter:blur(6px);display:grid;place-items:center;padding:22px;z-index:60;}
 .modal{width:100%;max-width:520px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 20px 50px rgba(0,108,180,.18);}
+.product-idea-modal{position:relative;display:flex;flex-direction:column;gap:10px;color:#14202B;max-width:480px;}
+.product-idea-modal .lbl{color:#5A6673;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;font-family:var(--fm);}
+.product-idea-modal textarea,.product-idea-modal input[type="number"]{
+  width:100%;background:#FBFAF7;color:#14202B;border:1px solid #E4DECF;border-radius:12px;
+  padding:12px 14px;font-family:var(--fd);font-size:14px;line-height:1.5;
+}
+.product-idea-modal textarea{min-height:140px;resize:vertical;}
+.product-idea-modal textarea:focus,.product-idea-modal input:focus{outline:none;border-color:#7C4DBE;box-shadow:0 0 0 3px rgba(124,77,190,.18);}
+.product-idea-modal .run{margin-top:6px;width:100%;justify-content:center;background:#1A0E2E;color:#fff;border:none;}
+.product-idea-modal .run:hover{filter:brightness(1.08);}
+.product-idea-modal .ghost{align-self:flex-start;background:#fff;color:#14202B;border:1px solid #DCD5C6;}
+.product-idea-modal .err{margin:4px 0 0;}
+.product-idea-close{position:absolute;top:14px;right:14px;}
 .modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
 .modal-h span{display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);}
 .msg-area{margin-bottom:12px;font-size:14px;line-height:1.5;}
