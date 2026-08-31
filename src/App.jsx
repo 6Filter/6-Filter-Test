@@ -13,6 +13,7 @@ import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 import SpecPage from "./SpecPage.jsx";
+import PropositionForm from "./PropositionForm.jsx";
 
 async function callModel(userText, system, image = null, provider = "claude") {
   const ctrl = new AbortController();
@@ -50,8 +51,58 @@ async function fetchIdeaHistory(limit = 20, ideaType = null) {
   return Array.isArray(data.ideas) ? data.ideas : [];
 }
 
+async function fetchPropositionList(limit = 100) {
+  const res = await fetch(`/api/propositions?limit=${limit}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not load propositions.");
+  return Array.isArray(data.propositions) ? data.propositions : [];
+}
+
+async function createPropositionRecord() {
+  const res = await fetch("/api/propositions", { method: "POST" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not create proposition.");
+  return data.proposition;
+}
+
+async function fetchPropositionById(id) {
+  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not load proposition.");
+  return data.proposition;
+}
+
+async function putProposition(id, payload) {
+  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not save proposition.");
+  return data.proposition;
+}
+
+async function deletePropositionById(id) {
+  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not delete proposition.");
+  return true;
+}
+
+function propositionVerdict(v) {
+  if (v === "pass") return { label: "Cleared", key: "pass" };
+  if (v === "fail") return { label: "Fail", key: "fail" };
+  return { label: "Open", key: "watch" };
+}
+
 function formatLogDate(ts) {
-  const d = new Date(Number(ts) || Date.now());
+  const raw = ts;
+  let d;
+  if (raw == null || raw === "") d = new Date();
+  else if (typeof raw === "number") d = new Date(raw);
+  else if (/^\d+$/.test(String(raw))) d = new Date(Number(raw));
+  else d = new Date(raw);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString(undefined, {
     day: "2-digit",
@@ -443,6 +494,10 @@ export default function App() {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [productHistory, setProductHistory] = useState([]);
+  const [propositionList, setPropositionList] = useState([]);
+  const [proposition, setProposition] = useState(null);
+  const [savingProp, setSavingProp] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState("");
 
@@ -467,9 +522,9 @@ export default function App() {
   const [outcomeMsg, setOutcomeMsg] = useState("");
 
   async function refreshHistories() {
-    const products = await fetchIdeaHistory(50, "product");
-    setProductHistory(products);
-    return { products };
+    const propositions = await fetchPropositionList(100);
+    setPropositionList(propositions);
+    return { propositions };
   }
 
   async function confirmDeleteRun(h, source = "spec") {
@@ -518,6 +573,14 @@ export default function App() {
   }, [view]);
 
   function goBack() {
+    if (view === "form") {
+      if (returnView === "log") {
+        openLogTab();
+      } else {
+        setView("spec");
+      }
+      return;
+    }
     if (view === "result") {
       if (returnView === "log") {
         openLogTab();
@@ -550,11 +613,97 @@ export default function App() {
     }
   }
 
-  const logHistory = productHistory;
+  const logHistory = propositionList;
 
   function openProductModal() {
     setError("");
     setProductModalOpen(true);
+  }
+
+  async function openNewProposition(from = "spec") {
+    setError("");
+    setLoading(true);
+    try {
+      const created = await createPropositionRecord();
+      setProposition(created);
+      setSavedFlash(false);
+      setReturnView(from === "log" ? "log" : "spec");
+      setView("form");
+    } catch (e) {
+      setError(e.message || "Could not open a new proposition.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openProposition(row, from = "log") {
+    if (!row?.id || openingId) return;
+    setOpeningId(row.id);
+    setLogError("");
+    setError("");
+    try {
+      const full = await fetchPropositionById(row.id);
+      setProposition(full);
+      setSavedFlash(false);
+      setReturnView(from);
+      setView("form");
+    } catch (e) {
+      setLogError(e.message || "Could not open that proposition.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
+  async function savePropositionForTeam(doc) {
+    if (!doc?.id || savingProp) return;
+    setSavingProp(true);
+    setError("");
+    try {
+      const saved = await putProposition(doc.id, doc);
+      setProposition(saved);
+      setPropositionList((rows) => {
+        const next = {
+          id: saved.id,
+          name: saved.name,
+          category: saved.category,
+          division: saved.division,
+          finalVerdict: saved.finalVerdict,
+          version: saved.version,
+          createdAt: saved.createdAt,
+          updatedAt: saved.updatedAt,
+        };
+        return [next, ...rows.filter((r) => r.id !== saved.id)];
+      });
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 1600);
+    } catch (e) {
+      setError(e.message || "Could not save this proposition.");
+    } finally {
+      setSavingProp(false);
+    }
+  }
+
+  async function confirmDeleteProposition(row, source = "form") {
+    if (!row?.id || deletingId) return;
+    const ok = window.confirm("Delete this proposition? This cannot be undone.");
+    if (!ok) return;
+    setDeletingId(row.id);
+    if (source === "log") setLogError("");
+    else setError("");
+    try {
+      await deletePropositionById(row.id);
+      setPropositionList((rows) => rows.filter((r) => r.id !== row.id));
+      if (proposition?.id === row.id) {
+        setProposition(null);
+        setView(source === "log" ? "log" : returnView === "log" ? "log" : "spec");
+      }
+    } catch (e) {
+      const msg = e.message || "Could not delete this proposition.";
+      if (source === "log") setLogError(msg);
+      else setError(msg);
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function submitProductIdea({ idea, attachment, pricePerUnit }) {
@@ -762,18 +911,28 @@ export default function App() {
   const backLabel =
     view === "spec"
       ? null
-      : view === "result"
+      : view === "form"
         ? returnView === "log"
           ? "Back to log"
           : "Back to spec"
-        : view === "log"
-          ? "Back to spec"
-          : result
-            ? "Back to scorecard"
-            : null;
+        : view === "result"
+          ? returnView === "log"
+            ? "Back to log"
+            : "Back to spec"
+          : view === "log"
+            ? "Back to spec"
+            : result
+              ? "Back to scorecard"
+              : null;
 
   const screenClass =
-    view === "result" ? "screen-verdict" : view === "log" ? "screen-log" : view === "spec" ? "screen-spec" : "screen-brief";
+    view === "result"
+      ? "screen-verdict"
+      : view === "log"
+        ? "screen-log"
+        : view === "spec" || view === "form"
+          ? "screen-spec"
+          : "screen-brief";
 
   return (
     <div className={`primus ${screenClass}`}>
@@ -797,9 +956,11 @@ export default function App() {
         <nav className="top-nav" aria-label="Main">
           <button
             type="button"
-            className={`nav-tab${productModalOpen || view === "result" ? " active" : ""}`}
-            onClick={openProductModal}
+            className={`nav-tab${view === "form" ? " active" : ""}`}
+            onClick={() => openNewProposition("spec")}
+            disabled={loading}
           >
+            {loading && view !== "form" ? <Loader2 size={14} className="spin" /> : null}
             NPD Screen
           </button>
           <button
@@ -846,16 +1007,25 @@ export default function App() {
       )}
 
       {view === "spec" && (
-        <SpecPage onEnterProposition={openProductModal} />
+        <SpecPage onEnterProposition={() => openNewProposition("spec")} />
       )}
 
-      <ProductIdeaModal
-        open={productModalOpen}
-        onClose={() => !loading && setProductModalOpen(false)}
-        onSubmit={submitProductIdea}
-        busy={loading}
-        error={error}
-      />
+      {view === "form" && proposition && (
+        <PropositionForm
+          initial={proposition}
+          onSave={savePropositionForTeam}
+          onDelete={(doc) => confirmDeleteProposition(doc, "form")}
+          saving={savingProp}
+          savedFlash={savedFlash}
+          error={error}
+        />
+      )}
+
+      {view === "form" && !proposition && loading && (
+        <main className="prop-page" style={{ padding: "48px 28px" }}>
+          <Loader2 size={20} className="spin" /> Opening proposition…
+        </main>
+      )}
 
       {view === "log" && (
         <main className="log-page">
@@ -863,9 +1033,9 @@ export default function App() {
             <div className="panel-tab">Log · History</div>
             <div className="log-head">
               <div>
-                <h2 className="log-title">Validation log</h2>
+                <h2 className="log-title">Proposition log</h2>
                 <p className="log-sub">
-                  Click a row to open the scorecard, or the trash icon to remove it from the log.
+                  Click a row to open the evidence form, or the trash icon to delete it.
                 </p>
               </div>
               <button type="button" className="ghost" onClick={openLogTab} disabled={logLoading}>
@@ -876,133 +1046,49 @@ export default function App() {
 
             {logError && <div className="err"><AlertTriangle size={14} /> {logError}</div>}
 
-            {logLoading && productHistory.length === 0 ? (
-              <div className="log-empty"><Loader2 size={18} className="spin" /> Loading history…</div>
+            {logLoading && propositionList.length === 0 ? (
+              <div className="log-empty"><Loader2 size={18} className="spin" /> Loading propositions…</div>
             ) : logHistory.length === 0 ? (
               <div className="log-empty">
-                No product ideas yet. Run a screen first.
+                No propositions yet. Use NPD Screen or Enter your proposition here to start one.
               </div>
             ) : (
               <div className="log-list">
                 {logHistory.map((h) => {
-                  const max = phase1MaxOf(h);
-                  const t = toneOf(h.phase1, max);
                   const isOpening = openingId === h.id;
                   const isDeleting = deletingId === h.id;
-                  const pf = overallPassFail(h);
-                  const isProcess = ideaTypeOf(h) === "process";
+                  const pf = propositionVerdict(h.finalVerdict);
                   return (
                     <div key={h.id} className="log-item">
                     <div className="log-row-wrap">
                       <button
                         type="button"
                         className="log-row"
-                        onClick={() => openHistory(h, "log")}
+                        onClick={() => openProposition(h, "log")}
                         disabled={loading || Boolean(deletingId)}
                       >
-                        <span className="log-score" style={{ color: t.color }}>
-                          {isOpening ? <Loader2 size={16} className="spin" /> : Number(h.phase1 || 0).toFixed(1)}
-                        </span>
-                        <span className={`log-status log-status-${pf.key}`}>{pf.label}</span>
-                        <span className="log-weight">
-                          {isProcess ? `/${max}` : (h.gramClass || h.ideaWeight || "—")}
-                        </span>
-                        <span className="log-model">{h.llmLabel || "Claude"}</span>
-                        <span className="log-idea">{h.idea}</span>
-                        <span className="log-date">{formatLogDate(h.ts)}</span>
+                        <span className={`log-status log-status-${pf.key}`}>{isOpening ? <Loader2 size={14} className="spin" /> : pf.label}</span>
+                        <span className="log-weight">{h.division || "—"}</span>
+                        <span className="log-idea">{h.name || "Untitled proposition"}</span>
+                        <span className="log-date">{formatLogDate(h.updatedAt)}</span>
                       </button>
-                      {!isProcess && (
-                        <button
-                          type="button"
-                          className="log-outcome-btn"
-                          aria-label="Record actual outcome"
-                          title="Record actual outcome"
-                          disabled={loading || Boolean(deletingId) || outcomeBusy}
-                          onClick={() => openOutcomeForm(h)}
-                        >
-                          <ClipboardList size={15} />
-                        </button>
-                      )}
                       <button
                         type="button"
                         className="log-del"
-                        aria-label="Delete this run from the log"
-                        title="Delete from log"
+                        aria-label="Delete this proposition"
+                        title="Delete proposition"
                         disabled={loading || Boolean(deletingId)}
-                        onClick={() => confirmDeleteRun(h, "log")}
+                        onClick={() => confirmDeleteProposition(h, "log")}
                       >
                         {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
                       </button>
                     </div>
-                    {!isProcess && outcomeOpenId === h.id && (
-                      <form
-                        className="log-outcome"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          submitOutcome(h);
-                        }}
-                      >
-                        <div className="log-outcome-fields">
-                          <label>
-                            <span>Actual net margin (%)</span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={outcomeMargin}
-                              onChange={(e) => setOutcomeMargin(e.target.value)}
-                              placeholder="optional"
-                            />
-                          </label>
-                          <label>
-                            <span>Actual revenue Y1–3 (₹ Cr)</span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={outcomeRevenue}
-                              onChange={(e) => setOutcomeRevenue(e.target.value)}
-                              placeholder="optional"
-                            />
-                          </label>
-                          <button type="submit" className="log-outcome-save" disabled={outcomeBusy}>
-                            {outcomeBusy ? <Loader2 size={14} className="spin" /> : "Save"}
-                          </button>
-                        </div>
-                        {outcomeMsg && <p className="log-outcome-msg">{outcomeMsg}</p>}
-                      </form>
-                    )}
                     </div>
                   );
                 })}
               </div>
             )}
           </section>
-        </main>
-      )}
-
-      {view === "result" && result && (
-        <main className="result result-wide">
-          <Readout
-            result={result}
-            onEscalate={() => {
-            const failed = result?.failedFilters || [];
-            setEscalateFilter(failed[0] || "");
-            setEscalateEvidence("");
-            setEscalateError("");
-            setEscalateOpen(true);
-          }}
-            onNewScreen={reset}
-            onUploadSupportingDoc={onUploadSupportingDoc}
-            onRemoveSupportingDoc={onRemoveSupportingDoc}
-          />
-          <div className="verdict-actions">
-            <button type="button" className="ghost" onClick={goBack}>
-              <ArrowLeft size={15} /> {returnView === "log" ? "Back to log" : "Back to NPD Screen"}
-            </button>
-            <button className="ghost" onClick={reset}><RefreshCw size={15} /> Refine &amp; re-run</button>
-            <button className="run inline" onClick={draftMessage}>
-              <Send size={16} /> Forward to manager <ArrowRight size={15} />
-            </button>
-          </div>
         </main>
       )}
 
@@ -1889,7 +1975,7 @@ const CSS = `
 
 .screen-spec .masthead{
   background:#191919;max-width:none;width:100%;margin:0;border-radius:0;border:none;
-  padding:12px 28px;position:relative;z-index:40;flex-wrap:nowrap;
+  padding:12px 28px;position:sticky;top:0;z-index:40;flex-wrap:nowrap;
 }
 .screen-spec .brandmark{background:#22113A;border-color:#C9AEEF;box-shadow:none;}
 .screen-spec .brandmark .star{color:#C9AEEF;}
@@ -1900,6 +1986,8 @@ const CSS = `
 .screen-spec .nav-tab.active{background:rgba(201,174,239,.16);border-color:rgba(201,174,239,.35);color:#F3EAF8;}
 .screen-spec .model-switch{background:rgba(243,234,248,.08);border-color:rgba(243,234,248,.16);}
 .screen-spec .pulse{background:#7EDCA8;animation:none;}
+.screen-spec .page-back{color:#F3EAF8;border-color:rgba(243,234,248,.2);}
+.screen-spec .page-back:hover{background:#22113A;border-color:#C9AEEF;color:#F3EAF8;}
 .screen-brief .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
 .screen-brief .brandmark{background:var(--card);border-color:var(--accent);}
 .screen-brief .type-toggle{background:var(--panel-2);border-color:var(--border);}
@@ -2033,14 +2121,14 @@ const CSS = `
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
 .log-list{display:flex;flex-direction:column;border-top:1px solid var(--line-soft);}
 .log-item{border-bottom:1px solid var(--line-soft);}
-.log-row{display:grid;grid-template-columns:56px 92px 52px 72px minmax(0,1fr) 140px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
+.log-row{display:grid;grid-template-columns:92px minmax(120px,.4fr) minmax(0,1fr) 160px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .log-row:hover{background:var(--bg-soft);}
 .log-row:disabled{opacity:.6;cursor:wait;}
 .log-score{font-family:var(--fm);font-weight:700;font-size:18px;}
 .log-status{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;width:fit-content;}
-.log-status-approved,.log-status-passed{background:rgba(36,168,102,.12);color:#1F8A55;}
-.log-status-promising,.log-status-needs{background:rgba(201,162,39,.16);color:#8A6E12;}
-.log-status-rejected,.log-status-failed{background:rgba(228,87,87,.12);color:#C53D3D;}
+.log-status-approved,.log-status-passed,.log-status-pass{background:rgba(36,168,102,.12);color:#1F8A55;}
+.log-status-promising,.log-status-needs,.log-status-watch{background:rgba(201,162,39,.16);color:#8A6E12;}
+.log-status-rejected,.log-status-failed,.log-status-fail{background:rgba(228,87,87,.12);color:#C53D3D;}
 .log-weight{font-family:var(--fm);font-size:11px;color:var(--ink);letter-spacing:.04em;}
 .log-idea{font-size:13.5px;color:var(--ink-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .log-date{font-size:11.5px;color:var(--muted);text-align:right;font-family:var(--fm);}
@@ -2300,8 +2388,8 @@ const CSS = `
   .panel.console{min-height:0;padding:26px 22px 22px;}
   .primus textarea.idea-input{min-height:160px;}
   .top-nav{order:3;width:100%;margin:8px 0 0;margin-right:0;}
-  .log-row{grid-template-columns:48px 78px minmax(0,1fr);gap:8px;}
-  .log-weight,.log-date,.log-model{display:none;}
+  .log-row{grid-template-columns:84px minmax(80px,.45fr) minmax(0,1fr);gap:8px;}
+  .log-date,.log-model{display:none;}
   .log-outcome{padding:0 4px 12px;}
   .log-outcome-fields{grid-template-columns:1fr;}
   .npd-grid{grid-template-columns:1fr;}

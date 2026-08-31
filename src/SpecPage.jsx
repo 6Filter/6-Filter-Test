@@ -97,8 +97,8 @@ export default function SpecPage({ onEnterProposition }) {
           Enter your proposition here <ArrowRight size={18} strokeWidth={2.4} />
         </button>
         <p className="spec-cta-text">
-          This page is the reference. Inputs go into the screening platform — fill the four
-          paper filters, watch the verdict banner, record the forum verdict.
+          This page is the reference. Inputs go into the screening platform — one evidence form,
+          filled over time, with a forum verdict on each filter.
         </p>
       </div>
 

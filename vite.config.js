@@ -102,6 +102,29 @@ function apiPlugin(env) {
           return;
         }
 
+        if (url === "/api/propositions") {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handlePropositionsCollection } = await import("./lib/propositionsApi.js");
+          await handlePropositionsCollection(req, res, { sendJson, redactSecrets });
+          return;
+        }
+
+        const propositionMatch = url.match(/^\/api\/propositions\/([^/]+)$/);
+        if (propositionMatch) {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+          const { handlePropositionById } = await import("./lib/propositionsApi.js");
+          await handlePropositionById(req, res, decodeURIComponent(propositionMatch[1]), {
+            readBody: readJsonBody,
+            sendJson,
+            redactSecrets,
+          });
+          return;
+        }
+
         const supportingDocItemMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc\/([^/]+)$/);
         if (supportingDocItemMatch) {
           res.setHeader("Access-Control-Allow-Origin", "*");

@@ -16,6 +16,7 @@ import {
   handleSupportingDoc,
   handleSupportingDocById,
 } from "./lib/ideasApi.js";
+import { handlePropositionsCollection, handlePropositionById } from "./lib/propositionsApi.js";
 import { handleLlmGenerate, handleProviders } from "./lib/llmApi.js";
 import { handleCategoryIntelRequest } from "./lib/categoryIntelligence/http.js";
 
@@ -100,6 +101,27 @@ const server = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       await handleIdeasCollection(req, res, {
+        readBody: readJsonBody,
+        sendJson,
+        redactSecrets,
+      });
+      return;
+    }
+
+    if (url === "/api/propositions") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handlePropositionsCollection(req, res, { sendJson, redactSecrets });
+      return;
+    }
+
+    const propositionMatch = url.match(/^\/api\/propositions\/([^/]+)$/);
+    if (propositionMatch) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      await handlePropositionById(req, res, decodeURIComponent(propositionMatch[1]), {
         readBody: readJsonBody,
         sendJson,
         redactSecrets,
