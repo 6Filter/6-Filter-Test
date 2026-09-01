@@ -63,18 +63,24 @@ async function fetchPropositionList(limit = 100) {
   return Array.isArray(data.propositions) ? data.propositions : [];
 }
 
+function attachAdvisory(data) {
+  const p = data.proposition;
+  if (!p) return p;
+  return { ...p, advisoryChecks: data.advisoryChecks };
+}
+
 async function createPropositionRecord() {
   const res = await apiFetch("/api/propositions", { method: "POST" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not create proposition.");
-  return data.proposition;
+  return attachAdvisory(data);
 }
 
 async function fetchPropositionById(id) {
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load proposition.");
-  return data.proposition;
+  return attachAdvisory(data);
 }
 
 async function putProposition(id, payload) {
@@ -85,7 +91,7 @@ async function putProposition(id, payload) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not save proposition.");
-  return data.proposition;
+  return attachAdvisory(data);
 }
 
 async function deletePropositionById(id) {
@@ -96,8 +102,11 @@ async function deletePropositionById(id) {
 }
 
 function propositionVerdict(v) {
+  if (v === "paper-cleared") return { label: "Paper cleared", key: "pass" };
+  if (v === "gate-open") return { label: "Gate open", key: "pass" };
   if (v === "pass") return { label: "Cleared", key: "pass" };
-  if (v === "fail") return { label: "Fail", key: "fail" };
+  if (v === "failed" || v === "fail") return { label: "Failed", key: "fail" };
+  if (v === "escalated") return { label: "Escalated", key: "watch" };
   return { label: "Open", key: "watch" };
 }
 
@@ -1973,7 +1982,7 @@ const CSS = `
   --accent: #C9AEEF; --accent-hover: #D9C4F5; --accent-on: #170C25;
   --pass: #7EDCA8; --fail: #E2716B; --watch: #E8B563; --coral: #D9A0C9;
   --bg-soft: #22113A; --line: rgba(243,234,248,.12); --line-soft: rgba(243,234,248,.08);
-  --accent-rgb: 201,174,239; --pass-rgb: 126,220,168; --fail-rgb: 226,113,107; --ink-rgb: 243,234,248;
+  --accent-rgb: 201,174,239; --pass-rgb: 126,220,168; --fail-rgb: 226,113,107; --watch-rgb: 232,181,99; --ink-rgb: 243,234,248;
   padding: 0;
 }
 .screen-brief {

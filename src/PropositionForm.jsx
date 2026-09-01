@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, FileText, FileUp, Loader2, Sparkles, Trash2, X } from "lucide-react";
-import { DIVISION_NET_MARGIN, REVENUE_TARGET_BY_DIVISION } from "../lib/npdMaster.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   FORUM_VERDICT_FIELD,
@@ -9,10 +8,8 @@ import {
   SIX_FILTERS_FORM,
   VERDICT_NOTE_FIELD,
   f6Unlocked,
-  filterStatus,
   mergeProposition,
 } from "../lib/propositionFields.js";
-import { ADVISORY_LABEL, computeAllAdvisoryChecks, computeF5Revenue } from "../lib/propositionScoring.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
 
 function OwnerTag({ role }) {
@@ -24,27 +21,15 @@ function OwnerTag({ role }) {
   );
 }
 
-function filterSubtitle(spec, division) {
-  if (spec.key === "f2" && spec.subtitleFromDivision) {
-    const target = DIVISION_NET_MARGIN[division];
-    if (target == null) return "path to the division floor (v4)";
-    return spec.subtitleFromDivision(division, target);
-  }
-  if (spec.key === "f5" && spec.subtitleFromDivision) {
-    const row = REVENUE_TARGET_BY_DIVISION[division];
-    const target = row?.allChannels;
-    if (target == null) return row?.note || "credible path to year-3 revenue (v4)";
-    const base = spec.subtitleFromDivision(division, target);
-    return row?.note ? `${base} · ${row.note}` : base;
-  }
+function filterSubtitle(spec) {
+  if (spec.key === "f2") return "path to the division floor (v4)";
+  if (spec.key === "f5") return "credible path to year-3 revenue (v4)";
   return spec.subtitle || "";
 }
 
-function fieldHelper(field, division) {
+function fieldHelper(field) {
   if (typeof field.helperFromDivision === "function") {
-    const target = DIVISION_NET_MARGIN[division];
-    if (target == null) return "Division floor: per respective division (v4, non-negotiable)";
-    return field.helperFromDivision(division, target);
+    return "Division floor: per respective division (v4, non-negotiable)";
   }
   return field.helper || "";
 }
@@ -295,8 +280,8 @@ function AiFirstPassModal({ open, onClose, onResult, propositionId }) {
   );
 }
 
-function FieldControl({ field, value, onChange, division, suggestion, onAcceptSuggestion, onDismissSuggestion, currentUser }) {
-  const helper = fieldHelper(field, division);
+function FieldControl({ field, value, onChange, suggestion, onAcceptSuggestion, onDismissSuggestion, currentUser }) {
+  const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
   const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
@@ -427,69 +412,40 @@ function AiPassResultBanner({ meta }) {
   );
 }
 
-function ComputedRevenue({ f5, division }) {
-  const cr = computeF5Revenue(f5);
-  const row = REVENUE_TARGET_BY_DIVISION[division];
-  const target = row?.allChannels ?? null;
-  if (cr == null) {
-    return <div className="prop-computed is-empty">Fill all five factors to compute year-3 revenue.</div>;
-  }
-  const shown = Math.round(cr * 10) / 10;
-  const clears = target != null && cr >= target;
-  return (
-    <div className="prop-computed">
-      <strong>₹{shown} Cr</strong>
-      {target != null ? (
-        <>
-          <span> vs target ₹{target} Cr</span>
-          <span className={clears ? "tone-pass" : "tone-watch"}>{clears ? "clears target" : "below target"}</span>
-        </>
-      ) : row?.note ? (
-        <span> · {row.note}</span>
-      ) : null}
-    </div>
-  );
+function toneFor(label) {
+  if (label === "Cleared") return "pass";
+  if (label === "Below floor") return "fail";
+  return "watch";
 }
 
-function advisoryCopy(overall) {
-  return ADVISORY_LABEL[overall] || "Advisory: not enough entered yet";
+function forumTone(verdict) {
+  if (verdict === "pass") return "pass";
+  if (verdict === "fail") return "fail";
+  return "pending";
 }
 
-function AdvisoryCoveragePanel({ advisoryChecks }) {
-  const rows = SIX_FILTERS_FORM.map((f) => ({
-    num: f.num,
-    title: f.title,
-    checked: advisoryChecks[f.key]?.checked || [],
-    notScored: advisoryChecks[f.key]?.notScored || [],
-  }));
+function forumLabel(verdict) {
+  if (verdict === "pass") return "Pass";
+  if (verdict === "fail") return "Fail";
+  return "pending";
+}
+
+function FilterCheckList({ check }) {
+  const items = Array.isArray(check?.items) ? check.items : [];
   return (
-    <div className="panel advisory-coverage">
-      <div className="panel-tab">Automated check coverage</div>
-      <p className="about-lede">
-        These are the only things checked automatically, against the v4 numeric
-        floors. Everything else is a Forum judgment call — the list below names
-        exactly what, per filter, so nobody mistakes a clean number for a cleared
-        filter.
-      </p>
-      {rows.map((r) => (
-        <div key={r.num} className="advisory-row">
-          <div className="advisory-row-title">{r.num} — {r.title}</div>
-          {r.checked.length > 0 && (
-            <ul className="advisory-checked-list">
-              {r.checked.map((c, i) => (
-                <li key={i} data-pass={String(c.pass)}>
-                  {c.rule}{c.value != null ? ` — ${c.value}` : ""} {c.pass ? "✓" : "✗"}
-                  {c.note ? <span className="advisory-check-note"> {c.note}</span> : null}
-                </li>
-              ))}
-            </ul>
-          )}
-          {r.checked.length === 0 && <p className="advisory-none">Nothing entered yet to check automatically.</p>}
-          <ul className="advisory-not-scored-list">
-            {r.notScored.map((n, i) => <li key={i}>{n}</li>)}
-          </ul>
+    <div className="check-list">
+      {items.map((it, i) => (
+        <div key={i} className="check-row">
+          <span className={`check-icon ${it.status}`}>{it.status === "done" ? "✓" : "…"}</span>
+          <span>{it.text}</span>
         </div>
       ))}
+      {check?.infoLine ? (
+        <div className="check-row check-info">
+          <span className="check-icon info">i</span>
+          <span>{check.infoLine}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -521,9 +477,11 @@ export default function PropositionForm({
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
+  const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
 
   useEffect(() => {
     setDoc(mergeProposition(initial));
+    if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
   }, [initial?.id, initial?.version]);
 
   useEffect(() => {
@@ -533,10 +491,40 @@ export default function PropositionForm({
     setAiPassOpen(false);
   }, [initial?.id]);
 
-  const division = doc.division || "";
   const unlocked = f6Unlocked(doc);
-  const advisoryChecks = computeAllAdvisoryChecks(doc);
   const propositionId = doc.id || initial?.id;
+
+  useEffect(() => {
+    if (!propositionId) return undefined;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/check`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            division: doc.division,
+            f1: doc.f1,
+            f2: doc.f2,
+            f3: doc.f3,
+            f4: doc.f4,
+            f5: doc.f5,
+            f6: doc.f6,
+          }),
+          signal: ctrl.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+      }
+    }, 600);
+    return () => {
+      window.clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [propositionId, doc]);
 
   function setTop(key, value) {
     setDoc((prev) => ({ ...prev, [key]: value }));
@@ -603,7 +591,6 @@ export default function PropositionForm({
               key={field.key}
               field={field}
               value={doc[field.key]}
-              division={division}
               onChange={(v) => setTop(field.key, v)}
               currentUser={currentUser}
               {...suggestionProps("", field, doc[field.key])}
@@ -612,7 +599,6 @@ export default function PropositionForm({
         </div>
         {error ? <div className="prop-err">{error}</div> : null}
         <AiPassResultBanner meta={aiPassMeta} />
-        <AdvisoryCoveragePanel advisoryChecks={advisoryChecks} />
         <div className="prop-actions">
           <button
             type="button"
@@ -644,9 +630,11 @@ export default function PropositionForm({
 
       {SIX_FILTERS_FORM.map((spec) => {
         const values = doc[spec.key] || {};
-        const status = filterStatus(spec.key, values, values.forumVerdict, spec.key === "f6" ? unlocked : true);
-        const check = advisoryChecks[spec.key] || { overallAdvisory: "insufficient-evidence" };
+        const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
         const locked = spec.key === "f6" && !unlocked;
+        const f5Sizing = spec.key === "f5"
+          ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
+          : null;
         return (
           <section
             key={spec.key}
@@ -661,29 +649,32 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec, division)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec)}</p>
               </div>
               <div className="prop-status-wrap">
-                <span className={`prop-status tone-${status.tone}`}>{status.label}</span>
-                <span className="advisory-note" data-advisory={check.overallAdvisory}>
-                  {advisoryCopy(check.overallAdvisory)}
+                <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
+                <span className="forum-pill" data-tone={forumTone(values.forumVerdict)}>
+                  Forum: {forumLabel(values.forumVerdict)}
                 </span>
               </div>
             </div>
+
+            <FilterCheckList check={check} />
 
             <div className="prop-grid">
               {spec.fields.map((field) =>
                 field.type === "computed" ? (
                   <div key={field.key} className="prop-field span-2">
                     <div className="prop-label">{field.label}</div>
-                    <ComputedRevenue f5={doc.f5} division={division} />
+                    <div className={`prop-computed${f5Sizing?.status === "pending" ? " is-empty" : ""}`}>
+                      {f5Sizing?.text || "Sizing incomplete — fill the five factors."}
+                    </div>
                   </div>
                 ) : (
                   <FieldControl
                     key={field.key}
                     field={field}
                     value={values[field.key]}
-                    division={division}
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     {...suggestionProps(spec.key, field, values[field.key])}
@@ -702,14 +693,12 @@ export default function PropositionForm({
               <FieldControl
                 field={FORUM_VERDICT_FIELD}
                 value={values.forumVerdict}
-                division={division}
                 currentUser={currentUser}
                 onChange={(v) => setFilter(spec.key, "forumVerdict", v)}
               />
               <FieldControl
                 field={VERDICT_NOTE_FIELD}
                 value={values.verdictNote}
-                division={division}
                 currentUser={currentUser}
                 onChange={(v) => setFilter(spec.key, "verdictNote", v)}
               />
@@ -796,7 +785,19 @@ const PROP_CSS = `
 .prop-filter-sub{margin:4px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);}
 .prop-status{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;padding:5px 10px;border-radius:999px;white-space:nowrap;}
-.prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.check-pill,.forum-pill{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
+  padding:5px 10px;border-radius:999px;white-space:nowrap;}
+.check-pill[data-tone="pass"],.forum-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
+.check-pill[data-tone="fail"],.forum-pill[data-tone="fail"]{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
+.check-pill[data-tone="watch"],.forum-pill[data-tone="pending"]{color:var(--watch);background:rgba(232,181,99,.16);}
+.check-list{margin:0 0 14px;padding:4px 0 2px;}
+.check-row{display:flex;align-items:center;padding:10px 0;border-top:1px dashed var(--border);font-size:13px;color:#F3EAF8;line-height:1.4;}
+.check-row:first-child{border-top:none;}
+.check-icon{width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:10px;flex-shrink:0;}
+.check-icon.pending{background:rgba(var(--watch-rgb,227,169,63),.18);color:var(--watch);}
+.check-icon.done{background:rgba(111,191,115,.18);color:var(--pass);}
+.check-icon.info{background:rgba(var(--accent-rgb),.15);color:var(--accent);font-style:italic;}
 .advisory-note{font-size:11px;font-family:var(--fm);text-align:right;max-width:220px;line-height:1.35;}
 .advisory-note[data-advisory="meets-floor"]{color:var(--pass);}
 .advisory-note[data-advisory="below-floor"]{color:var(--fail);}
