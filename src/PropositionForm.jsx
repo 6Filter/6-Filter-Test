@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Copy, Check, FileText, FileUp, Loader2, Send, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   OWNER_COLORS,
@@ -49,6 +49,34 @@ const SUGGEST_BLOCKLIST = new Set([
   "name",
 ]);
 
+const AI_AUTO_SKIP = new Set([
+  ...SUGGEST_BLOCKLIST,
+  "financeSigned",
+  "threatsAnswered",
+  "cmiHeadSigned",
+  "pureCommodity",
+]);
+
+function sourcedPath(filterKey, fieldKey) {
+  return filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
+}
+
+function applyAiAutoFill(current, suggested) {
+  const now = current && typeof current === "object" ? current : {};
+  const incoming = suggested && typeof suggested === "object" ? suggested : {};
+  const next = { ...now };
+  const sourced = {};
+  for (const [key, val] of Object.entries(incoming)) {
+    if (AI_AUTO_SKIP.has(key)) continue;
+    if (val == null || val === "") continue;
+    const empty = now[key] == null || now[key] === "";
+    if (!empty) continue;
+    next[key] = val;
+    sourced[key] = true;
+  }
+  return { next, sourced };
+}
+
 function isEmptyField(value) {
   if (value == null) return true;
   if (typeof value === "boolean") return value === false;
@@ -76,10 +104,18 @@ function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, currentVa
   return raw;
 }
 
+function AiWandMark({ size = 13 }) {
+  return (
+    <span className="ai-wand" title="AI generated — review" aria-label="AI generated">
+      <Wand2 size={size} strokeWidth={2.2} />
+    </span>
+  );
+}
+
 function SuggestionChip({ field, suggestion, onAccept, onDismiss }) {
   return (
     <div className="ai-suggestion-chip">
-      <Sparkles size={12} />
+      <AiWandMark size={12} />
       <span>
         AI suggests: <strong>{formatSuggestion(field, suggestion)}</strong>
       </span>
@@ -163,7 +199,6 @@ function FieldControl({
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
   const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
   const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
-  // F2 uses auto-fill (Part 32) — never show accept/dismiss chips for those fields.
   const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "mrpInr", "grammage", "qcomTrajectory"]);
   const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
@@ -175,12 +210,14 @@ function FieldControl({
         onDismiss={onDismissSuggestion}
       />
     ) : null;
+  const wand = aiSourced ? <AiWandMark /> : null;
 
   if (field.type === "computed") {
     return (
       <div className={`prop-field span-2`}>
         <div className="prop-label">
           {field.label}
+          {wand}
           {owners.map((role) => (
             <OwnerTag key={role} role={role} />
           ))}
@@ -201,6 +238,7 @@ function FieldControl({
         />
         <span>
           {field.label}
+          {wand}
           {owners.map((role) => (
             <OwnerTag key={role} role={role} />
           ))}
@@ -240,10 +278,11 @@ function FieldControl({
     );
 
   return (
-    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}`} title={lockTitle}>
+    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle}>
       <label className="prop-field-inner">
         <span className="prop-label">
           {field.label}
+          {wand}
           {owners.map((role) => (
             <OwnerTag key={role} role={role} />
           ))}
@@ -251,7 +290,6 @@ function FieldControl({
         {input}
       </label>
       {helper ? <span className="prop-helper">{helper}</span> : null}
-      {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {chip}
     </div>
   );
@@ -263,7 +301,9 @@ function AiPassResultBanner({ meta }) {
   const notCovered = Array.isArray(meta.notCovered) ? meta.notCovered : [];
   return (
     <div className="ai-pass-banner">
-      <p className="ai-pass-kicker">Research assist · not a Forum verdict</p>
+      <p className="ai-pass-kicker">
+        <AiWandMark size={12} /> Research assist · not a Forum verdict
+      </p>
       {notCovered.length ? (
         <ul className="ai-not-covered">
           {notCovered.map((item) => (
@@ -305,7 +345,9 @@ function GoNoGoResult({ result }) {
   if (!result?.classification) return null;
   return (
     <div className="gonogo-result" data-tone={goNoGoTone(result.classification)}>
-      <span className="gonogo-badge">{result.classification}</span>
+      <span className="gonogo-badge">
+        <AiWandMark size={12} /> {result.classification}
+      </span>
       <p>{result.rationale || "No rationale returned."}</p>
     </div>
   );
@@ -434,7 +476,7 @@ export default function PropositionForm({
   const [managerText, setManagerText] = useState("");
   const [managerSubject, setManagerSubject] = useState("");
   const [managerCopied, setManagerCopied] = useState(false);
-  const [f2AiSourced, setF2AiSourced] = useState({});
+  const [aiSourced, setAiSourced] = useState({});
   const fileRef = useRef(null);
   const proofRef = useRef(null);
 
@@ -458,7 +500,7 @@ export default function PropositionForm({
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
     setManagerOpen(false);
-    setF2AiSourced({});
+    setAiSourced({});
   }, [initial?.id]);
 
   const propositionId = doc.id || initial?.id;
@@ -510,60 +552,51 @@ export default function PropositionForm({
     if (justSubmitted) setSummaryStale(true);
   }
 
+  function markEdited(filterKey, fieldKey) {
+    const path = sourcedPath(filterKey, fieldKey);
+    setAiSourced((prev) => {
+      if (!prev[path]) return prev;
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
+  }
+
   function setTop(key, value) {
     noteEdit();
+    markEdited("", key);
     setDoc((prev) => ({ ...prev, [key]: value }));
   }
 
   function setFilter(filterKey, fieldKey, value) {
     noteEdit();
+    markEdited(filterKey, fieldKey);
     setDoc((prev) => ({
       ...prev,
       [filterKey]: { ...prev[filterKey], [fieldKey]: value },
     }));
-    if (filterKey === "f2") {
-      setF2AiSourced((prev) => {
-        if (!prev[fieldKey]) return prev;
-        const next = { ...prev };
-        delete next[fieldKey];
-        return next;
-      });
-    }
-  }
-
-  function applyF2AutoFill(currentF2, suggestedF2) {
-    const current = currentF2 && typeof currentF2 === "object" ? currentF2 : {};
-    const suggested = suggestedF2 && typeof suggestedF2 === "object" ? suggestedF2 : {};
-    const next = { ...current };
-    const sourced = {};
-    for (const key of ["cogsAtScale", "netMarginAtScale", "mrpInr", "grammage", "qcomTrajectory"]) {
-      const empty = current[key] == null || current[key] === "";
-      if (empty && suggested[key] != null && suggested[key] !== "") {
-        next[key] = suggested[key];
-        sourced[key] = true;
-      }
-    }
-    return { next, sourced };
   }
 
   function applyResearchResult(data) {
     if (!data?.suggestions) return;
-    const raw = { ...(data.suggestions || {}) };
-    const f2Suggested = raw.f2;
-    delete raw.f2; // F2 uses auto-fill, not chips
-
-    if (f2Suggested && typeof f2Suggested === "object") {
-      setDoc((prev) => {
-        const { next, sourced } = applyF2AutoFill(prev.f2, f2Suggested);
-        if (Object.keys(sourced).length) {
-          Promise.resolve().then(() => {
-            setF2AiSourced((prevFlags) => ({ ...prevFlags, ...sourced }));
-          });
-        }
-        return { ...prev, f2: next };
-      });
+    const raw = data.suggestions || {};
+    const flags = {};
+    let nextDoc = doc;
+    if (raw.top && typeof raw.top === "object") {
+      const { next, sourced } = applyAiAutoFill({ category: nextDoc.category }, raw.top);
+      nextDoc = { ...nextDoc, ...next };
+      for (const key of Object.keys(sourced)) flags[sourcedPath("", key)] = true;
     }
-
+    for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
+      if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
+      const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
+      nextDoc = { ...nextDoc, [filterKey]: next };
+      for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
+    }
+    if (nextDoc !== doc) setDoc(nextDoc);
+    if (Object.keys(flags).length) {
+      setAiSourced((prev) => ({ ...prev, ...flags }));
+    }
     setAiSuggestions(raw);
     setAiDismissed({});
     setAiPassMeta({
@@ -573,8 +606,18 @@ export default function PropositionForm({
   }
 
   function acceptSuggestion(filterKey, fieldKey, suggestion) {
-    if (filterKey) setFilter(filterKey, fieldKey, suggestion);
-    else setTop(fieldKey, suggestion);
+    const path = sourcedPath(filterKey, fieldKey);
+    noteEdit();
+    if (filterKey) {
+      setDoc((prev) => ({
+        ...prev,
+        [filterKey]: { ...prev[filterKey], [fieldKey]: suggestion },
+      }));
+    } else {
+      setDoc((prev) => ({ ...prev, [fieldKey]: suggestion }));
+    }
+    setAiSourced((prev) => ({ ...prev, [path]: true }));
+    setAiDismissed((prev) => ({ ...prev, [path]: true }));
   }
 
   function dismissSuggestion(filterKey, fieldKey) {
@@ -812,6 +855,7 @@ export default function PropositionForm({
                 value={doc[field.key]}
                 onChange={(v) => setTop(field.key, v)}
                 currentUser={currentUser}
+                aiSourced={Boolean(aiSourced[sourcedPath("", field.key)])}
                 {...suggestionProps("", field, doc[field.key])}
               />
               {field.key === "ideaDescription" ? (
@@ -895,7 +939,14 @@ export default function PropositionForm({
               {spec.fields.map((field) =>
                 field.type === "computed" ? (
                   <div key={field.key} className="prop-field span-2">
-                    <div className="prop-label">{field.label}</div>
+                    <div className="prop-label">
+                      {field.label}
+                      {["householdsReachedY3Mn", "trialRatePct", "repeatConversionPct", "purchaseFrequencyYr", "avgPackValueInr"].some(
+                        (k) => aiSourced[sourcedPath("f5", k)]
+                      ) ? (
+                        <AiWandMark />
+                      ) : null}
+                    </div>
                     <div className={`prop-computed${f5Sizing?.status === "pending" ? " is-empty" : ""}`}>
                       {f5Sizing?.text || "Sizing incomplete — fill the five factors."}
                     </div>
@@ -907,7 +958,7 @@ export default function PropositionForm({
                     value={values[field.key]}
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
-                    aiSourced={spec.key === "f2" ? Boolean(f2AiSourced[field.key]) : false}
+                    aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
                 )
@@ -1106,8 +1157,12 @@ const PROP_CSS = `
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
 .prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
+.ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
+  vertical-align:middle;flex-shrink:0;}
+.ai-wand svg{display:block;}
+.prop-field.is-ai input,.prop-field.is-ai select,.prop-field.is-ai textarea{
+  border-color:rgba(201,160,232,.45);}
 .prop-helper{font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;}
-.ai-sourced-tag{font-size:10px;font-family:var(--fm);color:#C9A0E8;margin-top:4px;display:inline-block;}
 .prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
 .prop-file-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
   background:rgba(201,174,239,.12);border:1px solid rgba(201,174,239,.28);font-size:13px;}
@@ -1146,7 +1201,7 @@ const PROP_CSS = `
 .ai-pass-banner{margin:14px 0 0;padding:14px 16px;border-radius:12px;
   background:rgba(201,174,239,.1);border:1px solid rgba(201,174,239,.28);}
 .ai-pass-kicker{margin:0 0 8px;font-family:var(--fm);font-size:11px;letter-spacing:.08em;
-  text-transform:uppercase;color:#C9A0E8;}
+  text-transform:uppercase;color:#C9A0E8;display:flex;align-items:center;gap:6px;}
 .prop-page input:disabled,.prop-page select:disabled,.prop-page textarea:disabled{opacity:.55;cursor:not-allowed;}
 .prop-field.is-locked,.prop-check.is-locked{cursor:not-allowed;}
 .ai-not-covered{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5;color:rgba(243,234,248,.78);}
@@ -1173,7 +1228,7 @@ const PROP_CSS = `
 .gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
 .gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
 .gonogo-result[data-tone="watch"]{border-color:rgba(232,181,99,.4);background:rgba(232,181,99,.08);}
-.gonogo-badge{display:inline-block;font-family:var(--fm);font-size:12px;font-weight:700;
+.gonogo-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:12px;font-weight:700;
   letter-spacing:.06em;margin-bottom:8px;}
 .gonogo-result[data-tone="pass"] .gonogo-badge{color:#7EDCA8;}
 .gonogo-result[data-tone="fail"] .gonogo-badge{color:#E2716B;}
