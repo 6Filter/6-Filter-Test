@@ -646,8 +646,8 @@ export default function PropositionForm({
     if (result?.proposition) setDoc(mergeProposition(result.proposition));
   }
 
-  async function runGoNoGoRead() {
-    if (readingGoNoGo || !proofGateReady || !propositionId) return;
+  async function runGoNoGoRead(propositionDoc = doc) {
+    if (readingGoNoGo || !isFilterUnlocked("proof-gate", propositionDoc) || !propositionId) return null;
     setReadingGoNoGo(true);
     setLocalError("");
     try {
@@ -655,7 +655,7 @@ export default function PropositionForm({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proposition: doc, provider: llmProvider }),
+        body: JSON.stringify({ proposition: propositionDoc, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "AI read failed.");
@@ -667,8 +667,10 @@ export default function PropositionForm({
       setGoNoGo(nextGo);
       setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
       if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
+      return nextGo;
     } catch (e) {
       setLocalError(e.message || "AI read failed.");
+      return null;
     } finally {
       setReadingGoNoGo(false);
     }
@@ -750,6 +752,11 @@ export default function PropositionForm({
     setSummaryChecks(checks);
     setJustSubmitted(true);
     setSummaryStale(false);
+
+    // GO/NO-GO/WATCH read runs from the same Submit once F1–F4 are complete.
+    if (!result.researchError && isFilterUnlocked("proof-gate", nextDoc)) {
+      await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition });
+    }
   }
 
   function handleRetryWithFallback() {
@@ -898,15 +905,11 @@ export default function PropositionForm({
 
       {proofGateReady ? (
         <section className="gonogo-panel">
-          <button
-            type="button"
-            className="prop-save run"
-            onClick={runGoNoGoRead}
-            disabled={readingGoNoGo || saving}
-          >
-            {readingGoNoGo ? <Loader2 size={15} className="spin" /> : null}
-            {readingGoNoGo ? "Analysing…" : "Submit for AI read"}
-          </button>
+          {readingGoNoGo ? (
+            <p className="gonogo-reading">
+              <Loader2 size={15} className="spin" /> Running GO / NO-GO / WATCH read…
+            </p>
+          ) : null}
           <GoNoGoResult result={goNoGo} />
           {goNoGo?.classification === "GO" ? (
             <ProofUploadPanel
@@ -915,13 +918,18 @@ export default function PropositionForm({
               onClear={clearProof}
               fileRef={proofRef}
               error={proofError}
-              disabled={saving}
+              disabled={saving || readingGoNoGo}
             />
           ) : null}
           {goNoGo != null && goNoGo.classification !== "GO" ? (
             <p className="gonogo-blocked-note">
-              Revise the filters above and submit for another read once ready — the upload step and
-              Filters 5–6 aren&apos;t available until this reads GO.
+              Revise the filters above and Submit again once ready — the upload step and Filters
+              5–6 aren&apos;t available until this reads GO.
+            </p>
+          ) : null}
+          {goNoGo == null && !readingGoNoGo ? (
+            <p className="gonogo-blocked-note">
+              Submit below to run the GO / NO-GO / WATCH read for Filters 1–4.
             </p>
           ) : null}
         </section>
@@ -973,7 +981,7 @@ export default function PropositionForm({
           <button
             type="button"
             className="prop-save run"
-            disabled={saving || !canSubmit}
+            disabled={saving || readingGoNoGo || !canSubmit}
             onClick={() => handleSubmit()}
             title={
               !canSubmit
@@ -981,8 +989,14 @@ export default function PropositionForm({
                 : undefined
             }
           >
-            {saving ? <Loader2 size={15} className="spin" /> : null}
-            {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
+            {saving || readingGoNoGo ? <Loader2 size={15} className="spin" /> : null}
+            {savedFlash
+              ? "Submitted"
+              : readingGoNoGo
+                ? "Analysing…"
+                : saving
+                  ? "Submitting…"
+                  : "Submit"}
           </button>
           {sendManagerReady ? (
             <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
@@ -1120,6 +1134,8 @@ const PROP_CSS = `
 .unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
 .gonogo-panel{background:#191919;border:1px solid rgba(243,234,248,.12);border-radius:16px;
   padding:18px 20px;margin:0 0 16px;display:flex;flex-direction:column;gap:14px;}
+.gonogo-reading{margin:0;display:inline-flex;align-items:center;gap:8px;font-size:13px;
+  color:rgba(243,234,248,.7);}
 .gonogo-result{padding:14px 16px;border-radius:12px;border:1px solid rgba(243,234,248,.16);}
 .gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
 .gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
