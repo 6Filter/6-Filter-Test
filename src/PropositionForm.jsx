@@ -334,6 +334,9 @@ export default function PropositionForm({
   savedFlash,
   error,
   currentUser,
+  llmProvider = "claude",
+  providerStatus = [],
+  onLlmProviderChange,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
   const [aiSuggestions, setAiSuggestions] = useState(null);
@@ -345,6 +348,8 @@ export default function PropositionForm({
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [summaryStale, setSummaryStale] = useState(false);
   const [summaryChecks, setSummaryChecks] = useState(null);
+  const [fallbackUi, setFallbackUi] = useState(null);
+  const [fallbackChoice, setFallbackChoice] = useState("");
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -358,6 +363,8 @@ export default function PropositionForm({
     setAiPassMeta(null);
     setFileError("");
     setLocalError("");
+    setFallbackUi(null);
+    setFallbackChoice("");
     setJustSubmitted(false);
     setSummaryStale(false);
     setSummaryChecks(null);
@@ -486,18 +493,34 @@ export default function PropositionForm({
     }
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(providerOverride) {
     if (saving) return;
     if (!canSubmit) {
       setLocalError("Describe the idea, or attach a file, before the first Submit.");
       return;
     }
     setLocalError("");
-    const result = await onSave(doc);
+    const provider = providerOverride || llmProvider;
+    const result = await onSave(doc, provider);
     if (!result?.proposition) return;
     if (result.suggestions) applyResearchResult(result);
     if (result.researchError) {
       setLocalError(result.researchError);
+      if (result.suggestFallback && result.fallbackProviders?.length) {
+        const nextChoice =
+          result.fallbackProviders.find((p) => p.id === fallbackChoice)?.id ||
+          result.fallbackProviders[0].id;
+        setFallbackUi({
+          failedLabel: result.failedProviderLabel || "Claude",
+          providers: result.fallbackProviders,
+        });
+        setFallbackChoice(nextChoice);
+      } else {
+        setFallbackUi(null);
+      }
+    } else {
+      setFallbackUi(null);
+      setLocalError("");
     }
     const nextDoc = mergeProposition(result.proposition);
     setDoc(nextDoc);
@@ -507,6 +530,19 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
   }
+
+  function handleRetryWithFallback() {
+    const next = fallbackChoice || fallbackOptions[0]?.id;
+    if (!next || saving) return;
+    if (typeof onLlmProviderChange === "function") onLlmProviderChange(next);
+    handleSubmit(next);
+  }
+
+  const configuredProviders = (providerStatus || []).filter((p) => p.configured !== false);
+  const fallbackOptions =
+    fallbackUi?.providers?.length > 0
+      ? fallbackUi.providers
+      : configuredProviders.filter((p) => p.id !== (llmProvider || "claude"));
 
   return (
     <main className="prop-page">
@@ -638,12 +674,52 @@ export default function PropositionForm({
 
       <section className="prop-submit-footer">
         {error || localError ? <div className="prop-err">{error || localError}</div> : null}
+        {fallbackUi && fallbackOptions.length > 0 ? (
+          <div className="prop-fallback" role="region" aria-label="Model fallback">
+            <p className="prop-fallback-lede">
+              {fallbackUi.failedLabel} could not complete research. Pick another configured model and
+              retry — your idea and form entries stay as they are.
+            </p>
+            <div className="prop-fallback-row">
+              <label className="prop-fallback-pick">
+                <span>Next model</span>
+                <select
+                  value={fallbackChoice || fallbackOptions[0]?.id || ""}
+                  onChange={(e) => setFallbackChoice(e.target.value)}
+                  disabled={saving}
+                  aria-label="Fallback LLM provider"
+                >
+                  {fallbackOptions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                      {p.hint ? ` · ${p.hint}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="prop-save run"
+                disabled={saving || !(fallbackChoice || fallbackOptions[0]?.id)}
+                onClick={handleRetryWithFallback}
+              >
+                {saving ? <Loader2 size={15} className="spin" /> : null}
+                Retry with{" "}
+                {fallbackOptions.find((p) => p.id === (fallbackChoice || fallbackOptions[0]?.id))
+                  ?.label || "fallback"}
+              </button>
+            </div>
+            <p className="prop-fallback-hint">
+              You can also switch the header Model control anytime; Submit uses that selection.
+            </p>
+          </div>
+        ) : null}
         <div className="prop-actions">
           <button
             type="button"
             className="prop-save run"
             disabled={saving || !canSubmit}
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()}
             title={
               !canSubmit
                 ? "Describe the idea or attach a file before the first Submit"
@@ -732,6 +808,14 @@ const PROP_CSS = `
 .ai-pass-sources ul{margin:8px 0 0;padding-left:18px;}
 .ai-pass-sources a{color:#C9AEEF;}
 .prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;display:flex;align-items:center;gap:6px;}
+.prop-fallback{margin:12px 0 0;padding:14px 16px;border-radius:12px;
+  background:rgba(226,113,107,.08);border:1px solid rgba(226,113,107,.35);}
+.prop-fallback-lede{margin:0 0 12px;font-size:13px;line-height:1.45;color:#F3EAF8;}
+.prop-fallback-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;}
+.prop-fallback-pick{display:flex;flex-direction:column;gap:6px;min-width:200px;flex:1;}
+.prop-fallback-pick span{font-family:var(--fm);font-size:11px;letter-spacing:.04em;
+  color:rgba(243,234,248,.75);}
+.prop-fallback-hint{margin:10px 0 0;font-size:12px;color:rgba(243,234,248,.55);line-height:1.4;}
 .prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
   border-radius:16px;padding:18px 20px 16px;margin:0 0 16px;}
 .prop-filter.is-locked{opacity:.78;}

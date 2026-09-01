@@ -83,14 +83,14 @@ async function fetchPropositionById(id) {
   return attachAdvisory(data);
 }
 
-async function putProposition(id, payload) {
+async function putProposition(id, payload, provider = "claude") {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 180000);
   try {
     const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ proposition: payload, provider }),
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
@@ -101,6 +101,11 @@ async function putProposition(id, payload) {
       notCovered: data.notCovered || [],
       sources: data.sources || [],
       researchError: data.researchError || null,
+      researchProvider: data.researchProvider || null,
+      suggestFallback: Boolean(data.suggestFallback),
+      fallbackProviders: Array.isArray(data.fallbackProviders) ? data.fallbackProviders : [],
+      failedProvider: data.failedProvider || null,
+      failedProviderLabel: data.failedProviderLabel || null,
     };
   } catch (e) {
     if (e?.name === "AbortError") {
@@ -711,12 +716,13 @@ export default function App() {
     }
   }
 
-  async function savePropositionForTeam(doc) {
+  async function savePropositionForTeam(doc, providerOverride) {
     if (!doc?.id || savingProp) return null;
+    const provider = normalizeProvider(providerOverride || llmProvider);
     setSavingProp(true);
     setError("");
     try {
-      const result = await putProposition(doc.id, doc);
+      const result = await putProposition(doc.id, doc, provider);
       const saved = result.proposition;
       setProposition(saved);
       setPropositionList((rows) => {
@@ -1112,6 +1118,17 @@ export default function App() {
           savedFlash={savedFlash}
           error={error}
           currentUser={sessionUser}
+          llmProvider={llmProvider}
+          providerStatus={providerStatus}
+          onLlmProviderChange={(next) => {
+            const id = normalizeProvider(next);
+            setLlmProvider(id);
+            try {
+              localStorage.setItem("primus-llm-provider", id);
+            } catch {
+              /* ignore */
+            }
+          }}
         />
       )}
 
