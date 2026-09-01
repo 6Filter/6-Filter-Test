@@ -278,6 +278,34 @@ function toneFor(label) {
   return "watch";
 }
 
+function AnalysisSummary({ advisoryChecks, visible, stale }) {
+  if (!visible || !advisoryChecks) return null;
+  return (
+    <section className={`analysis-summary${stale ? " is-stale" : ""}`} aria-live="polite">
+      <h2 className="summary-heading">Analysis</h2>
+      <p className="summary-lede">
+        {stale
+          ? "Based on the previous submit — resubmit to refresh."
+          : "Based on everything currently entered."}
+      </p>
+      <div className="summary-grid">
+        {SIX_FILTERS_FORM.map((f) => {
+          const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
+          return (
+            <div className="summary-row" key={f.key}>
+              <span className="summary-num">{f.num}</span>
+              <span className="summary-title">{f.title}</span>
+              <span className="check-pill" data-tone={toneFor(check.checkLabel)}>
+                {check.checkLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function formatSavedAt(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -306,6 +334,9 @@ export default function PropositionForm({
   const [fileError, setFileError] = useState("");
   const [localError, setLocalError] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const [summaryStale, setSummaryStale] = useState(false);
+  const [summaryChecks, setSummaryChecks] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -319,6 +350,9 @@ export default function PropositionForm({
     setAiPassMeta(null);
     setFileError("");
     setLocalError("");
+    setJustSubmitted(false);
+    setSummaryStale(false);
+    setSummaryChecks(null);
   }, [initial?.id]);
 
   const propositionId = doc.id || initial?.id;
@@ -358,11 +392,17 @@ export default function PropositionForm({
     };
   }, [propositionId, doc]);
 
+  function noteEdit() {
+    if (justSubmitted) setSummaryStale(true);
+  }
+
   function setTop(key, value) {
+    noteEdit();
     setDoc((prev) => ({ ...prev, [key]: value }));
   }
 
   function setFilter(filterKey, fieldKey, value) {
+    noteEdit();
     setDoc((prev) => ({
       ...prev,
       [filterKey]: { ...prev[filterKey], [fieldKey]: value },
@@ -446,14 +486,18 @@ export default function PropositionForm({
     }
     setLocalError("");
     const result = await onSave(doc);
-    if (result?.suggestions) applyResearchResult(result);
-    if (result?.researchError) {
+    if (!result?.proposition) return;
+    if (result.suggestions) applyResearchResult(result);
+    if (result.researchError) {
       setLocalError(result.researchError);
     }
-    if (result?.proposition) {
-      setDoc(mergeProposition(result.proposition));
-      if (result.proposition.advisoryChecks) setAdvisoryChecks(result.proposition.advisoryChecks);
-    }
+    const nextDoc = mergeProposition(result.proposition);
+    setDoc(nextDoc);
+    const checks = result.proposition.advisoryChecks || null;
+    if (checks) setAdvisoryChecks(checks);
+    setSummaryChecks(checks);
+    setJustSubmitted(true);
+    setSummaryStale(false);
   }
 
   return (
@@ -523,30 +567,7 @@ export default function PropositionForm({
             </div>
           ))}
         </div>
-        {error || localError ? <div className="prop-err">{error || localError}</div> : null}
         <AiPassResultBanner meta={aiPassMeta} />
-        <div className="prop-actions">
-          <button
-            type="button"
-            className="prop-save run"
-            disabled={saving || !canSubmit}
-            onClick={handleSubmit}
-            title={
-              !canSubmit
-                ? "Describe the idea or attach a file before the first Submit"
-                : undefined
-            }
-          >
-            {saving ? <Loader2 size={15} className="spin" /> : null}
-            {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
-          </button>
-        </div>
-        <p className="prop-submit-note">
-          Submitting publishes a new version — everyone opening this page sees the latest entries.
-          {!doc.researchRunAt
-            ? " The first Submit also runs research once and offers suggestions on empty fields."
-            : " Research already ran for this proposition; later Submits only save."}
-        </p>
       </section>
 
       {SIX_FILTERS_FORM.map((spec) => {
@@ -606,6 +627,37 @@ export default function PropositionForm({
           </section>
         );
       })}
+
+      <section className="prop-submit-footer">
+        {error || localError ? <div className="prop-err">{error || localError}</div> : null}
+        <div className="prop-actions">
+          <button
+            type="button"
+            className="prop-save run"
+            disabled={saving || !canSubmit}
+            onClick={handleSubmit}
+            title={
+              !canSubmit
+                ? "Describe the idea or attach a file before the first Submit"
+                : undefined
+            }
+          >
+            {saving ? <Loader2 size={15} className="spin" /> : null}
+            {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
+          </button>
+        </div>
+        <p className="prop-submit-note">
+          Submitting publishes a new version — everyone opening this page sees the latest entries.
+          {!doc.researchRunAt
+            ? " The first submit also runs research once and offers suggestions on empty fields."
+            : " Research already ran for this proposition; later Submits only save."}
+        </p>
+        <AnalysisSummary
+          advisoryChecks={summaryChecks}
+          visible={justSubmitted}
+          stale={summaryStale}
+        />
+      </section>
     </main>
   );
 }
@@ -637,10 +689,21 @@ const PROP_CSS = `
 .prop-check{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.45;cursor:pointer;color:#F3EAF8;}
 .prop-check input{width:auto;margin-top:3px;accent-color:#C9A0E8;}
 .prop-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.prop-submit-footer{background:#191919;border:1px solid rgba(243,234,248,.12);
+  border-radius:16px;padding:18px 20px 16px;margin:8px 0 0;}
 .prop-submit-note{margin:10px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);line-height:1.45;}
 .prop-save{display:inline-flex;align-items:center;gap:8px;background:#C9AEEF;color:#170C25;border:none;
   border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--fd);}
 .prop-save:disabled{opacity:.55;cursor:not-allowed;}
+.analysis-summary{margin-top:20px;}
+.analysis-summary.is-stale{opacity:.72;}
+.summary-heading{margin:0 0 4px;font-size:18px;letter-spacing:-.3px;color:var(--ink, #F3EAF8);}
+.summary-lede{margin:0 0 12px;font-size:12.5px;color:var(--muted-2, rgba(243,234,248,.55));line-height:1.45;}
+.summary-grid{display:flex;flex-direction:column;gap:2px;}
+.summary-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px dashed var(--border, rgba(243,234,248,.12));}
+.summary-row:first-child{border-top:none;}
+.summary-num{font-family:var(--fm);font-size:12px;color:var(--muted-3, rgba(243,234,248,.45));width:24px;}
+.summary-title{flex:1;font-weight:600;color:var(--ink, #F3EAF8);}
 .ai-suggestion-chip{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px;
   padding:8px 12px;border-radius:10px;background:rgba(201,174,239,.12);
   border:1px solid rgba(201,174,239,.28);font-size:12px;color:#F3EAF8;line-height:1.4;}
