@@ -1,8 +1,8 @@
 # 6 Filter Test — Logic Briefing for IT Team
 
 **Purpose:** Explain how 6 Filter Test works end-to-end for IT / engineering stakeholders  
-**Live app:** Vercel (e.g. `https://primus-ai-nine.vercel.app`)  
-**Repo:** `https://github.com/johngeorgegejo-dev/Primus-AI`
+**Live app:** Render — `https://ck-6-filter-test.onrender.com`  
+**Repo:** `https://github.com/cavinkarecia/Primus-AI`
 
 ---
 

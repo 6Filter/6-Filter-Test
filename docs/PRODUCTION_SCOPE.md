@@ -79,8 +79,8 @@ The retired Novelty / Market / Evidence scorecard and client-side API key flow a
 
 | Item | Notes |
 |------|--------|
-| Render web `primus-ai` | Production |
-| Render Postgres `primus-ai-db` | `DATABASE_URL` |
+| Render web `ck-6-filter-test` | Production (`https://ck-6-filter-test.onrender.com`) |
+| Render Postgres `primus-ai-db` | `DATABASE_URL` (shared DB; service name unchanged) |
 | `REQUIRE_AUTH` | Off unless set to `true` |
 | `SESSION_SECRET` | Needed only when login is on; rotate if leaked |
 | `ANTHROPIC_API_KEY` | Server only |
