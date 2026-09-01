@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, FileUp, Loader2, Sparkles, Trash2, X } from "lucide-react";
+import { AlertTriangle, FileText, FileUp, Loader2, Sparkles, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
-  FORUM_VERDICT_FIELD,
   OWNER_COLORS,
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
-  VERDICT_NOTE_FIELD,
-  f6Unlocked,
   mergeProposition,
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
@@ -40,7 +37,6 @@ const SUGGEST_BLOCKLIST = new Set([
   "forumVerdict",
   "verdictNote",
   "name",
-  "category",
 ]);
 
 function isEmptyField(value) {
@@ -63,7 +59,9 @@ function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, currentVa
   if (!isEmptyField(currentValue)) return null;
   const path = filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
   if (dismissed[path]) return null;
-  const raw = filterKey ? suggestions?.[filterKey]?.[fieldKey] : suggestions?.[fieldKey];
+  const raw = filterKey
+    ? suggestions?.[filterKey]?.[fieldKey]
+    : suggestions?.top?.[fieldKey] ?? suggestions?.[fieldKey];
   if (raw == null || (typeof raw === "string" && !raw.trim())) return null;
   return raw;
 }
@@ -418,38 +416,6 @@ function toneFor(label) {
   return "watch";
 }
 
-function forumTone(verdict) {
-  if (verdict === "pass") return "pass";
-  if (verdict === "fail") return "fail";
-  return "pending";
-}
-
-function forumLabel(verdict) {
-  if (verdict === "pass") return "Pass";
-  if (verdict === "fail") return "Fail";
-  return "pending";
-}
-
-function FilterCheckList({ check }) {
-  const items = Array.isArray(check?.items) ? check.items : [];
-  return (
-    <div className="check-list">
-      {items.map((it, i) => (
-        <div key={i} className="check-row">
-          <span className={`check-icon ${it.status}`}>{it.status === "done" ? "✓" : "…"}</span>
-          <span>{it.text}</span>
-        </div>
-      ))}
-      {check?.infoLine ? (
-        <div className="check-row check-info">
-          <span className="check-icon info">i</span>
-          <span>{check.infoLine}</span>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function formatSavedAt(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -466,7 +432,6 @@ function formatSavedAt(iso) {
 export default function PropositionForm({
   initial,
   onSave,
-  onDelete,
   saving,
   savedFlash,
   error,
@@ -491,7 +456,6 @@ export default function PropositionForm({
     setAiPassOpen(false);
   }, [initial?.id]);
 
-  const unlocked = f6Unlocked(doc);
   const propositionId = doc.id || initial?.id;
 
   useEffect(() => {
@@ -573,17 +537,10 @@ export default function PropositionForm({
       <style>{PROP_CSS}</style>
 
       <section className="prop-top">
-        <div className="prop-top-meta">
-          <p className="prop-kicker">Overall record · BH Forum</p>
-          <p className="prop-version">
-            {Number(doc.version) > 1
-              ? `v${doc.version} · last saved ${formatSavedAt(doc.updatedAt)}`
-              : "v1 · not yet saved for the team"}
-          </p>
-        </div>
-        <p className="prop-overall-note">
-          This is the overall verdict for the proposition, separate from the six per-filter forum verdicts below.
-          Clearing the filters is not approval — final validation is at CKR level (v4).
+        <p className="prop-version">
+          {Number(doc.version) > 1
+            ? `v${doc.version} · last saved ${formatSavedAt(doc.updatedAt)}`
+            : "v1 · not yet saved for the team"}
         </p>
         <div className="prop-grid">
           {PROPOSITION_TOP_FIELDS.map((field) => (
@@ -607,7 +564,7 @@ export default function PropositionForm({
             onClick={() => onSave(doc)}
           >
             {saving ? <Loader2 size={15} className="spin" /> : null}
-            {savedFlash ? "Saved" : saving ? "Saving…" : "Save for the team"}
+            {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
           </button>
           <button
             type="button"
@@ -617,28 +574,22 @@ export default function PropositionForm({
           >
             <Sparkles size={15} /> Run AI first pass
           </button>
-          <button
-            type="button"
-            className="prop-delete"
-            disabled={saving || (currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "BM")}
-            onClick={() => onDelete(doc)}
-          >
-            <Trash2 size={14} /> Delete proposition
-          </button>
         </div>
+        <p className="prop-submit-note">
+          Submitting publishes a new version — everyone opening this page sees the latest entries.
+        </p>
       </section>
 
       {SIX_FILTERS_FORM.map((spec) => {
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
-        const locked = spec.key === "f6" && !unlocked;
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
         return (
           <section
             key={spec.key}
-            className={`prop-filter${locked ? " is-locked" : ""}`}
+            className="prop-filter"
             style={{ borderLeftColor: spec.accentBg }}
           >
             <div className="prop-filter-h">
@@ -653,13 +604,8 @@ export default function PropositionForm({
               </div>
               <div className="prop-status-wrap">
                 <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
-                <span className="forum-pill" data-tone={forumTone(values.forumVerdict)}>
-                  Forum: {forumLabel(values.forumVerdict)}
-                </span>
               </div>
             </div>
-
-            <FilterCheckList check={check} />
 
             <div className="prop-grid">
               {spec.fields.map((field) =>
@@ -688,21 +634,6 @@ export default function PropositionForm({
                 {spec.crossCheckNote}
               </div>
             ) : null}
-
-            <div className="prop-forum">
-              <FieldControl
-                field={FORUM_VERDICT_FIELD}
-                value={values.forumVerdict}
-                currentUser={currentUser}
-                onChange={(v) => setFilter(spec.key, "forumVerdict", v)}
-              />
-              <FieldControl
-                field={VERDICT_NOTE_FIELD}
-                value={values.verdictNote}
-                currentUser={currentUser}
-                onChange={(v) => setFilter(spec.key, "verdictNote", v)}
-              />
-            </div>
           </section>
         );
       })}
@@ -723,10 +654,7 @@ const PROP_CSS = `
   padding:3px 9px;border-radius:999px;margin-left:8px;display:inline-block;vertical-align:middle;}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
-.prop-top-meta{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;}
-.prop-kicker{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#C9A0E8;margin:0;}
-.prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0;}
-.prop-overall-note{margin:8px 0 14px;font-size:13px;line-height:1.5;color:rgba(243,234,248,.62);}
+.prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
 .prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
 .prop-field{display:flex;flex-direction:column;gap:6px;margin:0;}
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
@@ -743,6 +671,7 @@ const PROP_CSS = `
 .prop-check{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.45;cursor:pointer;color:#F3EAF8;}
 .prop-check input{width:auto;margin-top:3px;accent-color:#C9A0E8;}
 .prop-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.prop-submit-note{margin:10px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);line-height:1.45;}
 .prop-save{display:inline-flex;align-items:center;gap:8px;background:#C9AEEF;color:#170C25;border:none;
   border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--fd);}
 .prop-save:disabled{opacity:.7;cursor:wait;}
@@ -772,8 +701,6 @@ const PROP_CSS = `
   text-transform:uppercase;color:#7C4DBE;font-weight:700;}
 .ai-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
 .ai-modal-actions .run{width:auto;margin:0;padding:10px 16px;border-radius:999px;}
-.prop-delete{display:inline-flex;align-items:center;gap:8px;background:transparent;color:#E2716B;
-  border:1px solid rgba(226,113,107,.4);border-radius:999px;padding:10px 16px;font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--fd);}
 .prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;}
 .prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
   border-radius:16px;padding:18px 20px 16px;margin:0 0 16px;}
@@ -786,11 +713,11 @@ const PROP_CSS = `
 .prop-status{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;padding:5px 10px;border-radius:999px;white-space:nowrap;}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
-.check-pill,.forum-pill{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
+.check-pill{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
   padding:5px 10px;border-radius:999px;white-space:nowrap;}
-.check-pill[data-tone="pass"],.forum-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
-.check-pill[data-tone="fail"],.forum-pill[data-tone="fail"]{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
-.check-pill[data-tone="watch"],.forum-pill[data-tone="pending"]{color:var(--watch);background:rgba(232,181,99,.16);}
+.check-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
+.check-pill[data-tone="fail"]{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
+.check-pill[data-tone="watch"]{color:var(--watch);background:rgba(232,181,99,.16);}
 .check-list{margin:0 0 14px;padding:4px 0 2px;}
 .check-row{display:flex;align-items:center;padding:10px 0;border-top:1px dashed var(--border);font-size:13px;color:#F3EAF8;line-height:1.4;}
 .check-row:first-child{border-top:none;}
@@ -821,15 +748,13 @@ const PROP_CSS = `
 .prop-cross{margin:12px 0 4px;padding:8px 12px;border-radius:10px;font-size:12.5px;
   background:rgba(232,181,99,.1);color:#E8B563;border:1px dashed rgba(232,181,99,.4);}
 .prop-cross.is-flag{background:rgba(226,113,107,.12);color:#E2716B;border-color:rgba(226,113,107,.45);}
-.prop-forum{margin-top:16px;padding-top:14px;border-top:1px dashed rgba(243,234,248,.2);
-  display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
 .prop-computed{background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;padding:12px 14px;
   display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;}
 .prop-computed.is-empty{color:rgba(243,234,248,.45);font-size:13.5px;}
 .prop-computed .tone-pass{color:var(--pass);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
 .prop-computed .tone-watch{color:var(--watch);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
 @media (max-width:760px){
-  .prop-grid,.prop-forum{grid-template-columns:1fr;}
+  .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
   .prop-page{padding:0 16px 56px;}
 }

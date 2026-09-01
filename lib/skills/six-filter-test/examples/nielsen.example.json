@@ -1,0 +1,21 @@
+[
+  {
+    "category": "hair oil",
+    "period": "2025",
+    "geography": "All-India",
+    "categoryValueCr": 23500,
+    "valueGrowthPct": 9.1,
+    "volumeGrowthPct": 3.7,
+    "formatShares": [{ "format": "bottle", "sharePct": 62 }],
+    "products": [
+      {
+        "brand": "ExampleBrand",
+        "variant": "Cooling",
+        "pack": "100 ml",
+        "mrpInr": 99,
+        "gramsOrMl": 100,
+        "pricePerGram": 0.99
+      }
+    ]
+  }
+]

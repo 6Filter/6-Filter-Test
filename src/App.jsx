@@ -1087,7 +1087,6 @@ export default function App() {
         <PropositionForm
           initial={proposition}
           onSave={savePropositionForTeam}
-          onDelete={(doc) => confirmDeleteProposition(doc, "form")}
           saving={savingProp}
           savedFlash={savedFlash}
           error={error}
