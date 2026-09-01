@@ -148,14 +148,26 @@ function readFileAsAttachment(file, isImage) {
   });
 }
 
-function FieldControl({ field, value, onChange, suggestion, onAcceptSuggestion, onDismissSuggestion, currentUser }) {
+function FieldControl({
+  field,
+  value,
+  onChange,
+  suggestion,
+  onAcceptSuggestion,
+  onDismissSuggestion,
+  currentUser,
+  aiSourced = false,
+}) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
   const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
   const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
+  // F2 uses auto-fill (Part 32) — never show accept/dismiss chips for those fields.
+  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "mrpInr", "grammage", "qcomTrajectory"]);
+  const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
-    !locked && suggestion != null ? (
+    showChip ? (
       <SuggestionChip
         field={field}
         suggestion={suggestion}
@@ -239,6 +251,7 @@ function FieldControl({ field, value, onChange, suggestion, onAcceptSuggestion, 
         {input}
       </label>
       {helper ? <span className="prop-helper">{helper}</span> : null}
+      {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {chip}
     </div>
   );
@@ -410,6 +423,7 @@ export default function PropositionForm({
   const [managerText, setManagerText] = useState("");
   const [managerSubject, setManagerSubject] = useState("");
   const [managerCopied, setManagerCopied] = useState(false);
+  const [f2AiSourced, setF2AiSourced] = useState({});
   const fileRef = useRef(null);
   const proofRef = useRef(null);
 
@@ -433,6 +447,7 @@ export default function PropositionForm({
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
     setManagerOpen(false);
+    setF2AiSourced({});
   }, [initial?.id]);
 
   const propositionId = doc.id || initial?.id;
@@ -495,12 +510,50 @@ export default function PropositionForm({
       ...prev,
       [filterKey]: { ...prev[filterKey], [fieldKey]: value },
     }));
+    if (filterKey === "f2") {
+      setF2AiSourced((prev) => {
+        if (!prev[fieldKey]) return prev;
+        const next = { ...prev };
+        delete next[fieldKey];
+        return next;
+      });
+    }
+  }
+
+  function applyF2AutoFill(currentF2, suggestedF2) {
+    const current = currentF2 && typeof currentF2 === "object" ? currentF2 : {};
+    const suggested = suggestedF2 && typeof suggestedF2 === "object" ? suggestedF2 : {};
+    const next = { ...current };
+    const sourced = {};
+    for (const key of ["cogsAtScale", "netMarginAtScale", "mrpInr", "grammage", "qcomTrajectory"]) {
+      const empty = current[key] == null || current[key] === "";
+      if (empty && suggested[key] != null && suggested[key] !== "") {
+        next[key] = suggested[key];
+        sourced[key] = true;
+      }
+    }
+    return { next, sourced };
   }
 
   function applyResearchResult(data) {
     if (!data?.suggestions) return;
-    const next = { ...(data.suggestions || {}) };
-    setAiSuggestions(next);
+    const raw = { ...(data.suggestions || {}) };
+    const f2Suggested = raw.f2;
+    delete raw.f2; // F2 uses auto-fill, not chips
+
+    if (f2Suggested && typeof f2Suggested === "object") {
+      setDoc((prev) => {
+        const { next, sourced } = applyF2AutoFill(prev.f2, f2Suggested);
+        if (Object.keys(sourced).length) {
+          Promise.resolve().then(() => {
+            setF2AiSourced((prevFlags) => ({ ...prevFlags, ...sourced }));
+          });
+        }
+        return { ...prev, f2: next };
+      });
+    }
+
+    setAiSuggestions(raw);
     setAiDismissed({});
     setAiPassMeta({
       notCovered: data.notCovered || [],
@@ -825,6 +878,7 @@ export default function PropositionForm({
                     value={values[field.key]}
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
+                    aiSourced={spec.key === "f2" ? Boolean(f2AiSourced[field.key]) : false}
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
                 )
@@ -1006,6 +1060,7 @@ const PROP_CSS = `
 .prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
 .prop-helper{font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;}
+.ai-sourced-tag{font-size:10px;font-family:var(--fm);color:#C9A0E8;margin-top:4px;display:inline-block;}
 .prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
 .prop-file-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
   background:rgba(201,174,239,.12);border:1px solid rgba(201,174,239,.28);font-size:13px;}
