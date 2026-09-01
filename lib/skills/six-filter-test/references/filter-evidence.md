@@ -8,7 +8,7 @@ Fill these proposition fields. Human-owned signatures stay unticked.
 |---|---|---|
 | Benchmark not named | Nielsen `products[]`, else web listings | `benchmark` |
 | Growth route / argument incomplete | Nielsen category value + growth, else three engines | `growthRoute`, `growthArgument` |
-| Attribute / gap | Web + reviews; gap ≥ 2.0 | `declaredAttribute`, `declaredGap` |
+| Attribute / gap | Web + reviews; gap ≥ 2.0 | `declaredAttribute` (required), `declaredAttribute2`/`declaredAttribute3` (optional), `declaredGap` |
 
 `generalCategory` is a plain market label. No CavinKare brands, no new-vs-existing-for-CK.
 
