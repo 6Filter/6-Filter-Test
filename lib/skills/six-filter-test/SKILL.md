@@ -30,7 +30,7 @@ Uncertainty is allowed **as a labelled weaker tier**, not as silence.
 
 | Filter | Research this skill covers | Stays human / out of scope |
 |---|---|---|
-| F1 | Benchmark naming; category size / growth argument | Attribute rank, CMI hierarchy evidence |
+| F1 | Benchmark naming; category size / growth argument | Declared attributes 1–3 (BM); CMI hierarchy evidence / U&A source |
 | F2 | Optional general context only — **not** MRP, COGS, net margin, Finance signature | All F2 numeric and signature fields |
 | F3 | Price index vs named benchmark (₹/g or ₹/ml, comparable pack) | Elasticity source ownership, volume-loss modelling sign-off |
 | F4 | Format trajectory; threat register + responses | — |

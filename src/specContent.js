@@ -115,10 +115,10 @@ export const SIX_FILTERS_SPEC = [
         n: "1.2",
         step: "Declare the attribute",
         input: "The chosen attribute from step 1.1, phrased in consumer language",
-        by: "BM selects; CMI confirms rank",
-        validation: "Must be rank 1–3 in the hierarchy (v4). Rank 4 is a FAIL, not a discussion",
+        by: "BM declares attributes 1–3 in rank order; CMI confirms against U&A / track",
+        validation: "Attribute 1 required; attributes must be among the top-3 purchase drivers (v4)",
         output:
-          "Declared attribute → KPI: attribute rank (must be ≤3); phrasing tested for consumer comprehension Y/N",
+          "Declared attributes 1–3 → KPI: primary attribute in top-3; phrasing tested for consumer comprehension Y/N",
       },
       {
         n: "1.3",
