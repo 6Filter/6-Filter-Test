@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ck-6-filter-test
+    name: 6-filter-test
     runtime: node
     plan: free
     region: oregon
@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: ALLOWED_ORIGIN
-        value: https://ck-6-filter-test.onrender.com
+        value: https://6-filter-test.onrender.com
       - key: ANTHROPIC_MODEL
         value: claude-sonnet-4-5-20250929
       - key: ANTHROPIC_API_KEY

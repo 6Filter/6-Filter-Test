@@ -1,7 +1,7 @@
 # Primus.AI — Production Scope
 
 **Audience:** Internal product, engineering, and IT  
-**Status:** Live on Render (`https://ck-6-filter-test.onrender.com`) with Postgres + server-side LLM keys  
+**Status:** Live on Render (`https://6-filter-test.onrender.com`) with Postgres + server-side LLM keys  
 **Primary UI:** Proposition Form (six-filter evidence record)
 
 ---
@@ -44,7 +44,7 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 - Roles when turned on: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`
 
 ### Security notes
-- CORS: `Access-Control-Allow-Origin` is set only when `Origin` equals `ALLOWED_ORIGIN` (default `https://ck-6-filter-test.onrender.com`), with credentials
+- CORS: `Access-Control-Allow-Origin` is set only when `Origin` equals `ALLOWED_ORIGIN` (default `https://6-filter-test.onrender.com`), with credentials
 - Rate limit: in-memory, 20/min per user on proposition Submit research path, `category-sizing/run`, `format-trend/run`, and `claude`. Resets on process restart; not shared across instances
 
 ---

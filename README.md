@@ -23,7 +23,7 @@ Named-account login is in the repo but off. To turn it on later: set `REQUIRE_AU
 
 ## Production (Render)
 
-Render is the live host: [https://ck-6-filter-test.onrender.com](https://ck-6-filter-test.onrender.com). `server.js` serves the Vite build and `/api/*`. Environment variables on the service:
+Render is the live host: [https://6-filter-test.onrender.com](https://6-filter-test.onrender.com). `server.js` serves the Vite build and `/api/*`. Environment variables on the service:
 
 | Variable | Required |
 |----------|----------|
@@ -31,7 +31,7 @@ Render is the live host: [https://ck-6-filter-test.onrender.com](https://ck-6-fi
 | `ANTHROPIC_API_KEY` | Yes for AI first pass / LLM routes |
 | `REQUIRE_AUTH` | Optional; set `true` only when turning login back on |
 | `SESSION_SECRET` | Required only when `REQUIRE_AUTH=true` |
-| `ALLOWED_ORIGIN` | Optional; defaults to `https://ck-6-filter-test.onrender.com` |
+| `ALLOWED_ORIGIN` | Optional; defaults to `https://6-filter-test.onrender.com` |
 | Other model keys | Optional comparison providers |
 
 Vercel-style `api/*.js` handlers still exist as a fallback. They import the **same** CORS, session, and ownership modules as `server.js` — do not copy those rules into a second place.
