@@ -74,4 +74,12 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[primus] listening on ${PORT}`);
+  import("./llmContext.js")
+    .then(({ listProvidersForClient }) => {
+      const rows = listProvidersForClient().map(
+        (p) => `${p.id}:${p.configured ? `yes(${p.keySource})` : "no"}`
+      );
+      console.log(`[primus] llm providers ${rows.join(" ")}`);
+    })
+    .catch((e) => console.warn(`[primus] provider status log failed: ${e.message}`));
 });

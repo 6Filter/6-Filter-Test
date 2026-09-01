@@ -8,6 +8,9 @@ const ENV_KEYS = [
   "ANTHROPIC_MODEL",
   "GEMINI_API_KEY",
   "GEMINI_MODEL",
+  "GOOGLE_API_KEY",
+  "GOOGLE_GENERATIVE_AI_API_KEY",
+  "GOOGLE_AI_API_KEY",
   "GROQ_API_KEY",
   "GROQ_MODEL",
   "DEEPSEEK_API_KEY",
@@ -30,6 +33,9 @@ function applyEnv(env) {
   }
   if (env.VITE_ANTHROPIC_MODEL && !process.env.ANTHROPIC_MODEL) {
     process.env.ANTHROPIC_MODEL = env.VITE_ANTHROPIC_MODEL;
+  }
+  if (env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
+    process.env.GEMINI_API_KEY = env.GOOGLE_API_KEY;
   }
 }
 

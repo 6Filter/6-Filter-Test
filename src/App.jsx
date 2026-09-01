@@ -1094,7 +1094,9 @@ export default function App() {
               <option key={p.id} value={p.id} disabled={p.configured === false}>
                 {p.label}
                 {p.id === "claude" ? " · default" : ""}
-                {p.configured === false ? " · not configured" : ""}
+                {p.configured === false
+                  ? ` · not configured (set ${p.envKey || "API key"} on Render)`
+                  : ""}
               </option>
             ))}
           </select>
