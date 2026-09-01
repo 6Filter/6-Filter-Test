@@ -2224,6 +2224,7 @@ const CSS = `
 .lbl em{font-style:normal;color:var(--muted);text-transform:none;letter-spacing:0;font-family:var(--fd);font-size:11px;}
 .primus textarea,.primus input,.primus select{width:100%;background:var(--bg-soft);border:1px solid var(--line);border-radius:14px;color:var(--ink);font-family:var(--fd);font-size:15px;padding:14px 16px;resize:vertical;outline:none;transition:border-color .15s,box-shadow .15s,background .15s;line-height:1.55;}
 .primus select{resize:none;cursor:pointer;}
+.primus select option{color:#170C25;background:#fff;}
 .primus textarea.idea-input{min-height:160px;font-size:15.5px;padding:18px 20px;}
 .primus textarea:focus,.primus input:focus,.primus select:focus{border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(0,108,180,.16);}
 .screen-brief textarea:focus,.screen-brief input:focus,.screen-brief select:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.22);}

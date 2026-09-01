@@ -747,6 +747,7 @@ const PROP_CSS = `
 .prop-page input,.prop-page select,.prop-page textarea{
   width:100%;background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;
   color:#F3EAF8;font-family:var(--fd);font-size:14.5px;padding:11px 13px;outline:none;}
+.prop-page select option{color:#170C25;background:#fff;}
 .prop-page textarea{min-height:84px;resize:vertical;}
 .prop-page input:focus,.prop-page select:focus,.prop-page textarea:focus{
   border-color:#C9AEEF;box-shadow:0 0 0 3px rgba(201,174,239,.18);}
