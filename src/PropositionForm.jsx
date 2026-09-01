@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, FileUp, Loader2, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Copy, Check, FileText, FileUp, Loader2, Send, Sparkles, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   OWNER_COLORS,
@@ -8,6 +8,8 @@ import {
   mergeProposition,
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
+import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
+import { goNoGoTone } from "../lib/goNoGo.js";
 
 function OwnerTag({ role }) {
   const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
@@ -281,13 +283,63 @@ function AiPassResultBanner({ meta }) {
 }
 
 function toneFor(label) {
-  if (label === "Cleared") return "pass";
+  if (label === "Cleared" || label === "Exempt") return "pass";
   if (label === "Below floor") return "fail";
   return "watch";
 }
 
-function AnalysisSummary({ advisoryChecks, visible, stale }) {
+function GoNoGoResult({ result }) {
+  if (!result?.classification) return null;
+  return (
+    <div className="gonogo-result" data-tone={goNoGoTone(result.classification)}>
+      <span className="gonogo-badge">{result.classification}</span>
+      <p>{result.rationale || "No rationale returned."}</p>
+    </div>
+  );
+}
+
+function ProofUploadPanel({ proof, onPick, onClear, fileRef, error, disabled }) {
+  return (
+    <section className="proof-panel" aria-label="Market research proof">
+      <h3 className="proof-title">Market-research proof</h3>
+      <p className="proof-lede">
+        Upload the U&A / tracker / study file that backs Filters 1–4. Filters 5 and 6 unlock after
+        this file is attached.
+      </p>
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+        onChange={onPick}
+        hidden
+      />
+      {!proof ? (
+        <button type="button" className="ghost" disabled={disabled} onClick={() => fileRef.current?.click()}>
+          <FileUp size={15} /> Upload proof (PDF, Word, or image)
+        </button>
+      ) : (
+        <span className="chip file prop-file-chip">
+          <FileText size={15} />
+          {proof.name || "Proof file"}
+          {!disabled ? (
+            <button type="button" onClick={onClear} aria-label="Remove proof">
+              <X size={12} />
+            </button>
+          ) : null}
+        </span>
+      )}
+      {error ? (
+        <div className="prop-err">
+          <AlertTriangle size={14} /> {error}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function AnalysisSummary({ advisoryChecks, visible, stale, unlockedKeys }) {
   if (!visible || !advisoryChecks) return null;
+  const filters = SIX_FILTERS_FORM.filter((f) => !unlockedKeys || unlockedKeys.has(f.key));
   return (
     <section className={`analysis-summary${stale ? " is-stale" : ""}`} aria-live="polite">
       <h2 className="summary-heading">Analysis</h2>
@@ -297,7 +349,7 @@ function AnalysisSummary({ advisoryChecks, visible, stale }) {
           : "Based on everything currently entered."}
       </p>
       <div className="summary-grid">
-        {SIX_FILTERS_FORM.map((f) => {
+        {filters.map((f) => {
           const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
           return (
             <div className="summary-row" key={f.key}>
@@ -350,11 +402,21 @@ export default function PropositionForm({
   const [summaryChecks, setSummaryChecks] = useState(null);
   const [fallbackUi, setFallbackUi] = useState(null);
   const [fallbackChoice, setFallbackChoice] = useState("");
+  const [goNoGo, setGoNoGo] = useState(() => initial?.goNoGo || null);
+  const [readingGoNoGo, setReadingGoNoGo] = useState(false);
+  const [proofError, setProofError] = useState("");
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [managerLoading, setManagerLoading] = useState(false);
+  const [managerText, setManagerText] = useState("");
+  const [managerSubject, setManagerSubject] = useState("");
+  const [managerCopied, setManagerCopied] = useState(false);
   const fileRef = useRef(null);
+  const proofRef = useRef(null);
 
   useEffect(() => {
     setDoc(mergeProposition(initial));
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
+    setGoNoGo(initial?.goNoGo || null);
   }, [initial?.id, initial?.version]);
 
   useEffect(() => {
@@ -365,15 +427,26 @@ export default function PropositionForm({
     setLocalError("");
     setFallbackUi(null);
     setFallbackChoice("");
+    setProofError("");
     setJustSubmitted(false);
     setSummaryStale(false);
     setSummaryChecks(null);
+    setGoNoGo(initial?.goNoGo || null);
+    setManagerOpen(false);
   }, [initial?.id]);
 
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
   const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
   const canSubmit = Boolean(doc.researchRunAt) || hasIdeaMaterial;
+  const proofGateReady = isFilterUnlocked("proof-gate", doc);
+  const f5Unlocked = isFilterUnlocked("f5", doc);
+  const sendManagerReady = isFilterUnlocked("send-manager", doc);
+  const unlockHint = nextLockedHint(doc);
+  const unlockedFilterKeys = new Set(
+    SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, doc))
+  );
+  const visibleFilters = SIX_FILTERS_FORM.filter((s) => unlockedFilterKeys.has(s.key));
 
   useEffect(() => {
     if (!propositionId) return undefined;
@@ -454,10 +527,7 @@ export default function PropositionForm({
     };
   }
 
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || attachmentLocked) return;
+  async function readUploadFile(file, setErr) {
     const name = String(file.name || "").toLowerCase();
     const mime = String(file.type || "").toLowerCase();
     const ok =
@@ -467,30 +537,127 @@ export default function PropositionForm({
       mime.includes("wordprocessingml") ||
       /\.(pdf|docx?)$/i.test(name);
     if (!ok) {
-      setFileError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
-      return;
+      setErr("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
+      return null;
     }
     if (file.size > 8 * 1024 * 1024) {
-      setFileError("Keep the file under 8 MB.");
-      return;
+      setErr("Keep the file under 8 MB.");
+      return null;
     }
-    setFileError("");
+    setErr("");
     const isImage = isImageUpload(name, mime);
     try {
-      let attachment;
       if (isImage) {
         try {
-          attachment = await rasterizeImageFile(file);
+          return await rasterizeImageFile(file);
         } catch {
-          attachment = await readFileAsAttachment(file, true);
+          return await readFileAsAttachment(file, true);
         }
-      } else {
-        attachment = await readFileAsAttachment(file, false);
       }
-      setTop("attachment", attachment);
+      return await readFileAsAttachment(file, false);
     } catch {
-      setFileError("Could not read that file. Try a JPG or PNG.");
+      setErr("Could not read that file. Try a JPG or PNG.");
+      return null;
     }
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || attachmentLocked) return;
+    const attachment = await readUploadFile(file, setFileError);
+    if (attachment) setTop("attachment", attachment);
+  }
+
+  async function handleProofFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || saving) return;
+    const proof = await readUploadFile(file, setProofError);
+    if (!proof) return;
+    const next = { ...doc, marketResearchProof: proof };
+    setDoc(next);
+    setProofError("");
+    const result = await onSave(next, llmProvider);
+    if (result?.proposition) {
+      setDoc(mergeProposition(result.proposition));
+      if (result.proposition.advisoryChecks) setAdvisoryChecks(result.proposition.advisoryChecks);
+    }
+  }
+
+  async function clearProof() {
+    if (saving) return;
+    const next = { ...doc, marketResearchProof: null };
+    setDoc(next);
+    const result = await onSave(next, llmProvider);
+    if (result?.proposition) setDoc(mergeProposition(result.proposition));
+  }
+
+  async function runGoNoGoRead() {
+    if (readingGoNoGo || !proofGateReady || !propositionId) return;
+    setReadingGoNoGo(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/go-nogo`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposition: doc, provider: llmProvider }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "AI read failed.");
+      const nextGo = data.goNoGo || {
+        classification: data.classification,
+        rationale: data.rationale,
+        at: new Date().toISOString(),
+      };
+      setGoNoGo(nextGo);
+      setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
+      if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
+    } catch (e) {
+      setLocalError(e.message || "AI read failed.");
+    } finally {
+      setReadingGoNoGo(false);
+    }
+  }
+
+  async function openSendToManagerModal() {
+    if (!sendManagerReady || !propositionId || managerLoading) return;
+    setManagerOpen(true);
+    setManagerLoading(true);
+    setManagerText("");
+    setManagerCopied(false);
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/manager-draft`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposition: doc, provider: llmProvider }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not draft the message.");
+      setManagerSubject(data.subject || `6 Filter Test — ${doc.name || "proposition"}`);
+      setManagerText(data.message || "");
+    } catch (e) {
+      setManagerText(e.message || "Couldn't draft the message — try again.");
+    } finally {
+      setManagerLoading(false);
+    }
+  }
+
+  function copyManagerMsg() {
+    const ta = document.createElement("textarea");
+    ta.value = managerText;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } catch {
+      /* ignore */
+    }
+    document.body.removeChild(ta);
+    setManagerCopied(true);
+    window.setTimeout(() => setManagerCopied(false), 1600);
   }
 
   async function handleSubmit(providerOverride) {
@@ -524,6 +691,7 @@ export default function PropositionForm({
     }
     const nextDoc = mergeProposition(result.proposition);
     setDoc(nextDoc);
+    if (nextDoc.goNoGo) setGoNoGo(nextDoc.goNoGo);
     const checks = result.proposition.advisoryChecks || null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
@@ -614,7 +782,7 @@ export default function PropositionForm({
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
-      {SIX_FILTERS_FORM.map((spec) => {
+      {visibleFilters.map((spec) => {
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
         const f5Sizing = spec.key === "f5"
@@ -671,6 +839,39 @@ export default function PropositionForm({
           </section>
         );
       })}
+
+      {unlockHint && !f5Unlocked ? <p className="unlock-hint">{unlockHint}</p> : null}
+
+      {proofGateReady ? (
+        <section className="gonogo-panel">
+          <button
+            type="button"
+            className="prop-save run"
+            onClick={runGoNoGoRead}
+            disabled={readingGoNoGo || saving}
+          >
+            {readingGoNoGo ? <Loader2 size={15} className="spin" /> : null}
+            {readingGoNoGo ? "Analysing…" : "Submit for AI read"}
+          </button>
+          <GoNoGoResult result={goNoGo} />
+          {goNoGo?.classification === "GO" ? (
+            <ProofUploadPanel
+              proof={doc.marketResearchProof}
+              onPick={handleProofFile}
+              onClear={clearProof}
+              fileRef={proofRef}
+              error={proofError}
+              disabled={saving}
+            />
+          ) : null}
+          {goNoGo != null && goNoGo.classification !== "GO" ? (
+            <p className="gonogo-blocked-note">
+              Revise the filters above and submit for another read once ready — the upload step and
+              Filters 5–6 aren&apos;t available until this reads GO.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="prop-submit-footer">
         {error || localError ? <div className="prop-err">{error || localError}</div> : null}
@@ -729,6 +930,11 @@ export default function PropositionForm({
             {saving ? <Loader2 size={15} className="spin" /> : null}
             {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
           </button>
+          {sendManagerReady ? (
+            <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
+              <Send size={15} /> Send to Manager
+            </button>
+          ) : null}
         </div>
         <p className="prop-submit-note">
           Submitting publishes a new version — everyone opening this page sees the latest entries.
@@ -740,8 +946,48 @@ export default function PropositionForm({
           advisoryChecks={summaryChecks}
           visible={justSubmitted}
           stale={summaryStale}
+          unlockedKeys={unlockedFilterKeys}
         />
       </section>
+
+      {managerOpen ? (
+        <div className="modal-bg" onClick={() => setManagerOpen(false)}>
+          <div className="modal prop-mgr-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-h">
+              <span>
+                <Send size={15} /> Send to Manager
+              </span>
+              <button type="button" className="ghost sq" onClick={() => setManagerOpen(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            {managerLoading ? (
+              <div className="modal-loading">
+                <Loader2 size={20} className="spin" /> Drafting…
+              </div>
+            ) : (
+              <>
+                <textarea className="msg-area" readOnly value={managerText} rows={8} />
+                <div className="prop-actions">
+                  <button type="button" className="prop-save run" onClick={copyManagerMsg}>
+                    {managerCopied ? <Check size={15} /> : <Copy size={15} />}
+                    {managerCopied ? "Copied" : "Copy"}
+                  </button>
+                  <a
+                    className="ghost send-mgr"
+                    href={`mailto:?subject=${encodeURIComponent(managerSubject)}&body=${encodeURIComponent(managerText)}`}
+                  >
+                    Open in Mail
+                  </a>
+                </div>
+                <p className="modal-foot">
+                  Review before sending — this platform won&apos;t message anyone for you.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -816,6 +1062,28 @@ const PROP_CSS = `
 .prop-fallback-pick span{font-family:var(--fm);font-size:11px;letter-spacing:.04em;
   color:rgba(243,234,248,.75);}
 .prop-fallback-hint{margin:10px 0 0;font-size:12px;color:rgba(243,234,248,.55);line-height:1.4;}
+.unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
+.gonogo-panel{background:#191919;border:1px solid rgba(243,234,248,.12);border-radius:16px;
+  padding:18px 20px;margin:0 0 16px;display:flex;flex-direction:column;gap:14px;}
+.gonogo-result{padding:14px 16px;border-radius:12px;border:1px solid rgba(243,234,248,.16);}
+.gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
+.gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
+.gonogo-result[data-tone="watch"]{border-color:rgba(232,181,99,.4);background:rgba(232,181,99,.08);}
+.gonogo-badge{display:inline-block;font-family:var(--fm);font-size:12px;font-weight:700;
+  letter-spacing:.06em;margin-bottom:8px;}
+.gonogo-result[data-tone="pass"] .gonogo-badge{color:#7EDCA8;}
+.gonogo-result[data-tone="fail"] .gonogo-badge{color:#E2716B;}
+.gonogo-result[data-tone="watch"] .gonogo-badge{color:#E8B563;}
+.gonogo-result p{margin:0;font-size:14px;line-height:1.5;color:#F3EAF8;}
+.gonogo-blocked-note{margin:0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.62);}
+.proof-panel{padding-top:4px;}
+.proof-title{margin:0 0 6px;font-size:16px;color:#F3EAF8;}
+.proof-lede{margin:0 0 12px;font-size:13px;line-height:1.45;color:rgba(243,234,248,.58);}
+.send-mgr{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(243,234,248,.28);
+  border-radius:999px;padding:10px 16px;color:#F3EAF8;text-decoration:none;font-size:14px;
+  font-family:var(--fd);background:transparent;cursor:pointer;}
+.prop-mgr-modal .msg-area{width:100%;min-height:160px;margin:12px 0;background:var(--bg-soft,#22113A);
+  border:1px solid rgba(243,234,248,.14);border-radius:12px;color:#F3EAF8;padding:12px;font-family:var(--fd);}
 .prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
   border-radius:16px;padding:18px 20px 16px;margin:0 0 16px;}
 .prop-filter.is-locked{opacity:.78;}
