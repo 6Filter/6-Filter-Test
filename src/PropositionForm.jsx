@@ -138,146 +138,6 @@ function readFileAsAttachment(file, isImage) {
   });
 }
 
-function AiFirstPassModal({ open, onClose, onResult, propositionId }) {
-  const [ideaText, setIdeaText] = useState("");
-  const [attachment, setAttachment] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const fileRef = useRef(null);
-
-  if (!open) return null;
-
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const name = String(file.name || "").toLowerCase();
-    const mime = String(file.type || "").toLowerCase();
-    const ok =
-      isImageUpload(name, mime) ||
-      mime === "application/pdf" ||
-      mime === "application/msword" ||
-      mime.includes("wordprocessingml") ||
-      /\.(pdf|docx?)$/i.test(name);
-    if (!ok) {
-      setError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      setError("Keep the file under 8 MB.");
-      return;
-    }
-    setError("");
-    const isImage = isImageUpload(name, mime);
-    try {
-      if (isImage) {
-        try {
-          setAttachment(await rasterizeImageFile(file));
-        } catch {
-          setAttachment(await readFileAsAttachment(file, true));
-        }
-      } else {
-        setAttachment(await readFileAsAttachment(file, false));
-      }
-    } catch {
-      setError("Could not read that file. Try a JPG or PNG.");
-    }
-  }
-
-  async function run() {
-    if (!ideaText.trim() && !attachment) {
-      setError("Describe the idea, or attach a file, to run the AI first pass.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 180000);
-      try {
-        const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/ai-first-pass`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ideaText: ideaText.trim(), image: attachment }),
-          signal: ctrl.signal,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "AI first pass failed.");
-        onResult(data);
-        onClose();
-      } finally {
-        clearTimeout(timer);
-      }
-    } catch (e) {
-      setError(
-        e?.name === "AbortError"
-          ? "The first pass timed out. Try a shorter description."
-          : e.message || "AI first pass failed."
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Run AI first pass"
-      onClick={() => !busy && onClose()}
-    >
-      <div className="modal product-idea-modal" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          className="ghost sq product-idea-close"
-          aria-label="Close"
-          disabled={busy}
-          onClick={onClose}
-        >
-          <X size={16} />
-        </button>
-        <p className="ai-modal-kicker">Draft assist · not a Forum verdict</p>
-        <label className="lbl">Product idea</label>
-        <textarea
-          value={ideaText}
-          onChange={(e) => setIdeaText(e.target.value)}
-          placeholder="A short description the persistent form doesn't carry — enough for the first pass to read."
-          rows={6}
-          disabled={busy}
-        />
-        <label className="lbl">Or attach idea / insight</label>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
-          onChange={handleFile}
-          hidden
-        />
-        {!attachment ? (
-          <button type="button" className="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
-            <FileUp size={15} /> Upload PDF, Word, or image
-          </button>
-        ) : (
-          <span className="chip file">
-            {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
-            {attachment.name}
-            <button type="button" disabled={busy} onClick={() => setAttachment(null)}><X size={12} /></button>
-          </span>
-        )}
-        {error ? <div className="err"><AlertTriangle size={14} /> {error}</div> : null}
-        <div className="ai-modal-actions">
-          <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancel</button>
-          <button type="button" className="run" disabled={busy} onClick={run}>
-            <Sparkles size={15} /> {busy ? "Running first pass…" : "Run first pass"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function FieldControl({ field, value, onChange, suggestion, onAcceptSuggestion, onDismissSuggestion, currentUser }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
@@ -380,17 +240,19 @@ function AiPassResultBanner({ meta }) {
   const notCovered = Array.isArray(meta.notCovered) ? meta.notCovered : [];
   return (
     <div className="ai-pass-banner">
-      <p className="ai-pass-kicker">This pass does not cover F5 or F6</p>
-      <ul className="ai-not-covered">
-        {notCovered.map((item) => (
-          <li key={item.filter}>
-            <strong>{item.filter}</strong> — {item.reason}
-          </li>
-        ))}
-      </ul>
+      <p className="ai-pass-kicker">Research assist · not a Forum verdict</p>
+      {notCovered.length ? (
+        <ul className="ai-not-covered">
+          {notCovered.map((item) => (
+            <li key={item.filter}>
+              <strong>{item.filter}</strong> — {item.reason}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {sources.length ? (
         <details className="ai-pass-sources">
-          <summary>Sources the first pass cited ({sources.length})</summary>
+          <summary>Sources cited ({sources.length})</summary>
           <ul>
             {sources.map((s, i) => (
               <li key={`${s.url || s.title || "s"}-${i}`}>
@@ -438,11 +300,13 @@ export default function PropositionForm({
   currentUser,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
-  const [aiPassOpen, setAiPassOpen] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
+  const [fileError, setFileError] = useState("");
+  const [localError, setLocalError] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     setDoc(mergeProposition(initial));
@@ -453,10 +317,14 @@ export default function PropositionForm({
     setAiSuggestions(null);
     setAiDismissed({});
     setAiPassMeta(null);
-    setAiPassOpen(false);
+    setFileError("");
+    setLocalError("");
   }, [initial?.id]);
 
   const propositionId = doc.id || initial?.id;
+  const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
+  const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
+  const canSubmit = Boolean(doc.researchRunAt) || hasIdeaMaterial;
 
   useEffect(() => {
     if (!propositionId) return undefined;
@@ -501,9 +369,9 @@ export default function PropositionForm({
     }));
   }
 
-  function applyAiFirstPass(data) {
+  function applyResearchResult(data) {
+    if (!data?.suggestions) return;
     const next = { ...(data.suggestions || {}) };
-    if (data.division) next.division = data.division;
     setAiSuggestions(next);
     setAiDismissed({});
     setAiPassMeta({
@@ -531,8 +399,64 @@ export default function PropositionForm({
     };
   }
 
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || attachmentLocked) return;
+    const name = String(file.name || "").toLowerCase();
+    const mime = String(file.type || "").toLowerCase();
+    const ok =
+      isImageUpload(name, mime) ||
+      mime === "application/pdf" ||
+      mime === "application/msword" ||
+      mime.includes("wordprocessingml") ||
+      /\.(pdf|docx?)$/i.test(name);
+    if (!ok) {
+      setFileError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setFileError("Keep the file under 8 MB.");
+      return;
+    }
+    setFileError("");
+    const isImage = isImageUpload(name, mime);
+    try {
+      let attachment;
+      if (isImage) {
+        try {
+          attachment = await rasterizeImageFile(file);
+        } catch {
+          attachment = await readFileAsAttachment(file, true);
+        }
+      } else {
+        attachment = await readFileAsAttachment(file, false);
+      }
+      setTop("attachment", attachment);
+    } catch {
+      setFileError("Could not read that file. Try a JPG or PNG.");
+    }
+  }
+
+  async function handleSubmit() {
+    if (saving) return;
+    if (!canSubmit) {
+      setLocalError("Describe the idea, or attach a file, before the first Submit.");
+      return;
+    }
+    setLocalError("");
+    const result = await onSave(doc);
+    if (result?.suggestions) applyResearchResult(result);
+    if (result?.researchError) {
+      setLocalError(result.researchError);
+    }
+    if (result?.proposition) {
+      setDoc(mergeProposition(result.proposition));
+      if (result.proposition.advisoryChecks) setAdvisoryChecks(result.proposition.advisoryChecks);
+    }
+  }
+
   return (
-    <>
     <main className="prop-page">
       <style>{PROP_CSS}</style>
 
@@ -544,39 +468,84 @@ export default function PropositionForm({
         </p>
         <div className="prop-grid">
           {PROPOSITION_TOP_FIELDS.map((field) => (
-            <FieldControl
-              key={field.key}
-              field={field}
-              value={doc[field.key]}
-              onChange={(v) => setTop(field.key, v)}
-              currentUser={currentUser}
-              {...suggestionProps("", field, doc[field.key])}
-            />
+            <div key={field.key} className={field.key === "ideaDescription" ? "span-2 prop-idea-block" : undefined}>
+              <FieldControl
+                field={field}
+                value={doc[field.key]}
+                onChange={(v) => setTop(field.key, v)}
+                currentUser={currentUser}
+                {...suggestionProps("", field, doc[field.key])}
+              />
+              {field.key === "ideaDescription" ? (
+                <div className="prop-attach">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+                    onChange={handleFile}
+                    hidden
+                  />
+                  {!doc.attachment ? (
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={saving || attachmentLocked}
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <FileUp size={15} /> Upload PDF, Word, or image
+                    </button>
+                  ) : (
+                    <span className="chip file prop-file-chip">
+                      {doc.attachment.preview ? (
+                        <img src={doc.attachment.preview} alt="" />
+                      ) : (
+                        <FileText size={15} />
+                      )}
+                      {doc.attachment.name || "Attachment"}
+                      {!attachmentLocked ? (
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => setTop("attachment", null)}
+                        >
+                          <X size={12} />
+                        </button>
+                      ) : null}
+                    </span>
+                  )}
+                  {fileError ? (
+                    <div className="prop-err">
+                      <AlertTriangle size={14} /> {fileError}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
-        {error ? <div className="prop-err">{error}</div> : null}
+        {error || localError ? <div className="prop-err">{error || localError}</div> : null}
         <AiPassResultBanner meta={aiPassMeta} />
         <div className="prop-actions">
           <button
             type="button"
-            className="prop-save"
-            disabled={saving}
-            onClick={() => onSave(doc)}
+            className="prop-save run"
+            disabled={saving || !canSubmit}
+            onClick={handleSubmit}
+            title={
+              !canSubmit
+                ? "Describe the idea or attach a file before the first Submit"
+                : undefined
+            }
           >
             {saving ? <Loader2 size={15} className="spin" /> : null}
             {savedFlash ? "Submitted" : saving ? "Submitting…" : "Submit"}
           </button>
-          <button
-            type="button"
-            className="ghost ai-first-pass-btn"
-            disabled={saving || !propositionId}
-            onClick={() => setAiPassOpen(true)}
-          >
-            <Sparkles size={15} /> Run AI first pass
-          </button>
         </div>
         <p className="prop-submit-note">
           Submitting publishes a new version — everyone opening this page sees the latest entries.
+          {!doc.researchRunAt
+            ? " The first Submit also runs research once and offers suggestions on empty fields."
+            : " Research already ran for this proposition; later Submits only save."}
         </p>
       </section>
 
@@ -638,13 +607,6 @@ export default function PropositionForm({
         );
       })}
     </main>
-      <AiFirstPassModal
-        open={aiPassOpen}
-        onClose={() => setAiPassOpen(false)}
-        onResult={applyAiFirstPass}
-        propositionId={propositionId}
-      />
-    </>
   );
 }
 
@@ -656,11 +618,17 @@ const PROP_CSS = `
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
 .prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
 .prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+.prop-idea-block{display:flex;flex-direction:column;gap:10px;}
 .prop-field{display:flex;flex-direction:column;gap:6px;margin:0;}
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
-.prop-field.span-2,.prop-check.span-2{grid-column:1 / -1;}
+.prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
 .prop-helper{font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;}
+.prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.prop-file-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
+  background:rgba(201,174,239,.12);border:1px solid rgba(201,174,239,.28);font-size:13px;}
+.prop-file-chip img{width:22px;height:22px;object-fit:cover;border-radius:4px;}
+.prop-file-chip button{border:none;background:transparent;color:#F3EAF8;cursor:pointer;display:inline-flex;}
 .prop-page input,.prop-page select,.prop-page textarea{
   width:100%;background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;
   color:#F3EAF8;font-family:var(--fd);font-size:14.5px;padding:11px 13px;outline:none;}
@@ -674,10 +642,7 @@ const PROP_CSS = `
 .prop-submit-note{margin:10px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);line-height:1.45;}
 .prop-save{display:inline-flex;align-items:center;gap:8px;background:#C9AEEF;color:#170C25;border:none;
   border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--fd);}
-.prop-save:disabled{opacity:.7;cursor:wait;}
-.ai-first-pass-btn{background:transparent;color:#F3EAF8;border:1px solid rgba(243,234,248,.28);
-  border-radius:999px;padding:10px 16px;font-weight:600;font-size:13.5px;}
-.prop-page .ai-first-pass-btn:hover{background:rgba(201,174,239,.12);border-color:rgba(201,174,239,.45);color:#F3EAF8;}
+.prop-save:disabled{opacity:.55;cursor:not-allowed;}
 .ai-suggestion-chip{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px;
   padding:8px 12px;border-radius:10px;background:rgba(201,174,239,.12);
   border:1px solid rgba(201,174,239,.28);font-size:12px;color:#F3EAF8;line-height:1.4;}
@@ -697,11 +662,7 @@ const PROP_CSS = `
 .ai-pass-sources summary{cursor:pointer;}
 .ai-pass-sources ul{margin:8px 0 0;padding-left:18px;}
 .ai-pass-sources a{color:#C9AEEF;}
-.ai-modal-kicker{margin:0 28px 4px 0;font-family:var(--fm);font-size:11px;letter-spacing:.1em;
-  text-transform:uppercase;color:#7C4DBE;font-weight:700;}
-.ai-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
-.ai-modal-actions .run{width:auto;margin:0;padding:10px 16px;border-radius:999px;}
-.prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;}
+.prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;display:flex;align-items:center;gap:6px;}
 .prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
   border-radius:16px;padding:18px 20px 16px;margin:0 0 16px;}
 .prop-filter.is-locked{opacity:.78;}
@@ -710,49 +671,17 @@ const PROP_CSS = `
   font-size:13px;font-weight:700;flex-shrink:0;}
 .prop-filter-title{margin:0;font-size:18px;letter-spacing:-.3px;}
 .prop-filter-sub{margin:4px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);}
-.prop-status{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.06em;
-  text-transform:uppercase;padding:5px 10px;border-radius:999px;white-space:nowrap;}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
 .check-pill{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
   padding:5px 10px;border-radius:999px;white-space:nowrap;}
 .check-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
 .check-pill[data-tone="fail"]{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
 .check-pill[data-tone="watch"]{color:var(--watch);background:rgba(232,181,99,.16);}
-.check-list{margin:0 0 14px;padding:4px 0 2px;}
-.check-row{display:flex;align-items:center;padding:10px 0;border-top:1px dashed var(--border);font-size:13px;color:#F3EAF8;line-height:1.4;}
-.check-row:first-child{border-top:none;}
-.check-icon{width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:10px;flex-shrink:0;}
-.check-icon.pending{background:rgba(var(--watch-rgb,227,169,63),.18);color:var(--watch);}
-.check-icon.done{background:rgba(111,191,115,.18);color:var(--pass);}
-.check-icon.info{background:rgba(var(--accent-rgb),.15);color:var(--accent);font-style:italic;}
-.advisory-note{font-size:11px;font-family:var(--fm);text-align:right;max-width:220px;line-height:1.35;}
-.advisory-note[data-advisory="meets-floor"]{color:var(--pass);}
-.advisory-note[data-advisory="below-floor"]{color:var(--fail);}
-.advisory-note[data-advisory="insufficient-evidence"],
-.advisory-note[data-advisory="not-started"]{color:var(--muted-3);}
-.advisory-note[data-advisory="exempt"]{color:var(--watch);}
-.advisory-coverage{background:#191919;border:1px solid rgba(243,234,248,.12);border-radius:14px;padding:22px 18px 8px;margin:14px 0 0;position:relative;}
-.advisory-coverage .about-lede{font-size:13px;line-height:1.5;color:rgba(243,234,248,.62);margin:8px 0 4px;}
-.advisory-row{padding:14px 0;}
-.advisory-row + .advisory-row{border-top:1px solid rgba(243,234,248,.12);}
-.advisory-row-title{font-weight:600;color:#F3EAF8;margin-bottom:6px;font-size:13.5px;}
-.advisory-checked-list{list-style:none;margin:0 0 8px;padding:0;font-size:13px;}
-.advisory-checked-list li[data-pass="true"]{color:var(--pass);}
-.advisory-checked-list li[data-pass="false"]{color:var(--fail);}
-.advisory-check-note{display:block;font-size:12px;color:rgba(243,234,248,.5);font-weight:400;margin:2px 0 0;}
-.advisory-not-scored-list{list-style:disc;margin:0;padding-left:18px;font-size:12px;color:rgba(243,234,248,.45);}
-.advisory-none{font-size:12.5px;color:rgba(243,234,248,.45);margin:0 0 8px;}
-.prop-status.tone-pass{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
-.prop-status.tone-fail{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
-.prop-status.tone-watch{color:var(--watch);background:rgba(232,181,99,.16);}
 .prop-cross{margin:12px 0 4px;padding:8px 12px;border-radius:10px;font-size:12.5px;
   background:rgba(232,181,99,.1);color:#E8B563;border:1px dashed rgba(232,181,99,.4);}
-.prop-cross.is-flag{background:rgba(226,113,107,.12);color:#E2716B;border-color:rgba(226,113,107,.45);}
 .prop-computed{background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;padding:12px 14px;
   display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;}
 .prop-computed.is-empty{color:rgba(243,234,248,.45);font-size:13.5px;}
-.prop-computed .tone-pass{color:var(--pass);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
-.prop-computed .tone-watch{color:var(--watch);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
 @media (max-width:760px){
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}

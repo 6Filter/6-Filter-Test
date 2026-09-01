@@ -21,13 +21,13 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 - Proposition Form — F1–F6 evidence, Forum verdicts, overall BH Forum verdict
 - Owner tags on fields (who *should* fill them); login/role lock is parked until `REQUIRE_AUTH=true`
 - Log of propositions (open / delete)
-- Optional “Run AI first pass” on a proposition (F1/F4 suggestions, F5/F6 explicitly not covered)
+- Optional research on first Submit of a proposition (F1/F3/F4/F5 suggestions; F6 explicitly not covered)
 - Automated-check coverage panel on the form
 
 ### Backend
 - `GET/POST /api/auth/login|logout|me` — cookie session (`primus_session`, HttpOnly)
 - `GET/POST /api/propositions`, `GET/PUT/DELETE /api/propositions/:id`
-- `POST /api/propositions/:id/ai-first-pass`
+- `POST /api/propositions/:id/ai-first-pass` (retired — research runs once on first Submit via `PUT /api/propositions/:id`)
 - Ideas / category-sizing / format-trend / calibration / Claude routes still exist for dormant tools
 - LLM keys only on the server (`ANTHROPIC_API_KEY`, never a `VITE_` key in the browser)
 - Postgres via `DATABASE_URL` (local file store if unset)
@@ -45,7 +45,7 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 
 ### Security notes
 - CORS: `Access-Control-Allow-Origin` is set only when `Origin` equals `ALLOWED_ORIGIN` (default `https://primus-ai.onrender.com`), with credentials
-- Rate limit: in-memory, 20/min per user on `ai-first-pass`, `category-sizing/run`, `format-trend/run`, and `claude`. Resets on process restart; not shared across instances
+- Rate limit: in-memory, 20/min per user on proposition Submit research path, `category-sizing/run`, `format-trend/run`, and `claude`. Resets on process restart; not shared across instances
 
 ---
 

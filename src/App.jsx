@@ -84,14 +84,32 @@ async function fetchPropositionById(id) {
 }
 
 async function putProposition(id, payload) {
-  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Could not save proposition.");
-  return attachAdvisory(data);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 180000);
+  try {
+    const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Could not save proposition.");
+    return {
+      proposition: attachAdvisory(data),
+      suggestions: data.suggestions ?? null,
+      notCovered: data.notCovered || [],
+      sources: data.sources || [],
+      researchError: data.researchError || null,
+    };
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      throw new Error("Submit timed out while running research. Try a shorter description, or Submit again.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function deletePropositionById(id) {
@@ -694,11 +712,12 @@ export default function App() {
   }
 
   async function savePropositionForTeam(doc) {
-    if (!doc?.id || savingProp) return;
+    if (!doc?.id || savingProp) return null;
     setSavingProp(true);
     setError("");
     try {
-      const saved = await putProposition(doc.id, doc);
+      const result = await putProposition(doc.id, doc);
+      const saved = result.proposition;
       setProposition(saved);
       setPropositionList((rows) => {
         const next = {
@@ -715,8 +734,10 @@ export default function App() {
       });
       setSavedFlash(true);
       window.setTimeout(() => setSavedFlash(false), 1600);
+      return result;
     } catch (e) {
       setError(e.message || "Could not save this proposition.");
+      return null;
     } finally {
       setSavingProp(false);
     }
