@@ -630,12 +630,10 @@ const PROP_CSS = `
 .prop-file-chip img{width:22px;height:22px;object-fit:cover;border-radius:4px;}
 .prop-file-chip button{border:none;background:transparent;color:#F3EAF8;cursor:pointer;display:inline-flex;}
 .prop-page input,.prop-page select,.prop-page textarea{
-  width:100%;background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;
-  color:#F3EAF8;font-family:var(--fd);font-size:14.5px;padding:11px 13px;outline:none;}
+  width:100%;background:var(--bg-soft, #22113A);border:1px solid var(--line, rgba(243,234,248,.14));border-radius:12px;
+  color:var(--ink, #F3EAF8);font-family:var(--fd);font-size:14.5px;padding:11px 13px;outline:none;}
 .prop-page select option{color:#170C25;background:#fff;}
 .prop-page textarea{min-height:84px;resize:vertical;}
-.prop-page input:focus,.prop-page select:focus,.prop-page textarea:focus{
-  border-color:#C9AEEF;box-shadow:0 0 0 3px rgba(201,174,239,.18);}
 .prop-check{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.45;cursor:pointer;color:#F3EAF8;}
 .prop-check input{width:auto;margin-top:3px;accent-color:#C9A0E8;}
 .prop-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
