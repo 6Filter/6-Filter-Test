@@ -1,86 +1,58 @@
 ---
-name: claude-skill-for-6-filter-test
+name: six-filter-test
 description: >-
-  Runs CavinKare 6 Filter Test evidence for Indian FMCG NPD ideas. Prefer
-  Nielsen retail audit and Kantar household panel when those files exist;
-  otherwise size and benchmark from the category-intelligence playbook plus
-  web search. Never return unsure or not available — always publish a working
-  estimate. Use when scoring or filling Filters 1–5, AI first pass, Nielsen,
-  Kantar, category size, price per gram, format trajectory, threat register,
-  or year-3 household sizing. Filter 6 is validation approval only, never scored.
+  Evidence research for CavinKare 6 Filter Test Filters 1, 3, 4 and 5. Prefer
+  publicly-cited Nielsen/Kantar figures (DRHPs, investor decks, credit-rating
+  rationales, trade press), then category-intelligence engines, then
+  digital-proxy/analog-transfer. Always report a finding and its source tier.
+  Never emit unsure or not available as a field value. Use for AI first pass,
+  F3 price index, F5 sizing factors, F1/F4 research prompts. F2 stays mostly
+  manual; F6 is validation only and is never researched or scored here.
 ---
 
 # Claude Skill for 6 Filter Test
 
-Backend evidence engine for Primus.AI. Scores and fills Filters 1–5 on the server. The form shows only the overall filter check (Cleared / Evidence missing / Below floor). It must not show per-point scores.
+Backend research guidance for Primus.AI Filters 1, 3, 4 and 5.
 
-## Evidence waterfall (every field)
+## Source hierarchy (every researched field)
 
-1. **Nielsen** retail audit (`data/nielsen.json`) when the category or SKU matches — products in market, category value/volume, price per gram, format shares.
-2. **Kantar** household panel (`data/kantar.json`) when the category matches — households, penetration, trial, repeat, frequency, pack value.
-3. **Calibration** in `data/category-intel.json` — apply measured Nielsen multipliers to free-data engines.
-4. **Playbook engines + web search** — HCES, ASI, IIP, WPI/CPI, filings, e-commerce price architecture (see category-intelligence methods).
-5. **Analog fallback** — nearest Indian staple/premium analog, labelled as a working estimate with a P10–P90 band stored in the backend, never shown as a per-point score.
+1. **Tier 1 — publicly-cited Nielsen / Kantar.** Web search for figures attributed to Nielsen retail audit or Kantar household panel in DRHPs, RHPs, investor decks, earnings transcripts, credit-rating rationales, and reputable trade press. There is **no** live Nielsen/Kantar API or internal export in this app — do not invent one and do not pretend a free scrape is Nielsen.
+2. **Tier 2 — category-intelligence engines.** Demand-side (HCES), supply-side (ASI ± trade), company build-up, reconciliation — as in `category-intelligence`.
+3. **Tier 3 — digital-proxy / analog-transfer.** Search interest, e-com assortment/price, review velocity, comparable-market or leading-state analogs.
 
-Never output "unsure", "not available", "unknown", "n/a", or "could not be established" as the field value. If the preferred source is empty, drop to the next step and still fill the field.
+Always fall through until there is a real finding. Never leave a researched field blank with "unsure", "not available", "unknown", or "n/a".
 
-## Filter rules (v4)
+Always state which tier the finding came from in the backend payload (`sourceTier` or `factorTiers`). Never present a tier-3 finding as if it were tier-1.
 
-### Filter 1 — Success possibility & growth
+Uncertainty is allowed **as a labelled weaker tier**, not as silence.
 
-- **Benchmark not named** — check what products are on shelf from Nielsen for this category; name the strongest currently-selling competitor (brand · variant · pack). If Nielsen has no row, web-search retail/e-com listings and still name one.
-- **Growth route or growth argument incomplete** — category size from Nielsen (value and volume growth, price/volume split). If Nielsen is empty, triangulate three playbook engines (demand-side, supply-side, company build-up); do not average a >30% spread — diagnose, then publish the working P50.
-- Attribute and gap still follow v4 (top-3 purchase attribute, gap ≥ 2.0). Commodity exemption unchanged.
+## Filter mapping
 
-### Filter 2 — Net margin
+| Filter | Research this skill covers | Stays human / out of scope |
+|---|---|---|
+| F1 | Benchmark naming; category size / growth argument | Attribute rank, CMI hierarchy evidence |
+| F2 | Optional general context only — **not** MRP, COGS, net margin, Finance signature | All F2 numeric and signature fields |
+| F3 | Price index vs named benchmark (₹/g or ₹/ml, comparable pack) | Elasticity source ownership, volume-loss modelling sign-off |
+| F4 | Format trajectory; threat register + responses | — |
+| F5 | Households Y3, trial %, repeat %, frequency, avg pack ₹ | CMI head signature |
+| F6 | **Nothing** — validation approval only, never researched or scored | Lab / consumer / pack panels |
 
-- Web search only (cost structures, channel terms, listed-player margin disclosures). Division floor stays in `lib/npdMaster.js`. Do not change the arithmetic. AI may suggest a path-to-floor net margin; Finance still signs.
+## What this skill does not cover
 
-### Filter 3 — Price resilient
+- Live syndicated feeds or private CavinKare Nielsen/Kantar exports
+- Inventing a Nielsen number when no public citation exists (use tier 2 or 3 instead)
+- F2 arithmetic against division floors
+- F6 lab/consumer/pack scoring
+- Surfacing per-factor methodology or tier labels in the checklist UI — tiers stay backend-only
 
-- **Price index vs benchmark missing** — competitor selling prices from Nielsen (price per gram / per ml, equal grammage). If Nielsen is empty, scrape or web-search current MRP/g for the named benchmark and 2–3 peers. Volume-loss cap stays **≤ 10% = pass**. Do not change that math.
+## Non-negotiables
 
-### Filter 4 — Tech & habit shift
-
-- **Format trajectory** — Nielsen format shares when present; otherwise this skill + web search (digital proxy, analog transfer, trademark filings). Always classify rising / stable / declining.
-- **Threat register empty** — substitutes, technology, clean-label, regulatory from this skill + web search. Always write a register.
-- **Threat responses incomplete — missing evidence counts as FAIL (v4)** — write a one-line response per threat. Empty register is a backend FAIL, not a blank.
-
-### Filter 5 — Revenue target (CMI model)
-
-Year-3 revenue = households reached × trial % × repeat % × frequency × pack value.
-
-Fill all five from Kantar, then Nielsen, then HCES / playbook household decomposition, then web search. Use analog fallbacks. Never leave a factor blank.
-
-```
-Category value ≈ Households × Penetration × Occasions/year × Volume/occasion × Realised price
-```
-
-CMI signature is a human gate. AI fills the factors so sizing is not incomplete; it does not tick the signature.
-
-### Filter 6 — Prototype gate
-
-**Scoring is not done on Filter 6.** Lab / consumer / pack numbers are collected for **validation approval** only. They must not move gram class, overall CLEARED, or any filter score.
-
-## Backend vs UI
-
-| Layer | What happens |
-|---|---|
-| Server | Per-criterion status, Nielsen/Kantar lookups, engine math, F5 crores, F3 ≤10% cap, F2 division floor |
-| Form | One Check pill per filter. No per-point scores, no 0–100 breakdown, no Novelty/Market/Evidence tiles on the proposition path |
-
-## Non-negotiables (do not invert)
-
-- Filter 3 volume loss **≤ 10% = PASS**
-- Filter 2 is a hard gate; margin headroom ±25% on revenue only
-- Gram bands: 10g < ₹1 Cr; 100g ₹1–12 Cr; 1000g > ₹12 Cr
-- Brand-line fit / CK category matching stays retired
+- Filter 3 volume loss ≤ 10% = PASS (do not change that math)
 - Do not average engines when spread > 30%
-- Label every rupee figure retail vs ex-factory
+- Label retail vs ex-factory on every rupee figure
+- Suggestions never overwrite a filled human field; nothing persists until Submit
 
 ## References
 
-- [nielsen-kantar.md](references/nielsen-kantar.md) — file shapes, lookup order, price/g and household fields
-- [filter-evidence.md](references/filter-evidence.md) — form field mapping and fallback recipes
-- [playbook-formulas.md](references/playbook-formulas.md) — sizing engines from the Category Intelligence Mastery Playbook
-- Sibling skill `lib/skills/category-intelligence/` — methods, sources, competition, RTM
+- [filter-checklist-research.md](references/filter-checklist-research.md) — checklist-item research recipes and JSON shapes
+- Sibling `lib/skills/category-intelligence/` — engines, sources, competition

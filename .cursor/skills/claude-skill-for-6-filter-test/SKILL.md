@@ -2,11 +2,11 @@
 name: claude-skill-for-6-filter-test
 description: >-
   Runs CavinKare 6 Filter Test evidence for Indian FMCG NPD ideas. Prefer
-  Nielsen and Kantar when local files exist; otherwise playbook engines and web
-  search. Never return unsure or not available. Use when editing 6 Filter Test
-  scoring, AI first pass, Nielsen, Kantar, category size, price per gram, format
-  trajectory, threat register, or Filter 5 household sizing. Filter 6 is
-  validation only, never scored.
+  publicly-cited Nielsen and Kantar figures; otherwise category-intelligence
+  engines and web search; last resort digital-proxy/analog. Never return unsure
+  or not available. Use when editing 6 Filter Test scoring, AI first pass,
+  Nielsen, Kantar, category size, price per gram, format trajectory, threat
+  register, or Filter 5 household sizing. Filter 6 is validation only, never scored.
 ---
 
 # Claude Skill for 6 Filter Test
@@ -16,17 +16,15 @@ Canonical copy: `lib/skills/six-filter-test/SKILL.md`.
 Before changing scoring, first pass, or check copy, read:
 
 1. `lib/skills/six-filter-test/SKILL.md`
-2. `lib/skills/six-filter-test/references/nielsen-kantar.md`
-3. `lib/skills/six-filter-test/references/filter-evidence.md`
-4. `lib/skills/six-filter-test/references/playbook-formulas.md`
+2. `lib/skills/six-filter-test/references/filter-checklist-research.md`
 
 ## Must follow
 
-- Nielsen → Kantar → calibration → playbook + web → analog. Never "unsure" / "not available".
-- F1 benchmark and category size: Nielsen products and category value first.
-- F2: web search. Do not change division-floor math.
-- F3: Nielsen price per gram vs benchmark. Volume loss ≤ 10% = pass.
-- F4: skill + web for trajectory, threats, responses.
-- F5: fill households, trial, repeat, frequency, pack value from Kantar/Nielsen/web fallbacks.
-- F6: not scored. Validation approval only.
-- Per-point scores stay on the server. The form shows one Check pill per filter.
+- Tier 1 public Nielsen/Kantar citations → tier 2 engines → tier 3 digital-proxy/analog. Always a finding; always report tier. Never "unsure" / "not available" as a field value.
+- No live Nielsen/Kantar feed — search publicly-cited figures only.
+- F1/F4: splice six-filter skill + source hierarchy into existing research prompts.
+- F2: almost entirely manual — no MRP, COGS, net margin, or Finance-signature suggestions.
+- F3: `runPriceResearch` only when a named benchmark exists.
+- F5: `runSizingResearch` fills all five factors; `factorTiers` stay backend/logs only.
+- F6: untouched — validation approval only, never researched or scored.
+- Suggestions never overwrite filled fields; nothing persists until Submit.
