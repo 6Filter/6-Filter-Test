@@ -8,7 +8,7 @@
 
 ## 1. Product summary
 
-Primus is CavinKare’s NPD **paper-gate** tool. A proposition is one persistent record. People in named roles fill the fields they own; BH Forum records a binary verdict per filter. Clearing the six filters is not commercial approval — final validation remains at CKR level (v4).
+Primus is CavinKare’s NPD **paper-gate** tool. A proposition is one persistent record. Owner tags on the form show who should fill each field; BH Forum records a binary verdict per filter. Clearing the six filters is not commercial approval — final validation remains at CKR level (v4).
 
 Advisory labels (Part 15) check only the v4 numeric floors that can be checked from what is typed. The optional AI first pass (Part 16) is a draft assist: it never writes the stored proposition, never sets `forumVerdict` / `finalVerdict`, and never overwrites a field a human has already filled.
 
@@ -17,10 +17,9 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 ## 2. In scope (what is actually running)
 
 ### User-facing
-- Sign in with a named email + password (one role per person)
 - Spec landing page (the v4 filter text)
 - Proposition Form — F1–F6 evidence, Forum verdicts, overall BH Forum verdict
-- Fields the current role does not own are disabled in the UI; the server rejects writes anyway
+- Owner tags on fields (who *should* fill them); login/role lock is parked until `REQUIRE_AUTH=true`
 - Log of propositions (open / delete)
 - Optional “Run AI first pass” on a proposition (F1/F4 suggestions, F5/F6 explicitly not covered)
 - Automated-check coverage panel on the form
@@ -29,7 +28,7 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 - `GET/POST /api/auth/login|logout|me` — cookie session (`primus_session`, HttpOnly)
 - `GET/POST /api/propositions`, `GET/PUT/DELETE /api/propositions/:id`
 - `POST /api/propositions/:id/ai-first-pass`
-- Ideas / category-sizing / format-trend / calibration / Claude routes still exist for dormant tools; they require a session
+- Ideas / category-sizing / format-trend / calibration / Claude routes still exist for dormant tools
 - LLM keys only on the server (`ANTHROPIC_API_KEY`, never a `VITE_` key in the browser)
 - Postgres via `DATABASE_URL` (local file store if unset)
 
@@ -39,11 +38,10 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 - Fallback: Vercel `api/*.js` wrappers that share `lib/cors.js`, `lib/auth.js`, and `lib/fieldOwnership.js` with Render — not a second copy of the rules
 - DB: Render Postgres in production
 
-### Auth (MVP)
-- Roles: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`
-- Ownership comes from `lib/propositionFields.js` (`owners` arrays) — not a second matrix
-- Seed users with `node scripts/seedUser.js "Name" email@ck.com password ROLE`
-- No public registration
+### Auth (parked)
+- Code for named accounts and field-ownership enforcement is in the repo
+- It is **off** unless `REQUIRE_AUTH=true` (then also set `SESSION_SECRET` and seed users)
+- Roles when turned on: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`
 
 ### Security notes
 - CORS: `Access-Control-Allow-Origin` is set only when `Origin` equals `ALLOWED_ORIGIN` (default `https://primus-ai.onrender.com`), with credentials
@@ -66,11 +64,11 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 ## 4. How a proposition moves
 
 ```
-Sign in  →  Spec page  →  NPD Screen (new or existing proposition)
-                         →  fill owned fields over weeks
-                         →  optional AI first pass (Accept per field)
-                         →  Save for the team
-                         →  BH Forum records forumVerdict / finalVerdict
+Spec page  →  NPD Screen (new or existing proposition)
+           →  fill fields over weeks
+           →  optional AI first pass (Accept per field)
+           →  Save for the team
+           →  BH Forum records forumVerdict / finalVerdict
 ```
 
 The retired Novelty / Market / Evidence scorecard and client-side API key flow are **not** how this app works anymore. Those files may still exist on disk as dormant code.
@@ -83,10 +81,11 @@ The retired Novelty / Market / Evidence scorecard and client-side API key flow a
 |------|--------|
 | Render web `primus-ai` | Production |
 | Render Postgres `primus-ai-db` | `DATABASE_URL` |
-| `SESSION_SECRET` | Required; rotate if leaked |
+| `REQUIRE_AUTH` | Off unless set to `true` |
+| `SESSION_SECRET` | Needed only when login is on; rotate if leaked |
 | `ANTHROPIC_API_KEY` | Server only |
 | `ALLOWED_ORIGIN` | Defaults to the Render URL |
-| User seeding | Engineering, via `scripts/seedUser.js` |
+| User seeding | Only when turning login on; `scripts/seedUser.js` |
 | Filter / owner schema | Product + the v4 document; coded in `lib/propositionFields.js` |
 
 ---

@@ -494,6 +494,7 @@ function hasFullScorecard(r) {
 
 export default function App() {
   const [sessionUser, setSessionUser] = useState(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [view, setView] = useState("spec");
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -562,10 +563,14 @@ export default function App() {
     apiFetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setSessionUser(data.user || null);
+        if (cancelled) return;
+        setAuthRequired(data.authRequired === true);
+        setSessionUser(data.user || null);
       })
       .catch(() => {
-        if (!cancelled) setSessionUser(null);
+        if (cancelled) return;
+        setAuthRequired(false);
+        setSessionUser(null);
       })
       .finally(() => {
         if (!cancelled) setSessionLoading(false);
@@ -576,7 +581,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!sessionUser) return;
     refreshHistories().catch(() => {});
     try {
       const stored = localStorage.getItem("primus-llm-provider");
@@ -592,7 +596,7 @@ export default function App() {
         }
       })
       .catch(() => {});
-  }, [sessionUser]);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -979,7 +983,7 @@ export default function App() {
     );
   }
 
-  if (!sessionUser) {
+  if (authRequired && !sessionUser) {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
@@ -1045,6 +1049,7 @@ export default function App() {
             ))}
           </select>
         </label>
+        {sessionUser ? (
         <div className="session-chip">
           <span>
             {sessionUser.name}
@@ -1054,6 +1059,7 @@ export default function App() {
             <LogOut size={14} />
           </button>
         </div>
+        ) : null}
       </header>
 
       {backLabel && (
