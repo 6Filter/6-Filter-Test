@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -14,12 +14,17 @@ import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
+import LoginScreen from "./LoginScreen.jsx";
+
+function apiFetch(url, options = {}) {
+  return fetch(url, { credentials: "include", ...options });
+}
 
 async function callModel(userText, system, image = null, provider = "claude") {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 90000);
   try {
-    const res = await fetch("/api/claude", {
+    const res = await apiFetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userText, system, image, provider }),
@@ -45,35 +50,35 @@ async function fetchIdeaHistory(limit = 20, ideaType = null) {
   if (ideaType === "product" || ideaType === "process") {
     params.set("ideaType", ideaType);
   }
-  const res = await fetch(`/api/ideas?${params.toString()}`);
+  const res = await apiFetch(`/api/ideas?${params.toString()}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load idea history.");
   return Array.isArray(data.ideas) ? data.ideas : [];
 }
 
 async function fetchPropositionList(limit = 100) {
-  const res = await fetch(`/api/propositions?limit=${limit}`);
+  const res = await apiFetch(`/api/propositions?limit=${limit}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load propositions.");
   return Array.isArray(data.propositions) ? data.propositions : [];
 }
 
 async function createPropositionRecord() {
-  const res = await fetch("/api/propositions", { method: "POST" });
+  const res = await apiFetch("/api/propositions", { method: "POST" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not create proposition.");
   return data.proposition;
 }
 
 async function fetchPropositionById(id) {
-  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`);
+  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load proposition.");
   return data.proposition;
 }
 
 async function putProposition(id, payload) {
-  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`, {
+  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -84,7 +89,7 @@ async function putProposition(id, payload) {
 }
 
 async function deletePropositionById(id) {
-  const res = await fetch(`/api/propositions/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, { method: "DELETE" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not delete proposition.");
   return true;
@@ -117,7 +122,7 @@ async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ideaType === "product" ? 180000 : 90000);
   try {
-    const res = await fetch("/api/ideas", {
+    const res = await apiFetch("/api/ideas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -145,21 +150,21 @@ async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd
 }
 
 async function fetchIdeaById(id) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}`);
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load idea.");
   return data;
 }
 
 async function deleteIdeaFromLog(id) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}`, { method: "DELETE" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not delete this run.");
   return data;
 }
 
 async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/escalate`, {
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}/escalate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filterName, disputedEvidence }),
@@ -170,7 +175,7 @@ async function escalateIdeaToCkr(id, filterName, disputedEvidence) {
 }
 
 async function recordIdeaOutcome(id, { actualNetMarginPct, actualRevenueCr }) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/record-outcome`, {
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}/record-outcome`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ actualNetMarginPct, actualRevenueCr }),
@@ -181,7 +186,7 @@ async function recordIdeaOutcome(id, { actualNetMarginPct, actualRevenueCr }) {
 }
 
 async function uploadSupportingDoc(id, doc) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc`, {
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: doc.name, mediaType: doc.mediaType, data: doc.data }),
@@ -192,7 +197,7 @@ async function uploadSupportingDoc(id, doc) {
 }
 
 async function removeSupportingDoc(id, docId) {
-  const res = await fetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc/${encodeURIComponent(docId)}`, { method: "DELETE" });
+  const res = await apiFetch(`/api/ideas/${encodeURIComponent(id)}/supporting-doc/${encodeURIComponent(docId)}`, { method: "DELETE" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not remove that document.");
   return data;
@@ -488,6 +493,8 @@ function hasFullScorecard(r) {
 }
 
 export default function App() {
+  const [sessionUser, setSessionUser] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [view, setView] = useState("spec");
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -551,6 +558,25 @@ export default function App() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setSessionUser(data.user || null);
+      })
+      .catch(() => {
+        if (!cancelled) setSessionUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setSessionLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sessionUser) return;
     refreshHistories().catch(() => {});
     try {
       const stored = localStorage.getItem("primus-llm-provider");
@@ -558,7 +584,7 @@ export default function App() {
     } catch {
       /* ignore */
     }
-    fetch("/api/providers")
+    apiFetch("/api/providers")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.providers) && data.providers.length) {
@@ -566,7 +592,7 @@ export default function App() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [sessionUser]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -934,6 +960,29 @@ export default function App() {
           ? "screen-spec"
           : "screen-brief";
 
+  async function signOut() {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* still clear locally */
+    }
+    setSessionUser(null);
+    setProposition(null);
+    setView("spec");
+  }
+
+  if (sessionLoading) {
+    return (
+      <div className="primus screen-spec" style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#F3EAF8" }}>
+        <Loader2 size={22} className="spin" />
+      </div>
+    );
+  }
+
+  if (!sessionUser) {
+    return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
+  }
+
   return (
     <div className={`primus ${screenClass}`}>
       <style>{CSS}</style>
@@ -996,6 +1045,15 @@ export default function App() {
             ))}
           </select>
         </label>
+        <div className="session-chip">
+          <span>
+            {sessionUser.name}
+            <em>{sessionUser.role}</em>
+          </span>
+          <button type="button" className="ghost sq" onClick={signOut} aria-label="Sign out">
+            <LogOut size={14} />
+          </button>
+        </div>
       </header>
 
       {backLabel && (
@@ -1018,6 +1076,7 @@ export default function App() {
           saving={savingProp}
           savedFlash={savedFlash}
           error={error}
+          currentUser={sessionUser}
         />
       )}
 
@@ -1068,6 +1127,7 @@ export default function App() {
                         disabled={loading || Boolean(deletingId)}
                       >
                         <span className={`log-status log-status-${pf.key}`}>{isOpening ? <Loader2 size={14} className="spin" /> : pf.label}</span>
+                        <span className="log-weight">{h.category || "—"}</span>
                         <span className="log-weight">{h.division || "—"}</span>
                         <span className="log-idea">{h.name || "Untitled proposition"}</span>
                         <span className="log-date">{formatLogDate(h.updatedAt)}</span>
@@ -1077,7 +1137,11 @@ export default function App() {
                         className="log-del"
                         aria-label="Delete this proposition"
                         title="Delete proposition"
-                        disabled={loading || Boolean(deletingId)}
+                        disabled={
+                          loading ||
+                          Boolean(deletingId) ||
+                          (sessionUser && sessionUser.role !== "ADMIN" && sessionUser.role !== "BM")
+                        }
                         onClick={() => confirmDeleteProposition(h, "log")}
                       >
                         {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
@@ -1215,7 +1279,7 @@ function CategoryIntelPanel({ filter, kind }) {
     setExporting(true);
     setExportErr("");
     try {
-      const res = await fetch(`/api/category-sizing/export/${encodeURIComponent(runId)}`);
+      const res = await apiFetch(`/api/category-sizing/export/${encodeURIComponent(runId)}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Export failed.");
@@ -1350,7 +1414,7 @@ function ReportExportButtons({ result, variant = "card" }) {
     setBusy(format);
     setErr("");
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/ideas/${encodeURIComponent(result.id)}/export?format=${encodeURIComponent(format)}`
       );
       if (!res.ok) {
@@ -1968,6 +2032,8 @@ const CSS = `
 .model-switch-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
 .model-switch select{appearance:none;background:transparent;border:none;color:var(--ink);font-family:var(--fd);font-size:13px;font-weight:600;padding:2px 18px 2px 0;cursor:pointer;max-width:150px;}
 .model-switch select:focus{outline:none;}
+.session-chip{display:flex;align-items:center;gap:8px;margin-left:8px;font-size:13px;color:var(--ink);}
+.session-chip em{font-style:normal;margin-left:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-family:var(--fm);}
 .hist-model,.log-model{font-family:var(--fm);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);background:rgba(0,108,180,.08);border-radius:999px;padding:2px 7px;flex-shrink:0;}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 0 var(--ink);animation:pl 2s infinite;}
 @keyframes pl{0%{box-shadow:0 0 0 0 rgba(0,108,180,.45);}70%{box-shadow:0 0 0 7px rgba(0,108,180,0);}100%{box-shadow:0 0 0 0 rgba(0,108,180,0);}}
@@ -1981,7 +2047,7 @@ const CSS = `
 .screen-spec .brandmark .star{color:#C9AEEF;}
 .screen-spec .spec-wordmark{display:flex;align-items:center;gap:8px;font-size:18px;letter-spacing:-.3px;white-space:nowrap;}
 .screen-spec .spec-chevron{opacity:.7;flex-shrink:0;}
-.screen-spec .top-nav,.screen-spec .model-switch{flex-shrink:0;}
+.screen-spec .top-nav,.screen-spec .model-switch,.screen-spec .session-chip{flex-shrink:0;}
 .screen-spec .nav-tab:hover{background:rgba(201,174,239,.1);color:#F3EAF8;}
 .screen-spec .nav-tab.active{background:rgba(201,174,239,.16);border-color:rgba(201,174,239,.35);color:#F3EAF8;}
 .screen-spec .model-switch{background:rgba(243,234,248,.08);border-color:rgba(243,234,248,.16);}

@@ -18,7 +18,7 @@ class ErrorBoundary extends React.Component {
         <div style={{ fontFamily: "system-ui", maxWidth: 520, margin: "64px auto", padding: 24 }}>
           <h1 style={{ fontSize: 20 }}>Something went wrong</h1>
           <p style={{ color: "#555", lineHeight: 1.5 }}>
-            The scorecard hit an unexpected error. Refresh the page and try again with a shorter idea.
+            The page hit an unexpected error. Refresh and try again — if it keeps happening, note what you were doing when it broke.
           </p>
           <button
             type="button"

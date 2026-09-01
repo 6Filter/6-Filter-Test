@@ -44,6 +44,15 @@
     },
     "api/calibration.js": {
       "maxDuration": 15
+    },
+    "api/auth/login.js": {
+      "maxDuration": 10
+    },
+    "api/auth/logout.js": {
+      "maxDuration": 10
+    },
+    "api/auth/me.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

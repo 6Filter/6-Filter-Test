@@ -1,29 +1,53 @@
-# 6 Filter Test
+# Primus.AI
 
-NPD screening for CavinKare product and process ideas.
-It scores ideas through the 4-filter weightage engine (plus process Phase-1) using the selected LLM.
+CavinKare’s NPD screening tool for the six-filter paper gate. The primary interface is the **Proposition Form**: BM, CMI, Finance, R&D, Sales, Packaging, and BH Forum fill evidence over time, with a Forum verdict on each filter. Advisory labels (Part 15) check numeric floors as people type. An optional **AI first pass** (Part 16) can suggest empty F1–F4 fields; nothing it produces is saved until a person clicks Accept and then Save.
 
-## Run it in 3 steps
+This is a governance tool. Only BH Forum clears a filter. The AI never writes `forumVerdict` or `finalVerdict`.
 
-1. Add your API key
-   - Rename `.env.local.example` to `.env.local`
-   - Paste your key after `VITE_ANTHROPIC_API_KEY=`
-     (get one at https://console.anthropic.com)
+## What exists today
 
-2. Install dependencies (run this once, inside this folder):
+- Persistent propositions (Postgres on Render; local JSON file store without `DATABASE_URL`)
+- Per-field owners from `lib/propositionFields.js`
+- Named accounts (email + password, one role per person) with server-side field-ownership enforcement
+- Optional AI first pass (Filter 1 + Filter 4 engines, suggestions only)
+- Advisory scoring coverage panel
+- Spec landing page, proposition log
+- Dormant idea-analysis / category-intelligence paths remain in the repo, unplugged from the primary UI
 
-       npm install
+## Run it locally
 
-3. Start the app:
+1. Copy `.env.local.example` to `.env.local` and set:
+   - `ANTHROPIC_API_KEY` (server-side only — never `VITE_…` in the browser)
+   - `SESSION_SECRET` (any long random string locally)
+2. `npm install`
+3. Seed at least one user (no public signup):
 
-       npm run dev
+       node scripts/seedUser.js "Your Name" you@cavinkare.com a-password BM
 
-   Then open the http://localhost:5173 link it prints.
+   Roles: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`.
 
-## Notes
-- If the model name errors, open `src/App.jsx`, find the line
-  `const MODEL = "claude-sonnet-4-6";` and change it to a model your
-  account can access (see https://docs.claude.com).
-- The key runs in the browser here, which is fine for local testing only.
-  For anything you share or deploy, move the API call to a small backend
-  so the key stays private.
+4. `npm run dev` and open the URL Vite prints (typically http://127.0.0.1:5173).
+
+## Production (Render)
+
+Render is the live host: [https://primus-ai.onrender.com](https://primus-ai.onrender.com). `server.js` serves the Vite build and `/api/*`. Environment variables on the service:
+
+| Variable | Required |
+|----------|----------|
+| `DATABASE_URL` | Yes — Render Postgres |
+| `SESSION_SECRET` | Yes — signed cookies fail loudly without it |
+| `ANTHROPIC_API_KEY` | Yes for AI first pass / LLM routes |
+| `ALLOWED_ORIGIN` | Optional; defaults to `https://primus-ai.onrender.com` |
+| Other model keys | Optional comparison providers |
+
+Seed production users the same way, with `DATABASE_URL` set in the shell (or Render’s one-off job). There is no admin UI for users yet.
+
+Vercel-style `api/*.js` handlers still exist as a fallback. They import the **same** CORS, session, and ownership modules as `server.js` — do not copy those rules into a second place.
+
+## Out of scope
+
+- Part 2 lifecycle (Luminar tracking, ticket routing, COO dashboard)
+- Real SSO (Okta / Azure AD / Google Workspace) — email+password is a documented stopgap; the session/role model is meant to survive a swap
+- Cross-instance rate limiting (in-memory, resets on restart; fine for a single Render instance)
+- Version history beyond a counter on the proposition row
+- A numeric F3 `mrpInr` field for a hard same-price gate

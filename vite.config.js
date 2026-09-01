@@ -1,21 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { readJsonBody, redactSecrets, sendJson } from "./lib/http.js";
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk) => {
-      body += chunk;
-      if (body.length > 16_000_000) {
-        reject(new Error("Request body too large."));
-        req.destroy();
-      }
-    });
-    req.on("end", () => resolve(body));
-    req.on("error", reject);
-  });
-}
+import { handleApiRequest } from "./lib/apiRouter.js";
+import { redactSecrets, sendJson } from "./lib/http.js";
 
 const ENV_KEYS = [
   "ANTHROPIC_API_KEY",
@@ -30,6 +16,8 @@ const ENV_KEYS = [
   "OPENAI_MODEL",
   "DATABASE_URL",
   "POSTGRES_URL",
+  "SESSION_SECRET",
+  "ALLOWED_ORIGIN",
 ];
 
 function applyEnv(env) {
@@ -51,178 +39,14 @@ function apiPlugin(env) {
       applyEnv(env);
 
       server.middlewares.use(async (req, res, next) => {
-        const url = req.url?.split("?")[0] || "";
-
-        if (url === "/api/providers") {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleProviders } = await import("./lib/llmApi.js");
-          await handleProviders(req, res, { sendJson });
-          return;
-        }
-
-        if (url === "/api/claude") {
-          if (req.method === "OPTIONS") {
-            res.statusCode = 204;
-            res.end();
-            return;
-          }
-          if (req.method !== "POST") {
-            sendJson(res, 405, { error: "Method not allowed" });
-            return;
-          }
-          try {
-            const raw = await readBody(req);
-            const payload = raw ? JSON.parse(raw) : {};
-            req.body = payload;
-            const { handleLlmGenerate } = await import("./lib/llmApi.js");
-            await handleLlmGenerate(req, res, {
-              readBody: readJsonBody,
-              sendJson,
-              redactSecrets,
-            });
-          } catch (e) {
-            const status = e.status && Number.isInteger(e.status) ? e.status : 500;
-            sendJson(res, status, { error: redactSecrets(e.message) });
-          }
-          return;
-        }
-
-        if (url === "/api/ideas") {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleIdeasCollection: handleCollection } = await import("./lib/ideasApi.js");
-          await handleCollection(req, res, {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        if (url === "/api/propositions") {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handlePropositionsCollection } = await import("./lib/propositionsApi.js");
-          await handlePropositionsCollection(req, res, { sendJson, redactSecrets });
-          return;
-        }
-
-        const propositionMatch = url.match(/^\/api\/propositions\/([^/]+)$/);
-        if (propositionMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handlePropositionById } = await import("./lib/propositionsApi.js");
-          await handlePropositionById(req, res, decodeURIComponent(propositionMatch[1]), {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        const supportingDocItemMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc\/([^/]+)$/);
-        if (supportingDocItemMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleSupportingDocById } = await import("./lib/ideasApi.js");
-          await handleSupportingDocById(
-            req,
-            res,
-            decodeURIComponent(supportingDocItemMatch[1]),
-            decodeURIComponent(supportingDocItemMatch[2]),
-            { sendJson, redactSecrets }
-          );
-          return;
-        }
-
-        const supportingDocMatch = url.match(/^\/api\/ideas\/([^/]+)\/supporting-doc$/);
-        if (supportingDocMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleSupportingDoc } = await import("./lib/ideasApi.js");
-          await handleSupportingDoc(req, res, decodeURIComponent(supportingDocMatch[1]), {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        const exportMatch = url.match(/^\/api\/ideas\/([^/]+)\/export$/);
-        if (exportMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleIdeaExport } = await import("./lib/ideasApi.js");
-          await handleIdeaExport(req, res, decodeURIComponent(exportMatch[1]), {
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        const escalateMatch = url.match(/^\/api\/ideas\/([^/]+)\/escalate$/);
-        if (escalateMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleIdeaEscalate } = await import("./lib/ideasApi.js");
-          await handleIdeaEscalate(req, res, decodeURIComponent(escalateMatch[1]), {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        const outcomeMatch = url.match(/^\/api\/ideas\/([^/]+)\/record-outcome$/);
-        if (outcomeMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleRecordOutcome } = await import("./lib/ideasApi.js");
-          await handleRecordOutcome(req, res, decodeURIComponent(outcomeMatch[1]), {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
-        const ideaMatch = url.match(/^\/api\/ideas\/([^/]+)$/);
-        if (ideaMatch) {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          const { handleIdeaById: handleById } = await import("./lib/ideasApi.js");
-          await handleById(req, res, decodeURIComponent(ideaMatch[1]), {
-            sendJson,
-            redactSecrets,
-          });
-          return;
-        }
-
         try {
-          const { handleCategoryIntelRequest } = await import("./lib/categoryIntelligence/http.js");
-          const intelHandled = await handleCategoryIntelRequest(req, res, url, {
-            readBody: readJsonBody,
-            sendJson,
-            redactSecrets,
-          });
-          if (intelHandled) return;
+          const handled = await handleApiRequest(req, res);
+          if (handled) return;
         } catch (e) {
           const status = e.status && Number.isInteger(e.status) ? e.status : 500;
           sendJson(res, status, { error: redactSecrets(e.message) });
           return;
         }
-
         next();
       });
     },

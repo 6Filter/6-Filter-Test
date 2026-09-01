@@ -1,10 +1,9 @@
+import { protectApi } from "../../lib/auth.js";
 import { handlePropositionById } from "../../lib/propositionsApi.js";
 import { readJsonBody, redactSecrets, sendJson } from "../../lib/http.js";
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (!(await protectApi(req, res, { methods: "GET, PUT, DELETE, OPTIONS" }))) return;
 
   const id =
     req.query?.id ??

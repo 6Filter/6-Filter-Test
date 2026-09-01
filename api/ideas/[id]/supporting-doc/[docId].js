@@ -1,10 +1,9 @@
+import { protectApi } from "../../../../lib/auth.js";
 import { handleSupportingDocById } from "../../../../lib/ideasApi.js";
 import { redactSecrets, sendJson } from "../../../../lib/http.js";
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (!(await protectApi(req, res, { methods: "GET, DELETE, OPTIONS" }))) return;
 
   const parts =
     typeof req.url === "string" ? req.url.split("?")[0].split("/").filter(Boolean) : [];

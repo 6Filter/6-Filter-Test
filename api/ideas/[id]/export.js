@@ -1,10 +1,9 @@
+import { protectApi } from "../../../lib/auth.js";
 import { handleIdeaExport } from "../../../lib/ideasApi.js";
 import { redactSecrets, sendJson } from "../../../lib/http.js";
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (!(await protectApi(req, res, { methods: "GET, OPTIONS" }))) return;
 
   const id =
     req.query?.id ??

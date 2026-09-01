@@ -1,9 +1,8 @@
+import { protectApi } from "../lib/auth.js";
 import { handleProviders } from "../lib/llmApi.js";
 import { sendJson } from "../lib/http.js";
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (!(await protectApi(req, res, { methods: "GET, OPTIONS" }))) return;
   await handleProviders(req, res, { sendJson });
 }

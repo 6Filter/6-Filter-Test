@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, FileText, FileUp, Loader2, Sparkles, Trash2, X } from "lucide-react";
 import { DIVISION_NET_MARGIN, REVENUE_TARGET_BY_DIVISION } from "../lib/npdMaster.js";
+import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   FORUM_VERDICT_FIELD,
   OWNER_COLORS,
@@ -12,6 +13,7 @@ import {
   mergeProposition,
 } from "../lib/propositionFields.js";
 import { ADVISORY_LABEL, computeAllAdvisoryChecks, computeF5Revenue } from "../lib/propositionScoring.js";
+import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
 
 function OwnerTag({ role }) {
   const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
@@ -47,10 +49,267 @@ function fieldHelper(field, division) {
   return field.helper || "";
 }
 
-function FieldControl({ field, value, onChange, division }) {
+const SUGGEST_BLOCKLIST = new Set([
+  "finalVerdict",
+  "finalVerdictNote",
+  "forumVerdict",
+  "verdictNote",
+  "name",
+  "category",
+]);
+
+function isEmptyField(value) {
+  if (value == null) return true;
+  if (typeof value === "boolean") return value === false;
+  return String(value).trim() === "";
+}
+
+function formatSuggestion(field, value) {
+  if (field?.type === "select" && Array.isArray(field.options)) {
+    const opt = field.options.find((o) => String(o.v) === String(value));
+    if (opt) return opt.l;
+  }
+  const s = String(value ?? "");
+  return s.length > 180 ? `${s.slice(0, 177)}…` : s;
+}
+
+function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, currentValue) {
+  if (SUGGEST_BLOCKLIST.has(fieldKey)) return null;
+  if (!isEmptyField(currentValue)) return null;
+  const path = filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
+  if (dismissed[path]) return null;
+  const raw = filterKey ? suggestions?.[filterKey]?.[fieldKey] : suggestions?.[fieldKey];
+  if (raw == null || (typeof raw === "string" && !raw.trim())) return null;
+  return raw;
+}
+
+function SuggestionChip({ field, suggestion, onAccept, onDismiss }) {
+  return (
+    <div className="ai-suggestion-chip">
+      <Sparkles size={12} />
+      <span>
+        AI suggests: <strong>{formatSuggestion(field, suggestion)}</strong>
+      </span>
+      <button type="button" onClick={onAccept}>Accept</button>
+      <button type="button" onClick={onDismiss}>Dismiss</button>
+    </div>
+  );
+}
+
+function isImageUpload(name, mime) {
+  return (
+    String(mime || "").startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|bmp|heic|heif|tif|tiff|avif|svg)$/i.test(String(name || ""))
+  );
+}
+
+async function rasterizeImageFile(file) {
+  const bitmap = await createImageBitmap(file);
+  const MAX = 1568;
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height, 1));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  if (typeof bitmap.close === "function") bitmap.close();
+  const dataUrl = canvas.toDataURL("image/png");
+  const data = sanitizeImageBase64(dataUrl);
+  if (!data) throw new Error("empty png");
+  return {
+    name: String(file.name || "upload").replace(/\.[^.]+$/, "") + ".png",
+    mediaType: "image/png",
+    data,
+    preview: dataUrl,
+  };
+}
+
+function readFileAsAttachment(file, isImage) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that file."));
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const data = sanitizeImageBase64(result.includes("base64,") ? result : result.split(",")[1] || "");
+      resolve({
+        name: file.name,
+        mediaType: isImage
+          ? sniffImageMediaType(data, file.name, file.type)
+          : file.type ||
+            (String(file.name).toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : String(file.name).toLowerCase().endsWith(".docx")
+                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                : String(file.name).toLowerCase().endsWith(".doc")
+                  ? "application/msword"
+                  : "application/octet-stream"),
+        data,
+        preview: isImage ? result : null,
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function AiFirstPassModal({ open, onClose, onResult, propositionId }) {
+  const [ideaText, setIdeaText] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef(null);
+
+  if (!open) return null;
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const name = String(file.name || "").toLowerCase();
+    const mime = String(file.type || "").toLowerCase();
+    const ok =
+      isImageUpload(name, mime) ||
+      mime === "application/pdf" ||
+      mime === "application/msword" ||
+      mime.includes("wordprocessingml") ||
+      /\.(pdf|docx?)$/i.test(name);
+    if (!ok) {
+      setError("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Keep the file under 8 MB.");
+      return;
+    }
+    setError("");
+    const isImage = isImageUpload(name, mime);
+    try {
+      if (isImage) {
+        try {
+          setAttachment(await rasterizeImageFile(file));
+        } catch {
+          setAttachment(await readFileAsAttachment(file, true));
+        }
+      } else {
+        setAttachment(await readFileAsAttachment(file, false));
+      }
+    } catch {
+      setError("Could not read that file. Try a JPG or PNG.");
+    }
+  }
+
+  async function run() {
+    if (!ideaText.trim() && !attachment) {
+      setError("Describe the idea, or attach a file, to run the AI first pass.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 180000);
+      try {
+        const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/ai-first-pass`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ideaText: ideaText.trim(), image: attachment }),
+          signal: ctrl.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "AI first pass failed.");
+        onResult(data);
+        onClose();
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (e) {
+      setError(
+        e?.name === "AbortError"
+          ? "The first pass timed out. Try a shorter description."
+          : e.message || "AI first pass failed."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Run AI first pass"
+      onClick={() => !busy && onClose()}
+    >
+      <div className="modal product-idea-modal" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="ghost sq product-idea-close"
+          aria-label="Close"
+          disabled={busy}
+          onClick={onClose}
+        >
+          <X size={16} />
+        </button>
+        <p className="ai-modal-kicker">Draft assist · not a Forum verdict</p>
+        <label className="lbl">Product idea</label>
+        <textarea
+          value={ideaText}
+          onChange={(e) => setIdeaText(e.target.value)}
+          placeholder="A short description the persistent form doesn't carry — enough for the first pass to read."
+          rows={6}
+          disabled={busy}
+        />
+        <label className="lbl">Or attach idea / insight</label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+          onChange={handleFile}
+          hidden
+        />
+        {!attachment ? (
+          <button type="button" className="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+            <FileUp size={15} /> Upload PDF, Word, or image
+          </button>
+        ) : (
+          <span className="chip file">
+            {attachment.preview ? <img src={attachment.preview} alt="" /> : <FileText size={15} />}
+            {attachment.name}
+            <button type="button" disabled={busy} onClick={() => setAttachment(null)}><X size={12} /></button>
+          </span>
+        )}
+        {error ? <div className="err"><AlertTriangle size={14} /> {error}</div> : null}
+        <div className="ai-modal-actions">
+          <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancel</button>
+          <button type="button" className="run" disabled={busy} onClick={run}>
+            <Sparkles size={15} /> {busy ? "Running first pass…" : "Run first pass"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FieldControl({ field, value, onChange, division, suggestion, onAcceptSuggestion, onDismissSuggestion, currentUser }) {
   const helper = fieldHelper(field, division);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
+  const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
+  const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
+  const chip =
+    !locked && suggestion != null ? (
+      <SuggestionChip
+        field={field}
+        suggestion={suggestion}
+        onAccept={onAcceptSuggestion}
+        onDismiss={onDismissSuggestion}
+      />
+    ) : null;
 
   if (field.type === "computed") {
     return (
@@ -68,10 +327,11 @@ function FieldControl({ field, value, onChange, division }) {
 
   if (field.type === "checkbox") {
     return (
-      <label className="prop-check span-2">
+      <label className={`prop-check span-2${locked ? " is-locked" : ""}`} title={lockTitle}>
         <input
           type="checkbox"
           checked={Boolean(value)}
+          disabled={locked}
           onChange={(e) => onChange(e.target.checked)}
         />
         <span>
@@ -86,7 +346,7 @@ function FieldControl({ field, value, onChange, division }) {
 
   const input =
     field.type === "select" ? (
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+      <select value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
         {(field.options || []).map((opt) => (
           <option key={`${opt.v}::${opt.l}`} value={opt.v}>
             {opt.l}
@@ -98,6 +358,8 @@ function FieldControl({ field, value, onChange, division }) {
         rows={3}
         value={value ?? ""}
         placeholder={field.placeholder || ""}
+        disabled={locked}
+        title={lockTitle}
         onChange={(e) => onChange(e.target.value)}
       />
     ) : (
@@ -106,21 +368,62 @@ function FieldControl({ field, value, onChange, division }) {
         step={field.type === "number" ? "any" : undefined}
         value={value ?? ""}
         placeholder={field.placeholder || ""}
+        disabled={locked}
+        title={lockTitle}
         onChange={(e) => onChange(e.target.value)}
       />
     );
 
   return (
-    <label className={`prop-field${full ? " span-2" : ""}`}>
-      <span className="prop-label">
-        {field.label}
-        {owners.map((role) => (
-          <OwnerTag key={role} role={role} />
-        ))}
-      </span>
-      {input}
+    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}`} title={lockTitle}>
+      <label className="prop-field-inner">
+        <span className="prop-label">
+          {field.label}
+          {owners.map((role) => (
+            <OwnerTag key={role} role={role} />
+          ))}
+        </span>
+        {input}
+      </label>
       {helper ? <span className="prop-helper">{helper}</span> : null}
-    </label>
+      {chip}
+    </div>
+  );
+}
+
+function AiPassResultBanner({ meta }) {
+  if (!meta) return null;
+  const sources = Array.isArray(meta.sources) ? meta.sources.filter((s) => s?.title || s?.url) : [];
+  const notCovered = Array.isArray(meta.notCovered) ? meta.notCovered : [];
+  return (
+    <div className="ai-pass-banner">
+      <p className="ai-pass-kicker">This pass does not cover F5 or F6</p>
+      <ul className="ai-not-covered">
+        {notCovered.map((item) => (
+          <li key={item.filter}>
+            <strong>{item.filter}</strong> — {item.reason}
+          </li>
+        ))}
+      </ul>
+      {sources.length ? (
+        <details className="ai-pass-sources">
+          <summary>Sources the first pass cited ({sources.length})</summary>
+          <ul>
+            {sources.map((s, i) => (
+              <li key={`${s.url || s.title || "s"}-${i}`}>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    {s.title || s.url}
+                  </a>
+                ) : (
+                  s.title
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
   );
 }
 
@@ -211,16 +514,29 @@ export default function PropositionForm({
   saving,
   savedFlash,
   error,
+  currentUser,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
+  const [aiPassOpen, setAiPassOpen] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [aiDismissed, setAiDismissed] = useState({});
+  const [aiPassMeta, setAiPassMeta] = useState(null);
 
   useEffect(() => {
     setDoc(mergeProposition(initial));
   }, [initial?.id, initial?.version]);
 
+  useEffect(() => {
+    setAiSuggestions(null);
+    setAiDismissed({});
+    setAiPassMeta(null);
+    setAiPassOpen(false);
+  }, [initial?.id]);
+
   const division = doc.division || "";
   const unlocked = f6Unlocked(doc);
   const advisoryChecks = computeAllAdvisoryChecks(doc);
+  const propositionId = doc.id || initial?.id;
 
   function setTop(key, value) {
     setDoc((prev) => ({ ...prev, [key]: value }));
@@ -233,7 +549,38 @@ export default function PropositionForm({
     }));
   }
 
+  function applyAiFirstPass(data) {
+    const next = { ...(data.suggestions || {}) };
+    if (data.division) next.division = data.division;
+    setAiSuggestions(next);
+    setAiDismissed({});
+    setAiPassMeta({
+      notCovered: data.notCovered || [],
+      sources: data.sources || [],
+    });
+  }
+
+  function acceptSuggestion(filterKey, fieldKey, suggestion) {
+    if (filterKey) setFilter(filterKey, fieldKey, suggestion);
+    else setTop(fieldKey, suggestion);
+  }
+
+  function dismissSuggestion(filterKey, fieldKey) {
+    const path = filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
+    setAiDismissed((prev) => ({ ...prev, [path]: true }));
+  }
+
+  function suggestionProps(filterKey, field, currentValue) {
+    const suggestion = lookupSuggestion(aiSuggestions, aiDismissed, filterKey, field.key, currentValue);
+    return {
+      suggestion,
+      onAcceptSuggestion: suggestion == null ? undefined : () => acceptSuggestion(filterKey, field.key, suggestion),
+      onDismissSuggestion: () => dismissSuggestion(filterKey, field.key),
+    };
+  }
+
   return (
+    <>
     <main className="prop-page">
       <style>{PROP_CSS}</style>
 
@@ -258,10 +605,13 @@ export default function PropositionForm({
               value={doc[field.key]}
               division={division}
               onChange={(v) => setTop(field.key, v)}
+              currentUser={currentUser}
+              {...suggestionProps("", field, doc[field.key])}
             />
           ))}
         </div>
         {error ? <div className="prop-err">{error}</div> : null}
+        <AiPassResultBanner meta={aiPassMeta} />
         <AdvisoryCoveragePanel advisoryChecks={advisoryChecks} />
         <div className="prop-actions">
           <button
@@ -275,8 +625,16 @@ export default function PropositionForm({
           </button>
           <button
             type="button"
+            className="ghost ai-first-pass-btn"
+            disabled={saving || !propositionId}
+            onClick={() => setAiPassOpen(true)}
+          >
+            <Sparkles size={15} /> Run AI first pass
+          </button>
+          <button
+            type="button"
             className="prop-delete"
-            disabled={saving}
+            disabled={saving || (currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "BM")}
             onClick={() => onDelete(doc)}
           >
             <Trash2 size={14} /> Delete proposition
@@ -327,6 +685,8 @@ export default function PropositionForm({
                     value={values[field.key]}
                     division={division}
                     onChange={(v) => setFilter(spec.key, field.key, v)}
+                    currentUser={currentUser}
+                    {...suggestionProps(spec.key, field, values[field.key])}
                   />
                 )
               )}
@@ -343,12 +703,14 @@ export default function PropositionForm({
                 field={FORUM_VERDICT_FIELD}
                 value={values.forumVerdict}
                 division={division}
+                currentUser={currentUser}
                 onChange={(v) => setFilter(spec.key, "forumVerdict", v)}
               />
               <FieldControl
                 field={VERDICT_NOTE_FIELD}
                 value={values.verdictNote}
                 division={division}
+                currentUser={currentUser}
                 onChange={(v) => setFilter(spec.key, "verdictNote", v)}
               />
             </div>
@@ -356,6 +718,13 @@ export default function PropositionForm({
         );
       })}
     </main>
+      <AiFirstPassModal
+        open={aiPassOpen}
+        onClose={() => setAiPassOpen(false)}
+        onResult={applyAiFirstPass}
+        propositionId={propositionId}
+      />
+    </>
   );
 }
 
@@ -371,6 +740,7 @@ const PROP_CSS = `
 .prop-overall-note{margin:8px 0 14px;font-size:13px;line-height:1.5;color:rgba(243,234,248,.62);}
 .prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
 .prop-field{display:flex;flex-direction:column;gap:6px;margin:0;}
+.prop-field-inner{display:flex;flex-direction:column;gap:6px;}
 .prop-field.span-2,.prop-check.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
 .prop-helper{font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;}
@@ -386,6 +756,32 @@ const PROP_CSS = `
 .prop-save{display:inline-flex;align-items:center;gap:8px;background:#C9AEEF;color:#170C25;border:none;
   border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--fd);}
 .prop-save:disabled{opacity:.7;cursor:wait;}
+.ai-first-pass-btn{background:transparent;color:#F3EAF8;border:1px solid rgba(243,234,248,.28);
+  border-radius:999px;padding:10px 16px;font-weight:600;font-size:13.5px;}
+.prop-page .ai-first-pass-btn:hover{background:rgba(201,174,239,.12);border-color:rgba(201,174,239,.45);color:#F3EAF8;}
+.ai-suggestion-chip{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px;
+  padding:8px 12px;border-radius:10px;background:rgba(201,174,239,.12);
+  border:1px solid rgba(201,174,239,.28);font-size:12px;color:#F3EAF8;line-height:1.4;}
+.ai-suggestion-chip strong{font-weight:700;}
+.ai-suggestion-chip button{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid rgba(243,234,248,.28);
+  background:transparent;color:#F3EAF8;cursor:pointer;font-family:var(--fd);}
+.ai-suggestion-chip button:hover{background:rgba(201,174,239,.2);}
+.ai-pass-banner{margin:14px 0 0;padding:14px 16px;border-radius:12px;
+  background:rgba(201,174,239,.1);border:1px solid rgba(201,174,239,.28);}
+.ai-pass-kicker{margin:0 0 8px;font-family:var(--fm);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:#C9A0E8;}
+.prop-page input:disabled,.prop-page select:disabled,.prop-page textarea:disabled{opacity:.55;cursor:not-allowed;}
+.prop-field.is-locked,.prop-check.is-locked{cursor:not-allowed;}
+.ai-not-covered{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5;color:rgba(243,234,248,.78);}
+.ai-not-covered li+li{margin-top:6px;}
+.ai-pass-sources{margin-top:10px;font-size:12.5px;color:rgba(243,234,248,.7);}
+.ai-pass-sources summary{cursor:pointer;}
+.ai-pass-sources ul{margin:8px 0 0;padding-left:18px;}
+.ai-pass-sources a{color:#C9AEEF;}
+.ai-modal-kicker{margin:0 28px 4px 0;font-family:var(--fm);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:#7C4DBE;font-weight:700;}
+.ai-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
+.ai-modal-actions .run{width:auto;margin:0;padding:10px 16px;border-radius:999px;}
 .prop-delete{display:inline-flex;align-items:center;gap:8px;background:transparent;color:#E2716B;
   border:1px solid rgba(226,113,107,.4);border-radius:999px;padding:10px 16px;font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--fd);}
 .prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;}

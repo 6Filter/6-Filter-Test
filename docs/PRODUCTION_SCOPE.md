@@ -1,183 +1,98 @@
-# 6 Filter Test — Production Scope & Process Flow
+# Primus.AI — Production Scope
 
-**Audience:** Internal product, engineering, and IT stakeholders  
-**Purpose:** Scope the current 6 Filter Test tool and process flow for production readiness  
-**Status:** Live on Vercel with Claude + PostgreSQL  
-**Related docs:** `PRIMUS_FULL_FLOW.md`, `PRIMUS_SCORING_LOGIC.md`, `BACKEND_API.md`, `API_KEY_BEST_PRACTICES.md`
+**Audience:** Internal product, engineering, and IT  
+**Status:** Live on Render (`https://primus-ai.onrender.com`) with Postgres + server-side LLM keys  
+**Primary UI:** Proposition Form (six-filter evidence record)
 
 ---
 
 ## 1. Product summary
 
-**6 Filter Test** is CavinKare’s NPD screening engine. Field / product teams submit an FMCG idea; the system runs a Phase-1 LLM validation, scores Novelty / Market Relevance / Evidence, estimates revenue and gram weight, and stores the result for later review.
+Primus is CavinKare’s NPD **paper-gate** tool. A proposition is one persistent record. People in named roles fill the fields they own; BH Forum records a binary verdict per filter. Clearing the six filters is not commercial approval — final validation remains at CKR level (v4).
 
-| Phase | Scope | Points |
-|-------|--------|--------|
-| **Phase 1** (in production now) | LLM validation + scorecard + persistence | 60 / 100 |
-| **Phase 2** (future) | Consumer validation after manager greenlight | 40 / 100 |
+Advisory labels (Part 15) check only the v4 numeric floors that can be checked from what is typed. The optional AI first pass (Part 16) is a draft assist: it never writes the stored proposition, never sets `forumVerdict` / `finalVerdict`, and never overwrites a field a human has already filled.
 
 ---
 
-## 2. In scope (current production tool)
+## 2. In scope (what is actually running)
 
 ### User-facing
-- Submit product idea (text, or PDF / Word / image)
-- Download the final report as PDF or Word
-- Run Phase-1 validation via Claude
-- View scorecard (score /60, status, matrix X/5, revenue, classification, TAM, critique, pivot)
-- Audio briefing (browser speech)
-- Draft “forward to manager” message
-- **Log tab** — browse saved validation history; open full results
-- Recent runs on compose sidebar
+- Sign in with a named email + password (one role per person)
+- Spec landing page (the v4 filter text)
+- Proposition Form — F1–F6 evidence, Forum verdicts, overall BH Forum verdict
+- Fields the current role does not own are disabled in the UI; the server rejects writes anyway
+- Log of propositions (open / delete)
+- Optional “Run AI first pass” on a proposition (F1/F4 suggestions, F5/F6 explicitly not covered)
+- Automated-check coverage panel on the form
 
 ### Backend
-- `POST /api/ideas` — analyze + save
-- `GET /api/ideas` — list history
-- `GET /api/ideas/:id/export?format=pdf|docx` — download the screen report
-- `POST /api/claude` — Claude proxy (manager draft)
-- Anthropic key server-side only (`ANTHROPIC_API_KEY`)
-- PostgreSQL persistence (`DATABASE_URL`)
+- `GET/POST /api/auth/login|logout|me` — cookie session (`primus_session`, HttpOnly)
+- `GET/POST /api/propositions`, `GET/PUT/DELETE /api/propositions/:id`
+- `POST /api/propositions/:id/ai-first-pass`
+- Ideas / category-sizing / format-trend / calibration / Claude routes still exist for dormant tools; they require a session
+- LLM keys only on the server (`ANTHROPIC_API_KEY`, never a `VITE_` key in the browser)
+- Postgres via `DATABASE_URL` (local file store if unset)
 
 ### Platform
-- Frontend: Vite + React on Vercel
-- API: Vercel serverless functions
-- DB: Neon / Vercel Postgres
-- Source: GitHub `johngeorgegejo-dev/Primus-AI`
+- Frontend: Vite + React
+- Production API + static: Node `server.js` on Render
+- Fallback: Vercel `api/*.js` wrappers that share `lib/cors.js`, `lib/auth.js`, and `lib/fieldOwnership.js` with Render — not a second copy of the rules
+- DB: Render Postgres in production
+
+### Auth (MVP)
+- Roles: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`
+- Ownership comes from `lib/propositionFields.js` (`owners` arrays) — not a second matrix
+- Seed users with `node scripts/seedUser.js "Name" email@ck.com password ROLE`
+- No public registration
+
+### Security notes
+- CORS: `Access-Control-Allow-Origin` is set only when `Origin` equals `ALLOWED_ORIGIN` (default `https://primus-ai.onrender.com`), with credentials
+- Rate limit: in-memory, 20/min per user on `ai-first-pass`, `category-sizing/run`, `format-trend/run`, and `claude`. Resets on process restart; not shared across instances
 
 ---
 
-## 3. Out of scope (current release)
+## 3. Out of scope
 
-- Phase-2 consumer validation scoring
-- Manager approval workflow / notifications (draft message only; no auto-send)
-- Auth / SSO / role-based access
-- Admin UI to edit investment masters
-- MySQL (Postgres only in this release)
-- Investment vs revenue quadrant grid (proposed; not yet built — see §8)
+- Part 2: Luminar pipeline tracking, ticket routing, COO dashboard
+- Real SSO (Okta, Azure AD, Google Workspace) — planned as a swap of how a session is established, not a rebuild of roles
+- Admin UI for adding/removing users
+- Redis / shared rate-limit store
+- Full version history (today: a version **counter** on the row)
+- Hard F3 same-price gate from a numeric `mrpInr` field
+- Treating Filters 5–6 as AI-scorable
 
 ---
 
-## 4. End-to-end process flow
+## 4. How a proposition moves
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌──────────────┐
-│ Field / PM  │────►│ 6 Filter Test UI │────►│ /api/ideas  │────►│ Claude       │
-│ submits idea│     │ Validate tab     │     │ (Vercel)    │     │ (Anthropic)  │
-└─────────────┘     └──────────────────┘     └──────┬──────┘     └──────┬───────┘
-                                                    │                   │
-                                                    │ scores + enrich   │
-                                                    ▼                   │
-                                             ┌──────────────┐           │
-                                             │ PostgreSQL   │◄──────────┘
-                                             │ ideas table  │
-                                             └──────┬───────┘
-                                                    │
-                    ┌───────────────┐               │
-                    │ Log tab       │◄──────────────┘
-                    │ history list  │
-                    └───────┬───────┘
-                            │ open row
-                            ▼
-                    ┌───────────────┐
-                    │ Scorecard UI  │
-                    └───────────────┘
+Sign in  →  Spec page  →  NPD Screen (new or existing proposition)
+                         →  fill owned fields over weeks
+                         →  optional AI first pass (Accept per field)
+                         →  Save for the team
+                         →  BH Forum records forumVerdict / finalVerdict
 ```
 
-### User process (Phase 1)
-
-1. Open 6 Filter Test (Vercel URL)  
-2. Enter field insight / product idea (+ optional media)  
-3. Click **Run validation**  
-4. Review scorecard (score, status, revenue, classification, TAM, critique, pivot)  
-5. Optionally draft manager message  
-6. Optionally open **Log** to revisit past runs  
-
-### Status rule (Phase 1)
-
-| Score / 60 | Status |
-|------------|--------|
-| > 40 | Approved |
-| 30–40 | Promising |
-| < 30 | Rejected |
-
-### Score formula
-
-```
-Phase1 = (Novelty×0.4 + Market×0.3 + Evidence×0.3) × 0.6
-```
-
-### Gram classification (from revenue)
-
-| Revenue | Class |
-|---------|--------|
-| < ₹1 Cr | 10g |
-| ₹1–12 Cr | 100g |
-| > ₹12 Cr | 1000g |
+The retired Novelty / Market / Evidence scorecard and client-side API key flow are **not** how this app works anymore. Those files may still exist on disk as dormant code.
 
 ---
 
-## 5. Architecture (production)
+## 5. Ops / env ownership
 
-| Layer | Technology |
-|-------|------------|
-| UI | Vite + React (Vercel static) |
-| API | Vercel serverless (`/api/*`) |
-| LLM | Anthropic Claude (`ANTHROPIC_API_KEY`) |
-| DB | PostgreSQL via Neon (`DATABASE_URL`) |
-| Source | GitHub `johngeorgegejo-dev/Primus-AI` |
-
-### Security (in scope)
-
-- API key **not** in browser (`ANTHROPIC_API_KEY`, not `VITE_…`)  
-- Secrets only in Vercel env + local `.env.local`  
-- `.env.local` gitignored  
-- Errors redact `sk-ant-…`  
+| Item | Notes |
+|------|--------|
+| Render web `primus-ai` | Production |
+| Render Postgres `primus-ai-db` | `DATABASE_URL` |
+| `SESSION_SECRET` | Required; rotate if leaked |
+| `ANTHROPIC_API_KEY` | Server only |
+| `ALLOWED_ORIGIN` | Defaults to the Render URL |
+| User seeding | Engineering, via `scripts/seedUser.js` |
+| Filter / owner schema | Product + the v4 document; coded in `lib/propositionFields.js` |
 
 ---
 
-## 6. Production checklist
+## Related
 
-- [x] Claude behind server route  
-- [x] Ideas analyze + persist API  
-- [x] PostgreSQL (`DATABASE_URL`)  
-- [x] Log tab for history  
-- [x] Env vars on Vercel (Claude + DB)  
-- [ ] Confirm redeploy after env changes  
-- [ ] Access control / SSO (future)  
-- [ ] Phase 2 consumer validation (future)  
-- [ ] Manager workflow beyond draft message (future)  
-
----
-
-## 7. Proposed next scope (not yet built)
-
-**Investment vs Revenue quadrant**
-
-- Predefined investment by category (plan, machinery, details)  
-- Map idea → category → investment band  
-- Classify vs Revenue Potential (± TAM) into 4 quadrants  
-- Show grid on scorecard + optional log filter  
-
-**Owner input required before build:** category investment table + high/low cutoffs.
-
----
-
-## 8. Ops contacts / env ownership
-
-| Item | Owner suggestion |
-|------|------------------|
-| Vercel project | Engineering |
-| `ANTHROPIC_API_KEY` | Engineering / AI ops (rotate on leak) |
-| `DATABASE_URL` | Engineering / IT |
-| Scoring rubric changes | Product + Engineering |
-| Investment master data | Product / Finance |
-
----
-
-## Related documents
-
-- `PRIMUS_FULL_FLOW.md` — end-to-end runtime flow  
-- `PRIMUS_SCORING_LOGIC.md` — scoring formulas  
-- `BACKEND_API.md` — API + Postgres schema  
-- `API_KEY_BEST_PRACTICES.md` — secret handling  
-- `GIT_AND_GITIGNORE.md` — Git practices  
+- `README.md` — local run
+- `docs/BACKEND_API.md` — older ideas-table notes (partially stale)
+- `lib/propositionFields.js` — field owners (source of truth for write access)
