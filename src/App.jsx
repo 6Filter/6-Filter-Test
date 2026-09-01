@@ -84,14 +84,14 @@ async function fetchPropositionById(id) {
   return attachAdvisory(data);
 }
 
-async function putProposition(id, payload, provider = "claude") {
+async function putProposition(id, payload, provider = "claude", { forceResearch = false } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 180000);
   try {
     const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proposition: payload, provider }),
+      body: JSON.stringify({ proposition: payload, provider, forceResearch: Boolean(forceResearch) }),
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
@@ -721,13 +721,15 @@ export default function App() {
     }
   }
 
-  async function savePropositionForTeam(doc, providerOverride) {
+  async function savePropositionForTeam(doc, providerOverride, saveOpts = {}) {
     if (!doc?.id || savingProp) return null;
     const provider = normalizeProvider(providerOverride || llmProvider);
     setSavingProp(true);
     setError("");
     try {
-      const result = await putProposition(doc.id, doc, provider);
+      const result = await putProposition(doc.id, doc, provider, {
+        forceResearch: Boolean(saveOpts?.forceResearch),
+      });
       const saved = result.proposition;
       setProposition(saved);
       setPropositionList((rows) => {

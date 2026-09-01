@@ -415,6 +415,17 @@ export default function PropositionForm({
   const [summaryChecks, setSummaryChecks] = useState(null);
   const [fallbackUi, setFallbackUi] = useState(null);
   const [fallbackChoice, setFallbackChoice] = useState("");
+  const [failedBanner, setFailedBanner] = useState(null);
+
+  function bannerErrorText(label, body) {
+    const raw = String(body || "").trim();
+    if (!label) return raw;
+    const stripped = raw.replace(
+      new RegExp(`^(?:${label}\\s+(?:API|request)\\s+failed\\.?\\s*)+`, "i"),
+      ""
+    );
+    return stripped || raw;
+  }
   const [goNoGo, setGoNoGo] = useState(() => initial?.goNoGo || null);
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
@@ -646,8 +657,9 @@ export default function PropositionForm({
     if (result?.proposition) setDoc(mergeProposition(result.proposition));
   }
 
-  async function runGoNoGoRead(propositionDoc = doc) {
+  async function runGoNoGoRead(propositionDoc = doc, providerOverride) {
     if (readingGoNoGo || !isFilterUnlocked("proof-gate", propositionDoc) || !propositionId) return null;
+    const provider = providerOverride || llmProvider;
     setReadingGoNoGo(true);
     setLocalError("");
     try {
@@ -655,7 +667,7 @@ export default function PropositionForm({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proposition: propositionDoc, provider: llmProvider }),
+        body: JSON.stringify({ proposition: propositionDoc, provider }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "AI read failed.");
@@ -715,19 +727,27 @@ export default function PropositionForm({
     window.setTimeout(() => setManagerCopied(false), 1600);
   }
 
-  async function handleSubmit(providerOverride) {
+  async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving) return;
     if (!canSubmit) {
       setLocalError("Describe the idea, or attach a file, before the first Submit.");
       return;
     }
     setLocalError("");
+    setFailedBanner(null);
     const provider = providerOverride || llmProvider;
-    const result = await onSave(doc, provider);
+    const result = await onSave(doc, provider, {
+      forceResearch: Boolean(submitOpts.forceResearch),
+    });
     if (!result?.proposition) return;
     if (result.suggestions) applyResearchResult(result);
     if (result.researchError) {
       setLocalError(result.researchError);
+      setFailedBanner({
+        label: result.failedProviderLabel || provider || "Model",
+        provider: result.failedProvider || provider,
+        body: result.researchError,
+      });
       if (result.suggestFallback && result.fallbackProviders?.length) {
         const nextChoice =
           result.fallbackProviders.find((p) => p.id === fallbackChoice)?.id ||
@@ -743,6 +763,7 @@ export default function PropositionForm({
     } else {
       setFallbackUi(null);
       setLocalError("");
+      setFailedBanner(null);
     }
     const nextDoc = mergeProposition(result.proposition);
     setDoc(nextDoc);
@@ -754,8 +775,9 @@ export default function PropositionForm({
     setSummaryStale(false);
 
     // GO/NO-GO/WATCH read runs from the same Submit once F1–F4 are complete.
+    // Pass provider explicitly — React state from onLlmProviderChange may not have flushed yet.
     if (!result.researchError && isFilterUnlocked("proof-gate", nextDoc)) {
-      await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition });
+      await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition }, provider);
     }
   }
 
@@ -763,7 +785,7 @@ export default function PropositionForm({
     const next = fallbackChoice || fallbackOptions[0]?.id;
     if (!next || saving) return;
     if (typeof onLlmProviderChange === "function") onLlmProviderChange(next);
-    handleSubmit(next);
+    handleSubmit(next, { forceResearch: true });
   }
 
   const configuredProviders = (providerStatus || []).filter((p) => p.configured !== false);
@@ -936,7 +958,18 @@ export default function PropositionForm({
       ) : null}
 
       <section className="prop-submit-footer">
-        {error || localError ? <div className="prop-err">{error || localError}</div> : null}
+        {error || localError ? (
+          <div className="prop-err" role="alert">
+            {failedBanner?.label ? (
+              <>
+                <strong>{failedBanner.label} API failed.</strong>{" "}
+                {bannerErrorText(failedBanner.label, failedBanner.body)}
+              </>
+            ) : (
+              error || localError
+            )}
+          </div>
+        ) : null}
         {fallbackUi && fallbackOptions.length > 0 ? (
           <div className="prop-fallback" role="region" aria-label="Model fallback">
             <p className="prop-fallback-lede">
