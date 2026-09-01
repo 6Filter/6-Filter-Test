@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut, Settings
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -14,6 +14,7 @@ import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
+import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 
 function apiFetch(url, options = {}) {
@@ -655,6 +656,10 @@ export default function App() {
       setView("spec");
       return;
     }
+    if (view === "settings") {
+      setView("spec");
+      return;
+    }
     if (result) {
       setReturnView("spec");
       setView("result");
@@ -985,7 +990,7 @@ export default function App() {
           ? returnView === "log"
             ? "Back to log"
             : "Back to spec"
-          : view === "log"
+          : view === "log" || view === "settings"
             ? "Back to spec"
             : result
               ? "Back to scorecard"
@@ -994,7 +999,7 @@ export default function App() {
   const screenClass =
     view === "result"
       ? "screen-verdict"
-      : view === "log"
+      : view === "log" || view === "settings"
         ? "screen-log"
         : view === "spec" || view === "form"
           ? "screen-spec"
@@ -1058,6 +1063,13 @@ export default function App() {
             onClick={openLogTab}
           >
             <History size={14} /> Log
+          </button>
+          <button
+            type="button"
+            className={`nav-tab${view === "settings" ? " active" : ""}`}
+            onClick={() => setView("settings")}
+          >
+            <Settings size={14} /> Settings
           </button>
         </nav>
         <label className="model-switch" title="Compare NPD results across models. Keys stay on the server.">
@@ -1207,6 +1219,8 @@ export default function App() {
           </section>
         </main>
       )}
+
+      {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
 
       {msgOpen && (
         <div className="modal-bg" onClick={() => setMsgOpen(false)}>

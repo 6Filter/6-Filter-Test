@@ -14,7 +14,7 @@ Fill these proposition fields. Human-owned signatures stay unticked.
 
 ## Filter 2 → `f2`
 
-Web search for cost/channel analogs. `netMarginAtScale` is a suggestion. Floor from `DIVISION_NET_MARGIN`. `financeSigned` stays human.
+Web search for cost/channel analogs. `netMarginAtScale` is a suggestion. Floor from `division_thresholds` via `getDivisionMarginFloor`. `financeSigned` stays human.
 
 ## Filter 3 → `f3`
 

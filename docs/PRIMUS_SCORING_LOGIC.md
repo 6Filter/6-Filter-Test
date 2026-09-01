@@ -25,7 +25,7 @@ Claude + `web_search_20250305` fills benchmark, purchase attribute, gap, and cat
 
 ### Filter 2 — Net Margin Gate (deterministic)
 
-Division floors live in `lib/npdMaster.js` (`DIVISION_NET_MARGIN`). Division is auto-detected from idea text and is **user-editable**. The team must declare launch net margin — AI does not invent it.
+Division floors live in the `division_thresholds` table (see `lib/divisionConfig.js`). Division is auto-detected from idea text and is **user-editable**. The team must declare launch net margin — AI does not invent it.
 
 - Blank declared margin → **FAIL** ("Missing evidence").
 - `International Business` → **NEEDS_INPUT** (Finance).
