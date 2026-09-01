@@ -18,15 +18,23 @@ function OwnerTag({ role }) {
   );
 }
 
-function filterSubtitle(spec) {
-  if (spec.key === "f2") return "path to the division floor (v4)";
-  if (spec.key === "f5") return "credible path to year-3 revenue (v4)";
+function filterSubtitle(spec, division) {
+  if (spec.key === "f2") {
+    return division
+      ? `path to the ${division} division floor (v4)`
+      : "division not yet determined — no floor until matched (v4)";
+  }
+  if (spec.key === "f5") {
+    return division
+      ? `credible year-3 path for ${division} (v4)`
+      : "division not yet determined — no revenue target until matched (v4)";
+  }
   return spec.subtitle || "";
 }
 
 function fieldHelper(field) {
   if (typeof field.helperFromDivision === "function") {
-    return "Division floor: per respective division (v4, non-negotiable)";
+    return "Division floor: matched automatically on first Submit (v4, non-negotiable)";
   }
   return field.helper || "";
 }
@@ -590,7 +598,7 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
               </div>
               <div className="prop-status-wrap">
                 <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
