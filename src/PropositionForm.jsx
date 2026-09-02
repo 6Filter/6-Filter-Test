@@ -17,8 +17,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import { formatFixedPriceGapNote } from "../lib/f2Derived.js";
-import { computeMrp, formatMrpBreakdown } from "../lib/mrpFormula.js";
+import { computeMrp } from "../lib/mrpFormula.js";
 
 function OwnerTag({ role }) {
   const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
@@ -207,6 +206,7 @@ function FieldControl({
   aiSourced = false,
   liveNote = "",
   breakdownNote = "",
+  taxNotes = null,
 }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
@@ -317,8 +317,9 @@ function FieldControl({
       </label>
       {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
-      {breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
-      {liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
+      {taxNotes}
+      {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
+      {!taxNotes && liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
       {chip}
     </div>
   );
@@ -580,11 +581,14 @@ export default function PropositionForm({
   const [managerSubject, setManagerSubject] = useState("");
   const [managerCopied, setManagerCopied] = useState(false);
   const [aiSourced, setAiSourced] = useState({});
+  const [mrpBaseInr, setMrpBaseInr] = useState(null);
+  const [mrpFinalInr, setMrpFinalInr] = useState(null);
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
     initial?.researchRunAt ? researchInputKey(initial) : ""
   );
   const fileRef = useRef(null);
   const proofRef = useRef(null);
+  const mrpTouchedByHuman = useRef(false);
 
   useEffect(() => {
     const next = mergeProposition(initial);
@@ -609,37 +613,55 @@ export default function PropositionForm({
     setGoNoGo(initial?.goNoGo || null);
     setManagerOpen(false);
     setAiSourced({});
+    setMrpBaseInr(null);
+    setMrpFinalInr(null);
+    mrpTouchedByHuman.current = false;
   }, [initial?.id]);
 
-  const mrpAiSourced = aiSourced[sourcedPath("f2", "mrpInr")];
   const f2Cogs = doc.f2?.cogsAtScale;
   const f2Margin = doc.f2?.netMarginAtScale;
   const f2Gst = doc.f2?.gstRatePct;
 
   useEffect(() => {
-    if (mrpAiSourced === false) return; // human has taken ownership — never auto-touch again
     const result = computeMrp({
       cogsAtScale: f2Cogs,
       netMarginAtScale: f2Margin,
       gstRatePct: f2Gst,
     });
-    const nextVal =
-      result?.finalMrp != null
-        ? result.finalMrp.toFixed(2)
-        : result?.baseMrp != null
-          ? result.baseMrp.toFixed(2)
-          : "";
-    if (mrpAiSourced !== true && nextVal === "") return;
-    setDoc((prev) => {
-      if (String(prev.f2?.mrpInr ?? "") === String(nextVal)) return prev;
-      return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-    });
-    if (nextVal !== "") {
+    setMrpBaseInr(result?.baseMrp ?? null);
+    setMrpFinalInr(result?.finalMrp ?? null);
+    if (mrpTouchedByHuman.current) return;
+    if (result?.finalMrp != null) {
+      const nextVal = result.finalMrp.toFixed(2);
+      setDoc((prev) => {
+        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
+        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+      });
       setAiSourced((prev) =>
         prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
       );
+    } else if (result?.baseMrp != null) {
+      const nextVal = result.baseMrp.toFixed(2);
+      setDoc((prev) => {
+        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
+        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+      });
+      setAiSourced((prev) =>
+        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
+      );
+    } else {
+      setDoc((prev) => {
+        if (String(prev.f2?.mrpInr ?? "") === "") return prev;
+        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: "" } };
+      });
+      setAiSourced((prev) => {
+        if (prev[sourcedPath("f2", "mrpInr")] === false || prev[sourcedPath("f2", "mrpInr")] == null) {
+          return prev;
+        }
+        return { ...prev, [sourcedPath("f2", "mrpInr")]: false };
+      });
     }
-  }, [f2Cogs, f2Margin, f2Gst, mrpAiSourced]);
+  }, [f2Cogs, f2Margin, f2Gst]);
 
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
@@ -693,14 +715,21 @@ export default function PropositionForm({
   function markEdited(filterKey, fieldKey) {
     const path = sourcedPath(filterKey, fieldKey);
     setAiSourced((prev) => {
-      if (filterKey === "f2" && fieldKey === "mrpInr") {
-        return { ...prev, [path]: false };
-      }
       if (!prev[path]) return prev;
       const next = { ...prev };
       delete next[path];
       return next;
     });
+  }
+
+  function handleMrpInput(value) {
+    mrpTouchedByHuman.current = true;
+    noteEdit();
+    setAiSourced((prev) => ({ ...prev, [sourcedPath("f2", "mrpInr")]: false }));
+    setDoc((prev) => ({
+      ...prev,
+      f2: { ...(prev.f2 || {}), mrpInr: value },
+    }));
   }
 
   function setTop(key, value) {
@@ -710,6 +739,10 @@ export default function PropositionForm({
   }
 
   function setFilter(filterKey, fieldKey, value) {
+    if (filterKey === "f2" && fieldKey === "mrpInr") {
+      handleMrpInput(value);
+      return;
+    }
     noteEdit();
     markEdited(filterKey, fieldKey);
     setDoc((prev) => ({
@@ -1141,28 +1174,23 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
-                    breakdownNote={
-                      spec.key === "f2" && field.key === "mrpInr"
-                        ? (() => {
-                            const result = computeMrp({
-                              cogsAtScale: values.cogsAtScale,
-                              netMarginAtScale: values.netMarginAtScale,
-                              gstRatePct: values.gstRatePct,
-                            });
-                            if (result) return formatMrpBreakdown(result, values.gstRatePct);
-                            const attempted =
-                              String(values.cogsAtScale ?? "").trim() !== "" ||
-                              String(values.netMarginAtScale ?? "").trim() !== "";
-                            return attempted ? "—" : "";
-                          })()
-                        : ""
+                    taxNotes={
+                      spec.key === "f2" && field.key === "mrpInr" ? (
+                        <>
+                          <p className="derived-note">
+                            MRP before tax: {mrpBaseInr != null ? `₹${mrpBaseInr.toFixed(2)}` : "—"}
+                          </p>
+                          <p className="derived-note">
+                            MRP after tax:{" "}
+                            {mrpFinalInr != null ? `₹${mrpFinalInr.toFixed(2)}` : "— (set a GST rate)"}
+                          </p>
+                        </>
+                      ) : null
                     }
                     liveNote={
-                      spec.key === "f2" && field.key === "mrpInr"
-                        ? formatFixedPriceGapNote(values.mrpInr)
-                        : spec.key === "f3" && field.key === "modelledVolumeLoss"
-                          ? String(values.modelledVolumeLossBasis || "").trim()
-                          : ""
+                      spec.key === "f3" && field.key === "modelledVolumeLoss"
+                        ? String(values.modelledVolumeLossBasis || "").trim()
+                        : ""
                     }
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
