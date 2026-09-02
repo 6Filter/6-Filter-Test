@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleApiRequest } from "./lib/apiRouter.js";
 import { redactSecrets, sendJson } from "./lib/http.js";
+import { listProvidersForClient } from "./lib/llmContext.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "dist");
@@ -74,12 +75,12 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[primus] listening on ${PORT}`);
-  import("./llmContext.js")
-    .then(({ listProvidersForClient }) => {
-      const rows = listProvidersForClient().map(
-        (p) => `${p.id}:${p.configured ? `yes(${p.keySource})` : "no"}`
-      );
-      console.log(`[primus] llm providers ${rows.join(" ")}`);
-    })
-    .catch((e) => console.warn(`[primus] provider status log failed: ${e.message}`));
+  try {
+    const rows = listProvidersForClient().map(
+      (p) => `${p.id}:${p.configured ? `yes(${p.keySource})` : "no"}`
+    );
+    console.log(`[primus] llm providers ${rows.join(" ")}`);
+  } catch (e) {
+    console.warn(`[primus] provider status log failed: ${e.message}`);
+  }
 });
