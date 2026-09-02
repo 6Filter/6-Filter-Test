@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut, Settings
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut, Settings, Clock
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -16,6 +16,25 @@ import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
+import { processTimerCopy } from "../lib/processTimer.js";
+
+function ProcessEta({ startedAt, expectedMs }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [startedAt]);
+  const copy = processTimerCopy({ elapsedMs: now - startedAt, expectedMs });
+  return (
+    <div className="process-eta" role="status" aria-live="polite">
+      <Clock size={14} aria-hidden="true" />
+      <span className="process-eta-lbl">Expected</span>
+      <strong className="process-eta-time">
+        {copy.status === "counting" ? `${copy.remainingLabel} left` : copy.remainingLabel}
+      </strong>
+    </div>
+  );
+}
 
 function apiFetch(url, options = {}) {
   return fetch(url, { credentials: "include", ...options });
@@ -545,6 +564,7 @@ export default function App() {
   const [propositionList, setPropositionList] = useState([]);
   const [proposition, setProposition] = useState(null);
   const [savingProp, setSavingProp] = useState(false);
+  const [processJob, setProcessJob] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState("");
@@ -641,6 +661,10 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== "form") setProcessJob(null);
   }, [view]);
 
   function goBack() {
@@ -1101,6 +1125,9 @@ export default function App() {
             <Settings size={14} /> Settings
           </button>
         </nav>
+        {processJob?.busy ? (
+          <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
+        ) : null}
         <label className="model-switch" title="Compare NPD results across models. Keys stay on the server.">
           <span className="pulse" />
           <span className="model-switch-lbl">Model</span>
@@ -1163,6 +1190,7 @@ export default function App() {
           currentUser={sessionUser}
           llmProvider={llmProvider}
           providerStatus={providerStatus}
+          onProcessingChange={(job) => setProcessJob(job?.busy ? job : null)}
           onLlmProviderChange={(next) => {
             const id = normalizeProvider(next);
             setLlmProvider(id);
@@ -2139,6 +2167,11 @@ const CSS = `
 .brandmark{width:48px;height:48px;border:1.5px solid var(--ink);border-radius:14px;display:grid;place-items:center;background:linear-gradient(160deg,#E8F4FC,var(--bg));box-shadow:var(--shadow);}
 .brandmark .star{color:var(--ink);font-size:22px;}
 .top-nav{display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;}
+.process-eta{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;margin-right:8px;
+  background:rgba(0,108,180,.08);border:1px solid rgba(0,108,180,.22);padding:6px 12px 6px 10px;
+  border-radius:999px;color:var(--ink);font-family:var(--fm);}
+.process-eta-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.process-eta-time{font-size:13px;font-weight:600;letter-spacing:.02em;font-variant-numeric:tabular-nums;}
 .nav-tab{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;color:var(--muted);border-radius:999px;padding:8px 14px;font-family:var(--fd);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
 .nav-tab:hover{color:var(--ink);background:rgba(0,108,180,.06);}
 .nav-tab.active{color:var(--ink);background:rgba(0,108,180,.1);border-color:rgba(0,108,180,.22);}
@@ -2162,7 +2195,9 @@ const CSS = `
 .screen-spec .brandmark .star{color:#C9AEEF;}
 .screen-spec .spec-wordmark{display:flex;align-items:center;gap:8px;font-size:18px;letter-spacing:-.3px;white-space:nowrap;}
 .screen-spec .spec-chevron{opacity:.7;flex-shrink:0;}
-.screen-spec .top-nav,.screen-spec .model-switch,.screen-spec .session-chip{flex-shrink:0;}
+.screen-spec .top-nav,.screen-spec .model-switch,.screen-spec .session-chip,.screen-spec .process-eta{flex-shrink:0;}
+.screen-spec .process-eta{background:rgba(243,234,248,.08);border-color:rgba(243,234,248,.16);color:#F3EAF8;}
+.screen-spec .process-eta-lbl{color:rgba(243,234,248,.55);}
 .screen-spec .nav-tab:hover{background:rgba(201,174,239,.1);color:#F3EAF8;}
 .screen-spec .nav-tab.active{background:rgba(201,174,239,.16);border-color:rgba(201,174,239,.35);color:#F3EAF8;}
 .screen-spec .model-switch{background:rgba(243,234,248,.08);border-color:rgba(243,234,248,.16);}

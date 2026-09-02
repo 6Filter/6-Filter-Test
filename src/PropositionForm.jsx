@@ -17,14 +17,8 @@ import {
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
-import {
-  computeMrp,
-  hydrateMarginElasticityMrp,
-  isMarginElasticityUnfilled,
-  marginPctFromMrp,
-  seedMarginElasticityFromAi,
-  withoutPercentSign,
-} from "../lib/mrpFormula.js";
+import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { expectedProcessMs } from "../lib/processTimer.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -672,6 +666,7 @@ export default function PropositionForm({
   llmProvider = "claude",
   providerStatus = [],
   onLlmProviderChange,
+  onProcessingChange,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
   const [aiSuggestions, setAiSuggestions] = useState(null);
@@ -1143,6 +1138,17 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
     const provider = providerOverride || llmProvider;
+    const ideaChanged = Boolean(
+      doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
+    );
+    const startedAt = Date.now();
+    const expectedMs = expectedProcessMs({
+      forceResearch: Boolean(submitOpts.forceResearch),
+      researchRunAt: doc.researchRunAt,
+      ideaChanged,
+    });
+    onProcessingChange?.({ busy: true, startedAt, expectedMs });
+    try {
     const result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
     });
@@ -1192,6 +1198,9 @@ export default function PropositionForm({
     setSummaryStale(false);
 
     await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
+    } finally {
+      onProcessingChange?.({ busy: false });
+    }
   }
 
   function handleRetryWithFallback() {
