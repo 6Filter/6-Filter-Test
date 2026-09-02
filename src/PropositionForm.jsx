@@ -9,7 +9,14 @@ import {
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
 import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
-import { goNoGoTone } from "../lib/goNoGo.js";
+import {
+  applyLocalGate,
+  computeGoNoGoWatch,
+  filterCheckScore,
+  goNoGoTone,
+  scoreAdvisoryChecks,
+} from "../lib/goNoGo.js";
+import { formatFixedPriceGapNote, seedDerivedMrp } from "../lib/f2Derived.js";
 
 function OwnerTag({ role }) {
   const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
@@ -193,6 +200,7 @@ function FieldControl({
   onDismissSuggestion,
   currentUser,
   aiSourced = false,
+  liveNote = "",
 }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
@@ -289,7 +297,9 @@ function FieldControl({
         </span>
         {input}
       </label>
+      {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
+      {liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
       {chip}
     </div>
   );
@@ -341,12 +351,28 @@ function toneFor(label) {
   return "watch";
 }
 
-function GoNoGoResult({ result }) {
+function localGateRationale(classification, checks) {
+  const score = scoreAdvisoryChecks(checks);
+  const tally = `${score.done}/${score.total} filter parameters cleared`;
+  if (classification === "NO-GO") {
+    return `NO-GO — at least one of Filters 1–4 is below a non-negotiable floor. ${tally}.`;
+  }
+  if (classification === "GO") {
+    return `GO — Filters 1–4 are cleared or exempt on the recorded parameters. ${tally}.`;
+  }
+  return `WATCH — evidence is still incomplete on one or more of Filters 1–4. ${tally} so far.`;
+}
+
+function GoNoGoResult({ result, score }) {
   if (!result?.classification) return null;
+  const tally = score && score.total
+    ? `${score.done}/${score.total} · ${score.pct}%`
+    : null;
   return (
     <div className="gonogo-result" data-tone={goNoGoTone(result.classification)}>
       <span className="gonogo-badge">
-        <AiWandMark size={12} /> {result.classification}
+        {result.classification}
+        {tally ? <em className="gonogo-score">{tally}</em> : null}
       </span>
       <p>{result.rationale || "No rationale returned."}</p>
     </div>
@@ -392,24 +418,38 @@ function ProofUploadPanel({ proof, onPick, onClear, fileRef, error, disabled }) 
   );
 }
 
-function AnalysisSummary({ advisoryChecks, visible, stale, unlockedKeys }) {
+function AnalysisSummary({ advisoryChecks, visible, stale, classification }) {
   if (!visible || !advisoryChecks) return null;
-  const filters = SIX_FILTERS_FORM.filter((f) => !unlockedKeys || unlockedKeys.has(f.key));
+  const keys = ["f1", "f2", "f3", "f4"];
+  const score = scoreAdvisoryChecks(advisoryChecks, keys);
+  const filters = SIX_FILTERS_FORM.filter((f) => keys.includes(f.key));
   return (
     <section className={`analysis-summary${stale ? " is-stale" : ""}`} aria-live="polite">
       <h2 className="summary-heading">Analysis</h2>
+      {classification ? (
+        <p className="summary-gate" data-tone={goNoGoTone(classification)}>
+          <strong>{classification}</strong>
+          <span>
+            {score.done}/{score.total} parameters · {score.pct}%
+          </span>
+        </p>
+      ) : null}
       <p className="summary-lede">
         {stale
           ? "Based on the previous submit — resubmit to refresh."
-          : "Based on everything currently entered."}
+          : "Scored from the Filter 1–4 check parameters on this submit."}
       </p>
       <div className="summary-grid">
         {filters.map((f) => {
           const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
+          const s = score.byFilter[f.key] || { done: 0, total: 0, pct: 0 };
           return (
             <div className="summary-row" key={f.key}>
               <span className="summary-num">{f.num}</span>
               <span className="summary-title">{f.title}</span>
+              <span className="summary-score">
+                {s.total ? `${s.done}/${s.total}` : "—"}
+              </span>
               <span className="check-pill" data-tone={toneFor(check.checkLabel)}>
                 {check.checkLabel}
               </span>
@@ -571,10 +611,18 @@ export default function PropositionForm({
   function setFilter(filterKey, fieldKey, value) {
     noteEdit();
     markEdited(filterKey, fieldKey);
+    const nextFilter = { ...(doc[filterKey] || {}), [fieldKey]: value };
+    const seeded =
+      filterKey === "f2" && (fieldKey === "cogsAtScale" || fieldKey === "netMarginAtScale")
+        ? seedDerivedMrp(nextFilter)
+        : { f2: nextFilter, seeded: false };
     setDoc((prev) => ({
       ...prev,
-      [filterKey]: { ...prev[filterKey], [fieldKey]: value },
+      [filterKey]: seeded.seeded ? seeded.f2 : { ...(prev[filterKey] || {}), [fieldKey]: value },
     }));
+    if (seeded.seeded) {
+      setAiSourced((prev) => ({ ...prev, [sourcedPath("f2", "mrpInr")]: true }));
+    }
   }
 
   function applyResearchResult(data) {
@@ -590,8 +638,15 @@ export default function PropositionForm({
     for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
       if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
       const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
-      nextDoc = { ...nextDoc, [filterKey]: next };
-      for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
+      let filled = next;
+      let sourcedFlags = sourced;
+      if (filterKey === "f2") {
+        const seeded = seedDerivedMrp(next);
+        filled = seeded.f2;
+        if (seeded.seeded) sourcedFlags = { ...sourced, mrpInr: true };
+      }
+      nextDoc = { ...nextDoc, [filterKey]: filled };
+      for (const key of Object.keys(sourcedFlags)) flags[sourcedPath(filterKey, key)] = true;
     }
     if (nextDoc !== doc) setDoc(nextDoc);
     if (Object.keys(flags).length) {
@@ -701,12 +756,13 @@ export default function PropositionForm({
   }
 
   async function runGoNoGoRead(propositionDoc = doc, providerOverride) {
-    if (readingGoNoGo || !isFilterUnlocked("proof-gate", propositionDoc) || !propositionId) return null;
+    const id = propositionDoc?.id || propositionId;
+    if (readingGoNoGo || !id) return null;
     const provider = providerOverride || llmProvider;
     setReadingGoNoGo(true);
     setLocalError("");
     try {
-      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/go-nogo`, {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(id)}/go-nogo`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -719,6 +775,9 @@ export default function PropositionForm({
         rationale: data.rationale,
         at: new Date().toISOString(),
       };
+      if (!nextGo.score && data.advisoryChecks) {
+        nextGo.score = scoreAdvisoryChecks(data.advisoryChecks);
+      }
       setGoNoGo(nextGo);
       setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
       if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
@@ -778,6 +837,17 @@ export default function PropositionForm({
     }
     setLocalError("");
     setFailedBanner(null);
+    const preview = applyLocalGate(doc);
+    setAdvisoryChecks(preview.checks);
+    setSummaryChecks(preview.checks);
+    setGoNoGo({
+      classification: preview.classification,
+      rationale: localGateRationale(preview.classification, preview.checks),
+      score: preview.score,
+      at: new Date().toISOString(),
+    });
+    setJustSubmitted(true);
+    setSummaryStale(false);
     const provider = providerOverride || llmProvider;
     const result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
@@ -810,18 +880,20 @@ export default function PropositionForm({
     }
     const nextDoc = mergeProposition(result.proposition);
     setDoc(nextDoc);
-    if (nextDoc.goNoGo) setGoNoGo(nextDoc.goNoGo);
-    const checks = result.proposition.advisoryChecks || null;
+    const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
+    const classification = computeGoNoGoWatch(checks || {});
+    setGoNoGo({
+      classification,
+      rationale: localGateRationale(classification, checks || {}),
+      score: scoreAdvisoryChecks(checks || {}),
+      at: new Date().toISOString(),
+    });
     setJustSubmitted(true);
     setSummaryStale(false);
 
-    // GO/NO-GO/WATCH read runs from the same Submit once F1–F4 are complete.
-    // Pass provider explicitly — React state from onLlmProviderChange may not have flushed yet.
-    if (!result.researchError && isFilterUnlocked("proof-gate", nextDoc)) {
-      await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition }, provider);
-    }
+    await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition }, provider);
   }
 
   function handleRetryWithFallback() {
@@ -911,6 +983,7 @@ export default function PropositionForm({
       {visibleFilters.map((spec) => {
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
+        const filterScore = filterCheckScore(check);
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
@@ -931,6 +1004,11 @@ export default function PropositionForm({
                 <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
               </div>
               <div className="prop-status-wrap">
+                {filterScore.total ? (
+                  <span className="filter-score">
+                    {filterScore.done}/{filterScore.total} · {filterScore.pct}%
+                  </span>
+                ) : null}
                 <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
               </div>
             </div>
@@ -959,11 +1037,26 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                    liveNote={
+                      spec.key === "f2" && field.key === "mrpInr"
+                        ? formatFixedPriceGapNote(values.mrpInr)
+                        : ""
+                    }
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
                 )
               )}
             </div>
+
+            {(justSubmitted || goNoGo) && check.items?.length ? (
+              <ul className="filter-check-list">
+                {check.items.map((it, i) => (
+                  <li key={`${spec.key}-${i}`} data-status={it.status}>
+                    {it.text}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
             {spec.crossCheckNote ? (
               <div className="prop-cross">
@@ -974,17 +1067,20 @@ export default function PropositionForm({
         );
       })}
 
-      {unlockHint && !f5Unlocked ? <p className="unlock-hint">{unlockHint}</p> : null}
+      {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
-      {proofGateReady ? (
+      {justSubmitted || goNoGo || proofGateReady ? (
         <section className="gonogo-panel">
           {readingGoNoGo ? (
             <p className="gonogo-reading">
               <Loader2 size={15} className="spin" /> Running GO / NO-GO / WATCH read…
             </p>
           ) : null}
-          <GoNoGoResult result={goNoGo} />
-          {goNoGo?.classification === "GO" ? (
+          <GoNoGoResult
+            result={goNoGo}
+            score={goNoGo?.score || scoreAdvisoryChecks(summaryChecks || advisoryChecks || {})}
+          />
+          {goNoGo?.classification === "GO" && proofGateReady ? (
             <ProofUploadPanel
               proof={doc.marketResearchProof}
               onPick={handleProofFile}
@@ -996,8 +1092,9 @@ export default function PropositionForm({
           ) : null}
           {goNoGo != null && goNoGo.classification !== "GO" ? (
             <p className="gonogo-blocked-note">
-              Revise the filters above and Submit again once ready — the upload step and Filters
-              5–6 aren&apos;t available until this reads GO.
+              {goNoGo.classification === "WATCH"
+                ? "Fill the remaining Filter 1–4 parameters and Submit again. Upload and Filters 5–6 unlock only on GO."
+                : "Revise the filters above and Submit again — upload and Filters 5–6 stay locked until this reads GO."}
             </p>
           ) : null}
           {goNoGo == null && !readingGoNoGo ? (
@@ -1095,10 +1192,10 @@ export default function PropositionForm({
             : " Research already ran for this proposition; later Submits only save."}
         </p>
         <AnalysisSummary
-          advisoryChecks={summaryChecks}
-          visible={justSubmitted}
-          stale={summaryStale}
-          unlockedKeys={unlockedFilterKeys}
+          advisoryChecks={summaryChecks || advisoryChecks}
+          visible={justSubmitted || Boolean(goNoGo)}
+          stale={summaryStale && !justSubmitted}
+          classification={goNoGo?.classification}
         />
       </section>
 
@@ -1157,6 +1254,10 @@ const PROP_CSS = `
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
 .prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
+.ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
+  color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
+  border-radius:999px;padding:3px 8px;width:fit-content;}
+.price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
   vertical-align:middle;flex-shrink:0;}
 .ai-wand svg{display:block;}
@@ -1185,7 +1286,14 @@ const PROP_CSS = `
 .analysis-summary{margin-top:20px;}
 .analysis-summary.is-stale{opacity:.72;}
 .summary-heading{margin:0 0 4px;font-size:18px;letter-spacing:-.3px;color:var(--ink, #F3EAF8);}
+.summary-gate{display:flex;align-items:center;gap:12px;margin:8px 0 10px;font-size:20px;letter-spacing:-.3px;}
+.summary-gate strong{font-weight:800;}
+.summary-gate span{font-size:13px;color:rgba(243,234,248,.62);}
+.summary-gate[data-tone="pass"] strong{color:#7EDCA8;}
+.summary-gate[data-tone="fail"] strong{color:#E2716B;}
+.summary-gate[data-tone="watch"] strong{color:#E8B563;}
 .summary-lede{margin:0 0 12px;font-size:12.5px;color:var(--muted-2, rgba(243,234,248,.55));line-height:1.45;}
+.summary-score{font-family:var(--fm);font-size:12px;color:rgba(243,234,248,.7);min-width:42px;text-align:right;}
 .summary-grid{display:flex;flex-direction:column;gap:2px;}
 .summary-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px dashed var(--border, rgba(243,234,248,.12));}
 .summary-row:first-child{border-top:none;}
@@ -1228,8 +1336,9 @@ const PROP_CSS = `
 .gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
 .gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
 .gonogo-result[data-tone="watch"]{border-color:rgba(232,181,99,.4);background:rgba(232,181,99,.08);}
-.gonogo-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:12px;font-weight:700;
+.gonogo-badge{display:inline-flex;align-items:center;gap:10px;font-family:var(--fm);font-size:13px;font-weight:700;
   letter-spacing:.06em;margin-bottom:8px;}
+.gonogo-score{font-style:normal;font-weight:600;opacity:.85;letter-spacing:.02em;}
 .gonogo-result[data-tone="pass"] .gonogo-badge{color:#7EDCA8;}
 .gonogo-result[data-tone="fail"] .gonogo-badge{color:#E2716B;}
 .gonogo-result[data-tone="watch"] .gonogo-badge{color:#E8B563;}
@@ -1252,6 +1361,11 @@ const PROP_CSS = `
 .prop-filter-title{margin:0;font-size:18px;letter-spacing:-.3px;}
 .prop-filter-sub{margin:4px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.filter-score{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.7);}
+.filter-check-list{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;}
+.filter-check-list li{font-size:12.5px;line-height:1.4;color:rgba(243,234,248,.78);padding-left:16px;position:relative;}
+.filter-check-list li::before{content:"";position:absolute;left:0;top:6px;width:7px;height:7px;border-radius:50%;background:rgba(232,181,99,.75);}
+.filter-check-list li[data-status="done"]::before{background:#7EDCA8;}
 .check-pill{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
   padding:5px 10px;border-radius:999px;white-space:nowrap;}
 .check-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
