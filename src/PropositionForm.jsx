@@ -17,7 +17,14 @@ import {
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
-import { computeMrp, hydrateMarginElasticityMrp, marginPctFromMrp, withoutPercentSign } from "../lib/mrpFormula.js";
+import {
+  computeMrp,
+  hydrateMarginElasticityMrp,
+  isMarginElasticityUnfilled,
+  marginPctFromMrp,
+  seedMarginElasticityFromAi,
+  withoutPercentSign,
+} from "../lib/mrpFormula.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -64,6 +71,14 @@ function sourcedPath(filterKey, fieldKey) {
 function isUnfilledValue(value) {
   if (value == null || value === "") return true;
   if (typeof value === "object" && !Array.isArray(value)) {
+    if (
+      "minMrpInr" in value ||
+      "maxMrpInr" in value ||
+      "minMarginPct" in value ||
+      "maxMarginPct" in value
+    ) {
+      return isMarginElasticityUnfilled(value);
+    }
     return value.maxMarginPct == null;
   }
   return false;
@@ -99,6 +114,26 @@ function mergeSuggestionsIntoDoc(baseDoc, suggestions) {
     const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
     nextDoc = { ...nextDoc, [filterKey]: next };
     for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
+  }
+  if (raw.f3?.marginElasticity) {
+    const seeded = seedMarginElasticityFromAi(
+      nextDoc.f3?.marginElasticity,
+      raw.f3.marginElasticity,
+      nextDoc.f2?.cogsAtScale
+    );
+    const before = nextDoc.f3?.marginElasticity;
+    const changed =
+      Number(before?.minMrpInr) !== Number(seeded?.minMrpInr) ||
+      Number(before?.maxMrpInr) !== Number(seeded?.maxMrpInr);
+    if (seeded && seeded !== before) {
+      nextDoc = {
+        ...nextDoc,
+        f3: { ...(nextDoc.f3 || {}), marginElasticity: { ...seeded, aiSourced: true } },
+      };
+      if (changed || isMarginElasticityUnfilled(before)) {
+        flags[sourcedPath("f3", "marginElasticity")] = true;
+      }
+    }
   }
   return { doc: nextDoc, sourced: flags };
 }
@@ -679,17 +714,23 @@ export default function PropositionForm({
   const fileRef = useRef(null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
+  const f3RangeTouchedByHuman = useRef(false);
 
   useEffect(() => {
-    const next = mergeProposition(initial);
-    setDoc(next);
+    const merged = mergeProposition(initial);
+    const filled = initial?.suggestions
+      ? mergeSuggestionsIntoDoc(merged, initial.suggestions)
+      : { doc: merged, sourced: {} };
+    setDoc(filled.doc);
+    setAiSourced(filled.sourced);
+    setAiSuggestions(initial?.suggestions || null);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
-    setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(next) : "");
+    setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
+    f3RangeTouchedByHuman.current = false;
   }, [initial?.id]);
 
   useEffect(() => {
-    setAiSuggestions(null);
     setAiDismissed({});
     setAiPassMeta(null);
     setFileError("");
@@ -703,10 +744,10 @@ export default function PropositionForm({
     setGoNoGo(initial?.goNoGo || null);
     setCurrentView("propositionForm");
     setManagerOpen(false);
-    setAiSourced({});
     setMrpBaseInr(null);
     setMrpFinalInr(null);
     mrpTouchedByHuman.current = false;
+    f3RangeTouchedByHuman.current = false;
   }, [initial?.id]);
 
   const f2Cogs = doc.f2?.cogsAtScale;
@@ -753,6 +794,36 @@ export default function PropositionForm({
       });
     }
   }, [f2Cogs, f2Margin, f2Gst]);
+
+  const f3SuggestedRange = aiSuggestions?.f3?.marginElasticity;
+  useEffect(() => {
+    if (f3RangeTouchedByHuman.current) return;
+    setDoc((prev) => {
+      const current = prev.f3?.marginElasticity;
+      const seeded = seedMarginElasticityFromAi(current, f3SuggestedRange, f2Cogs);
+      if (!seeded || typeof seeded !== "object") return prev;
+      const same =
+        Number(current?.minMrpInr) === Number(seeded.minMrpInr) &&
+        Number(current?.maxMrpInr) === Number(seeded.maxMrpInr) &&
+        Number(current?.minMarginPct) === Number(seeded.minMarginPct) &&
+        Number(current?.maxMarginPct) === Number(seeded.maxMarginPct);
+      if (same && !isMarginElasticityUnfilled(current)) return prev;
+      if (seeded.minMrpInr == null && seeded.maxMrpInr == null && isMarginElasticityUnfilled(current)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        f3: { ...(prev.f3 || {}), marginElasticity: { ...seeded, aiSourced: true } },
+      };
+    });
+    if (f3SuggestedRange && !isMarginElasticityUnfilled(f3SuggestedRange)) {
+      setAiSourced((prev) =>
+        prev[sourcedPath("f3", "marginElasticity")] === true
+          ? prev
+          : { ...prev, [sourcedPath("f3", "marginElasticity")]: true }
+      );
+    }
+  }, [f2Cogs, f3SuggestedRange]);
 
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
@@ -839,6 +910,9 @@ export default function PropositionForm({
     if (filterKey === "f2" && fieldKey === "mrpInr") {
       handleMrpInput(value);
       return;
+    }
+    if (filterKey === "f3" && fieldKey === "marginElasticity") {
+      f3RangeTouchedByHuman.current = true;
     }
     noteEdit();
     markEdited(filterKey, fieldKey);

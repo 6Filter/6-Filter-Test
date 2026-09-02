@@ -67,7 +67,7 @@ async function fetchPropositionList(limit = 100) {
 function attachAdvisory(data) {
   const p = data.proposition;
   if (!p) return p;
-  return { ...p, advisoryChecks: data.advisoryChecks };
+  return { ...p, advisoryChecks: data.advisoryChecks, suggestions: data.suggestions ?? null };
 }
 
 async function createPropositionRecord() {
