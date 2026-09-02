@@ -16,6 +16,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
+import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, marginPctFromMrp } from "../lib/mrpFormula.js";
 
 function filterSubtitle(spec, division) {
@@ -285,6 +286,7 @@ function FieldControl({
         </div>
         <p className="derived-note">Safe MRP range over the next 5 years</p>
         {range.basis ? <p className="derived-note">{range.basis}</p> : null}
+        {range.competitiveNote ? <p className="derived-note">{range.competitiveNote}</p> : null}
         <div className="me-overrides">
           <label>
             Min MRP (₹)
@@ -478,39 +480,40 @@ function namedCheckFilters(checks, predicate) {
 }
 
 function localGateRationale(classification, checks) {
-  const score = scoreAdvisoryChecks(checks);
-  const tally = `${score.done}/${score.total} filter parameters cleared`;
   if (classification === "GO") {
-    return `GO — Filters 1–4 are cleared or exempt on the recorded parameters. ${tally}.`;
+    return "GO — Filters 1–4 are cleared or exempt on the recorded parameters.";
   }
   const below = namedCheckFilters(checks, (label) => label === "Below floor");
   if (below.length) {
-    return `NO-GO — ${below.join(", ")} ${below.length === 1 ? "is" : "are"} below a non-negotiable floor. That is the blocker, not unfinished evidence. ${tally}.`;
+    return `NO-GO — ${below.join(", ")} ${below.length === 1 ? "is" : "are"} below a non-negotiable floor. That is the blocker, not unfinished evidence.`;
   }
   const missing = namedCheckFilters(
     checks,
     (label) => label !== "Cleared" && label !== "Exempt"
   );
   const names = missing.length ? missing.join(", ") : "Filters 1–4";
-  return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again. ${tally} so far.`;
+  return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again.`;
 }
 
-function FilterCheckGrid({ advisoryChecks, score }) {
-  const keys = ["f1", "f2", "f3", "f4"];
-  const filters = SIX_FILTERS_FORM.filter((f) => keys.includes(f.key));
+function FilterNarrativeList({ narratives, advisoryChecks }) {
   return (
-    <div className="summary-grid">
-      {filters.map((f) => {
-        const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
-        const s = score?.byFilter?.[f.key] || filterCheckScore(check);
+    <div className="panel gonogo-score-detail">
+      <div className="panel-tab">Filter analysis</div>
+      {SIX_FILTERS_FORM.slice(0, 4).map((f) => {
+        const stored = String(narratives?.[f.key] || "").trim();
+        const check = advisoryChecks?.[f.key] || {};
+        const text = stored || fallbackFilterNarrative(check);
+        const items = Array.isArray(check.items) ? check.items : [];
+        const points = items.length
+          ? `${items.filter((i) => i.status === "done").length}/${items.length}`
+          : "—";
         return (
-          <div className="summary-row" key={f.key}>
-            <span className="summary-num">{f.num}</span>
-            <span className="summary-title">{f.title}</span>
-            <span className="summary-score">{s.total ? `${s.done}/${s.total}` : "—"}</span>
-            <span className="check-pill" data-tone={toneFor(check.checkLabel)}>
-              {check.checkLabel}
-            </span>
+          <div key={f.key} className="filter-narrative">
+            <div className="filter-narrative-title">
+              {f.num} — {f.title}
+              <span className="filter-points">{points}</span>
+            </div>
+            <p>{text}</p>
           </div>
         );
       })}
@@ -542,16 +545,11 @@ function GoNoGoResultPage({ result, advisoryChecks, onBack, onContinue }) {
       </div>
       <div className={`gonogo-hero tone-${tone === "pass" ? "pass" : "fail"}`}>
         <div className="gonogo-classification">{result.classification}</div>
-        <div className="gonogo-score">
-          {score.done}/{score.total} · {score.pct}%
-        </div>
+        <div className="gonogo-score">{score.pct}%</div>
         <p className="gonogo-rationale">{result.rationale || "No rationale returned."}</p>
       </div>
       <ImprovementList advisoryChecks={checks} />
-      <div className="panel gonogo-score-detail">
-        <div className="panel-tab">Filter checks</div>
-        <FilterCheckGrid advisoryChecks={checks} score={score} />
-      </div>
+      <FilterNarrativeList narratives={result.filterNarratives} advisoryChecks={checks} />
       {isGo ? (
         <p className="gonogo-blocked-note">
           Continue to upload market-research proof and unlock Filters 5–6.
@@ -1582,6 +1580,12 @@ const PROP_CSS = `
 .gonogo-rationale{margin:0;font-size:15px;line-height:1.55;color:#F3EAF8;}
 .gonogo-score-detail{margin-top:18px;position:relative;padding:22px 16px 8px;background:#161616;
   border:1px solid rgba(243,234,248,.12);border-radius:14px;}
+.filter-narrative{padding:14px 0;border-top:1px dashed rgba(243,234,248,.12);}
+.panel-tab + .filter-narrative{border-top:none;}
+.filter-narrative-title{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.04em;
+  color:rgba(243,234,248,.72);margin:0 0 6px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.filter-points{font-size:11px;font-weight:600;letter-spacing:.02em;color:rgba(243,234,248,.55);white-space:nowrap;}
+.filter-narrative p{margin:0;font-size:14px;line-height:1.55;color:#F3EAF8;}
 .gonogo-blocked-note{margin:16px 0 0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.62);}
 .proof-panel{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px;margin:0 0 16px;}
