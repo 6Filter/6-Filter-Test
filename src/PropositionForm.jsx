@@ -351,6 +351,27 @@ function toneFor(label) {
   return "watch";
 }
 
+function ImprovementList({ advisoryChecks }) {
+  const pending = ["f1", "f2", "f3", "f4"].flatMap((k) =>
+    (advisoryChecks[k]?.items || [])
+      .filter((it) => it.status === "pending")
+      .map((it) => ({ filter: k.toUpperCase(), text: it.text }))
+  );
+  if (!pending.length) return null;
+  return (
+    <div className="panel improvement-list">
+      <div className="panel-tab">What's holding this back</div>
+      <ul>
+        {pending.map((p, i) => (
+          <li key={`${p.filter}-${i}`}>
+            <span className="imp-filter-tag">{p.filter}</span> {p.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function localGateRationale(classification, checks) {
   const score = scoreAdvisoryChecks(checks);
   const tally = `${score.done}/${score.total} filter parameters cleared`;
@@ -457,6 +478,7 @@ function AnalysisSummary({ advisoryChecks, visible, stale, classification }) {
           );
         })}
       </div>
+      <ImprovementList advisoryChecks={advisoryChecks} />
     </section>
   );
 }
@@ -780,7 +802,10 @@ export default function PropositionForm({
       }
       setGoNoGo(nextGo);
       setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
-      if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
+      if (data.advisoryChecks) {
+        setAdvisoryChecks(data.advisoryChecks);
+        setSummaryChecks(data.advisoryChecks);
+      }
       return nextGo;
     } catch (e) {
       setLocalError(e.message || "AI read failed.");
@@ -893,7 +918,7 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
 
-    await runGoNoGoRead({ ...nextDoc, ...doc, ...result.proposition }, provider);
+    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
   }
 
   function handleRetryWithFallback() {
@@ -1057,6 +1082,7 @@ export default function PropositionForm({
                 ))}
               </ul>
             ) : null}
+            {check.infoLine ? <p className="unlock-hint">{check.infoLine}</p> : null}
 
             {spec.crossCheckNote ? (
               <div className="prop-cross">
@@ -1299,6 +1325,12 @@ const PROP_CSS = `
 .summary-row:first-child{border-top:none;}
 .summary-num{font-family:var(--fm);font-size:12px;color:var(--muted-3, rgba(243,234,248,.45));width:24px;}
 .summary-title{flex:1;font-weight:600;color:var(--ink, #F3EAF8);}
+.improvement-list{margin-top:18px;position:relative;padding:22px 16px 8px;background:#161616;
+  border:1px solid rgba(243,234,248,.12);border-radius:14px;}
+.improvement-list ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+.improvement-list li{font-size:13px;line-height:1.45;color:#F3EAF8;display:flex;gap:10px;align-items:flex-start;}
+.imp-filter-tag{flex-shrink:0;font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.06em;
+  color:#C9AEEF;background:rgba(201,174,239,.14);border-radius:999px;padding:3px 8px;margin-top:1px;}
 .ai-suggestion-chip{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px;
   padding:8px 12px;border-radius:10px;background:rgba(201,174,239,.12);
   border:1px solid rgba(201,174,239,.28);font-size:12px;color:#F3EAF8;line-height:1.4;}
