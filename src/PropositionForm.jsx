@@ -17,6 +17,7 @@ import {
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { formatFixedPriceGapNote, seedDerivedMrp } from "../lib/f2Derived.js";
+import { computeMrp, formatMrpBreakdown } from "../lib/mrpFormula.js";
 
 function OwnerTag({ role }) {
   const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
@@ -201,13 +202,14 @@ function FieldControl({
   currentUser,
   aiSourced = false,
   liveNote = "",
+  breakdownNote = "",
 }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
   const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
   const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
-  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "mrpInr", "grammage", "qcomTrajectory"]);
+  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory"]);
   const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
     showChip ? (
@@ -255,6 +257,7 @@ function FieldControl({
     );
   }
 
+  const listId = Array.isArray(field.datalist) && field.datalist.length ? `${field.key}-presets` : "";
   const input =
     field.type === "select" ? (
       <select value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
@@ -274,15 +277,25 @@ function FieldControl({
         onChange={(e) => onChange(e.target.value)}
       />
     ) : (
-      <input
-        type={field.type === "number" ? "number" : "text"}
-        step={field.type === "number" ? "any" : undefined}
-        value={value ?? ""}
-        placeholder={field.placeholder || ""}
-        disabled={locked}
-        title={lockTitle}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <>
+        <input
+          type={field.type === "number" ? "number" : "text"}
+          step={field.type === "number" ? "any" : undefined}
+          list={listId || undefined}
+          value={value ?? ""}
+          placeholder={field.placeholder || ""}
+          disabled={locked}
+          title={lockTitle}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {listId ? (
+          <datalist id={listId}>
+            {field.datalist.map((v) => (
+              <option key={v} value={v} />
+            ))}
+          </datalist>
+        ) : null}
+      </>
     );
 
   return (
@@ -299,6 +312,7 @@ function FieldControl({
       </label>
       {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
+      {breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
       {liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
       {chip}
     </div>
@@ -650,7 +664,8 @@ export default function PropositionForm({
     markEdited(filterKey, fieldKey);
     const nextFilter = { ...(doc[filterKey] || {}), [fieldKey]: value };
     const seeded =
-      filterKey === "f2" && (fieldKey === "cogsAtScale" || fieldKey === "netMarginAtScale")
+      filterKey === "f2" &&
+      (fieldKey === "cogsAtScale" || fieldKey === "netMarginAtScale" || fieldKey === "gstRatePct")
         ? seedDerivedMrp(nextFilter)
         : { f2: nextFilter, seeded: false };
     setDoc((prev) => ({
@@ -1081,6 +1096,18 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                    breakdownNote={
+                      spec.key === "f2" && field.key === "mrpInr"
+                        ? formatMrpBreakdown(
+                            computeMrp({
+                              cogsAtScale: values.cogsAtScale,
+                              netMarginAtScale: values.netMarginAtScale,
+                              gstRatePct: values.gstRatePct,
+                            }),
+                            values.gstRatePct
+                          )
+                        : ""
+                    }
                     liveNote={
                       spec.key === "f2" && field.key === "mrpInr"
                         ? formatFixedPriceGapNote(values.mrpInr)
@@ -1306,6 +1333,7 @@ const PROP_CSS = `
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
 .price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
+.derived-note{margin:4px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.72);}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
   vertical-align:middle;flex-shrink:0;}
 .ai-wand svg{display:block;}
