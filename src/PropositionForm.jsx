@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
-  OWNER_COLORS,
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
   mergeProposition,
@@ -18,15 +17,6 @@ import {
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { computeMrp } from "../lib/mrpFormula.js";
-
-function OwnerTag({ role }) {
-  const c = OWNER_COLORS[role] || { bg: "#333", fg: "#ccc" };
-  return (
-    <span className="owner-tag" style={{ background: c.bg, color: c.fg }}>
-      {role}
-    </span>
-  );
-}
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -279,9 +269,6 @@ function FieldControl({
         <div className="prop-label">
           {field.label}
           {wand}
-          {owners.map((role) => (
-            <OwnerTag key={role} role={role} />
-          ))}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <div className="margin-elasticity-display">
@@ -327,9 +314,6 @@ function FieldControl({
         <div className="prop-label">
           {field.label}
           {wand}
-          {owners.map((role) => (
-            <OwnerTag key={role} role={role} />
-          ))}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
       </div>
@@ -348,9 +332,6 @@ function FieldControl({
         <span>
           {field.label}
           {wand}
-          {owners.map((role) => (
-            <OwnerTag key={role} role={role} />
-          ))}
         </span>
       </label>
     );
@@ -403,9 +384,6 @@ function FieldControl({
         <span className="prop-label">
           {field.label}
           {wand}
-          {owners.map((role) => (
-            <OwnerTag key={role} role={role} />
-          ))}
         </span>
         {input}
       </label>
@@ -1477,8 +1455,6 @@ export default function PropositionForm({
 
 const PROP_CSS = `
 .prop-page{max-width:1080px;margin:0 auto;padding:0 28px 72px;color:#F3EAF8;}
-.owner-tag{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.04em;
-  padding:3px 9px;border-radius:999px;margin-left:8px;display:inline-block;vertical-align:middle;}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
 .prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
