@@ -11,6 +11,7 @@ import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
 import { isNamedBenchmark } from "../lib/benchmarkName.js";
 import {
   applyLocalGate,
+  buildGateRationale,
   computeGoNoGo,
   filterCheckScore,
   goNoGoIsFloorFailure,
@@ -523,31 +524,6 @@ function ImprovementList({ advisoryChecks, category }) {
       </ul>
     </div>
   );
-}
-
-function namedCheckFilters(checks, predicate) {
-  return ["f1", "f2", "f3", "f4"]
-    .filter((k) => predicate((checks?.[k] || {}).checkLabel || "Evidence missing"))
-    .map((k) => k.toUpperCase());
-}
-
-function localGateRationale(classification, checks) {
-  if (classification === "GO") {
-    return "GO — Filters 1–4 are cleared or exempt on the recorded parameters.";
-  }
-  if (classification === "WATCH") {
-    return "WATCH — the score is in the 61–80 band. Close the remaining gaps before this can read GO.";
-  }
-  const below = namedCheckFilters(checks, (label) => label === "Below floor");
-  if (below.length) {
-    return `NO-GO — ${below.join(", ")} ${below.length === 1 ? "is" : "are"} below a non-negotiable floor. That is the blocker, not unfinished evidence.`;
-  }
-  const missing = namedCheckFilters(
-    checks,
-    (label) => label !== "Cleared" && label !== "Exempt"
-  );
-  const names = missing.length ? missing.join(", ") : "Filters 1–4";
-  return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again.`;
 }
 
 function FilterNarrativeList({ narratives, advisoryChecks, category }) {
@@ -1273,7 +1249,7 @@ export default function PropositionForm({
     setSummaryChecks(preview.checks);
     setGoNoGo({
       classification: preview.classification,
-      rationale: localGateRationale(preview.classification, preview.checks),
+      rationale: preview.rationale,
       score: preview.score,
       ideaScale: preview.ideaScale,
       ideaName: preview.ideaName,
@@ -1333,13 +1309,22 @@ export default function PropositionForm({
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
     const classification = computeGoNoGo(checks || {});
+    const nextScore = scoreAdvisoryChecks(checks || {});
+    const ideaName = formIdeaLabel(nextDoc);
+    const category = formCategoryLabel(nextDoc);
     setGoNoGo({
       classification,
-      rationale: localGateRationale(classification, checks || {}),
-      score: scoreAdvisoryChecks(checks || {}),
+      rationale: buildGateRationale({
+        classification,
+        score: nextScore,
+        checks: checks || {},
+        ideaName,
+        category,
+      }),
+      score: nextScore,
       ideaScale: ideaScaleFromDoc(nextDoc),
-      ideaName: formIdeaLabel(nextDoc),
-      category: formCategoryLabel(nextDoc),
+      ideaName,
+      category,
       at: new Date().toISOString(),
     });
     setJustSubmitted(true);

@@ -4,6 +4,7 @@ import {
   classifyGoNoGoFromScore,
   computeGoNoGo,
   goNoGoTone,
+  buildGateRationale,
 } from "../lib/goNoGo.js";
 import {
   categoryCheckCopy,
@@ -87,5 +88,64 @@ assert.doesNotMatch(
   /doesn't clearly match any of CavinKare's divisions/
 );
 assert.match(scoring, /categoryCheckCopy\(category\)/);
+
+const skinChecks = {
+  f3: {
+    checkLabel: "Below floor",
+    items: [
+      {
+        status: "pending",
+        text: "Current margin implies a price above the safe ₹168 ceiling — risks over 10% volume loss",
+      },
+    ],
+  },
+  f2: {
+    checkLabel: "Evidence missing",
+    items: [{ status: "pending", text: "The margin computation hasn't been confirmed by Finance yet" }],
+  },
+};
+const skinArgs = {
+  classification: "NO-GO",
+  score: { pct: 58 },
+  checks: skinChecks,
+  ideaName: "Gentle foaming face wash",
+  category: "Skin cleanser",
+};
+const skinA = buildGateRationale(skinArgs);
+const skinB = buildGateRationale(skinArgs);
+assert.equal(skinA, skinB, "same form inputs must yield the same rationale");
+assert.match(skinA, /Gentle foaming face wash/);
+assert.match(skinA, /58%/);
+assert.match(skinA, /₹168 ceiling/);
+assert.doesNotMatch(skinA, /Beyond that hard blocker/);
+assert.doesNotMatch(skinA, /purchase-decision attribute/);
+assert.doesNotMatch(skinA, /Category: Skin cleanser should not advance/);
+assert.doesNotMatch(skinA, /written responses to each threat/);
+
+const oilA = buildGateRationale({
+  classification: "NO-GO",
+  score: { pct: 50 },
+  checks: {
+    f2: {
+      checkLabel: "Below floor",
+      items: [
+        {
+          status: "pending",
+          text: "Net margin 25% is below the 50% floor (v4, non-negotiable)",
+        },
+      ],
+    },
+  },
+  ideaName: "Cooling herbal hair oil",
+  category: "Hair oils",
+});
+assert.match(oilA, /Cooling herbal hair oil/);
+assert.match(oilA, /Net margin 25%/);
+assert.notEqual(oilA, skinA, "different form numbers must not share the same paragraph");
+
+const gateSrc = readFileSync(new URL("../lib/propositionGateApi.js", import.meta.url), "utf8");
+assert.match(gateSrc, /buildGateRationale/);
+assert.doesNotMatch(gateSrc, /generateFilterNarratives/);
+assert.doesNotMatch(gateSrc, /write a 2-3 sentence plain-language read/);
 
 console.log("part56 ok");
