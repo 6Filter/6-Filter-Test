@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   OWNER_COLORS,
@@ -416,18 +416,74 @@ function localGateRationale(classification, checks) {
   return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again. ${tally} so far.`;
 }
 
-function GoNoGoResult({ result, score }) {
-  if (!result?.classification) return null;
-  const tally = score && score.total
-    ? `${score.done}/${score.total} · ${score.pct}%`
-    : null;
+function FilterCheckGrid({ advisoryChecks, score }) {
+  const keys = ["f1", "f2", "f3", "f4"];
+  const filters = SIX_FILTERS_FORM.filter((f) => keys.includes(f.key));
   return (
-    <div className="gonogo-result" data-tone={goNoGoTone(result.classification)}>
-      <span className="gonogo-badge">
-        {result.classification}
-        {tally ? <em className="gonogo-score">{tally}</em> : null}
-      </span>
-      <p>{result.rationale || "No rationale returned."}</p>
+    <div className="summary-grid">
+      {filters.map((f) => {
+        const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
+        const s = score?.byFilter?.[f.key] || filterCheckScore(check);
+        return (
+          <div className="summary-row" key={f.key}>
+            <span className="summary-num">{f.num}</span>
+            <span className="summary-title">{f.title}</span>
+            <span className="summary-score">{s.total ? `${s.done}/${s.total}` : "—"}</span>
+            <span className="check-pill" data-tone={toneFor(check.checkLabel)}>
+              {check.checkLabel}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GoNoGoResultPage({ result, advisoryChecks, onBack, onContinue }) {
+  if (!result?.classification) return null;
+  const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
+  // Score is always from scoreAdvisoryChecks(computeAllAdvisoryChecks) on the
+  // go-nogo response — researchFindings demote unverified items (Part 39).
+  const score = result.score?.total
+    ? result.score
+    : scoreAdvisoryChecks(checks);
+  const tone = goNoGoTone(result.classification);
+  const isGo = result.classification === "GO";
+  return (
+    <div className="gonogo-result-page">
+      <div className="gonogo-result-actions">
+        <button type="button" className="ghost send-mgr" onClick={onBack}>
+          <ArrowLeft size={15} /> Back to filters
+        </button>
+        {isGo ? (
+          <button type="button" className="prop-save run" onClick={onContinue}>
+            Continue
+          </button>
+        ) : null}
+      </div>
+      <div className={`gonogo-hero tone-${tone === "pass" ? "pass" : "fail"}`}>
+        <div className="gonogo-classification">{result.classification}</div>
+        <div className="gonogo-score">
+          {score.done}/{score.total} · {score.pct}%
+        </div>
+        <p className="gonogo-rationale">{result.rationale || "No rationale returned."}</p>
+      </div>
+      <ImprovementList advisoryChecks={checks} />
+      <div className="panel gonogo-score-detail">
+        <div className="panel-tab">Filter checks</div>
+        <FilterCheckGrid advisoryChecks={checks} score={score} />
+      </div>
+      {isGo ? (
+        <p className="gonogo-blocked-note">
+          Continue to upload market-research proof and unlock Filters 5–6.
+        </p>
+      ) : (
+        <p className="gonogo-blocked-note">
+          {goNoGoIsFloorFailure(checks)
+            ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked until this reads GO."
+            : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
+        </p>
+      )}
     </div>
   );
 }
@@ -467,50 +523,6 @@ function ProofUploadPanel({ proof, onPick, onClear, fileRef, error, disabled }) 
           <AlertTriangle size={14} /> {error}
         </div>
       ) : null}
-    </section>
-  );
-}
-
-function AnalysisSummary({ advisoryChecks, visible, stale, classification }) {
-  if (!visible || !advisoryChecks) return null;
-  const keys = ["f1", "f2", "f3", "f4"];
-  const score = scoreAdvisoryChecks(advisoryChecks, keys);
-  const filters = SIX_FILTERS_FORM.filter((f) => keys.includes(f.key));
-  return (
-    <section className={`analysis-summary${stale ? " is-stale" : ""}`} aria-live="polite">
-      <h2 className="summary-heading">Analysis</h2>
-      {classification ? (
-        <p className="summary-gate" data-tone={goNoGoTone(classification)}>
-          <strong>{classification}</strong>
-          <span>
-            {score.done}/{score.total} parameters · {score.pct}%
-          </span>
-        </p>
-      ) : null}
-      <p className="summary-lede">
-        {stale
-          ? "Based on the previous submit — resubmit to refresh."
-          : "Scored from the Filter 1–4 check parameters on this submit."}
-      </p>
-      <div className="summary-grid">
-        {filters.map((f) => {
-          const check = advisoryChecks[f.key] || { checkLabel: "Evidence missing" };
-          const s = score.byFilter[f.key] || { done: 0, total: 0, pct: 0 };
-          return (
-            <div className="summary-row" key={f.key}>
-              <span className="summary-num">{f.num}</span>
-              <span className="summary-title">{f.title}</span>
-              <span className="summary-score">
-                {s.total ? `${s.done}/${s.total}` : "—"}
-              </span>
-              <span className="check-pill" data-tone={toneFor(check.checkLabel)}>
-                {check.checkLabel}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <ImprovementList advisoryChecks={advisoryChecks} />
     </section>
   );
 }
@@ -573,6 +585,7 @@ export default function PropositionForm({
     return stripped || raw;
   }
   const [goNoGo, setGoNoGo] = useState(() => initial?.goNoGo || null);
+  const [currentView, setCurrentView] = useState("propositionForm");
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
   const [managerOpen, setManagerOpen] = useState(false);
@@ -611,6 +624,7 @@ export default function PropositionForm({
     setSummaryStale(false);
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
+    setCurrentView("propositionForm");
     setManagerOpen(false);
     setAiSourced({});
     setMrpBaseInr(null);
@@ -707,6 +721,12 @@ export default function PropositionForm({
       ctrl.abort();
     };
   }, [propositionId, doc]);
+
+  useEffect(() => {
+    if (currentView !== "goNoGoResult") return undefined;
+    window.scrollTo(0, 0);
+    return undefined;
+  }, [currentView, goNoGo?.at]);
 
   function noteEdit() {
     if (justSubmitted) setSummaryStale(true);
@@ -914,6 +934,7 @@ export default function PropositionForm({
         setAdvisoryChecks(data.advisoryChecks);
         setSummaryChecks(data.advisoryChecks);
       }
+      setCurrentView("goNoGoResult");
       return nextGo;
     } catch (e) {
       setLocalError(e.message || "AI read failed.");
@@ -1046,8 +1067,23 @@ export default function PropositionForm({
     doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
   );
 
+  if (currentView === "goNoGoResult" && goNoGo?.classification) {
+    return (
+      <main className="prop-page" data-view="goNoGoResult">
+        <style>{PROP_CSS}</style>
+        <GoNoGoResultPage
+          key={goNoGo.at || goNoGo.classification}
+          result={goNoGo}
+          advisoryChecks={summaryChecks || advisoryChecks || {}}
+          onBack={() => setCurrentView("propositionForm")}
+          onContinue={() => setCurrentView("propositionForm")}
+        />
+      </main>
+    );
+  }
+
   return (
-    <main className="prop-page">
+    <main className="prop-page" data-view="propositionForm">
       <style>{PROP_CSS}</style>
 
       <section className="prop-top">
@@ -1220,40 +1256,15 @@ export default function PropositionForm({
 
       {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
-      {justSubmitted || goNoGo || proofGateReady ? (
-        <section className="gonogo-panel">
-          {readingGoNoGo ? (
-            <p className="gonogo-reading">
-              <Loader2 size={15} className="spin" /> Running GO / NO-GO read…
-            </p>
-          ) : null}
-          <GoNoGoResult
-            result={goNoGo}
-            score={goNoGo?.score || scoreAdvisoryChecks(summaryChecks || advisoryChecks || {})}
-          />
-          {goNoGo?.classification === "GO" && proofGateReady ? (
-            <ProofUploadPanel
-              proof={doc.marketResearchProof}
-              onPick={handleProofFile}
-              onClear={clearProof}
-              fileRef={proofRef}
-              error={proofError}
-              disabled={saving || readingGoNoGo}
-            />
-          ) : null}
-          {goNoGo != null && goNoGo.classification !== "GO" ? (
-            <p className="gonogo-blocked-note">
-              {goNoGoIsFloorFailure(summaryChecks || advisoryChecks || {})
-                ? "Revise the filters above and Submit again — upload and Filters 5–6 stay locked until this reads GO."
-                : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
-            </p>
-          ) : null}
-          {goNoGo == null && !readingGoNoGo ? (
-            <p className="gonogo-blocked-note">
-              Submit below to run the GO / NO-GO read for Filters 1–4.
-            </p>
-          ) : null}
-        </section>
+      {goNoGo?.classification === "GO" && proofGateReady ? (
+        <ProofUploadPanel
+          proof={doc.marketResearchProof}
+          onPick={handleProofFile}
+          onClear={clearProof}
+          fileRef={proofRef}
+          error={proofError}
+          disabled={saving || readingGoNoGo}
+        />
       ) : null}
 
       <section className="prop-submit-footer">
@@ -1345,12 +1356,6 @@ export default function PropositionForm({
               ? " The first submit also runs research once and offers suggestions on empty fields."
               : " Research already ran for this proposition; later Submits only save."}
         </p>
-        <AnalysisSummary
-          advisoryChecks={summaryChecks || advisoryChecks}
-          visible={justSubmitted || Boolean(goNoGo)}
-          stale={summaryStale && !justSubmitted}
-          classification={goNoGo?.classification}
-        />
       </section>
 
       {managerOpen ? (
@@ -1489,21 +1494,21 @@ const PROP_CSS = `
   color:rgba(243,234,248,.75);}
 .prop-fallback-hint{margin:10px 0 0;font-size:12px;color:rgba(243,234,248,.55);line-height:1.4;}
 .unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
-.gonogo-panel{background:#191919;border:1px solid rgba(243,234,248,.12);border-radius:16px;
-  padding:18px 20px;margin:0 0 16px;display:flex;flex-direction:column;gap:14px;}
-.gonogo-reading{margin:0;display:inline-flex;align-items:center;gap:8px;font-size:13px;
-  color:rgba(243,234,248,.7);}
-.gonogo-result{padding:14px 16px;border-radius:12px;border:1px solid rgba(243,234,248,.16);}
-.gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
-.gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
-.gonogo-badge{display:inline-flex;align-items:center;gap:10px;font-family:var(--fm);font-size:13px;font-weight:700;
-  letter-spacing:.06em;margin-bottom:8px;}
-.gonogo-score{font-style:normal;font-weight:600;opacity:.85;letter-spacing:.02em;}
-.gonogo-result[data-tone="pass"] .gonogo-badge{color:#7EDCA8;}
-.gonogo-result[data-tone="fail"] .gonogo-badge{color:#E2716B;}
-.gonogo-result p{margin:0;font-size:14px;line-height:1.5;color:#F3EAF8;}
-.gonogo-blocked-note{margin:0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.62);}
-.proof-panel{padding-top:4px;}
+.gonogo-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px;}
+.gonogo-hero{padding:24px 22px;border-radius:16px;margin:0 0 18px;border:1px solid rgba(243,234,248,.16);}
+.gonogo-hero.tone-fail{border-color:rgba(226,113,107,.45);background:rgba(226,113,107,.1);}
+.gonogo-hero.tone-pass{border-color:rgba(126,220,168,.45);background:rgba(126,220,168,.1);}
+.gonogo-classification{font-size:32px;font-weight:800;letter-spacing:-.4px;line-height:1.1;}
+.gonogo-hero.tone-fail .gonogo-classification{color:#E2716B;}
+.gonogo-hero.tone-pass .gonogo-classification{color:#7EDCA8;}
+.gonogo-hero .gonogo-score{margin:8px 0 14px;font-size:16px;font-weight:600;font-style:normal;
+  letter-spacing:.02em;color:rgba(243,234,248,.88);}
+.gonogo-rationale{margin:0;font-size:15px;line-height:1.55;color:#F3EAF8;}
+.gonogo-score-detail{margin-top:18px;position:relative;padding:22px 16px 8px;background:#161616;
+  border:1px solid rgba(243,234,248,.12);border-radius:14px;}
+.gonogo-blocked-note{margin:16px 0 0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.62);}
+.proof-panel{background:#191919;border:1px solid rgba(243,234,248,.12);
+  border-radius:16px;padding:18px 20px;margin:0 0 16px;}
 .proof-title{margin:0 0 6px;font-size:16px;color:#F3EAF8;}
 .proof-lede{margin:0 0 12px;font-size:13px;line-height:1.45;color:rgba(243,234,248,.58);}
 .send-mgr{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(243,234,248,.28);
