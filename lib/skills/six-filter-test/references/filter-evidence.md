@@ -22,7 +22,7 @@ Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCost
 |---|---|---|
 | Margin elasticity not yet computed | Category avg price + Part 43 inflation/elasticity + division floor | `marginElasticity` |
 
-`marginElasticity` is `{ minMarginPct, maxMarginPct, basis, sources, aiSourced }`. Min is the division floor. Max is the margin at the 10% volume-loss price ceiling after 5 years of cost inflation. F3 clears only when Filter 2's declared margin sits inside that band.
+`marginElasticity` is `{ minMrpInr, maxMrpInr, minMarginPct, maxMarginPct, basis, sources, aiSourced }`. Display is a ₹ MRP range. Min MRP is today's COGS against the division floor. Max MRP is the 10% volume-loss price ceiling after 5 years of cost inflation. Internal `minMarginPct`/`maxMarginPct` are what Filter 2's declared margin is checked against.
 
 ## Filter 4 → `f4`
 

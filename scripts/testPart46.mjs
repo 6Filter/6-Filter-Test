@@ -26,31 +26,31 @@ assert(/not yet computed/i.test(missing.items[0].text), missing.items[0].text);
 
 const noMargin = checkF3(
   {},
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
+  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(noMargin.checkLabel === "Evidence missing", "range without F2 margin → evidence missing");
 assert(/isn't entered yet/i.test(noMargin.items[0].text), noMargin.items[0].text);
 
 const cleared = checkF3(
   { netMarginAtScale: 40 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
+  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(cleared.checkLabel === "Cleared", `inside band should clear, got ${cleared.checkLabel}`);
-assert(/40% sits within the safe 18–55%/.test(cleared.items[0].text), cleared.items[0].text);
+assert(/safe ₹61–₹111 range/.test(cleared.items[0].text), cleared.items[0].text);
 
 const below = checkF3(
   { netMarginAtScale: 10 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
+  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(below.checkLabel === "Below floor", "below min should be Below floor");
-assert(/below the 18% division floor/.test(below.items[0].text), below.items[0].text);
+assert(/below the safe ₹61 floor/.test(below.items[0].text), below.items[0].text);
 
 const above = checkF3(
   { netMarginAtScale: 70 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
+  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(above.checkLabel === "Below floor", "above max should be Below floor");
-assert(/exceeds the 55% ceiling/.test(above.items[0].text), above.items[0].text);
+assert(/above the safe ₹111 ceiling/.test(above.items[0].text), above.items[0].text);
 
 assert(!f3HasEnough({}), "empty f3 does not unlock");
 assert(!f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: null } }), "null max does not unlock");

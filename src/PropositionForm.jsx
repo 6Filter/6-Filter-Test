@@ -16,7 +16,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import { computeMrp } from "../lib/mrpFormula.js";
+import { computeMrp, marginPctFromMrp } from "../lib/mrpFormula.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -112,10 +112,10 @@ function isEmptyField(value) {
 }
 
 function formatSuggestion(field, value) {
-  if (value && typeof value === "object" && !Array.isArray(value) && ("minMarginPct" in value || "maxMarginPct" in value)) {
-    const min = value.minMarginPct == null ? "—" : Number(value.minMarginPct).toFixed(0);
-    const max = value.maxMarginPct == null ? "—" : Number(value.maxMarginPct).toFixed(0);
-    return `${min}–${max}%`;
+  if (value && typeof value === "object" && !Array.isArray(value) && ("minMrpInr" in value || "maxMrpInr" in value || "minMarginPct" in value)) {
+    const min = value.minMrpInr == null || !Number.isFinite(Number(value.minMrpInr)) ? "—" : Number(value.minMrpInr).toFixed(0);
+    const max = value.maxMrpInr == null || !Number.isFinite(Number(value.maxMrpInr)) ? "—" : Number(value.maxMrpInr).toFixed(0);
+    return `₹${min}–₹${max}`;
   }
   if (field?.type === "select" && Array.isArray(field.options)) {
     const opt = field.options.find((o) => String(o.v) === String(value));
@@ -231,6 +231,7 @@ function FieldControl({
   liveNote = "",
   breakdownNote = "",
   taxNotes = null,
+  cogsAtScale = null,
 }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
@@ -253,14 +254,18 @@ function FieldControl({
 
   if (field.type === "computed-range") {
     const range = value && typeof value === "object" ? value : {};
-    const min = range.minMarginPct;
-    const max = range.maxMarginPct;
+    const minMrp = range.minMrpInr;
+    const maxMrp = range.maxMrpInr;
     const fmt = (n) => (n == null || n === "" || !Number.isFinite(Number(n)) ? "—" : Number(n).toFixed(0));
-    const patchEnd = (end, raw) => {
+    const patchMrp = (end, raw) => {
       const nextVal = raw === "" ? null : Number(raw);
+      const mrp = Number.isFinite(nextVal) ? nextVal : null;
+      const marginKey = end === "minMrpInr" ? "minMarginPct" : "maxMarginPct";
+      const margin = mrp != null ? marginPctFromMrp(cogsAtScale, mrp) : null;
       onChange({
         ...range,
-        [end]: Number.isFinite(nextVal) ? nextVal : null,
+        [end]: mrp,
+        [marginKey]: margin,
         aiSourced: false,
       });
     };
@@ -271,34 +276,35 @@ function FieldControl({
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        <div className="margin-elasticity-display">
-          <span className="me-min">{fmt(min)}%</span>
+        <div className="mrp-range-display">
+          <span className="me-min">₹{fmt(minMrp)}</span>
           <span className="me-sep">–</span>
-          <span className="me-max">{fmt(max)}%</span>
+          <span className="me-max">₹{fmt(maxMrp)}</span>
           {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
         </div>
+        <p className="derived-note">Safe MRP range over the next 5 years</p>
         {range.basis ? <p className="derived-note">{range.basis}</p> : null}
         <div className="me-overrides">
           <label>
-            Min %
+            Min MRP (₹)
             <input
               type="number"
               step="any"
-              value={min ?? ""}
+              value={minMrp ?? ""}
               disabled={locked}
               title={lockTitle}
-              onChange={(e) => patchEnd("minMarginPct", e.target.value)}
+              onChange={(e) => patchMrp("minMrpInr", e.target.value)}
             />
           </label>
           <label>
-            Max %
+            Max MRP (₹)
             <input
               type="number"
               step="any"
-              value={max ?? ""}
+              value={maxMrp ?? ""}
               disabled={locked}
               title={lockTitle}
-              onChange={(e) => patchEnd("maxMarginPct", e.target.value)}
+              onChange={(e) => patchMrp("maxMrpInr", e.target.value)}
             />
           </label>
         </div>
@@ -1268,6 +1274,7 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                    cogsAtScale={spec.key === "f3" ? doc.f2?.cogsAtScale : undefined}
                     taxNotes={
                       spec.key === "f2" && field.key === "mrpInr" ? (
                         <>
@@ -1469,7 +1476,7 @@ const PROP_CSS = `
   border-radius:999px;padding:3px 8px;width:fit-content;}
 .price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
 .derived-note{margin:4px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.72);}
-.margin-elasticity-display{display:flex;align-items:baseline;gap:8px;font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;margin:4px 0 2px;}
+.mrp-range-display,.margin-elasticity-display{display:flex;align-items:baseline;gap:8px;font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;margin:4px 0 2px;}
 .me-sep{color:rgba(243,234,248,.45);font-weight:500;}
 .ai-sourced-mark{color:#C9A0E8;margin-left:4px;align-self:center;}
 .me-overrides{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
