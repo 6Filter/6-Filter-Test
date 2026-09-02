@@ -8,6 +8,7 @@ import {
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
 import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
+import { isNamedBenchmark } from "../lib/benchmarkName.js";
 import {
   applyLocalGate,
   computeGoNoGo,
@@ -273,12 +274,19 @@ function FieldControl({
   breakdownNote = "",
   taxNotes = null,
   cogsAtScale = null,
+  inactive = false,
+  inactiveHint = "",
 }) {
-  const helper = fieldHelper(field);
+  const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range";
-  const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
-  const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
+  const roleLocked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
+  const locked = roleLocked || inactive;
+  const lockTitle = roleLocked
+    ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}`
+    : inactive
+      ? inactiveHint || "Name a benchmark to declare a gap."
+      : undefined;
   const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory", "marginElasticity"]);
   const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
@@ -1475,6 +1483,10 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                    inactive={
+                      spec.key === "f1" && field.key === "declaredGap" && !isNamedBenchmark(values.benchmark)
+                    }
+                    inactiveHint="Name a real benchmark (brand · variant · pack) to declare a gap."
                     cogsAtScale={spec.key === "f3" ? doc.f2?.cogsAtScale : undefined}
                     taxNotes={
                       spec.key === "f2" && field.key === "mrpInr" ? (
