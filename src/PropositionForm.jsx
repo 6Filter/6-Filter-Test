@@ -17,7 +17,7 @@ import {
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
-import { computeMrp, marginPctFromMrp } from "../lib/mrpFormula.js";
+import { computeMrp, hydrateMarginElasticityMrp, marginPctFromMrp, withoutPercentSign } from "../lib/mrpFormula.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -108,15 +108,16 @@ function isEmptyField(value) {
   if (typeof value === "boolean") return value === false;
   if (typeof value === "object") {
     if (Array.isArray(value)) return value.length === 0;
-    return value.minMarginPct == null && value.maxMarginPct == null;
+    return value.minMrpInr == null && value.maxMrpInr == null && value.minMarginPct == null && value.maxMarginPct == null;
   }
   return String(value).trim() === "";
 }
 
 function formatSuggestion(field, value) {
   if (value && typeof value === "object" && !Array.isArray(value) && ("minMrpInr" in value || "maxMrpInr" in value || "minMarginPct" in value)) {
-    const min = value.minMrpInr == null || !Number.isFinite(Number(value.minMrpInr)) ? "—" : Number(value.minMrpInr).toFixed(0);
-    const max = value.maxMrpInr == null || !Number.isFinite(Number(value.maxMrpInr)) ? "—" : Number(value.maxMrpInr).toFixed(0);
+    const rupee = hydrateMarginElasticityMrp(value, null);
+    const min = rupee.minMrpInr == null || !Number.isFinite(Number(rupee.minMrpInr)) ? "—" : Number(rupee.minMrpInr).toFixed(0);
+    const max = rupee.maxMrpInr == null || !Number.isFinite(Number(rupee.maxMrpInr)) ? "—" : Number(rupee.maxMrpInr).toFixed(0);
     return `₹${min}–₹${max}`;
   }
   if (field?.type === "select" && Array.isArray(field.options)) {
@@ -255,10 +256,9 @@ function FieldControl({
   const wand = aiSourced ? <AiWandMark /> : null;
 
   if (field.type === "computed-range") {
-    const range = value && typeof value === "object" ? value : {};
+    const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale);
     const minMrp = range.minMrpInr;
     const maxMrp = range.maxMrpInr;
-    const fmt = (n) => (n == null || n === "" || !Number.isFinite(Number(n)) ? "—" : Number(n).toFixed(0));
     const patchMrp = (end, raw) => {
       const nextVal = raw === "" ? null : Number(raw);
       const mrp = Number.isFinite(nextVal) ? nextVal : null;
@@ -271,22 +271,22 @@ function FieldControl({
         aiSourced: false,
       });
     };
+    const basisNote = withoutPercentSign(range.basis);
     return (
-      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle}>
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f3-range="mrp">
         <div className="prop-label">
           {field.label}
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <div className="mrp-range-display">
-          <span className="me-min">₹{fmt(minMrp)}</span>
+          <span className="me-min">₹{range?.minMrpInr != null && Number.isFinite(Number(range.minMrpInr)) ? Number(range.minMrpInr).toFixed(0) : "—"}</span>
           <span className="me-sep">–</span>
-          <span className="me-max">₹{fmt(maxMrp)}</span>
+          <span className="me-max">₹{range?.maxMrpInr != null && Number.isFinite(Number(range.maxMrpInr)) ? Number(range.maxMrpInr).toFixed(0) : "—"}</span>
           {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
         </div>
         <p className="derived-note">Safe MRP range over the next 5 years</p>
-        {range.basis ? <p className="derived-note">{range.basis}</p> : null}
-        {range.competitiveNote ? <p className="derived-note">{range.competitiveNote}</p> : null}
+        {basisNote ? <p className="derived-note">{basisNote}</p> : null}
         <div className="me-overrides">
           <label>
             Min MRP (₹)
@@ -1248,7 +1248,9 @@ export default function PropositionForm({
               <div className="prop-status-wrap">
                 {filterScore.total ? (
                   <span className="filter-score">
-                    {filterScore.done}/{filterScore.total} · {filterScore.pct}%
+                    {spec.key === "f3"
+                      ? `${filterScore.done}/${filterScore.total}`
+                      : `${filterScore.done}/${filterScore.total} · ${filterScore.pct}%`}
                   </span>
                 ) : null}
                 <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
@@ -1308,7 +1310,7 @@ export default function PropositionForm({
               <ul className="filter-check-list">
                 {check.items.map((it, i) => (
                   <li key={`${spec.key}-${i}`} data-status={it.status}>
-                    {it.text}
+                    {spec.key === "f3" ? withoutPercentSign(it.text) : it.text}
                   </li>
                 ))}
               </ul>
