@@ -11,8 +11,9 @@ import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
 import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
 import {
   applyLocalGate,
-  computeGoNoGoWatch,
+  computeGoNoGo,
   filterCheckScore,
+  goNoGoIsFloorFailure,
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
@@ -386,16 +387,28 @@ function ImprovementList({ advisoryChecks }) {
   );
 }
 
+function namedCheckFilters(checks, predicate) {
+  return ["f1", "f2", "f3", "f4"]
+    .filter((k) => predicate((checks?.[k] || {}).checkLabel || "Evidence missing"))
+    .map((k) => k.toUpperCase());
+}
+
 function localGateRationale(classification, checks) {
   const score = scoreAdvisoryChecks(checks);
   const tally = `${score.done}/${score.total} filter parameters cleared`;
-  if (classification === "NO-GO") {
-    return `NO-GO — at least one of Filters 1–4 is below a non-negotiable floor. ${tally}.`;
-  }
   if (classification === "GO") {
     return `GO — Filters 1–4 are cleared or exempt on the recorded parameters. ${tally}.`;
   }
-  return `WATCH — evidence is still incomplete on one or more of Filters 1–4. ${tally} so far.`;
+  const below = namedCheckFilters(checks, (label) => label === "Below floor");
+  if (below.length) {
+    return `NO-GO — ${below.join(", ")} ${below.length === 1 ? "is" : "are"} below a non-negotiable floor. That is the blocker, not unfinished evidence. ${tally}.`;
+  }
+  const missing = namedCheckFilters(
+    checks,
+    (label) => label !== "Cleared" && label !== "Exempt"
+  );
+  const names = missing.length ? missing.join(", ") : "Filters 1–4";
+  return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again. ${tally} so far.`;
 }
 
 function GoNoGoResult({ result, score }) {
@@ -939,7 +952,7 @@ export default function PropositionForm({
     const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
-    const classification = computeGoNoGoWatch(checks || {});
+    const classification = computeGoNoGo(checks || {});
     setGoNoGo({
       classification,
       rationale: localGateRationale(classification, checks || {}),
@@ -1145,7 +1158,7 @@ export default function PropositionForm({
         <section className="gonogo-panel">
           {readingGoNoGo ? (
             <p className="gonogo-reading">
-              <Loader2 size={15} className="spin" /> Running GO / NO-GO / WATCH read…
+              <Loader2 size={15} className="spin" /> Running GO / NO-GO read…
             </p>
           ) : null}
           <GoNoGoResult
@@ -1164,14 +1177,14 @@ export default function PropositionForm({
           ) : null}
           {goNoGo != null && goNoGo.classification !== "GO" ? (
             <p className="gonogo-blocked-note">
-              {goNoGo.classification === "WATCH"
-                ? "Fill the remaining Filter 1–4 parameters and Submit again. Upload and Filters 5–6 unlock only on GO."
-                : "Revise the filters above and Submit again — upload and Filters 5–6 stay locked until this reads GO."}
+              {goNoGoIsFloorFailure(summaryChecks || advisoryChecks || {})
+                ? "Revise the filters above and Submit again — upload and Filters 5–6 stay locked until this reads GO."
+                : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
             </p>
           ) : null}
           {goNoGo == null && !readingGoNoGo ? (
             <p className="gonogo-blocked-note">
-              Submit below to run the GO / NO-GO / WATCH read for Filters 1–4.
+              Submit below to run the GO / NO-GO read for Filters 1–4.
             </p>
           ) : null}
         </section>
@@ -1367,7 +1380,6 @@ const PROP_CSS = `
 .summary-gate span{font-size:13px;color:rgba(243,234,248,.62);}
 .summary-gate[data-tone="pass"] strong{color:#7EDCA8;}
 .summary-gate[data-tone="fail"] strong{color:#E2716B;}
-.summary-gate[data-tone="watch"] strong{color:#E8B563;}
 .summary-lede{margin:0 0 12px;font-size:12.5px;color:var(--muted-2, rgba(243,234,248,.55));line-height:1.45;}
 .summary-score{font-family:var(--fm);font-size:12px;color:rgba(243,234,248,.7);min-width:42px;text-align:right;}
 .summary-grid{display:flex;flex-direction:column;gap:2px;}
@@ -1417,13 +1429,11 @@ const PROP_CSS = `
 .gonogo-result{padding:14px 16px;border-radius:12px;border:1px solid rgba(243,234,248,.16);}
 .gonogo-result[data-tone="pass"]{border-color:rgba(126,220,168,.4);background:rgba(126,220,168,.08);}
 .gonogo-result[data-tone="fail"]{border-color:rgba(226,113,107,.4);background:rgba(226,113,107,.08);}
-.gonogo-result[data-tone="watch"]{border-color:rgba(232,181,99,.4);background:rgba(232,181,99,.08);}
 .gonogo-badge{display:inline-flex;align-items:center;gap:10px;font-family:var(--fm);font-size:13px;font-weight:700;
   letter-spacing:.06em;margin-bottom:8px;}
 .gonogo-score{font-style:normal;font-weight:600;opacity:.85;letter-spacing:.02em;}
 .gonogo-result[data-tone="pass"] .gonogo-badge{color:#7EDCA8;}
 .gonogo-result[data-tone="fail"] .gonogo-badge{color:#E2716B;}
-.gonogo-result[data-tone="watch"] .gonogo-badge{color:#E8B563;}
 .gonogo-result p{margin:0;font-size:14px;line-height:1.5;color:#F3EAF8;}
 .gonogo-blocked-note{margin:0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.62);}
 .proof-panel{padding-top:4px;}
