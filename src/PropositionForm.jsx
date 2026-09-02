@@ -19,6 +19,7 @@ import {
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
+import { resolveGstRate } from "../lib/gstRate.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -78,7 +79,7 @@ function isUnfilledValue(value) {
   return false;
 }
 
-function applyAiAutoFill(current, suggested) {
+function applyAiAutoFill(current, suggested, { overwritePaths = {}, filterKey = "" } = {}) {
   const now = current && typeof current === "object" ? current : {};
   const incoming = suggested && typeof suggested === "object" ? suggested : {};
   const next = { ...now };
@@ -86,26 +87,34 @@ function applyAiAutoFill(current, suggested) {
   for (const [key, val] of Object.entries(incoming)) {
     if (AI_AUTO_SKIP.has(key)) continue;
     if (val == null || val === "") continue;
-    if (key === "gstBasis" && !isUnfilledValue(now.gstRatePct)) continue;
-    if (!isUnfilledValue(now[key])) continue;
+    const path = sourcedPath(filterKey, key);
+    const gstOwned = overwritePaths[sourcedPath(filterKey, "gstRatePct")];
+    if (key === "gstBasis" && !isUnfilledValue(now.gstRatePct) && !gstOwned && !overwritePaths[path]) continue;
+    if (!isUnfilledValue(now[key]) && !overwritePaths[path]) continue;
     next[key] = val;
     sourced[key] = true;
   }
   return { next, sourced };
 }
 
-function mergeSuggestionsIntoDoc(baseDoc, suggestions) {
+function mergeSuggestionsIntoDoc(baseDoc, suggestions, { overwritePaths = {} } = {}) {
   const raw = suggestions && typeof suggestions === "object" ? suggestions : {};
   const flags = {};
   let nextDoc = baseDoc;
   if (raw.top && typeof raw.top === "object") {
-    const { next, sourced } = applyAiAutoFill({ category: nextDoc.category }, raw.top);
+    const { next, sourced } = applyAiAutoFill({ category: nextDoc.category }, raw.top, {
+      overwritePaths,
+      filterKey: "",
+    });
     nextDoc = { ...nextDoc, ...next };
     for (const key of Object.keys(sourced)) flags[sourcedPath("", key)] = true;
   }
   for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
     if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
-    const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
+    const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey], {
+      overwritePaths,
+      filterKey,
+    });
     nextDoc = { ...nextDoc, [filterKey]: next };
     for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
   }
@@ -341,6 +350,7 @@ function FieldControl({
           </label>
         </div>
         {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
       </div>
     );
@@ -710,6 +720,18 @@ export default function PropositionForm({
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
   const f3RangeTouchedByHuman = useRef(false);
+  const gstTouchedByHuman = useRef(false);
+  const f3AutoFillRequested = useRef(false);
+  const docRef = useRef(doc);
+  const aiSourcedRef = useRef({});
+  const [f3Filling, setF3Filling] = useState(false);
+
+  useEffect(() => {
+    docRef.current = doc;
+  }, [doc]);
+  useEffect(() => {
+    aiSourcedRef.current = aiSourced;
+  }, [aiSourced]);
 
   useEffect(() => {
     const merged = mergeProposition(initial);
@@ -723,6 +745,8 @@ export default function PropositionForm({
     setGoNoGo(initial?.goNoGo || null);
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
     f3RangeTouchedByHuman.current = false;
+    gstTouchedByHuman.current = false;
+    f3AutoFillRequested.current = false;
   }, [initial?.id]);
 
   useEffect(() => {
@@ -743,6 +767,9 @@ export default function PropositionForm({
     setMrpFinalInr(null);
     mrpTouchedByHuman.current = false;
     f3RangeTouchedByHuman.current = false;
+    gstTouchedByHuman.current = false;
+    f3AutoFillRequested.current = false;
+    setF3Filling(false);
   }, [initial?.id]);
 
   const f2Cogs = doc.f2?.cogsAtScale;
@@ -820,6 +847,40 @@ export default function PropositionForm({
     }
   }, [f2Cogs, f3SuggestedRange]);
 
+  const ideaName = doc.name;
+  const ideaCategory = doc.category;
+  const ideaText = doc.ideaDescription;
+  useEffect(() => {
+    if (gstTouchedByHuman.current) return;
+    const hasIdea = Boolean(
+      String(ideaName || "").trim() || String(ideaCategory || "").trim() || String(ideaText || "").trim()
+    );
+    if (!hasIdea) return;
+    const resolved = resolveGstRate({
+      name: ideaName,
+      category: ideaCategory,
+      ideaDescription: ideaText,
+    });
+    setDoc((prev) => {
+      if (gstTouchedByHuman.current) return prev;
+      if (
+        Number(prev.f2?.gstRatePct) === Number(resolved.gstRatePct) &&
+        String(prev.f2?.gstBasis || "") === resolved.gstBasis
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        f2: { ...(prev.f2 || {}), gstRatePct: resolved.gstRatePct, gstBasis: resolved.gstBasis },
+      };
+    });
+    setAiSourced((prev) => ({
+      ...prev,
+      [sourcedPath("f2", "gstRatePct")]: true,
+      [sourcedPath("f2", "gstBasis")]: true,
+    }));
+  }, [ideaName, ideaCategory, ideaText]);
+
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
   const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
@@ -832,6 +893,47 @@ export default function PropositionForm({
     SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, doc))
   );
   const visibleFilters = SIX_FILTERS_FORM.filter((s) => unlockedFilterKeys.has(s.key));
+  const f3Unlocked = unlockedFilterKeys.has("f3");
+
+  useEffect(() => {
+    if (!propositionId || !f3Unlocked || saving) return undefined;
+    if (f3RangeTouchedByHuman.current) return undefined;
+    if (!isMarginElasticityUnfilled(docRef.current?.f3?.marginElasticity)) return undefined;
+    if (f3SuggestedRange && !isMarginElasticityUnfilled(f3SuggestedRange)) return undefined;
+    if (f3AutoFillRequested.current) return undefined;
+    f3AutoFillRequested.current = true;
+    const ctrl = new AbortController();
+    setF3Filling(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/auto-fill`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ proposition: docRef.current, provider: llmProvider }),
+          signal: ctrl.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (ctrl.signal.aborted) return;
+        if (!res.ok) {
+          f3AutoFillRequested.current = false;
+          return;
+        }
+        if (data.suggestions) {
+          applyResearchResult(data, docRef.current);
+        }
+      } catch (e) {
+        if (e?.name !== "AbortError") f3AutoFillRequested.current = false;
+      } finally {
+        if (!ctrl.signal.aborted) setF3Filling(false);
+      }
+    })();
+    return () => {
+      ctrl.abort();
+      f3AutoFillRequested.current = false;
+      setF3Filling(false);
+    };
+  }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider]);
 
   useEffect(() => {
     if (!propositionId) return undefined;
@@ -907,7 +1009,14 @@ export default function PropositionForm({
       return;
     }
     if (filterKey === "f3" && fieldKey === "marginElasticity") {
-      f3RangeTouchedByHuman.current = true;
+      const minR = Number(value?.minMrpInr);
+      const maxR = Number(value?.maxMrpInr);
+      if ((Number.isFinite(minR) && minR > 0) || (Number.isFinite(maxR) && maxR > 0)) {
+        f3RangeTouchedByHuman.current = true;
+      }
+    }
+    if (filterKey === "f2" && fieldKey === "gstRatePct") {
+      gstTouchedByHuman.current = true;
     }
     noteEdit();
     markEdited(filterKey, fieldKey);
@@ -923,10 +1032,12 @@ export default function PropositionForm({
     });
   }
 
-  function applyResearchResult(data, baseDoc = doc) {
+  function applyResearchResult(data, baseDoc = docRef.current) {
     if (!data?.suggestions) return baseDoc;
     const raw = data.suggestions || {};
-    const { doc: nextDoc, sourced } = mergeSuggestionsIntoDoc(baseDoc, raw);
+    const { doc: nextDoc, sourced } = mergeSuggestionsIntoDoc(baseDoc, raw, {
+      overwritePaths: aiSourcedRef.current,
+    });
     setDoc(nextDoc);
     if (Object.keys(sourced).length) {
       setAiSourced((prev) => ({ ...prev, ...sourced }));
@@ -1377,6 +1488,11 @@ export default function PropositionForm({
                           </p>
                         </>
                       ) : null
+                    }
+                    liveNote={
+                      spec.key === "f3" && field.key === "marginElasticity" && f3Filling
+                        ? "Computing safe MRP range from inflation and category pricing…"
+                        : ""
                     }
                     breakdownNote={
                       spec.key === "f2" && field.key === "gstRatePct"
