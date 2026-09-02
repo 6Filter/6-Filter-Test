@@ -496,6 +496,16 @@ function formatSavedAt(iso) {
   });
 }
 
+function researchInputKey(doc) {
+  const attach = doc?.attachment;
+  const attachSig = attach?.data
+    ? String(attach.data).length
+    : attach?.name
+      ? `name:${attach.name}`
+      : "";
+  return `${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attachSig}`;
+}
+
 export default function PropositionForm({
   initial,
   onSave,
@@ -539,13 +549,18 @@ export default function PropositionForm({
   const [managerSubject, setManagerSubject] = useState("");
   const [managerCopied, setManagerCopied] = useState(false);
   const [aiSourced, setAiSourced] = useState({});
+  const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
+    initial?.researchRunAt ? researchInputKey(initial) : ""
+  );
   const fileRef = useRef(null);
   const proofRef = useRef(null);
 
   useEffect(() => {
-    setDoc(mergeProposition(initial));
+    const next = mergeProposition(initial);
+    setDoc(next);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
+    setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(next) : "");
   }, [initial?.id, initial?.version]);
 
   useEffect(() => {
@@ -905,6 +920,7 @@ export default function PropositionForm({
     }
     const nextDoc = mergeProposition(result.proposition);
     setDoc(nextDoc);
+    if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
     const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
@@ -933,6 +949,9 @@ export default function PropositionForm({
     fallbackUi?.providers?.length > 0
       ? fallbackUi.providers
       : configuredProviders.filter((p) => p.id !== (llmProvider || "claude"));
+  const ideaChangedSinceResearch = Boolean(
+    doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
+  );
 
   return (
     <main className="prop-page">
@@ -1147,8 +1166,9 @@ export default function PropositionForm({
         {fallbackUi && fallbackOptions.length > 0 ? (
           <div className="prop-fallback" role="region" aria-label="Model fallback">
             <p className="prop-fallback-lede">
-              {fallbackUi.failedLabel} could not complete research. Pick another configured model and
-              retry — your idea and form entries stay as they are.
+              {fallbackUi.failedLabel} could not complete research. Re-running research — this may
+              return a different result than before. Pick another configured model and retry — your
+              idea and form entries stay as they are.
             </p>
             <div className="prop-fallback-row">
               <label className="prop-fallback-pick">
@@ -1213,9 +1233,11 @@ export default function PropositionForm({
         </div>
         <p className="prop-submit-note">
           Submitting publishes a new version — everyone opening this page sees the latest entries.
-          {!doc.researchRunAt
-            ? " The first submit also runs research once and offers suggestions on empty fields."
-            : " Research already ran for this proposition; later Submits only save."}
+          {ideaChangedSinceResearch
+            ? " Re-running research — this may return a different result than before."
+            : !doc.researchRunAt
+              ? " The first submit also runs research once and offers suggestions on empty fields."
+              : " Research already ran for this proposition; later Submits only save."}
         </p>
         <AnalysisSummary
           advisoryChecks={summaryChecks || advisoryChecks}
