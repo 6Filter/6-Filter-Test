@@ -13,7 +13,7 @@ services:
       - key: ALLOWED_ORIGIN
         value: https://ck-6-filter-test.onrender.com
       - key: ANTHROPIC_MODEL
-        value: claude-sonnet-4-5-20250929
+        value: claude-sonnet-5
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: GEMINI_API_KEY

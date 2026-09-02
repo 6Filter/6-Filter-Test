@@ -28,9 +28,6 @@ function applyEnv(env) {
   for (const key of ENV_KEYS) {
     if (env[key]) process.env[key] = env[key];
   }
-  if (env.VITE_ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY) {
-    process.env.ANTHROPIC_API_KEY = env.VITE_ANTHROPIC_API_KEY;
-  }
   if (env.VITE_ANTHROPIC_MODEL && !process.env.ANTHROPIC_MODEL) {
     process.env.ANTHROPIC_MODEL = env.VITE_ANTHROPIC_MODEL;
   }

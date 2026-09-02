@@ -117,7 +117,7 @@ async function main() {
       value = "https://ck-6-filter-test.onrender.com";
     }
     if (key === "ANTHROPIC_MODEL" && !value) {
-      value = "claude-sonnet-4-5-20250929";
+      value = "claude-sonnet-5";
     }
     if (!value) {
       console.log(`keep ${key} (no local value${merged.has(key) ? ", already on Render" : ""})`);
