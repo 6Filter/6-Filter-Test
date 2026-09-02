@@ -17,7 +17,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import { formatFixedPriceGapNote, seedDerivedMrp } from "../lib/f2Derived.js";
+import { formatFixedPriceGapNote } from "../lib/f2Derived.js";
 import { computeMrp, formatMrpBreakdown } from "../lib/mrpFormula.js";
 
 function OwnerTag({ role }) {
@@ -64,6 +64,7 @@ const AI_AUTO_SKIP = new Set([
   "threatsAnswered",
   "cmiHeadSigned",
   "pureCommodity",
+  "mrpInr",
 ]);
 
 function sourcedPath(filterKey, fieldKey) {
@@ -121,12 +122,13 @@ function AiWandMark({ size = 13 }) {
   );
 }
 
-function SuggestionChip({ field, suggestion, onAccept, onDismiss }) {
+function SuggestionChip({ field, suggestion, basis, onAccept, onDismiss }) {
   return (
     <div className="ai-suggestion-chip">
       <AiWandMark size={12} />
       <span>
         AI suggests: <strong>{formatSuggestion(field, suggestion)}</strong>
+        {basis ? <span className="ai-suggestion-basis"> — {basis}</span> : null}
       </span>
       <button type="button" onClick={onAccept}>Accept</button>
       <button type="button" onClick={onDismiss}>Dismiss</button>
@@ -198,6 +200,7 @@ function FieldControl({
   value,
   onChange,
   suggestion,
+  suggestionBasis = "",
   onAcceptSuggestion,
   onDismissSuggestion,
   currentUser,
@@ -217,6 +220,7 @@ function FieldControl({
       <SuggestionChip
         field={field}
         suggestion={suggestion}
+        basis={suggestionBasis}
         onAccept={onAcceptSuggestion}
         onDismiss={onDismissSuggestion}
       />
@@ -607,6 +611,36 @@ export default function PropositionForm({
     setAiSourced({});
   }, [initial?.id]);
 
+  const mrpAiSourced = aiSourced[sourcedPath("f2", "mrpInr")];
+  const f2Cogs = doc.f2?.cogsAtScale;
+  const f2Margin = doc.f2?.netMarginAtScale;
+  const f2Gst = doc.f2?.gstRatePct;
+
+  useEffect(() => {
+    if (mrpAiSourced === false) return; // human has taken ownership — never auto-touch again
+    const result = computeMrp({
+      cogsAtScale: f2Cogs,
+      netMarginAtScale: f2Margin,
+      gstRatePct: f2Gst,
+    });
+    const nextVal =
+      result?.finalMrp != null
+        ? result.finalMrp.toFixed(2)
+        : result?.baseMrp != null
+          ? result.baseMrp.toFixed(2)
+          : "";
+    if (mrpAiSourced !== true && nextVal === "") return;
+    setDoc((prev) => {
+      if (String(prev.f2?.mrpInr ?? "") === String(nextVal)) return prev;
+      return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+    });
+    if (nextVal !== "") {
+      setAiSourced((prev) =>
+        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
+      );
+    }
+  }, [f2Cogs, f2Margin, f2Gst, mrpAiSourced]);
+
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
   const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
@@ -659,6 +693,9 @@ export default function PropositionForm({
   function markEdited(filterKey, fieldKey) {
     const path = sourcedPath(filterKey, fieldKey);
     setAiSourced((prev) => {
+      if (filterKey === "f2" && fieldKey === "mrpInr") {
+        return { ...prev, [path]: false };
+      }
       if (!prev[path]) return prev;
       const next = { ...prev };
       delete next[path];
@@ -675,19 +712,10 @@ export default function PropositionForm({
   function setFilter(filterKey, fieldKey, value) {
     noteEdit();
     markEdited(filterKey, fieldKey);
-    const nextFilter = { ...(doc[filterKey] || {}), [fieldKey]: value };
-    const seeded =
-      filterKey === "f2" &&
-      (fieldKey === "cogsAtScale" || fieldKey === "netMarginAtScale" || fieldKey === "gstRatePct")
-        ? seedDerivedMrp(nextFilter)
-        : { f2: nextFilter, seeded: false };
     setDoc((prev) => ({
       ...prev,
-      [filterKey]: seeded.seeded ? seeded.f2 : { ...(prev[filterKey] || {}), [fieldKey]: value },
+      [filterKey]: { ...(prev[filterKey] || {}), [fieldKey]: value },
     }));
-    if (seeded.seeded) {
-      setAiSourced((prev) => ({ ...prev, [sourcedPath("f2", "mrpInr")]: true }));
-    }
   }
 
   function applyResearchResult(data) {
@@ -703,15 +731,8 @@ export default function PropositionForm({
     for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
       if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
       const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
-      let filled = next;
-      let sourcedFlags = sourced;
-      if (filterKey === "f2") {
-        const seeded = seedDerivedMrp(next);
-        filled = seeded.f2;
-        if (seeded.seeded) sourcedFlags = { ...sourced, mrpInr: true };
-      }
-      nextDoc = { ...nextDoc, [filterKey]: filled };
-      for (const key of Object.keys(sourcedFlags)) flags[sourcedPath(filterKey, key)] = true;
+      nextDoc = { ...nextDoc, [filterKey]: next };
+      for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
     }
     if (nextDoc !== doc) setDoc(nextDoc);
     if (Object.keys(flags).length) {
@@ -729,10 +750,16 @@ export default function PropositionForm({
     const path = sourcedPath(filterKey, fieldKey);
     noteEdit();
     if (filterKey) {
-      setDoc((prev) => ({
-        ...prev,
-        [filterKey]: { ...prev[filterKey], [fieldKey]: suggestion },
-      }));
+      setDoc((prev) => {
+        const extra =
+          filterKey === "f3" && fieldKey === "modelledVolumeLoss"
+            ? { modelledVolumeLossBasis: aiSuggestions?.f3?.modelledVolumeLossBasis || prev.f3?.modelledVolumeLossBasis || "" }
+            : {};
+        return {
+          ...prev,
+          [filterKey]: { ...prev[filterKey], [fieldKey]: suggestion, ...extra },
+        };
+      });
     } else {
       setDoc((prev) => ({ ...prev, [fieldKey]: suggestion }));
     }
@@ -747,8 +774,13 @@ export default function PropositionForm({
 
   function suggestionProps(filterKey, field, currentValue) {
     const suggestion = lookupSuggestion(aiSuggestions, aiDismissed, filterKey, field.key, currentValue);
+    const suggestionBasis =
+      filterKey === "f3" && field.key === "modelledVolumeLoss"
+        ? String(aiSuggestions?.f3?.modelledVolumeLossBasis || "").trim()
+        : "";
     return {
       suggestion,
+      suggestionBasis,
       onAcceptSuggestion: suggestion == null ? undefined : () => acceptSuggestion(filterKey, field.key, suggestion),
       onDismissSuggestion: () => dismissSuggestion(filterKey, field.key),
     };
@@ -1111,20 +1143,26 @@ export default function PropositionForm({
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
                     breakdownNote={
                       spec.key === "f2" && field.key === "mrpInr"
-                        ? formatMrpBreakdown(
-                            computeMrp({
+                        ? (() => {
+                            const result = computeMrp({
                               cogsAtScale: values.cogsAtScale,
                               netMarginAtScale: values.netMarginAtScale,
                               gstRatePct: values.gstRatePct,
-                            }),
-                            values.gstRatePct
-                          )
+                            });
+                            if (result) return formatMrpBreakdown(result, values.gstRatePct);
+                            const attempted =
+                              String(values.cogsAtScale ?? "").trim() !== "" ||
+                              String(values.netMarginAtScale ?? "").trim() !== "";
+                            return attempted ? "—" : "";
+                          })()
                         : ""
                     }
                     liveNote={
                       spec.key === "f2" && field.key === "mrpInr"
                         ? formatFixedPriceGapNote(values.mrpInr)
-                        : ""
+                        : spec.key === "f3" && field.key === "modelledVolumeLoss"
+                          ? String(values.modelledVolumeLossBasis || "").trim()
+                          : ""
                     }
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
@@ -1397,6 +1435,7 @@ const PROP_CSS = `
   padding:8px 12px;border-radius:10px;background:rgba(201,174,239,.12);
   border:1px solid rgba(201,174,239,.28);font-size:12px;color:#F3EAF8;line-height:1.4;}
 .ai-suggestion-chip strong{font-weight:700;}
+.ai-suggestion-basis{font-weight:400;color:rgba(243,234,248,.78);}
 .ai-suggestion-chip button{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid rgba(243,234,248,.28);
   background:transparent;color:#F3EAF8;cursor:pointer;font-family:var(--fd);}
 .ai-suggestion-chip button:hover{background:rgba(201,174,239,.2);}

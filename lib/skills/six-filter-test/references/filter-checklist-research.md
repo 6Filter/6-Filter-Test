@@ -44,6 +44,25 @@ JSON shape:
 
 If no benchmark name exists, skip F3 price research entirely — do not invent a competitor.
 
+## F3 — volume loss on an inflation-matching increase
+
+Run **only after** `priceIndexVsBenchmark` is known (from price research or a human entry). Do not fire on an empty index.
+
+Research (1) the latest cited WPI/CPI figure for the relevant item group and (2) volume loss from an inflation-matching price rise, given that index (above 100 = less headroom; below 100 = more). Return `basis` that names both the inflation figure and the competitive-position note — never a generic "estimated from category history" placeholder.
+
+```json
+{
+  "inflationRatePct": 0,
+  "inflationSource": "...",
+  "inflationPeriod": "...",
+  "competitivePositionNote": "...",
+  "modelledVolumeLossPct": 0,
+  "sourceTier": 1,
+  "basis": "...",
+  "sources": [{ "title": "...", "url": "..." }]
+}
+```
+
 ## F4 — format trajectory and threats
 
 - Format rising / stable / declining from public format-share citations, then engines, then digital proxy.
