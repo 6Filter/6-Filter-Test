@@ -17,6 +17,8 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
+import { formCategoryLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
+import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -499,11 +501,14 @@ function toneFor(label) {
   return "watch";
 }
 
-function ImprovementList({ advisoryChecks }) {
+function ImprovementList({ advisoryChecks, category }) {
   const pending = ["f1", "f2", "f3", "f4"].flatMap((k) =>
     (advisoryChecks[k]?.items || [])
       .filter((it) => it.status === "pending")
-      .map((it) => ({ filter: k.toUpperCase(), text: it.text }))
+      .map((it) => ({
+        filter: k.toUpperCase(),
+        text: rewriteUnmatchedDivisionCopy(it.text, category),
+      }))
   );
   if (!pending.length) return null;
   return (
@@ -530,6 +535,9 @@ function localGateRationale(classification, checks) {
   if (classification === "GO") {
     return "GO — Filters 1–4 are cleared or exempt on the recorded parameters.";
   }
+  if (classification === "WATCH") {
+    return "WATCH — the score is in the 61–80 band. Close the remaining gaps before this can read GO.";
+  }
   const below = namedCheckFilters(checks, (label) => label === "Below floor");
   if (below.length) {
     return `NO-GO — ${below.join(", ")} ${below.length === 1 ? "is" : "are"} below a non-negotiable floor. That is the blocker, not unfinished evidence.`;
@@ -542,14 +550,14 @@ function localGateRationale(classification, checks) {
   return `NO-GO — this is incomplete, not a floor failure. Evidence is still missing on ${names}. Fill those in and Submit again.`;
 }
 
-function FilterNarrativeList({ narratives, advisoryChecks }) {
+function FilterNarrativeList({ narratives, advisoryChecks, category }) {
   return (
     <div className="panel gonogo-score-detail">
       <div className="panel-tab">Filter analysis</div>
       {SIX_FILTERS_FORM.slice(0, 4).map((f) => {
         const stored = String(narratives?.[f.key] || "").trim();
         const check = advisoryChecks?.[f.key] || {};
-        const text = stored || fallbackFilterNarrative(check);
+        const text = rewriteUnmatchedDivisionCopy(stored || fallbackFilterNarrative(check), category);
         const items = Array.isArray(check.items) ? check.items : [];
         const points = items.length
           ? `${items.filter((i) => i.status === "done").length}/${items.length}`
@@ -568,7 +576,7 @@ function FilterNarrativeList({ narratives, advisoryChecks }) {
   );
 }
 
-function GoNoGoResultPage({ result, advisoryChecks, onBack, onContinue }) {
+function GoNoGoResultPage({ result, advisoryChecks, category, ideaScale, onBack, onContinue }) {
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
   // Score is always from scoreAdvisoryChecks(computeAllAdvisoryChecks) on the
@@ -578,6 +586,10 @@ function GoNoGoResultPage({ result, advisoryChecks, onBack, onContinue }) {
     : scoreAdvisoryChecks(checks);
   const tone = goNoGoTone(result.classification);
   const isGo = result.classification === "GO";
+  const isWatch = result.classification === "WATCH";
+  const categoryName = String(category || result.category || "").trim();
+  const scale = String(ideaScale || result.ideaScale || "").trim() || "10g";
+  const rationale = rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName);
   return (
     <div className="output-page gonogo-result-page">
       <div className="gonogo-result-actions">
@@ -590,22 +602,26 @@ function GoNoGoResultPage({ result, advisoryChecks, onBack, onContinue }) {
           </button>
         ) : null}
       </div>
-      <div className={`gonogo-hero tone-${tone === "pass" ? "pass" : "fail"}`}>
+      <div className={`gonogo-hero tone-${tone}`}>
         <div className="gonogo-classification">{result.classification}</div>
         <div className="gonogo-score">{score.pct}%</div>
-        <p className="gonogo-rationale">{result.rationale || "No rationale returned."}</p>
+        <div className="gonogo-scale">{scale}</div>
+        {categoryName ? <p className="gonogo-category">Category: {categoryName}</p> : null}
+        <p className="gonogo-rationale">{rationale}</p>
       </div>
-      <ImprovementList advisoryChecks={checks} />
-      <FilterNarrativeList narratives={result.filterNarratives} advisoryChecks={checks} />
+      <ImprovementList advisoryChecks={checks} category={categoryName} />
+      <FilterNarrativeList narratives={result.filterNarratives} advisoryChecks={checks} category={categoryName} />
       {isGo ? (
         <p className="gonogo-blocked-note">
           Continue to upload market-research proof and unlock Filters 5–6.
         </p>
       ) : (
         <p className="gonogo-blocked-note">
-          {goNoGoIsFloorFailure(checks)
-            ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked until this reads GO."
-            : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
+          {isWatch
+            ? "WATCH — close the remaining Filter 1–4 gaps and Submit again. Upload and Filters 5–6 unlock only on GO."
+            : goNoGoIsFloorFailure(checks)
+              ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked until this reads GO."
+              : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
         </p>
       )}
     </div>
@@ -1252,6 +1268,8 @@ export default function PropositionForm({
       classification: preview.classification,
       rationale: localGateRationale(preview.classification, preview.checks),
       score: preview.score,
+      ideaScale: preview.ideaScale,
+      category: preview.category,
       at: new Date().toISOString(),
     });
     setJustSubmitted(true);
@@ -1311,6 +1329,8 @@ export default function PropositionForm({
       classification,
       rationale: localGateRationale(classification, checks || {}),
       score: scoreAdvisoryChecks(checks || {}),
+      ideaScale: ideaScaleFromDoc(nextDoc),
+      category: formCategoryLabel(nextDoc),
       at: new Date().toISOString(),
     });
     setJustSubmitted(true);
@@ -1346,6 +1366,8 @@ export default function PropositionForm({
           key={goNoGo.at || goNoGo.classification}
           result={goNoGo}
           advisoryChecks={summaryChecks || advisoryChecks || {}}
+          category={formCategoryLabel(doc) || goNoGo.category}
+          ideaScale={goNoGo.ideaScale || ideaScaleFromDoc(doc)}
           onBack={() => setCurrentView("propositionForm")}
           onContinue={() => setCurrentView("propositionForm")}
         />
@@ -1783,7 +1805,9 @@ const PROP_CSS = `
 .gonogo-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px;}
 .gonogo-hero{padding:24px 22px;border-radius:16px;margin:0 0 18px;}
 .gonogo-classification{font-size:32px;font-weight:800;letter-spacing:-.4px;line-height:1.1;}
-.gonogo-hero .gonogo-score{margin:8px 0 14px;font-size:16px;font-weight:600;font-style:normal;letter-spacing:.02em;}
+.gonogo-hero .gonogo-score{margin:8px 0 6px;font-size:16px;font-weight:600;font-style:normal;letter-spacing:.02em;}
+.gonogo-scale{margin:0 0 10px;font-size:18px;font-weight:700;letter-spacing:.04em;line-height:1.2;}
+.gonogo-category{margin:0 0 12px;font-size:13px;line-height:1.4;}
 .gonogo-rationale{margin:0;font-size:15px;line-height:1.55;}
 .gonogo-score-detail{margin-top:18px;position:relative;padding:22px 16px 8px;}
 .filter-narrative-title{font-size:12px;font-weight:700;letter-spacing:.04em;
@@ -1797,7 +1821,7 @@ const PROP_CSS = `
   --ink-muted-55:rgba(240,238,231,.55); --ink-muted-45:rgba(240,238,231,.45);
   --border:rgba(240,238,231,.14);
   --pass:#63C08D; --fail:#F08A7A; --watch:#E3B25C;
-  --hero-go:#14513A; --hero-nogo:#5C2320;
+  --hero-go:#14513A; --hero-nogo:#5C2320; --hero-watch:#5C4A20;
   background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif;
   min-height:60vh;
 }
@@ -1807,8 +1831,14 @@ const PROP_CSS = `
 .output-page .derived-note{font-family:'IBM Plex Mono',monospace;}
 .output-page .gonogo-hero.tone-pass{background:var(--hero-go);}
 .output-page .gonogo-hero.tone-fail{background:var(--hero-nogo);}
+.output-page .gonogo-hero.tone-watch{background:var(--hero-watch);}
 .output-page .gonogo-classification{color:var(--ink);}
+.output-page .gonogo-hero.tone-pass .gonogo-classification{color:var(--pass);}
+.output-page .gonogo-hero.tone-fail .gonogo-classification{color:var(--fail);}
+.output-page .gonogo-hero.tone-watch .gonogo-classification{color:var(--watch);}
 .output-page .gonogo-hero .gonogo-score{color:var(--ink-muted-85);}
+.output-page .gonogo-scale{color:var(--ink);}
+.output-page .gonogo-category{color:var(--ink-muted-65);}
 .output-page .gonogo-rationale{color:var(--ink-muted-85);}
 .output-page .panel,
 .output-page .filter-narrative{

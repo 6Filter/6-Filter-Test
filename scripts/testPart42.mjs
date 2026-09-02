@@ -1,4 +1,4 @@
-import { computeGoNoGo, goNoGoTone, goNoGoIsFloorFailure } from "../lib/goNoGo.js";
+import { computeGoNoGo, goNoGoTone, goNoGoIsFloorFailure, classifyGoNoGoFromScore } from "../lib/goNoGo.js";
 import { stripCavinKareMentions } from "../lib/sanitizeAiText.js";
 import { buildResearchFindings } from "../lib/researchFindings.js";
 import { buildSuggestions } from "../lib/propositionAiFirstPass.js";
@@ -7,25 +7,36 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
+function items(done, pending) {
+  return [
+    ...Array.from({ length: done }, () => ({ status: "done", text: "ok" })),
+    ...Array.from({ length: pending }, () => ({ status: "pending", text: "gap" })),
+  ];
+}
+
 const missing = computeGoNoGo({});
 assert(missing === "NO-GO", `incomplete evidence should be NO-GO, got ${missing}`);
 assert(goNoGoTone(missing) === "fail", "incomplete should use fail tone");
 assert(!goNoGoIsFloorFailure({}), "empty checks are incompleteness, not a floor failure");
 
 const go = computeGoNoGo({
-  f1: { checkLabel: "Cleared" },
-  f2: { checkLabel: "Exempt" },
-  f3: { checkLabel: "Cleared" },
-  f4: { checkLabel: "Cleared" },
+  f1: { checkLabel: "Cleared", items: items(3, 0) },
+  f2: { checkLabel: "Exempt", items: items(3, 0) },
+  f3: { checkLabel: "Cleared", items: items(2, 0) },
+  f4: { checkLabel: "Cleared", items: items(2, 0) },
 });
 assert(go === "GO", `all clear should be GO, got ${go}`);
 assert(goNoGoTone(go) === "pass", "GO should use pass tone");
+assert(classifyGoNoGoFromScore(81) === "GO", "81 is GO");
+assert(classifyGoNoGoFromScore(80) === "WATCH", "80 is WATCH");
+assert(classifyGoNoGoFromScore(61) === "WATCH", "61 is WATCH");
+assert(classifyGoNoGoFromScore(60) === "NO-GO", "60 is NO-GO");
 
 const incomplete = computeGoNoGo({
-  f1: { checkLabel: "Evidence missing" },
-  f2: { checkLabel: "Cleared" },
-  f3: { checkLabel: "Cleared" },
-  f4: { checkLabel: "Cleared" },
+  f1: { checkLabel: "Evidence missing", items: items(0, 4) },
+  f2: { checkLabel: "Cleared", items: items(2, 0) },
+  f3: { checkLabel: "Cleared", items: items(2, 0) },
+  f4: { checkLabel: "Cleared", items: items(2, 0) },
 });
 assert(incomplete === "NO-GO", "Evidence missing should fold into NO-GO");
 assert(
