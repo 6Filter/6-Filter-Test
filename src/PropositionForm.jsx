@@ -70,6 +70,14 @@ function sourcedPath(filterKey, fieldKey) {
   return filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
 }
 
+function isUnfilledValue(value) {
+  if (value == null || value === "") return true;
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value.maxMarginPct == null;
+  }
+  return false;
+}
+
 function applyAiAutoFill(current, suggested) {
   const now = current && typeof current === "object" ? current : {};
   const incoming = suggested && typeof suggested === "object" ? suggested : {};
@@ -78,21 +86,47 @@ function applyAiAutoFill(current, suggested) {
   for (const [key, val] of Object.entries(incoming)) {
     if (AI_AUTO_SKIP.has(key)) continue;
     if (val == null || val === "") continue;
-    const empty = now[key] == null || now[key] === "";
-    if (!empty) continue;
+    if (!isUnfilledValue(now[key])) continue;
     next[key] = val;
     sourced[key] = true;
   }
   return { next, sourced };
 }
 
+function mergeSuggestionsIntoDoc(baseDoc, suggestions) {
+  const raw = suggestions && typeof suggestions === "object" ? suggestions : {};
+  const flags = {};
+  let nextDoc = baseDoc;
+  if (raw.top && typeof raw.top === "object") {
+    const { next, sourced } = applyAiAutoFill({ category: nextDoc.category }, raw.top);
+    nextDoc = { ...nextDoc, ...next };
+    for (const key of Object.keys(sourced)) flags[sourcedPath("", key)] = true;
+  }
+  for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
+    if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
+    const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
+    nextDoc = { ...nextDoc, [filterKey]: next };
+    for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
+  }
+  return { doc: nextDoc, sourced: flags };
+}
+
 function isEmptyField(value) {
   if (value == null) return true;
   if (typeof value === "boolean") return value === false;
+  if (typeof value === "object") {
+    if (Array.isArray(value)) return value.length === 0;
+    return value.minMarginPct == null && value.maxMarginPct == null;
+  }
   return String(value).trim() === "";
 }
 
 function formatSuggestion(field, value) {
+  if (value && typeof value === "object" && !Array.isArray(value) && ("minMarginPct" in value || "maxMarginPct" in value)) {
+    const min = value.minMarginPct == null ? "—" : Number(value.minMarginPct).toFixed(0);
+    const max = value.maxMarginPct == null ? "—" : Number(value.maxMarginPct).toFixed(0);
+    return `${min}–${max}%`;
+  }
   if (field?.type === "select" && Array.isArray(field.options)) {
     const opt = field.options.find((o) => String(o.v) === String(value));
     if (opt) return opt.l;
@@ -210,10 +244,10 @@ function FieldControl({
 }) {
   const helper = fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
-  const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed";
+  const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range";
   const locked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
   const lockTitle = locked ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}` : undefined;
-  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory"]);
+  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory", "marginElasticity"]);
   const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
     showChip ? (
@@ -226,6 +260,66 @@ function FieldControl({
       />
     ) : null;
   const wand = aiSourced ? <AiWandMark /> : null;
+
+  if (field.type === "computed-range") {
+    const range = value && typeof value === "object" ? value : {};
+    const min = range.minMarginPct;
+    const max = range.maxMarginPct;
+    const fmt = (n) => (n == null || n === "" || !Number.isFinite(Number(n)) ? "—" : Number(n).toFixed(0));
+    const patchEnd = (end, raw) => {
+      const nextVal = raw === "" ? null : Number(raw);
+      onChange({
+        ...range,
+        [end]: Number.isFinite(nextVal) ? nextVal : null,
+        aiSourced: false,
+      });
+    };
+    return (
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle}>
+        <div className="prop-label">
+          {field.label}
+          {wand}
+          {owners.map((role) => (
+            <OwnerTag key={role} role={role} />
+          ))}
+        </div>
+        {helper ? <p className="prop-helper">{helper}</p> : null}
+        <div className="margin-elasticity-display">
+          <span className="me-min">{fmt(min)}%</span>
+          <span className="me-sep">–</span>
+          <span className="me-max">{fmt(max)}%</span>
+          {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
+        </div>
+        {range.basis ? <p className="derived-note">{range.basis}</p> : null}
+        <div className="me-overrides">
+          <label>
+            Min %
+            <input
+              type="number"
+              step="any"
+              value={min ?? ""}
+              disabled={locked}
+              title={lockTitle}
+              onChange={(e) => patchEnd("minMarginPct", e.target.value)}
+            />
+          </label>
+          <label>
+            Max %
+            <input
+              type="number"
+              step="any"
+              value={max ?? ""}
+              disabled={locked}
+              title={lockTitle}
+              onChange={(e) => patchEnd("maxMarginPct", e.target.value)}
+            />
+          </label>
+        </div>
+        {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        {chip}
+      </div>
+    );
+  }
 
   if (field.type === "computed") {
     return (
@@ -609,7 +703,7 @@ export default function PropositionForm({
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(next) : "");
-  }, [initial?.id, initial?.version]);
+  }, [initial?.id]);
 
   useEffect(() => {
     setAiSuggestions(null);
@@ -771,25 +865,13 @@ export default function PropositionForm({
     }));
   }
 
-  function applyResearchResult(data) {
-    if (!data?.suggestions) return;
+  function applyResearchResult(data, baseDoc = doc) {
+    if (!data?.suggestions) return baseDoc;
     const raw = data.suggestions || {};
-    const flags = {};
-    let nextDoc = doc;
-    if (raw.top && typeof raw.top === "object") {
-      const { next, sourced } = applyAiAutoFill({ category: nextDoc.category }, raw.top);
-      nextDoc = { ...nextDoc, ...next };
-      for (const key of Object.keys(sourced)) flags[sourcedPath("", key)] = true;
-    }
-    for (const filterKey of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
-      if (!raw[filterKey] || typeof raw[filterKey] !== "object") continue;
-      const { next, sourced } = applyAiAutoFill(nextDoc[filterKey], raw[filterKey]);
-      nextDoc = { ...nextDoc, [filterKey]: next };
-      for (const key of Object.keys(sourced)) flags[sourcedPath(filterKey, key)] = true;
-    }
-    if (nextDoc !== doc) setDoc(nextDoc);
-    if (Object.keys(flags).length) {
-      setAiSourced((prev) => ({ ...prev, ...flags }));
+    const { doc: nextDoc, sourced } = mergeSuggestionsIntoDoc(baseDoc, raw);
+    setDoc(nextDoc);
+    if (Object.keys(sourced).length) {
+      setAiSourced((prev) => ({ ...prev, ...sourced }));
     }
     setAiSuggestions(raw);
     setAiDismissed({});
@@ -797,22 +879,17 @@ export default function PropositionForm({
       notCovered: data.notCovered || [],
       sources: data.sources || [],
     });
+    return nextDoc;
   }
 
   function acceptSuggestion(filterKey, fieldKey, suggestion) {
     const path = sourcedPath(filterKey, fieldKey);
     noteEdit();
     if (filterKey) {
-      setDoc((prev) => {
-        const extra =
-          filterKey === "f3" && fieldKey === "modelledVolumeLoss"
-            ? { modelledVolumeLossBasis: aiSuggestions?.f3?.modelledVolumeLossBasis || prev.f3?.modelledVolumeLossBasis || "" }
-            : {};
-        return {
-          ...prev,
-          [filterKey]: { ...prev[filterKey], [fieldKey]: suggestion, ...extra },
-        };
-      });
+      setDoc((prev) => ({
+        ...prev,
+        [filterKey]: { ...(prev[filterKey] || {}), [fieldKey]: suggestion },
+      }));
     } else {
       setDoc((prev) => ({ ...prev, [fieldKey]: suggestion }));
     }
@@ -828,8 +905,8 @@ export default function PropositionForm({
   function suggestionProps(filterKey, field, currentValue) {
     const suggestion = lookupSuggestion(aiSuggestions, aiDismissed, filterKey, field.key, currentValue);
     const suggestionBasis =
-      filterKey === "f3" && field.key === "modelledVolumeLoss"
-        ? String(aiSuggestions?.f3?.modelledVolumeLossBasis || "").trim()
+      filterKey === "f3" && field.key === "marginElasticity"
+        ? String(aiSuggestions?.f3?.marginElasticity?.basis || "").trim()
         : "";
     return {
       suggestion,
@@ -1007,7 +1084,10 @@ export default function PropositionForm({
       forceResearch: Boolean(submitOpts.forceResearch),
     });
     if (!result?.proposition) return;
-    if (result.suggestions) applyResearchResult(result);
+    const saved = mergeProposition(result.proposition);
+    const filled = result.suggestions
+      ? applyResearchResult(result, saved)
+      : saved;
     if (result.researchError) {
       setLocalError(result.researchError);
       setFailedBanner({
@@ -1032,7 +1112,7 @@ export default function PropositionForm({
       setLocalError("");
       setFailedBanner(null);
     }
-    const nextDoc = mergeProposition(result.proposition);
+    const nextDoc = filled;
     setDoc(nextDoc);
     if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
     const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
@@ -1222,11 +1302,6 @@ export default function PropositionForm({
                           </p>
                         </>
                       ) : null
-                    }
-                    liveNote={
-                      spec.key === "f3" && field.key === "modelledVolumeLoss"
-                        ? String(values.modelledVolumeLossBasis || "").trim()
-                        : ""
                     }
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />
@@ -1418,6 +1493,12 @@ const PROP_CSS = `
   border-radius:999px;padding:3px 8px;width:fit-content;}
 .price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
 .derived-note{margin:4px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.72);}
+.margin-elasticity-display{display:flex;align-items:baseline;gap:8px;font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;margin:4px 0 2px;}
+.me-sep{color:rgba(243,234,248,.45);font-weight:500;}
+.ai-sourced-mark{color:#C9A0E8;margin-left:4px;align-self:center;}
+.me-overrides{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+.me-overrides label{display:flex;flex-direction:column;gap:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;color:rgba(243,234,248,.6);flex:1;min-width:120px;}
+.me-overrides input{width:100%;}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
   vertical-align:middle;flex-shrink:0;}
 .ai-wand svg{display:block;}

@@ -34,17 +34,17 @@ const skippedNull = await runVolumeLossResearch({
 });
 assert(skippedNull == null, "volume-loss research must not fire when price index is omitted");
 
-const withLoss = buildSuggestions({}, {}, { priceIndexVsBenchmark: 108 }, null, null, {
-  modelledVolumeLossPct: 6.2,
-  basis: "5.5% inflation (WPI food articles, Aug 2026) plus an already-above-benchmark price position",
+const withLoss = buildSuggestions({}, {}, null, null, null, {
+  minMarginPct: 18,
+  maxMarginPct: 52,
+  basis: "Min from the Personal Care division floor (v4, non-negotiable). Max from modelled category pricing, 5.5% inflation (WPI food articles) projected over 5 years, capped at the 10% volume-loss ceiling.",
 });
-assert(withLoss.f3.modelledVolumeLoss === 6.2, "volume-loss number should surface");
-assert(/inflation/i.test(withLoss.f3.modelledVolumeLossBasis || ""), "basis must mention inflation");
-assert(/benchmark|above/i.test(withLoss.f3.modelledVolumeLossBasis || ""), "basis must mention competitive position");
+assert(withLoss.f3.marginElasticity?.maxMarginPct === 52, "margin elasticity max should surface");
+assert(/inflation/i.test(withLoss.f3.marginElasticity?.basis || ""), "basis must mention inflation");
 assert(withLoss.f2?.mrpInr == null, "suggestions must not seed MRP — formula owns it");
 
 const withoutIndex = buildSuggestions({}, {}, null, null, null, null);
-assert(withoutIndex.f3?.modelledVolumeLoss == null, "no volume-loss suggestion without a price index / research result");
+assert(withoutIndex.f3?.marginElasticity == null, "no margin-elasticity suggestion without a research result");
 
 const fixture = fs.readFileSync("scripts/testF2Cost.mjs", "utf8");
 assert(!/\b5\.3\b/.test(fixture), "testF2Cost.mjs still contains a 5.3-shaped fixture");

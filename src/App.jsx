@@ -125,6 +125,13 @@ async function deletePropositionById(id) {
   return true;
 }
 
+async function deleteAllPropositions() {
+  const res = await apiFetch("/api/propositions/bulk-delete", { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not delete all propositions.");
+  return data.deleted;
+}
+
 function propositionVerdict(v) {
   if (v === "paper-cleared") return { label: "Paper cleared", key: "pass" };
   if (v === "gate-open") return { label: "Gate open", key: "pass" };
@@ -554,6 +561,7 @@ export default function App() {
   const [escalateLoading, setEscalateLoading] = useState(false);
   const [escalateError, setEscalateError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [llmProvider, setLlmProvider] = useState(DEFAULT_LLM_PROVIDER);
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [outcomeOpenId, setOutcomeOpenId] = useState(null);
@@ -757,7 +765,7 @@ export default function App() {
   }
 
   async function confirmDeleteProposition(row, source = "form") {
-    if (!row?.id || deletingId) return;
+    if (!row?.id || deletingId || deletingAll) return;
     const ok = window.confirm("Delete this proposition? This cannot be undone.");
     if (!ok) return;
     setDeletingId(row.id);
@@ -776,6 +784,25 @@ export default function App() {
       else setError(msg);
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function confirmAndDeleteAll() {
+    if (deletingAll || deletingId) return;
+    const count = propositionList.length;
+    if (!count) return;
+    const ok = window.confirm(`Delete all ${count} propositions? This cannot be undone.`);
+    if (!ok) return;
+    setDeletingAll(true);
+    setLogError("");
+    try {
+      await deleteAllPropositions();
+      setPropositionList([]);
+      setProposition(null);
+    } catch (e) {
+      setLogError(e.message || "Could not delete all propositions.");
+    } finally {
+      setDeletingAll(false);
     }
   }
 
@@ -1165,10 +1192,26 @@ export default function App() {
                   Click a row to open the evidence form, or the trash icon to delete it.
                 </p>
               </div>
-              <button type="button" className="ghost" onClick={openLogTab} disabled={logLoading}>
-                {logLoading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
-                Refresh
-              </button>
+              <div className="log-head-actions">
+                <button type="button" className="ghost" onClick={openLogTab} disabled={logLoading || deletingAll}>
+                  {logLoading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  className="ghost danger"
+                  onClick={confirmAndDeleteAll}
+                  disabled={
+                    logLoading ||
+                    deletingAll ||
+                    propositionList.length === 0 ||
+                    (sessionUser && sessionUser.role !== "ADMIN")
+                  }
+                >
+                  {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                  Delete all
+                </button>
+              </div>
             </div>
 
             {logError && <div className="err"><AlertTriangle size={14} /> {logError}</div>}
@@ -1192,7 +1235,7 @@ export default function App() {
                         type="button"
                         className="log-row"
                         onClick={() => openProposition(h, "log")}
-                        disabled={loading || Boolean(deletingId)}
+                        disabled={loading || Boolean(deletingId) || deletingAll}
                       >
                         <span className={`log-status log-status-${pf.key}`}>{isOpening ? <Loader2 size={14} className="spin" /> : pf.label}</span>
                         <span className="log-weight">{h.category || "—"}</span>
@@ -1208,6 +1251,7 @@ export default function App() {
                         disabled={
                           loading ||
                           Boolean(deletingId) ||
+                          deletingAll ||
                           (sessionUser && sessionUser.role !== "ADMIN" && sessionUser.role !== "BM")
                         }
                         onClick={() => confirmDeleteProposition(h, "log")}
@@ -2252,6 +2296,7 @@ const CSS = `
 .log-page{max-width:1080px;margin:0 auto;animation:rise .45s ease both;}
 .log-panel{padding-top:28px;}
 .log-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+.log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 .log-title{margin:0 0 6px;font-size:22px;color:var(--ink);}
 .log-sub{margin:0;font-size:13px;color:var(--muted);max-width:520px;line-height:1.45;}
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
@@ -2375,6 +2420,9 @@ const CSS = `
 
 .ghost{display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:9px 14px;font-family:var(--fd);font-size:13px;cursor:pointer;transition:.15s;}
 .ghost:hover{border-color:var(--ink);background:var(--card);}
+.ghost.danger{color:#C53D3D;border-color:rgba(197,61,61,.35);}
+.ghost.danger:hover{background:rgba(228,87,87,.1);border-color:#C53D3D;}
+.ghost:disabled{opacity:.55;cursor:not-allowed;}
 .ghost.sq{padding:9px;}
 .run{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#006CB4,#0088C7);color:#fff;border:none;border-radius:12px;padding:15px;font-family:var(--fd);font-weight:600;font-size:15px;cursor:pointer;transition:transform .15s,filter .15s,box-shadow .15s;box-shadow:0 8px 18px rgba(0,108,180,.28);margin-top:12px;}
 .run-hint{margin:8px 0 0;text-align:center;font-size:12px;color:var(--muted);font-family:var(--fm);}

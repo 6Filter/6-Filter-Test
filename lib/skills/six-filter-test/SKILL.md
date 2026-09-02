@@ -6,7 +6,7 @@ description: >-
   rationales, trade press), then category-intelligence engines, then
   digital-proxy/analog-transfer. Always report a finding and its source tier.
   Never emit unsure or not available as a field value. Use for AI first pass,
-  F3 price index, F5 sizing factors, F1/F4 research prompts. F2 stays mostly
+  F3 margin elasticity, F5 sizing factors, F1/F4 research prompts. F2 stays mostly
   manual; F6 is validation only and is never researched or scored here.
 ---
 
@@ -32,7 +32,7 @@ Uncertainty is allowed **as a labelled weaker tier**, not as silence.
 |---|---|---|
 | F1 | Benchmark naming; category size / growth argument | Declared attributes 1–3 (BM); CMI hierarchy evidence / U&A source |
 | F2 | Cost / MRP / grammage / qcom trajectory estimates (auto-fill empty fields only) | Finance signature; human override of any estimate |
-| F3 | Price index vs named benchmark (₹/g or ₹/ml, comparable pack) | Elasticity source ownership, volume-loss modelling sign-off |
+| F3 | Category average price + inflation/elasticity to compute a safe margin band vs a 10% volume-loss cap over 5 years | Human override of either end of the band |
 | F4 | Format trajectory; threat register + responses | — |
 | F5 | Households Y3, trial %, repeat %, frequency, avg pack ₹ | CMI head signature |
 | F6 | **Nothing** — validation approval only, never researched or scored | Lab / consumer / pack panels |

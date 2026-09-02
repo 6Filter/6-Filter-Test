@@ -20,9 +20,9 @@ Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCost
 
 | Check copy | Source | Field |
 |---|---|---|
-| Price index vs benchmark missing | Nielsen price per gram of the named benchmark and peers | `priceIndexVsBenchmark` |
+| Margin elasticity not yet computed | Category avg price + Part 43 inflation/elasticity + division floor | `marginElasticity` |
 
-`priceIndexVsBenchmark` = idea ₹/g ÷ benchmark ₹/g × 100. Volume loss cap ≤ 10% unchanged.
+`marginElasticity` is `{ minMarginPct, maxMarginPct, basis, sources, aiSourced }`. Min is the division floor. Max is the margin at the 10% volume-loss price ceiling after 5 years of cost inflation. F3 clears only when Filter 2's declared margin sits inside that band.
 
 ## Filter 4 → `f4`
 

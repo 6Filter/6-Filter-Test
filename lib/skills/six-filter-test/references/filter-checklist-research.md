@@ -22,33 +22,21 @@ came from, never omit the tier, never present a tier-3 finding as if it were tie
 
 Do **not** research or suggest: MRP & grammage, COGS, net margin at scale, Finance signature. No dedicated F2 research module.
 
-## F3 — price index vs benchmark
+## F3 — margin elasticity (safe min–max band)
 
-Requires a **named benchmark**. Research ₹ per g (or ₹ per ml) at a pack size comparable to the proposition.
+Research three inputs, then the engine computes the range — do not invent a ceiling if elasticity is missing:
 
-```
-priceIndexVsBenchmark = (ownPricePerUnit / benchmarkPricePerUnit) * 100
-```
+1. **Category average pack price** (Nielsen/Kantar cited avg first, else engines, else e-com listing average). Return `sourceTier`.
+2. **Inflation** for the category (reuse the Part 43 WPI/CPI recipe) plus the inflation-matching volume-loss observation that encodes elasticity.
+3. **Division margin floor** is supplied by the app (`getDivisionMarginFloor`) — do not research it.
 
-JSON shape:
+If no elasticity exists at any tier, return a structured miss rather than a fabricated `maxMarginPct`.
 
-```json
-{
-  "benchmarkPricePerUnit": 0,
-  "benchmarkPackSize": "...",
-  "sourceTier": 1,
-  "priceIndexVsBenchmark": 0,
-  "sources": [{ "title": "...", "url": "..." }]
-}
-```
-
-If no benchmark name exists, skip F3 price research entirely — do not invent a competitor.
+The stored field is `marginElasticity`: `{ minMarginPct, maxMarginPct, basis, sources, aiSourced }`.
 
 ## F3 — volume loss on an inflation-matching increase
 
-Run **only after** `priceIndexVsBenchmark` is known (from price research or a human entry). Do not fire on an empty index.
-
-Research (1) the latest cited WPI/CPI figure for the relevant item group and (2) volume loss from an inflation-matching price rise, given that index (above 100 = less headroom; below 100 = more). Return `basis` that names both the inflation figure and the competitive-position note — never a generic "estimated from category history" placeholder.
+Used to recover the elasticity relationship (typically at price-index 100 / at-parity) so the 10% volume-loss ceiling can be solved for a price, then a margin. Do not fire a parallel elasticity model.
 
 ```json
 {
