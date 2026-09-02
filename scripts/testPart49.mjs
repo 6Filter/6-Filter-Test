@@ -83,4 +83,29 @@ const hashA = fingerprintNarrativeInputs({ advisoryChecks: checks, researchFindi
 const hashB = fingerprintNarrativeInputs({ advisoryChecks: checks, researchFindings: {}, extras });
 assert.equal(hashA, hashB);
 
+let capturedPrompt = "";
+const missingExtras = await generateFilterNarratives({
+  advisoryChecks: {
+    f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Attribute 1 declared" }] },
+    f2: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Net margin at scale not yet computed" }] },
+    f3: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Margin elasticity not yet computed" }] },
+    f4: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Format trajectory pending" }] },
+  },
+  extras: {},
+  callNarrative: async (userText) => {
+    capturedPrompt = userText;
+    return {
+      f1: "Attribute 1 is declared.",
+      f2: "Net margin is still outstanding.",
+      f3: "The competitive price position has (not yet computed — do not invent one), and elasticity is missing.",
+      f4: "The five-year relevance verdict is (not yet computed — do not invent a five-year guarantee).",
+    };
+  },
+});
+assert.doesNotMatch(capturedPrompt, /\(not yet computed/);
+assert.doesNotMatch(missingExtras.f3, /do not invent/i);
+assert.doesNotMatch(missingExtras.f3, /not yet computed/i);
+assert.doesNotMatch(missingExtras.f4, /do not invent/i);
+assert.doesNotMatch(missingExtras.f4, /not yet computed/i);
+
 console.log("PASS Part 49 competitive note, F4 five-year verdict, and cache-stable extras");
