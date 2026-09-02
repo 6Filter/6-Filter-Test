@@ -38,6 +38,9 @@ assert.match(src, /Filter analysis/);
 assert.match(src, /\{score\.pct\}%/);
 assert.match(src, /\{result\.classification\}/);
 assert.match(src, /className="gonogo-scale"/);
+assert.match(src, /className="gonogo-idea"/);
+assert.match(src, />Idea</);
+assert.match(src, /\{idea\}/);
 assert.match(src, /Category: \{categoryName\}/);
 assert.match(src, /Continue to upload market-research proof and unlock Filters 5–6\./);
 

@@ -17,7 +17,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import { formCategoryLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
+import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -576,7 +576,7 @@ function FilterNarrativeList({ narratives, advisoryChecks, category }) {
   );
 }
 
-function GoNoGoResultPage({ result, advisoryChecks, category, ideaScale, onBack, onContinue }) {
+function GoNoGoResultPage({ result, advisoryChecks, category, ideaName, ideaScale, onBack, onContinue }) {
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
   // Score is always from scoreAdvisoryChecks(computeAllAdvisoryChecks) on the
@@ -588,6 +588,7 @@ function GoNoGoResultPage({ result, advisoryChecks, category, ideaScale, onBack,
   const isGo = result.classification === "GO";
   const isWatch = result.classification === "WATCH";
   const categoryName = String(category || result.category || "").trim();
+  const idea = String(ideaName || result.ideaName || "").trim();
   const scale = String(ideaScale || result.ideaScale || "").trim() || "10g";
   const rationale = rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName);
   return (
@@ -603,6 +604,12 @@ function GoNoGoResultPage({ result, advisoryChecks, category, ideaScale, onBack,
         ) : null}
       </div>
       <div className={`gonogo-hero tone-${tone}`}>
+        {idea ? (
+          <div className="gonogo-idea-block">
+            <div className="gonogo-idea-kicker">Idea</div>
+            <div className="gonogo-idea">{idea}</div>
+          </div>
+        ) : null}
         <div className="gonogo-classification">{result.classification}</div>
         <div className="gonogo-score">{score.pct}%</div>
         <div className="gonogo-scale">{scale}</div>
@@ -1269,6 +1276,7 @@ export default function PropositionForm({
       rationale: localGateRationale(preview.classification, preview.checks),
       score: preview.score,
       ideaScale: preview.ideaScale,
+      ideaName: preview.ideaName,
       category: preview.category,
       at: new Date().toISOString(),
     });
@@ -1330,6 +1338,7 @@ export default function PropositionForm({
       rationale: localGateRationale(classification, checks || {}),
       score: scoreAdvisoryChecks(checks || {}),
       ideaScale: ideaScaleFromDoc(nextDoc),
+      ideaName: formIdeaLabel(nextDoc),
       category: formCategoryLabel(nextDoc),
       at: new Date().toISOString(),
     });
@@ -1367,6 +1376,7 @@ export default function PropositionForm({
           result={goNoGo}
           advisoryChecks={summaryChecks || advisoryChecks || {}}
           category={formCategoryLabel(doc) || goNoGo.category}
+          ideaName={formIdeaLabel(doc) || goNoGo.ideaName}
           ideaScale={goNoGo.ideaScale || ideaScaleFromDoc(doc)}
           onBack={() => setCurrentView("propositionForm")}
           onContinue={() => setCurrentView("propositionForm")}
@@ -1804,6 +1814,9 @@ const PROP_CSS = `
 .unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
 .gonogo-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px;}
 .gonogo-hero{padding:24px 22px;border-radius:16px;margin:0 0 18px;}
+.gonogo-idea-block{margin:0 0 16px;}
+.gonogo-idea-kicker{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.gonogo-idea{margin:0;font-size:20px;font-weight:700;letter-spacing:-.2px;line-height:1.25;}
 .gonogo-classification{font-size:32px;font-weight:800;letter-spacing:-.4px;line-height:1.1;}
 .gonogo-hero .gonogo-score{margin:8px 0 6px;font-size:16px;font-weight:600;font-style:normal;letter-spacing:.02em;}
 .gonogo-scale{margin:0 0 10px;font-size:18px;font-weight:700;letter-spacing:.04em;line-height:1.2;}
@@ -1832,6 +1845,8 @@ const PROP_CSS = `
 .output-page .gonogo-hero.tone-pass{background:var(--hero-go);}
 .output-page .gonogo-hero.tone-fail{background:var(--hero-nogo);}
 .output-page .gonogo-hero.tone-watch{background:var(--hero-watch);}
+.output-page .gonogo-idea-kicker{color:var(--ink-muted-55);font-family:'IBM Plex Mono',monospace;}
+.output-page .gonogo-idea{color:var(--ink);}
 .output-page .gonogo-classification{color:var(--ink);}
 .output-page .gonogo-hero.tone-pass .gonogo-classification{color:var(--pass);}
 .output-page .gonogo-hero.tone-fail .gonogo-classification{color:var(--fail);}

@@ -7,6 +7,7 @@ import {
 } from "../lib/goNoGo.js";
 import {
   categoryCheckCopy,
+  formIdeaLabel,
   ideaScaleFromDoc,
   ideaScaleLabel,
 } from "../lib/ideaScale.js";
@@ -69,6 +70,8 @@ assert.equal(ideaScaleFromDoc({ researchFindings: { f1: { categoryTamCr: 8 } } }
 
 assert.equal(categoryCheckCopy("Hair care"), "Category: Hair care");
 assert.match(categoryCheckCopy(""), /not filled/);
+assert.equal(formIdeaLabel({ name: "Herbal cooling hair oil" }), "Herbal cooling hair oil");
+assert.equal(formIdeaLabel({ name: "  " }), "");
 
 const rewritten = rewriteUnmatchedDivisionCopy(
   "Division could not be determined automatically — the idea doesn't clearly match any of CavinKare's divisions. Net margin is still open.",
