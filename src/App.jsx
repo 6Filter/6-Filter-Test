@@ -8,7 +8,7 @@ import {
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
-import { LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
+import { DEFAULT_LLM_PROVIDER, LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
@@ -554,7 +554,7 @@ export default function App() {
   const [escalateLoading, setEscalateLoading] = useState(false);
   const [escalateError, setEscalateError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
-  const [llmProvider, setLlmProvider] = useState("claude");
+  const [llmProvider, setLlmProvider] = useState(DEFAULT_LLM_PROVIDER);
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [outcomeOpenId, setOutcomeOpenId] = useState(null);
   const [outcomeMargin, setOutcomeMargin] = useState("");
@@ -615,9 +615,9 @@ export default function App() {
 
   useEffect(() => {
     refreshHistories().catch(() => {});
+    setLlmProvider(DEFAULT_LLM_PROVIDER);
     try {
-      const stored = localStorage.getItem("primus-llm-provider");
-      if (stored) setLlmProvider(normalizeProvider(stored));
+      localStorage.setItem("primus-llm-provider", DEFAULT_LLM_PROVIDER);
     } catch {
       /* ignore */
     }
