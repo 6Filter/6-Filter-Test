@@ -76,6 +76,7 @@ function applyAiAutoFill(current, suggested) {
   for (const [key, val] of Object.entries(incoming)) {
     if (AI_AUTO_SKIP.has(key)) continue;
     if (val == null || val === "") continue;
+    if (key === "gstBasis" && !isUnfilledValue(now.gstRatePct)) continue;
     if (!isUnfilledValue(now[key])) continue;
     next[key] = val;
     sourced[key] = true;
@@ -625,7 +626,7 @@ function researchInputKey(doc) {
     : attach?.name
       ? `name:${attach.name}`
       : "";
-  return `${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attachSig}`;
+  return `${String(doc?.name || "").trim().toLowerCase()}|${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attachSig}`;
 }
 
 export default function PropositionForm({
@@ -843,10 +844,16 @@ export default function PropositionForm({
     }
     noteEdit();
     markEdited(filterKey, fieldKey);
-    setDoc((prev) => ({
-      ...prev,
-      [filterKey]: { ...(prev[filterKey] || {}), [fieldKey]: value },
-    }));
+    setDoc((prev) => {
+      const nextFilter = { ...(prev[filterKey] || {}), [fieldKey]: value };
+      if (filterKey === "f2" && fieldKey === "gstRatePct") {
+        nextFilter.gstBasis = "";
+      }
+      return {
+        ...prev,
+        [filterKey]: nextFilter,
+      };
+    });
   }
 
   function applyResearchResult(data, baseDoc = doc) {
@@ -1287,6 +1294,11 @@ export default function PropositionForm({
                           </p>
                         </>
                       ) : null
+                    }
+                    breakdownNote={
+                      spec.key === "f2" && field.key === "gstRatePct"
+                        ? String(values.gstBasis || "").trim()
+                        : ""
                     }
                     {...suggestionProps(spec.key, field, values[field.key])}
                   />

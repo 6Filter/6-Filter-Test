@@ -14,7 +14,7 @@ Fill these proposition fields. Human-owned signatures stay unticked.
 
 ## Filter 2 → `f2`
 
-Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCostEstimate` (Part 32). Floor from `division_thresholds` via `getDivisionMarginFloor`. `financeSigned` stays human.
+Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCostEstimate` (Part 32). Floor from `division_thresholds` via `getDivisionMarginFloor`. `financeSigned` stays human. GST is analysed from the product name / category / idea at the top of the page: food 5% or 18%, packaged snacks typically 18%. Display `gstBasis` under the GST field.
 
 ## Filter 3 → `f3`
 

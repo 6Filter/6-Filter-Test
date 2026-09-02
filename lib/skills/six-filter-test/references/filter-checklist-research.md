@@ -18,9 +18,12 @@ came from, never omit the tier, never present a tier-3 finding as if it were tie
 - **Benchmark not named:** find currently-selling named competitors in the exact segment (tier-1 public audit citations when available; else e-com / filings / trade press). Name brand · variant · pack.
 - **Growth route / argument:** category value and growth from public Nielsen/Kantar citations when available; else triangulate demand / supply / company build-up; publish working P50 with tier.
 
-## F2 — almost entirely manual
+## F2 — cost, GST, qcom (auto-fill empty fields only)
 
-Do **not** research or suggest: MRP & grammage, COGS, net margin at scale, Finance signature. No dedicated F2 research module.
+Empty F2 fields may auto-fill from `runCostEstimate`. Finance signature stays human. MRP is formula-only (never researched).
+
+**GST rate:** analysed from the proposition name, category, and idea at the top of the page.
+Food products are usually 5% or 18%. Packaged snacks (namkeen, chips, extruded savoury) are typically 18%. Staple foods more often 5%. Personal care / homecare typically 18%. Store `gstRatePct` plus `gstBasis` (`Analysed by AI: …`). Do not leave GST blank.
 
 ## F3 — margin elasticity (safe min–max band)
 
