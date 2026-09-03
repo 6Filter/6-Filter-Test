@@ -21,7 +21,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
-import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
 import {
@@ -390,6 +390,8 @@ function FieldControl({
     const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale);
     const minMrp = range.minMrpInr;
     const maxMrp = range.maxMrpInr;
+    const minInput = minMrp != null && Number.isFinite(Number(minMrp)) ? Number(Number(minMrp).toFixed(2)) : "";
+    const maxInput = maxMrp != null && Number.isFinite(Number(maxMrp)) ? Number(Number(maxMrp).toFixed(2)) : "";
     const patchMrp = (end, raw) => {
       const nextVal = raw === "" ? null : Number(raw);
       const mrp = Number.isFinite(nextVal) ? nextVal : null;
@@ -434,7 +436,7 @@ function FieldControl({
             <input
               type="number"
               step="any"
-              value={minMrp ?? ""}
+              value={minInput}
               disabled={locked}
               title={lockTitle}
               onChange={(e) => patchMrp("minMrpInr", e.target.value)}
@@ -445,7 +447,7 @@ function FieldControl({
             <input
               type="number"
               step="any"
-              value={maxMrp ?? ""}
+              value={maxInput}
               disabled={locked}
               title={lockTitle}
               onChange={(e) => patchMrp("maxMrpInr", e.target.value)}
@@ -928,22 +930,30 @@ export default function PropositionForm({
   const f3SuggestedRange = aiSuggestions?.f3?.marginElasticity;
   useEffect(() => {
     if (f3RangeTouchedByHuman.current) return;
+    const mrp = computeMrp({
+      cogsAtScale: f2Cogs,
+      netMarginAtScale: f2Margin,
+      gstRatePct: f2Gst,
+    });
+    const liveMrp = mrp?.finalMrp ?? mrp?.baseMrp ?? null;
     setDoc((prev) => {
       const current = prev.f3?.marginElasticity;
       const seeded = seedMarginElasticityFromAi(current, f3SuggestedRange, f2Cogs);
-      if (!seeded || typeof seeded !== "object") return prev;
-      const same =
-        Number(current?.minMrpInr) === Number(seeded.minMrpInr) &&
-        Number(current?.maxMrpInr) === Number(seeded.maxMrpInr) &&
-        Number(current?.minMarginPct) === Number(seeded.minMarginPct) &&
-        Number(current?.maxMarginPct) === Number(seeded.maxMarginPct);
-      if (same && !isMarginElasticityUnfilled(current)) return prev;
-      if (seeded.minMrpInr == null && seeded.maxMrpInr == null && isMarginElasticityUnfilled(current)) {
+      const base = seeded && typeof seeded === "object" ? seeded : current;
+      if (!base || typeof base !== "object") return prev;
+      const recast = recastMarginElasticityLive(base, {
+        cogsAtScale: f2Cogs,
+        mrpInr: liveMrp ?? prev.f2?.mrpInr,
+        division: prev.division,
+      });
+      if (!recast || typeof recast !== "object") return prev;
+      if (marginElasticityUnchanged(current, recast) && !isMarginElasticityUnfilled(current)) return prev;
+      if (recast.minMrpInr == null && recast.maxMrpInr == null && isMarginElasticityUnfilled(current)) {
         return prev;
       }
       return {
         ...prev,
-        f3: { ...(prev.f3 || {}), marginElasticity: { ...seeded, aiSourced: true } },
+        f3: { ...(prev.f3 || {}), marginElasticity: { ...recast, aiSourced: true } },
       };
     });
     if (f3SuggestedRange && !isMarginElasticityUnfilled(f3SuggestedRange)) {
@@ -953,7 +963,7 @@ export default function PropositionForm({
           : { ...prev, [sourcedPath("f3", "marginElasticity")]: true }
       );
     }
-  }, [f2Cogs, f3SuggestedRange]);
+  }, [f2Cogs, f2Margin, f2Gst, f3SuggestedRange]);
 
   const f4SuggestedRisk = aiSuggestions?.f4?.techShiftRisk;
   useEffect(() => {
