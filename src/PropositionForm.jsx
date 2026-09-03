@@ -419,14 +419,23 @@ function FieldControl({
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        <div className="mrp-range-display">
-          <span className="me-min">₹{range?.minMrpInr != null && Number.isFinite(Number(range.minMrpInr)) ? Number(range.minMrpInr).toFixed(0) : "—"}</span>
-          <span className="me-sep">–</span>
-          <span className="me-max">₹{range?.maxMrpInr != null && Number.isFinite(Number(range.maxMrpInr)) ? Number(range.maxMrpInr).toFixed(0) : "—"}</span>
-          {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
-        </div>
-        <p className="derived-note">Safe MRP range over the next 5 years</p>
-        {basisNote ? <p className="derived-note">{basisNote}</p> : null}
+        {range?.rangeError ? (
+          <p className="derived-note error">{range.rangeError}</p>
+        ) : (
+          <>
+            <div className="mrp-range-display">
+              <span className="me-min">₹{range?.minMrpInr != null && Number.isFinite(Number(range.minMrpInr)) ? Number(range.minMrpInr).toFixed(0) : "—"}</span>
+              <span className="me-sep">–</span>
+              <span className="me-max">₹{range?.maxMrpInr != null && Number.isFinite(Number(range.maxMrpInr)) ? Number(range.maxMrpInr).toFixed(0) : "—"}</span>
+              {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
+            </div>
+            <p className="derived-note">Safe MRP range over the next 5 years</p>
+          </>
+        )}
+        {range?.packSizeWarning ? <p className="derived-note error">{range.packSizeWarning}</p> : null}
+        {basisNote && !range?.rangeError && basisNote !== range?.packSizeWarning ? (
+          <p className="derived-note">{basisNote}</p>
+        ) : null}
         <div className="me-overrides">
           <label>
             Min MRP (₹)
@@ -1833,6 +1842,7 @@ const PROP_CSS = `
   border-radius:999px;padding:3px 8px;width:fit-content;}
 .price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
 .derived-note{margin:4px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.72);}
+.derived-note.error{color:#E8B563;}
 .mrp-range-display,.margin-elasticity-display{display:flex;align-items:baseline;gap:8px;font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;margin:4px 0 2px;}
 .me-sep{color:rgba(243,234,248,.45);font-weight:500;}
 .ai-sourced-mark{color:#C9A0E8;margin-left:4px;align-self:center;}
