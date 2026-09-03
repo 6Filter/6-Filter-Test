@@ -29,6 +29,7 @@ assert.match(src, /\{result\.classification\}/);
 assert.match(src, /className="gonogo-idea"/);
 assert.match(src, /\{idea\}/);
 assert.match(src, /gonogo-scale-chip/);
+assert.match(src, /\.gonogo-scale-chip\{[\s\S]*?color:var\(--pass\)/);
 assert.match(src, /ideaScaleImpactCopy/);
 assert.doesNotMatch(src, /Up to ₹1 Cr business impact/i);
 

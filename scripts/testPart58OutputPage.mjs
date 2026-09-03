@@ -103,6 +103,7 @@ assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);
 assert.match(src, /See all next steps/);
 assert.match(src, /gonogo-scale-chip/);
+assert.match(src, /\.gonogo-scale-chip\{[\s\S]*?color:var\(--pass\)/);
 assert.match(src, /ideaScaleImpactCopy/);
 assert.doesNotMatch(src, /Up to ₹1 Cr business impact/i);
 assert.doesNotMatch(src, /Export summary/);

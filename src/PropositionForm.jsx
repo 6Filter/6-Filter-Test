@@ -2120,8 +2120,8 @@ const PROP_CSS = `
 .gonogo-badge.tone-watch{background:rgba(240,193,75,.16);color:var(--watch);}
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
 .gonogo-scale-chip{
-  background:var(--badge-chip-bg);color:var(--badge-chip-text);
-  border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.04em;
+  background:rgba(126,224,168,.16);color:var(--pass);
+  border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.04em;font-weight:700;
 }
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
