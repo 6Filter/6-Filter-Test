@@ -2090,7 +2090,7 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 .primus *{box-sizing:border-box;}
 .screen-spec {
   --bg: #170C25; --card: #191919; --panel: #22113A; --panel-2: #2A1841;

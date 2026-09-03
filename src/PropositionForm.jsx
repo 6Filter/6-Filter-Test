@@ -17,9 +17,18 @@ import {
   goNoGoIsFloorFailure,
   goNoGoTone,
   scoreAdvisoryChecks,
-  isFormAdminCheck,
   analysisCheckItems,
 } from "../lib/goNoGo.js";
+import {
+  computeImprovementPointValues,
+  countFiltersWithEvidence,
+  f2ActualVsFloor,
+  f3ActualVsCeiling,
+  formatOutputDate,
+  formatScreenedDuration,
+  projectedScoreIfTopResolved,
+  scoreArcColor,
+} from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
@@ -567,71 +576,74 @@ function toneFor(label) {
   return "watch";
 }
 
-function ImprovementList({ advisoryChecks, category }) {
-  const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  const pending = ["f1", "f2", "f3", "f4"].flatMap((k) =>
-    (checks[k]?.items || [])
-      .filter((it) => it.status === "pending" && !isFormAdminCheck(it))
-      .map((it) => ({
-        filter: k.toUpperCase(),
-        text: rewriteUnmatchedDivisionCopy(it.text, category),
-      }))
-  );
-  if (!pending.length) return null;
+function filterCardTone(check, specKey) {
+  const label = check?.checkLabel || "";
+  if (specKey === "f6" && (label === "Awaiting panels" || !analysisCheckItems(check?.items).length)) {
+    return "idle";
+  }
+  if (label === "Cleared" || label === "Exempt") return "pass";
+  if (label === "Below floor") return "fail";
+  return "watch";
+}
+
+function FilterComparePair({ label, actual, target, unit }) {
   return (
-    <div className="panel improvement-list">
-      <div className="panel-tab">What's holding this back</div>
-      <ul>
-        {pending.map((p, i) => (
-          <li key={`${p.filter}-${i}`}>
-            <span className="imp-filter-tag">{p.filter}</span> {p.text}
-          </li>
-        ))}
-      </ul>
+    <div className="filter-compare">
+      <div>
+        <span className="mono filter-compare-lbl">{label}</span>
+        <strong className="mono">{unit === "₹" ? `₹${Math.round(actual)}` : `${actual}${unit}`}</strong>
+      </div>
+      <div>
+        <span className="mono filter-compare-lbl">{unit === "₹" ? "Safe max" : "Floor"}</span>
+        <strong className="mono">{unit === "₹" ? `₹${Math.round(target)}` : `${target}${unit}`}</strong>
+      </div>
     </div>
   );
 }
 
-function FilterNarrativeList({ narratives, advisoryChecks, category }) {
+function FilterStatusCard({ spec, check, narrative, compare }) {
+  const tone = filterCardTone(check, spec.key);
+  const items = analysisCheckItems(check?.items);
+  const done = items.filter((i) => i.status === "done").length;
+  const total = items.length;
+  const pct = total ? Math.round((100 * done) / total) : 0;
+  const label = check?.checkLabel || spec.defaultStatus || "Evidence missing";
   return (
-    <div className="panel gonogo-score-detail">
-      <div className="panel-tab">Filter analysis</div>
-      {SIX_FILTERS_FORM.slice(0, 4).map((f) => {
-        const stored = stripFormAdminNarrative(String(narratives?.[f.key] || "").trim());
-        const check = advisoryChecks?.[f.key] || {};
-        const text = rewriteUnmatchedDivisionCopy(stored || fallbackFilterNarrative(check), category);
-        const items = analysisCheckItems(check.items);
-        const points = items.length
-          ? `${items.filter((i) => i.status === "done").length}/${items.length}`
-          : "—";
-        return (
-          <div key={f.key} className="filter-narrative">
-            <div className="filter-narrative-title">
-              {f.num} — {f.title}
-              <span className="filter-points">{points}</span>
-            </div>
-            <p>{text}</p>
-            {f.key === "f4" && items.length ? (
-              <ul className="filter-check-list f4-analysis-dims">
-                {items.map((it, i) => (
-                  <li key={`f4-dim-${i}`} data-status={it.status}>
-                    {it.text}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+    <article className="filter-status-card" data-tone={tone}>
+      <div className="filter-status-head">
+        <span className="mono filter-status-badge">{spec.num}</span>
+        <span className="mono filter-status-label">{label}</span>
+      </div>
+      <h3>{spec.title}</h3>
+      <p>{narrative}</p>
+      {compare ? (
+        <FilterComparePair {...compare} />
+      ) : total ? (
+        <div className="filter-progress" aria-label={`${done} of ${total} items`}>
+          <div className="filter-progress-track">
+            <div className="filter-progress-fill" style={{ width: `${pct}%` }} />
           </div>
-        );
-      })}
-    </div>
+          <span className="mono filter-progress-n">{done}/{total}</span>
+        </div>
+      ) : (
+        <span className="mono filter-progress-n">—</span>
+      )}
+    </article>
   );
 }
 
-function GoNoGoResultPage({ result, advisoryChecks, category, ideaName, ideaScale, onBack, onContinue }) {
+function GoNoGoResultPage({
+  result,
+  advisoryChecks,
+  category,
+  ideaName,
+  doc,
+  onBack,
+  onSubmit,
+  saving,
+}) {
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  // Score is always from scoreAdvisoryChecks(computeAllAdvisoryChecks) on the
-  // go-nogo response — researchFindings demote unverified items (Part 39).
   const score = result.score?.total
     ? result.score
     : scoreAdvisoryChecks(checks);
@@ -639,39 +651,143 @@ function GoNoGoResultPage({ result, advisoryChecks, category, ideaName, ideaScal
   const isGo = result.classification === "GO";
   const isWatch = result.classification === "WATCH";
   const categoryName = String(category || result.category || "").trim();
+  const divisionName = String(doc?.division || "").trim();
   const idea = String(ideaName || result.ideaName || "").trim();
-  const scale = String(ideaScale || result.ideaScale || "").trim() || "10g";
   const rationale = rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName);
+  const improvementItems = computeImprovementPointValues(checks).map((it) => ({
+    ...it,
+    text: rewriteUnmatchedDivisionCopy(it.text, categoryName),
+  }));
+  const topTwo = improvementItems.slice(0, 2);
+  const projected = projectedScoreIfTopResolved(score.pct, topTwo, 2);
+  const coverage = countFiltersWithEvidence(doc || {});
+  const screened = formatScreenedDuration(result.screenedMs);
+  const dated = formatOutputDate(doc?.updatedAt || result.at);
+  const arc = scoreArcColor(score.pct);
+  const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
+
   return (
     <div className="output-page gonogo-result-page">
-      <div className="gonogo-result-actions">
-        <button type="button" className="ghost send-mgr" onClick={onBack}>
-          <ArrowLeft size={15} /> Back to filters
-        </button>
-        {isGo ? (
-          <button type="button" className="prop-save run" onClick={onContinue}>
-            Continue
-          </button>
-        ) : null}
-      </div>
-      <div className={`gonogo-hero tone-${tone}`}>
-        {idea ? (
-          <div className="gonogo-idea-block">
-            <div className="gonogo-idea-kicker">Idea</div>
-            <div className="gonogo-idea">{idea}</div>
+      <header className="output-meta">
+        <span className="mono">
+          IDEA · v4 RULESET{dated ? ` · ${dated}` : ""}
+        </span>
+        <span className="mono">
+          {screened ? `Screened in ${screened} · ` : ""}
+          {coverage.have} of {coverage.total} filters have evidence
+        </span>
+      </header>
+
+      <div className="output-hero-row">
+        <section className={`gonogo-hero tone-${tone}`}>
+          <div className="gonogo-hero-copy">
+            {idea ? <h1 className="gonogo-idea">{idea}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}
+            <div className="gonogo-chips">
+              {categoryName ? <span className="mono badge-chip">{categoryName}</span> : null}
+              {divisionName ? <span className="mono badge-chip">{divisionName}</span> : null}
+            </div>
+            <div className={`gonogo-badge tone-${tone}`}>{result.classification}</div>
+            <p className="gonogo-rationale">{rationale}</p>
           </div>
-        ) : null}
-        <div className="gonogo-classification">{result.classification}</div>
-        <div className="gonogo-score">{score.pct}%</div>
-        <div className="gonogo-scale">{scale}</div>
-        {categoryName ? <p className="gonogo-category">Category: {categoryName}</p> : null}
-        <p className="gonogo-rationale">{rationale}</p>
+          <div
+            className="score-ring"
+            style={{ background: `conic-gradient(${arc} ${ringPct}%, #2a1a3f 0)` }}
+            aria-label={`Score ${score.pct}%`}
+          >
+            <div className="score-ring-inner">
+              <strong className="mono">{score.pct}</strong>
+              <span className="mono">/100</span>
+            </div>
+          </div>
+        </section>
+
+        <aside className="path-panel">
+          <div className="panel-kicker mono">Closest path to GO</div>
+          <p className="path-score-line">
+            <span className="mono">{score.pct}%</span>
+            <span className="path-arrow" aria-hidden="true">→</span>
+            <span className="mono path-projected">{projected}%</span>
+            {topTwo.length ? (
+              <span className="path-if">if the top {topTwo.length === 1 ? "item" : `${topTwo.length} items`} clear</span>
+            ) : (
+              <span className="path-if">nothing outstanding on the scored checklist</span>
+            )}
+          </p>
+          {topTwo.length ? (
+            <ul className="path-top-list">
+              {topTwo.map((it, i) => (
+                <li key={`${it.filter}-${i}`}>
+                  <span className="mono imp-filter-tag">{it.filter}</span>
+                  {it.text}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="path-empty">No scored gaps left on Filters 1–4.</p>
+          )}
+          {improvementItems.length ? (
+            <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
+          ) : null}
+        </aside>
       </div>
-      <ImprovementList advisoryChecks={checks} category={categoryName} />
-      <FilterNarrativeList narratives={result.filterNarratives} advisoryChecks={checks} category={categoryName} />
+
+      <div className="filter-grid">
+        {SIX_FILTERS_FORM.map((spec) => {
+          const check = checks[spec.key] || {};
+          const stored = stripFormAdminNarrative(String(result.filterNarratives?.[spec.key] || "").trim());
+          const narrative = rewriteUnmatchedDivisionCopy(
+            stored || fallbackFilterNarrative(check),
+            categoryName
+          );
+          let compare = null;
+          if (spec.key === "f2") {
+            const pair = f2ActualVsFloor(doc, check);
+            if (pair) compare = { label: "Net margin", actual: pair.actual, target: pair.floor, unit: pair.unit };
+          }
+          if (spec.key === "f3") {
+            const pair = f3ActualVsCeiling(doc);
+            if (pair) compare = { label: "Implied MRP", actual: pair.actual, target: pair.ceiling, unit: pair.unit };
+          }
+          return (
+            <FilterStatusCard
+              key={spec.key}
+              spec={spec}
+              check={check}
+              narrative={narrative}
+              compare={compare}
+            />
+          );
+        })}
+      </div>
+
+      <section className="next-steps" id="what-to-do-next">
+        <div className="next-steps-head">
+          <h2>What to do next</h2>
+          <span className="mono">Ordered by score impact</span>
+        </div>
+        {improvementItems.length ? (
+          improvementItems.map((item, i) => (
+            <div key={`${item.filter}-${i}`} className="next-step-card">
+              <div className="point-badge" data-tier={item.pointValue >= 10 ? "high" : "normal"}>
+                +{item.pointValue}
+              </div>
+              <div>
+                <div className="next-step-tags">
+                  <span className="mono">{item.filter}</span>
+                  <span className="mono">OWNER: {item.owners?.length ? item.owners.join(", ") : "—"}</span>
+                </div>
+                <p>{item.text}</p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="path-empty">Nothing outstanding on the scored Filter 1–4 checklist.</p>
+        )}
+      </section>
+
       {isGo ? (
         <p className="gonogo-blocked-note">
-          Continue to upload market-research proof and unlock Filters 5–6.
+          Back to filters to upload market-research proof and unlock Filters 5–6.
         </p>
       ) : (
         <p className="gonogo-blocked-note">
@@ -682,6 +798,21 @@ function GoNoGoResultPage({ result, advisoryChecks, category, ideaName, ideaScal
               : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
         </p>
       )}
+
+      <div className="output-actions">
+        <button
+          type="button"
+          className="output-btn-primary"
+          disabled={saving}
+          onClick={onSubmit}
+        >
+          {saving ? <Loader2 size={15} className="spin" /> : null}
+          Submit
+        </button>
+        <button type="button" className="output-btn-secondary" onClick={onBack}>
+          <ArrowLeft size={15} /> Back to filters
+        </button>
+      </div>
     </div>
   );
 }
@@ -1266,7 +1397,7 @@ export default function PropositionForm({
     if (result?.proposition) setDoc(mergeProposition(result.proposition));
   }
 
-  async function runGoNoGoRead(propositionDoc = doc, providerOverride) {
+  async function runGoNoGoRead(propositionDoc = doc, providerOverride, timedFrom = Date.now()) {
     const id = propositionDoc?.id || propositionId;
     if (readingGoNoGo || !id) return null;
     const provider = providerOverride || llmProvider;
@@ -1289,6 +1420,7 @@ export default function PropositionForm({
       if (!nextGo.score && data.advisoryChecks) {
         nextGo.score = scoreAdvisoryChecks(data.advisoryChecks);
       }
+      nextGo.screenedMs = Math.max(0, Date.now() - timedFrom);
       setGoNoGo(nextGo);
       setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
       if (data.advisoryChecks) {
@@ -1438,7 +1570,7 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
 
-    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
+    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider, startedAt);
     } finally {
       onProcessingChange?.({ busy: false });
     }
@@ -1470,9 +1602,10 @@ export default function PropositionForm({
           advisoryChecks={summaryChecks || advisoryChecks || {}}
           category={formCategoryLabel(doc) || goNoGo.category}
           ideaName={formIdeaLabel(doc) || goNoGo.ideaName}
-          ideaScale={goNoGo.ideaScale || ideaScaleFromDoc(doc)}
+          doc={doc}
+          saving={saving || readingGoNoGo}
           onBack={() => setCurrentView("propositionForm")}
-          onContinue={() => setCurrentView("propositionForm")}
+          onSubmit={() => handleSubmit()}
         />
       </main>
     );
@@ -1913,68 +2046,139 @@ const PROP_CSS = `
   color:rgba(243,234,248,.75);}
 .prop-fallback-hint{margin:10px 0 0;font-size:12px;color:rgba(243,234,248,.55);line-height:1.4;}
 .unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
-.gonogo-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px;}
-.gonogo-hero{padding:24px 22px;border-radius:16px;margin:0 0 18px;}
-.gonogo-idea-block{margin:0 0 16px;}
-.gonogo-idea-kicker{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
-.gonogo-idea{margin:0;font-size:20px;font-weight:700;letter-spacing:-.2px;line-height:1.25;}
-.gonogo-classification{font-size:32px;font-weight:800;letter-spacing:-.4px;line-height:1.1;}
-.gonogo-hero .gonogo-score{margin:8px 0 6px;font-size:16px;font-weight:600;font-style:normal;letter-spacing:.02em;}
-.gonogo-scale{margin:0 0 10px;font-size:18px;font-weight:700;letter-spacing:.04em;line-height:1.2;}
-.gonogo-category{margin:0 0 12px;font-size:13px;line-height:1.4;}
-.gonogo-rationale{margin:0;font-size:15px;line-height:1.55;}
-.gonogo-score-detail{margin-top:18px;position:relative;padding:22px 16px 8px;}
-.filter-narrative-title{font-size:12px;font-weight:700;letter-spacing:.04em;
-  margin:0 0 6px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
-.filter-points{font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
-.filter-narrative p{margin:0;font-size:14px;line-height:1.55;}
-.gonogo-blocked-note{margin:16px 0 0;font-size:13px;line-height:1.45;}
 .output-page{
-  --bg:#0B1B2A; --card:#12283C; --ink:#F0EEE7;
-  --ink-muted-85:rgba(240,238,231,.85); --ink-muted-65:rgba(240,238,231,.65);
-  --ink-muted-55:rgba(240,238,231,.55); --ink-muted-45:rgba(240,238,231,.45);
-  --border:rgba(240,238,231,.14);
-  --pass:#63C08D; --fail:#F08A7A; --watch:#E3B25C;
-  --hero-go:#14513A; --hero-nogo:#5C2320; --hero-watch:#5C4A20;
-  background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif;
+  --bg:#0d0715;
+  --bg-gradient:radial-gradient(1200px 600px at 15% -10%, #241038 0%, #0d0715 60%);
+  --header-bg:#100819; --header-border:#2a1a3f;
+  --hero-bg:linear-gradient(135deg,#2a1338 0%,#1a0e28 100%); --hero-border:#3d2154;
+  --path-panel-bg:#151f2c; --path-panel-border:#2b4157;
+  --card-bg:#180f26; --card-border:#2f1e45;
+  --ink:#efe8fb; --ink-secondary:#a898c2; --ink-secondary-2:#c4b5da;
+  --ink-muted:#8b7aa8; --ink-muted-2:#9c8cb8; --ink-muted-3:#6f5f8a;
+  --pass:#7ee0a8; --fail:#ff8a6b; --watch:#f0c14b;
+  --nogo-bg:#4d1f1f; --nogo-border:#7d3232; --nogo-text:#ffb4a0;
+  --badge-chip-bg:#2c1a44; --badge-chip-text:#c9a6ff;
+  --btn-primary:#5a2ea6; --btn-secondary-bg:#1e1330; --btn-secondary-border:#35224d;
+  background:var(--bg-gradient), var(--bg);
+  color:var(--ink);
+  font-family:'Space Grotesk',system-ui,sans-serif;
   min-height:60vh;
+  padding:8px 4px 28px;
 }
+.output-page .mono{font-family:'JetBrains Mono',monospace;}
 .prop-page.output-page{color:var(--ink);}
-.output-page .filter-narrative-title,
-.output-page .filter-points,
-.output-page .derived-note{font-family:'IBM Plex Mono',monospace;}
-.output-page .gonogo-hero.tone-pass{background:var(--hero-go);}
-.output-page .gonogo-hero.tone-fail{background:var(--hero-nogo);}
-.output-page .gonogo-hero.tone-watch{background:var(--hero-watch);}
-.output-page .gonogo-idea-kicker{color:var(--ink-muted-55);font-family:'IBM Plex Mono',monospace;}
-.output-page .gonogo-idea{color:var(--ink);}
-.output-page .gonogo-classification{color:var(--ink);}
-.output-page .gonogo-hero.tone-pass .gonogo-classification{color:var(--pass);}
-.output-page .gonogo-hero.tone-fail .gonogo-classification{color:var(--fail);}
-.output-page .gonogo-hero.tone-watch .gonogo-classification{color:var(--watch);}
-.output-page .gonogo-hero .gonogo-score{color:var(--ink-muted-85);}
-.output-page .gonogo-scale{color:var(--ink);}
-.output-page .gonogo-category{color:var(--ink-muted-65);}
-.output-page .gonogo-rationale{color:var(--ink-muted-85);}
-.output-page .panel,
-.output-page .filter-narrative{
-  background:var(--card); border:1px solid var(--border); border-radius:16px; color:var(--ink-muted-85);
+.output-meta{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;
+  padding:10px 14px;margin:0 0 16px;
+  background:var(--header-bg);border:1px solid var(--header-border);border-radius:12px;
+  font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-muted);
 }
-.output-page .filter-narrative{padding:14px 16px;margin:0 0 12px;}
-.output-page .panel-tab + .filter-narrative{margin-top:8px;}
-.output-page .filter-narrative-title{color:var(--ink);}
-.output-page .filter-points{color:var(--ink-muted-55);}
-.output-page .filter-narrative p{color:var(--ink-muted-85);}
-.output-page .gonogo-blocked-note{color:var(--ink-muted-65);}
-.output-page .improvement-list li{color:var(--ink-muted-85);}
-.output-page .imp-filter-tag{color:var(--bg);background:var(--watch);}
-.output-page .panel-tab{color:var(--bg);background:var(--ink);}
-.output-page .gonogo-result-actions .ghost,
-.output-page .gonogo-result-actions .send-mgr{color:var(--ink);border-color:var(--border);background:transparent;}
-.output-page .gonogo-result-actions .prop-save.run{background:var(--pass);color:var(--bg);box-shadow:none;}
-.output-page .filter-check-list li::before{background:var(--watch);}
-.output-page .filter-check-list li[data-status="done"]::before{background:var(--pass);}
-.output-page .filter-check-list li[data-status="pending"]::before{background:var(--fail);}
+.output-hero-row{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin:0 0 20px;}
+.gonogo-hero{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
+  padding:24px 22px;border-radius:18px;margin:0;
+  background:var(--hero-bg);border:1px solid var(--hero-border);
+}
+.gonogo-hero-copy{min-width:0;flex:1;}
+.gonogo-idea{margin:0 0 10px;font-size:26px;font-weight:700;letter-spacing:-.4px;line-height:1.2;color:var(--ink);}
+.gonogo-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+.badge-chip{
+  background:var(--badge-chip-bg);color:var(--badge-chip-text);
+  border-radius:999px;padding:4px 10px;font-size:11px;letter-spacing:.04em;
+}
+.gonogo-badge{
+  display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em;
+  padding:6px 12px;border-radius:999px;margin:0 0 12px;
+}
+.gonogo-badge.tone-pass{background:rgba(126,224,168,.16);color:var(--pass);}
+.gonogo-badge.tone-watch{background:rgba(240,193,75,.16);color:var(--watch);}
+.gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
+.gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
+.score-ring{
+  width:132px;height:132px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;
+}
+.score-ring-inner{
+  width:96px;height:96px;border-radius:50%;background:#140a20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+.score-ring-inner strong{font-size:28px;font-weight:700;color:var(--ink);line-height:1;}
+.score-ring-inner span{font-size:10px;color:var(--ink-muted);letter-spacing:.06em;}
+.path-panel{
+  background:var(--path-panel-bg);border:1px solid var(--path-panel-border);
+  border-radius:18px;padding:20px 18px;
+}
+.panel-kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 10px;}
+.path-score-line{margin:0 0 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font-size:22px;font-weight:600;}
+.path-arrow{color:var(--ink-muted);}
+.path-projected{color:var(--pass);}
+.path-if{font-size:12px;font-weight:400;color:var(--ink-muted-2);letter-spacing:0;text-transform:none;font-family:'Space Grotesk',system-ui,sans-serif;}
+.path-top-list{margin:0 0 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;}
+.path-top-list li{font-size:13px;line-height:1.45;color:var(--ink-secondary-2);display:flex;gap:10px;align-items:flex-start;}
+.path-empty{margin:0;font-size:13px;color:var(--ink-muted);}
+.path-jump{color:var(--badge-chip-text);text-decoration:none;font-size:11px;letter-spacing:.04em;}
+.path-jump:hover{text-decoration:underline;}
+.imp-filter-tag{
+  flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.06em;
+  border-radius:999px;padding:3px 8px;margin-top:1px;
+  color:#0d0715;background:var(--watch);
+}
+.filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px;}
+.filter-status-card{
+  background:var(--card-bg);border:1px solid var(--card-border);border-left-width:4px;
+  border-radius:16px;padding:16px 16px 14px;min-height:168px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.filter-status-card[data-tone="pass"]{border-left-color:var(--pass);}
+.filter-status-card[data-tone="fail"]{border-left-color:var(--fail);}
+.filter-status-card[data-tone="watch"]{border-left-color:var(--watch);}
+.filter-status-card[data-tone="idle"]{border-left-style:dashed;border-left-color:var(--ink-muted-3);}
+.filter-status-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.filter-status-badge{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--badge-chip-text);}
+.filter-status-label{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-muted);}
+.filter-status-card h3{margin:0;font-size:15px;font-weight:600;letter-spacing:-.2px;color:var(--ink);}
+.filter-status-card p{margin:0;font-size:13px;line-height:1.5;color:var(--ink-secondary);flex:1;}
+.filter-progress{display:flex;align-items:center;gap:10px;margin-top:4px;}
+.filter-progress-track{flex:1;height:6px;border-radius:999px;background:#2a1a3f;overflow:hidden;}
+.filter-progress-fill{height:100%;background:var(--pass);border-radius:999px;}
+.filter-status-card[data-tone="fail"] .filter-progress-fill{background:var(--fail);}
+.filter-status-card[data-tone="watch"] .filter-progress-fill{background:var(--watch);}
+.filter-progress-n{font-size:11px;color:var(--ink-muted);}
+.filter-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;padding-top:10px;border-top:1px solid var(--card-border);}
+.filter-compare div{display:flex;flex-direction:column;gap:2px;}
+.filter-compare-lbl{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-muted);}
+.filter-compare strong{font-size:16px;color:var(--ink);}
+.next-steps{margin:0 0 18px;}
+.next-steps-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 12px;}
+.next-steps-head h2{margin:0;font-size:18px;font-weight:600;}
+.next-steps-head span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);}
+.next-step-card{
+  display:flex;gap:14px;align-items:flex-start;
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:14px;padding:14px 16px;margin:0 0 10px;
+}
+.point-badge{
+  flex-shrink:0;min-width:48px;text-align:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;
+  padding:8px 8px;border-radius:10px;
+  background:#2c1a44;color:var(--badge-chip-text);
+}
+.point-badge[data-tier="high"]{background:rgba(240,193,75,.16);color:var(--watch);}
+.next-step-tags{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 6px;}
+.next-step-tags span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);}
+.next-step-card p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink-secondary-2);}
+.gonogo-blocked-note{margin:4px 0 16px;font-size:13px;line-height:1.45;color:var(--ink-muted);}
+.output-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.output-btn-primary,.output-btn-secondary{
+  display:inline-flex;align-items:center;gap:8px;border-radius:999px;
+  padding:11px 18px;font-size:14px;font-family:inherit;cursor:pointer;
+}
+.output-btn-primary{background:var(--btn-primary);color:#efe8fb;border:0;font-weight:600;}
+.output-btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+.output-btn-secondary{background:var(--btn-secondary-bg);color:var(--ink);border:1px solid var(--btn-secondary-border);}
+@media (max-width:900px){
+  .output-hero-row,.filter-grid{grid-template-columns:1fr;}
+}
 .proof-panel{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px;margin:0 0 16px;}
 .proof-title{margin:0 0 6px;font-size:16px;color:#F3EAF8;}
