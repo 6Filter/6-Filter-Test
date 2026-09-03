@@ -25,6 +25,12 @@ assert.equal(financeSignatureCopy(true), "Finance has confirmed the margin compu
 
 const preview = previewAdvisoryChecks({ f2: { financeSigned: false } });
 assert.equal(preview.f2.items.at(-1).text, unsigned);
+assert.equal(preview.f2.items.at(-1).formAdmin, true);
+assert.equal(preview.f2.checkLabel, "Cleared");
+
+const f2UnsignedFallback = fallbackFilterNarrative(preview.f2);
+assert.doesNotMatch(f2UnsignedFallback, /Finance/i);
+assert.match(f2UnsignedFallback, /Nothing outstanding/);
 
 const f4pending = checkF4({});
 assert.match(f4pending.items[0].text, /not yet assessed/);
@@ -64,7 +70,7 @@ const floorChecks = {
 };
 
 const classification = computeGoNoGo(floorChecks);
-assert.equal(classification, "NO-GO");
+assert.equal(classification, "WATCH");
 assert.equal(goNoGoIsFloorFailure(floorChecks), true);
 
 assert.equal(
@@ -100,6 +106,7 @@ assert.equal(computeGoNoGo(floorChecks), classification, "reconcile must not mut
 assert.equal(floorChecks.f3.checkLabel, "Below floor");
 assert.match(contradicting.f3, /analytical floor failure|₹70 ceiling/);
 assert.doesNotMatch(contradicting.f3, /Filter 3 is cleared/);
+assert.doesNotMatch(contradicting.f2, /Finance/i);
 
 const generated = await generateFilterNarratives({
   advisoryChecks: floorChecks,
@@ -111,10 +118,11 @@ const generated = await generateFilterNarratives({
     f4: "No material structural exposure found.",
   }),
 });
-assert.equal(computeGoNoGo(floorChecks), "NO-GO");
+assert.equal(computeGoNoGo(floorChecks), "WATCH");
 assert.equal(goNoGoIsFloorFailure(floorChecks), true);
 assert.match(generated.f3, /₹70 ceiling|analytical floor failure/);
 assert.doesNotMatch(generated.f3, /This filter is cleared/);
+assert.doesNotMatch(generated.f2, /Finance/i);
 
 const hashA = fingerprintNarrativeInputs({
   advisoryChecks: floorChecks,

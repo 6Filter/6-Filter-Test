@@ -21,15 +21,17 @@ const f1Growth = SIX_FILTERS_FORM.find((f) => f.key === "f1")?.fields.find((f) =
 assert(f1Growth?.label === "Growth Route", `growthRoute label should be Growth Route, got ${f1Growth?.label}`);
 
 const missing = checkF3({ netMarginAtScale: 40 }, {});
-assert(missing.checkLabel === "Evidence missing", "no range → evidence missing");
+assert(missing.checkLabel === "Cleared", "empty range is a form-admin gap, not a scored miss");
 assert(/not yet computed/i.test(missing.items[0].text), missing.items[0].text);
+assert(missing.items[0].formAdmin === true, "empty F3 range must be form-admin");
 
 const noMargin = checkF3(
   {},
   { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
-assert(noMargin.checkLabel === "Evidence missing", "range without F2 margin → evidence missing");
+assert(noMargin.checkLabel === "Cleared", "missing F2 margin is a form-admin gap, not a scored miss");
 assert(/isn't entered yet/i.test(noMargin.items[0].text), noMargin.items[0].text);
+assert(noMargin.items[0].formAdmin === true, "empty F2 margin against a range must be form-admin");
 
 const cleared = checkF3(
   { netMarginAtScale: 40 },
@@ -59,7 +61,7 @@ assert(f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } })
 const locked = isFilterUnlocked("f4", {
   f1: {
     declaredAttribute: "softness",
-    benchmark: "X",
+    benchmark: "Indulekha",
     declaredGap: 2,
     growthRoute: "penetration",
     growthArgument: "yes",
@@ -72,7 +74,7 @@ assert(!locked, "F4 stays locked until maxMarginPct exists");
 const unlocked = isFilterUnlocked("f4", {
   f1: {
     declaredAttribute: "softness",
-    benchmark: "X",
+    benchmark: "Indulekha",
     declaredGap: 2,
     growthRoute: "penetration",
     growthArgument: "yes",

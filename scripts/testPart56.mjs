@@ -117,6 +117,7 @@ assert.equal(skinA, skinB, "same form inputs must yield the same rationale");
 assert.match(skinA, /Gentle foaming face wash/);
 assert.match(skinA, /58%/);
 assert.match(skinA, /₹168 ceiling/);
+assert.doesNotMatch(skinA, /confirmed by Finance/i);
 assert.doesNotMatch(skinA, /Beyond that hard blocker/);
 assert.doesNotMatch(skinA, /purchase-decision attribute/);
 assert.doesNotMatch(skinA, /Category: Skin cleanser should not advance/);

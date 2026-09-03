@@ -53,8 +53,9 @@ assert.equal(again.overallRisk, normalized.overallRisk, "same dimensions → sam
 assert.deepEqual(again.dimensions, normalized.dimensions);
 
 const missing = checkF4({});
-assert.equal(missing.checkLabel, "Evidence missing");
+assert.equal(missing.checkLabel, "Cleared");
 assert.match(missing.items[0].text, /not yet assessed/);
+assert.equal(missing.items[0].formAdmin, true);
 assert.equal(f4HasEnough({}), false);
 
 const highCheck = checkF4({ techShiftRisk: { dimensions: twoHigh, overallRisk: "High" } });

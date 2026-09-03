@@ -17,10 +17,12 @@ import {
   goNoGoIsFloorFailure,
   goNoGoTone,
   scoreAdvisoryChecks,
+  isFormAdminCheck,
+  analysisCheckItems,
 } from "../lib/goNoGo.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
-import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
+import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
@@ -569,7 +571,7 @@ function ImprovementList({ advisoryChecks, category }) {
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
   const pending = ["f1", "f2", "f3", "f4"].flatMap((k) =>
     (checks[k]?.items || [])
-      .filter((it) => it.status === "pending")
+      .filter((it) => it.status === "pending" && !isFormAdminCheck(it))
       .map((it) => ({
         filter: k.toUpperCase(),
         text: rewriteUnmatchedDivisionCopy(it.text, category),
@@ -595,10 +597,10 @@ function FilterNarrativeList({ narratives, advisoryChecks, category }) {
     <div className="panel gonogo-score-detail">
       <div className="panel-tab">Filter analysis</div>
       {SIX_FILTERS_FORM.slice(0, 4).map((f) => {
-        const stored = String(narratives?.[f.key] || "").trim();
+        const stored = stripFormAdminNarrative(String(narratives?.[f.key] || "").trim());
         const check = advisoryChecks?.[f.key] || {};
         const text = rewriteUnmatchedDivisionCopy(stored || fallbackFilterNarrative(check), category);
-        const items = Array.isArray(check.items) ? check.items : [];
+        const items = analysisCheckItems(check.items);
         const points = items.length
           ? `${items.filter((i) => i.status === "done").length}/${items.length}`
           : "—";
@@ -1551,6 +1553,7 @@ export default function PropositionForm({
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
         const filterScore = filterCheckScore(check);
+        const visibleItems = analysisCheckItems(check.items);
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
@@ -1640,9 +1643,9 @@ export default function PropositionForm({
               )}
             </div>
 
-            {(justSubmitted || goNoGo) && spec.key !== "f4" && check.items?.length ? (
+            {(justSubmitted || goNoGo) && spec.key !== "f4" && visibleItems.length ? (
               <ul className="filter-check-list">
-                {check.items.map((it, i) => (
+                {visibleItems.map((it, i) => (
                   <li key={`${spec.key}-${i}`} data-status={it.status}>
                     {spec.key === "f3" ? withoutPercentSign(it.text) : it.text}
                   </li>
