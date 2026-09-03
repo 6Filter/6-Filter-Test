@@ -5,8 +5,8 @@ description: >-
   publicly-cited Nielsen and Kantar figures; otherwise category-intelligence
   engines and web search; last resort digital-proxy/analog. Never return unsure
   or not available. Use when editing 6 Filter Test scoring, AI first pass,
-  Nielsen, Kantar, category size, price per gram, format trajectory, threat
-  register, or Filter 5 household sizing. Filter 6 is validation only, never scored.
+  Nielsen, Kantar, category size, price per gram, tech-shift risk, structural
+  obsolescence, or Filter 5 household sizing. Filter 6 is validation only, never scored.
 ---
 
 # Claude Skill for 6 Filter Test

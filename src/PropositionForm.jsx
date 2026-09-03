@@ -24,6 +24,13 @@ import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginPctFromMrp, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
+import {
+  DIMENSION_LABELS,
+  TECH_SHIFT_DIMENSIONS,
+  effectiveOverallRisk,
+  isTechShiftRiskUnfilled,
+  normalizeTechShiftRisk,
+} from "../lib/techShiftRisk.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -57,7 +64,6 @@ const SUGGEST_BLOCKLIST = new Set([
 const AI_AUTO_SKIP = new Set([
   ...SUGGEST_BLOCKLIST,
   "financeSigned",
-  "threatsAnswered",
   "cmiHeadSigned",
   "pureCommodity",
   "mrpInr",
@@ -70,6 +76,7 @@ function sourcedPath(filterKey, fieldKey) {
 function isUnfilledValue(value) {
   if (value == null || value === "") return true;
   if (typeof value === "object" && !Array.isArray(value)) {
+    if (value.dimensions != null) return isTechShiftRiskUnfilled(value);
     if (
       "minMrpInr" in value ||
       "maxMrpInr" in value ||
@@ -142,6 +149,19 @@ function mergeSuggestionsIntoDoc(baseDoc, suggestions, { overwritePaths = {} } =
       }
     }
   }
+  if (raw.f4?.techShiftRisk) {
+    const current = nextDoc.f4?.techShiftRisk;
+    if (isTechShiftRiskUnfilled(current)) {
+      const seeded = normalizeTechShiftRisk(raw.f4.techShiftRisk);
+      if (seeded?.dimensions) {
+        nextDoc = {
+          ...nextDoc,
+          f4: { ...(nextDoc.f4 || {}), techShiftRisk: { ...seeded, aiSourced: true } },
+        };
+        flags[sourcedPath("f4", "techShiftRisk")] = true;
+      }
+    }
+  }
   return { doc: nextDoc, sourced: flags };
 }
 
@@ -150,12 +170,17 @@ function isEmptyField(value) {
   if (typeof value === "boolean") return value === false;
   if (typeof value === "object") {
     if (Array.isArray(value)) return value.length === 0;
+    if (value.dimensions != null) return isTechShiftRiskUnfilled(value);
     return value.minMrpInr == null && value.maxMrpInr == null && value.minMarginPct == null && value.maxMarginPct == null;
   }
   return String(value).trim() === "";
 }
 
 function formatSuggestion(field, value) {
+  if (value && typeof value === "object" && !Array.isArray(value) && value.dimensions) {
+    const overall = effectiveOverallRisk(value) || "—";
+    return `${overall} structural risk`;
+  }
   if (value && typeof value === "object" && !Array.isArray(value) && ("minMrpInr" in value || "maxMrpInr" in value || "minMarginPct" in value)) {
     const rupee = hydrateMarginElasticityMrp(value, null);
     const min = rupee.minMrpInr == null || !Number.isFinite(Number(rupee.minMrpInr)) ? "—" : Number(rupee.minMrpInr).toFixed(0);
@@ -282,7 +307,7 @@ function FieldControl({
 }) {
   const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
-  const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range";
+  const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range" || field.type === "computed-risk";
   const roleLocked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
   const locked = roleLocked || inactive;
   const lockTitle = roleLocked
@@ -290,7 +315,7 @@ function FieldControl({
     : inactive
       ? inactiveHint || "Name a benchmark to declare a gap."
       : undefined;
-  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory", "marginElasticity"]);
+  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory", "marginElasticity", "techShiftRisk"]);
   const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
   const chip =
     showChip ? (
@@ -303,6 +328,72 @@ function FieldControl({
       />
     ) : null;
   const wand = aiSourced ? <AiWandMark /> : null;
+
+  if (field.type === "computed-risk") {
+    const risk = value && typeof value === "object" ? value : {};
+    const dimensions = risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : null;
+    const overall = effectiveOverallRisk(risk);
+    const override = risk.overallRiskOverride || "";
+    const patchOverride = (nextOverride) => {
+      if (!dimensions) return;
+      onChange({
+        ...risk,
+        dimensions,
+        overallRisk: risk.overallRisk,
+        sources: risk.sources || [],
+        aiSourced: !nextOverride,
+        overallRiskOverride: nextOverride || undefined,
+      });
+    };
+    return (
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f4-risk="tech-shift">
+        <div className="prop-label">
+          {field.label}
+          {wand}
+        </div>
+        {helper ? <p className="prop-helper">{helper}</p> : null}
+        <div className="tech-shift-overall" data-risk={overall || "unset"}>
+          <span className="tech-shift-level">{overall || "—"}</span>
+          <span className="tech-shift-level-label">overall structural risk</span>
+        </div>
+        {dimensions ? (
+          <ul className="tech-shift-dims">
+            {TECH_SHIFT_DIMENSIONS.map((key) => {
+              const d = dimensions[key] || {};
+              return (
+                <li key={key} data-risk={d.risk || "Low"}>
+                  <span className="tech-shift-dim-label">{DIMENSION_LABELS[key]}</span>
+                  <span className="tech-shift-dim-risk">{d.risk || "—"}</span>
+                  <span className="tech-shift-dim-reason">{d.reason || ""}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="derived-note">Submit the idea to run the seven-dimension assessment.</p>
+        )}
+        <div className="me-overrides">
+          <label>
+            Overall risk override
+            <select
+              value={override}
+              disabled={locked || !dimensions}
+              title={lockTitle}
+              onChange={(e) => patchOverride(e.target.value)}
+            >
+              <option value="">Use AI assessment</option>
+              <option value="Low">Override: Low</option>
+              <option value="Medium">Override: Medium</option>
+              <option value="High">Override: High</option>
+            </select>
+          </label>
+        </div>
+        {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        {liveNote ? <p className="derived-note">{liveNote}</p> : null}
+        {chip}
+      </div>
+    );
+  }
 
   if (field.type === "computed-range") {
     const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale);
@@ -854,6 +945,25 @@ export default function PropositionForm({
     }
   }, [f2Cogs, f3SuggestedRange]);
 
+  const f4SuggestedRisk = aiSuggestions?.f4?.techShiftRisk;
+  useEffect(() => {
+    if (!f4SuggestedRisk?.dimensions) return;
+    setDoc((prev) => {
+      if (!isTechShiftRiskUnfilled(prev.f4?.techShiftRisk)) return prev;
+      const seeded = normalizeTechShiftRisk(f4SuggestedRisk);
+      if (!seeded?.dimensions) return prev;
+      return {
+        ...prev,
+        f4: { ...(prev.f4 || {}), techShiftRisk: { ...seeded, aiSourced: true } },
+      };
+    });
+    setAiSourced((prev) =>
+      prev[sourcedPath("f4", "techShiftRisk")] === true
+        ? prev
+        : { ...prev, [sourcedPath("f4", "techShiftRisk")]: true }
+    );
+  }, [f4SuggestedRisk]);
+
   const ideaName = doc.name;
   const ideaCategory = doc.category;
   const ideaText = doc.ideaDescription;
@@ -1024,6 +1134,13 @@ export default function PropositionForm({
     }
     if (filterKey === "f2" && fieldKey === "gstRatePct") {
       gstTouchedByHuman.current = true;
+    }
+    if (filterKey === "f4" && fieldKey === "techShiftRisk") {
+      const overridden = Boolean(value?.overallRiskOverride);
+      setAiSourced((prev) => ({
+        ...prev,
+        [sourcedPath("f4", "techShiftRisk")]: !overridden && Boolean(value?.dimensions),
+      }));
     }
     noteEdit();
     markEdited(filterKey, fieldKey);
@@ -1467,7 +1584,7 @@ export default function PropositionForm({
               <div className="prop-status-wrap">
                 {filterScore.total ? (
                   <span className="filter-score">
-                    {spec.key === "f3"
+                    {spec.key === "f3" || spec.key === "f4"
                       ? `${filterScore.done}/${filterScore.total}`
                       : `${filterScore.done}/${filterScore.total} · ${filterScore.pct}%`}
                   </span>
@@ -1721,7 +1838,26 @@ const PROP_CSS = `
 .ai-sourced-mark{color:#C9A0E8;margin-left:4px;align-self:center;}
 .me-overrides{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
 .me-overrides label{display:flex;flex-direction:column;gap:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;color:rgba(243,234,248,.6);flex:1;min-width:120px;}
-.me-overrides input{width:100%;}
+.me-overrides input,.me-overrides select{width:100%;}
+.tech-shift-overall{display:flex;align-items:baseline;gap:10px;margin:4px 0 8px;}
+.tech-shift-level{font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;}
+.tech-shift-overall[data-risk="Low"] .tech-shift-level{color:#6FE0A3;}
+.tech-shift-overall[data-risk="Medium"] .tech-shift-level{color:#E8B563;}
+.tech-shift-overall[data-risk="High"] .tech-shift-level{color:#F07178;}
+.tech-shift-level-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.55);}
+.tech-shift-dims{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:8px;}
+.tech-shift-dims li{display:grid;grid-template-columns:minmax(140px,1fr) 72px 2fr;gap:8px 12px;align-items:start;
+  padding:8px 10px;border-radius:10px;background:rgba(243,234,248,.04);border:1px solid rgba(243,234,248,.08);}
+.tech-shift-dim-label{font-family:var(--fm);font-size:11.5px;color:rgba(243,234,248,.82);}
+.tech-shift-dim-risk{font-family:var(--fm);font-size:11px;letter-spacing:.04em;font-weight:700;}
+.tech-shift-dims li[data-risk="Low"] .tech-shift-dim-risk{color:#6FE0A3;}
+.tech-shift-dims li[data-risk="Medium"] .tech-shift-dim-risk{color:#E8B563;}
+.tech-shift-dims li[data-risk="High"] .tech-shift-dim-risk{color:#F07178;}
+.tech-shift-dim-reason{font-size:12px;line-height:1.4;color:rgba(243,234,248,.7);}
+@media (max-width:720px){
+  .tech-shift-dims li{grid-template-columns:1fr auto;grid-template-rows:auto auto;}
+  .tech-shift-dim-reason{grid-column:1 / -1;}
+}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
   vertical-align:middle;flex-shrink:0;}
 .ai-wand svg{display:block;}

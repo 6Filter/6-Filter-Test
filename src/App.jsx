@@ -471,7 +471,7 @@ const NPD_FILTERS = [
   { key: "filter1", num: "01", title: "Opportunity to Grow", hint: "Attribute · benchmark · gap", icon: TrendingUp },
   { key: "filter2", num: "02", title: "Net Margin Gate", hint: "Division floor at launch", icon: Scale },
   { key: "filter3", num: "03", title: "Price Resilient", hint: "2-pt proxy · volume loss ≤10%", icon: Tag },
-  { key: "filter4", num: "04", title: "Tech & Habit Shift", hint: "5–10 year format trend", icon: Cpu },
+  { key: "filter4", num: "04", title: "Tech & Habit Shift", hint: "structural obsolescence risk", icon: Cpu },
 ];
 
 function filterReason(filter) {
@@ -1412,7 +1412,6 @@ function CategoryIntelPanel({ filter, kind }) {
   const notRun = Array.isArray(filter?.enginesNotRun) ? filter.enginesNotRun : [];
   const growth = filter?.growthDecomposition || {};
   const badge = growthBadgeLabel(growth.classification);
-  const filings = Array.isArray(filter?.trademarkFilingsFound) ? filter.trademarkFilingsFound : [];
   const notes = Array.isArray(filter?.calibrationNotes) ? filter.calibrationNotes : [];
 
   async function exportWorkbook() {
@@ -1501,26 +1500,17 @@ function CategoryIntelPanel({ filter, kind }) {
       {kind === "filter4" && (
         <>
           <p className="ci-archetype">
-            Format trend: <strong>{filter.formatTrendDirection || "unclassified"}</strong>
-            {filter.earlyWarningSignal ? ` · early warning: ${filter.earlyWarningSignal}` : ""}
+            Structural risk: <strong>{filter.overallRisk || filter.techShiftRisk?.overallRisk || "unassessed"}</strong>
           </p>
-          {filter.digitalProxySignal && <p><strong>Digital proxy.</strong> {filter.digitalProxySignal}</p>}
-          {filter.analogTransferSignal && <p><strong>Analog transfer.</strong> {filter.analogTransferSignal}</p>}
-          {filings.length > 0 && (
-            <table className="ci-table">
-              <thead>
-                <tr><th>Applicant</th><th>Filed</th><th>Note</th></tr>
-              </thead>
-              <tbody>
-                {filings.map((f, i) => (
-                  <tr key={`${f.applicant || "tm"}-${i}`}>
-                    <td>{f.applicant || "—"}</td>
-                    <td>{f.filedDate || "—"}</td>
-                    <td>{f.note || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {filter.obsolescenceVerdict && <p>{filter.obsolescenceVerdict}</p>}
+          {filter.techShiftRisk?.dimensions && (
+            <ul className="ci-dims">
+              {Object.entries(filter.techShiftRisk.dimensions).map(([key, d]) => (
+                <li key={key}>
+                  <strong>{d.risk}</strong> — {d.reason}
+                </li>
+              ))}
+            </ul>
           )}
         </>
       )}

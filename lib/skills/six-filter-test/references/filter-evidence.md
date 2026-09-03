@@ -28,11 +28,9 @@ Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCost
 
 | Check copy | Source | Field |
 |---|---|---|
-| Format trajectory pending | Nielsen format shares, else skill + web | `formatTrajectory` (`rising` / `flat` / `declining`) |
-| Threat register empty | Skill + web: substitutes, technology, clean-label, regulatory | `threatRegister` |
-| Threat responses incomplete | One response line per threat | `threatRegister` (include responses); `threatsAnswered` stays human |
+| Technology & habit shift risk not yet assessed | Skill + web: emerging tech, patents, regulation, adjacent-category innovation | `techShiftRisk` |
 
-Map model `stable` → form `flat`. Declining format = backend FAIL (`Below floor`).
+`techShiftRisk` is `{ dimensions: { functionalCoreStability, consumptionContextStability, manufacturingDisruptionRisk, userHabitShiftPotential, adjacentSubstitutionThreat, purchaseFrequencyShift, regulatoryDisruptionRisk }, overallRisk, sources, aiSourced }`. Each dimension is `{ risk: Low|Medium|High, reason }`. The model must not supply `overallRisk` — the app computes it (`2+ High → High`, `1 High or 3+ Medium → Medium`, else `Low`). High overall = `Below floor`. Medium = `Evidence missing`. Human may override only the overall level.
 
 ## Filter 5 → `f5`
 

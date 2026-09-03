@@ -91,7 +91,11 @@ assert(!/cavinkare/i.test(findings.f4.threatEvidence || ""), "threatEvidence was
 
 const suggestions = buildSuggestions(
   { generalCategory: "Ready-to-eat snacks. New for CavinKare." },
-  { threatRegister: "Private-label threat is rising." }
+  {
+    dimensions: {
+      functionalCoreStability: { risk: "Low", reason: "Function survives a form change." },
+    },
+  }
 );
 assert(!/cavinkare/i.test(suggestions.top?.category || ""), "generalCategory/category was not sanitized");
 

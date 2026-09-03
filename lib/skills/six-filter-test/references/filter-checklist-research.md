@@ -54,10 +54,24 @@ Used to recover the elasticity relationship (typically at price-index 100 / at-p
 }
 ```
 
-## F4 — format trajectory and threats
+## F4 — structural obsolescence (`techShiftRisk`)
 
-- Format rising / stable / declining from public format-share citations, then engines, then digital proxy.
-- Threat register: substitutes, technology, clean-label, regulatory — each with a one-line response. Empty register is a backend FAIL, not a blank.
+Assess whether the format is structurally exposed to a shift that has not happened yet — not whether today's trend line is up or down. Seven dimensions, each Low/Medium/High with a one-sentence evidence-grounded reason. If a dimension has no discoverable destabilizing signal, write `Low risk — no destabilizing signal found`. Do not return `overallRisk`; the app aggregates it.
+
+```json
+{
+  "dimensions": {
+    "functionalCoreStability": { "risk": "Low", "reason": "..." },
+    "consumptionContextStability": { "risk": "Low", "reason": "..." },
+    "manufacturingDisruptionRisk": { "risk": "Low", "reason": "..." },
+    "userHabitShiftPotential": { "risk": "Low", "reason": "..." },
+    "adjacentSubstitutionThreat": { "risk": "Low", "reason": "..." },
+    "purchaseFrequencyShift": { "risk": "Low", "reason": "..." },
+    "regulatoryDisruptionRisk": { "risk": "Low", "reason": "..." }
+  },
+  "sources": [{ "title": "...", "url": "..." }]
+}
+```
 
 ## F5 — five sizing factors
 

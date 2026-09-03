@@ -26,10 +26,24 @@ assert.equal(financeSignatureCopy(true), "Finance has confirmed the margin compu
 const preview = previewAdvisoryChecks({ f2: { financeSigned: false } });
 assert.equal(preview.f2.items.at(-1).text, unsigned);
 
-const f4pending = checkF4({ threatRegister: "substitutes", threatsAnswered: false });
-assert.match(f4pending.items[2].text, /written responses to each threat aren't complete yet/);
-const f4done = checkF4({ formatTrajectory: "rising", threatRegister: "substitutes", threatsAnswered: true });
-assert.equal(f4done.items[2].text, "Every registered threat has a written response");
+const f4pending = checkF4({});
+assert.match(f4pending.items[0].text, /not yet assessed/);
+const f4done = checkF4({
+  techShiftRisk: {
+    dimensions: {
+      functionalCoreStability: { risk: "Low", reason: "Function survives a form change" },
+      consumptionContextStability: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+      manufacturingDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+      userHabitShiftPotential: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+      adjacentSubstitutionThreat: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+      purchaseFrequencyShift: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+      regulatoryDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
+    },
+    overallRisk: "Low",
+  },
+});
+assert.equal(f4done.checkLabel, "Cleared");
+assert.equal(f4done.items.length, 7);
 
 const floorChecks = {
   f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named: Parachute Advansed" }] },
@@ -46,7 +60,7 @@ const floorChecks = {
       },
     ],
   },
-  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Format trajectory: rising" }] },
+  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Functional core stability: Low risk — function survives a form change" }] },
 };
 
 const classification = computeGoNoGo(floorChecks);
@@ -78,7 +92,7 @@ const contradicting = reconcileNarratives(
     f1: "F1 is cleared on the named benchmark.",
     f2: "Finance still needs to confirm the margin.",
     f3: "Filter 3 is cleared.",
-    f4: "Format is rising and threats are answered.",
+    f4: "No material structural exposure found.",
   },
   floorChecks
 );
@@ -94,7 +108,7 @@ const generated = await generateFilterNarratives({
     f1: "Cleared on Parachute Advansed.",
     f2: "Finance has not confirmed the margin yet.",
     f3: "This filter is cleared.",
-    f4: "Rising format with threats answered.",
+    f4: "No material structural exposure found.",
   }),
 });
 assert.equal(computeGoNoGo(floorChecks), "NO-GO");

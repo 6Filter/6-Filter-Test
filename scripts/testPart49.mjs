@@ -25,17 +25,10 @@ assert.equal(
   null
 );
 
-assert.match(formatObsolescenceVerdict({ formatTrajectory: "declining" }), /lose relevance within the next five years/);
-assert.match(formatObsolescenceVerdict({ formatTrajectory: "rising" }), /rising side of the shift/);
-assert.match(
-  formatObsolescenceVerdict({ formatTrajectory: "flat", earlyRiskSignal: "weak" }),
-  /early signals exist/
-);
-assert.match(
-  formatObsolescenceVerdict({ formatTrajectory: "flat", earlyRiskSignal: "none" }),
-  /No displacement signal found/
-);
-assert.equal(formatObsolescenceVerdict({ formatTrajectory: "", earlyRiskSignal: "none" }), null);
+assert.match(formatObsolescenceVerdict({ overallRisk: "High" }), /structurally exposed on multiple fronts/i);
+assert.match(formatObsolescenceVerdict({ overallRisk: "Medium" }), /one real vulnerability worth watching/i);
+assert.match(formatObsolescenceVerdict({ overallRisk: "Low" }), /no material structural exposure found/i);
+assert.equal(formatObsolescenceVerdict({ overallRisk: "" }), null);
 
 const checks = {
   f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named: Parachute Advansed" }] },
@@ -44,13 +37,13 @@ const checks = {
     checkLabel: "Below floor",
     items: [{ status: "pending", text: "Current margin implies a price above the safe ₹70 ceiling" }],
   },
-  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Format trajectory: rising" }] },
+  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Functional core stability: Low risk — function survives a form change" }] },
 };
 const classification = computeGoNoGo(checks);
 const extras = {
   competitiveNote: "Priced 18% above the category average (₹95) — a real premium to justify, not just a number.",
   obsolescenceVerdict:
-    "This format is on the rising side of the shift — reasonable confidence it holds up over the next five years.",
+    "No material structural exposure found — the format is not sitting on a shift that has already been invented elsewhere.",
 };
 
 const generated = await generateFilterNarratives({
@@ -61,7 +54,7 @@ const generated = await generateFilterNarratives({
     f1: "Cleared on Parachute Advansed.",
     f2: "Margin clears the floor.",
     f3: "The safe band is ₹60–₹70.",
-    f4: "Threat register is written up.",
+    f4: "The seven dimensions are on record.",
   }),
 });
 assert.equal(computeGoNoGo(checks), classification);
@@ -69,7 +62,7 @@ assert.match(generated.f3, /₹95/);
 assert.match(generated.f3, /18% above/);
 assert.match(generated.f3, /₹60–₹70/);
 assert.ok(generated.f4.startsWith(extras.obsolescenceVerdict), generated.f4);
-assert.match(generated.f4, /Threat register is written up/);
+assert.match(generated.f4, /seven dimensions are on record/);
 
 const led = applyVerdictLeads(
   { f3: generated.f3, f4: generated.f4 },
@@ -89,7 +82,7 @@ const missingExtras = await generateFilterNarratives({
     f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Attribute 1 declared" }] },
     f2: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Net margin at scale not yet computed" }] },
     f3: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Margin elasticity not yet computed" }] },
-    f4: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Format trajectory pending" }] },
+    f4: { checkLabel: "Evidence missing", items: [{ status: "pending", text: "Technology & habit shift risk not yet assessed" }] },
   },
   extras: {},
   callNarrative: async (userText) => {

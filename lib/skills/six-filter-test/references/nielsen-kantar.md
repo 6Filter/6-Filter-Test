@@ -37,7 +37,7 @@ Local files are optional. When they exist they are the first source. When they d
 }
 ```
 
-**Use for:** Filter 1 named benchmark (pick the largest currently-selling SKU in the exact segment). Filter 1 category size and growth argument. Filter 3 price index = (idea MRP/g) ÷ (benchmark MRP/g) × 100. Filter 4 format trajectory from `formatShares` trend if a prior period exists; else web search.
+**Use for:** Filter 1 named benchmark (pick the largest currently-selling SKU in the exact segment). Filter 1 category size and growth argument. Filter 3 price index = (idea MRP/g) ÷ (benchmark MRP/g) × 100. Filter 4 structural signals (emerging formats, adjacent substitutes) when a public citation exists; else web search. Format-share trend lines are not the F4 gate.
 
 ## Kantar row shape
 
