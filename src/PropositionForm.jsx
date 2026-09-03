@@ -352,25 +352,16 @@ function FieldControl({
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        <div className="tech-shift-overall" data-risk={overall || "unset"}>
-          <span className="tech-shift-level">{overall || "—"}</span>
-          <span className="tech-shift-level-label">overall structural risk</span>
-        </div>
-        {dimensions ? (
-          <ul className="tech-shift-dims">
-            {TECH_SHIFT_DIMENSIONS.map((key) => {
-              const d = dimensions[key] || {};
-              return (
-                <li key={key} data-risk={d.risk || "Low"}>
-                  <span className="tech-shift-dim-label">{DIMENSION_LABELS[key]}</span>
-                  <span className="tech-shift-dim-risk">{d.risk || "—"}</span>
-                  <span className="tech-shift-dim-reason">{d.reason || ""}</span>
-                </li>
-              );
-            })}
-          </ul>
+        <p className="prop-helper">Points scored</p>
+        <ul className="f4-eval-points">
+          {TECH_SHIFT_DIMENSIONS.map((key) => (
+            <li key={key}>{DIMENSION_LABELS[key]}</li>
+          ))}
+        </ul>
+        {overall ? (
+          <p className="derived-note">Current overall: {overall}</p>
         ) : (
-          <p className="derived-note">Submit the idea to run the seven-dimension assessment.</p>
+          <p className="derived-note">Submit the idea to score these seven points.</p>
         )}
         <div className="me-overrides">
           <label>
@@ -646,6 +637,15 @@ function FilterNarrativeList({ narratives, advisoryChecks, category }) {
               <span className="filter-points">{points}</span>
             </div>
             <p>{text}</p>
+            {f.key === "f4" && items.length ? (
+              <ul className="filter-check-list f4-analysis-dims">
+                {items.map((it, i) => (
+                  <li key={`f4-dim-${i}`} data-status={it.status}>
+                    {it.text}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         );
       })}
@@ -1661,7 +1661,7 @@ export default function PropositionForm({
               )}
             </div>
 
-            {(justSubmitted || goNoGo) && check.items?.length ? (
+            {(justSubmitted || goNoGo) && spec.key !== "f4" && check.items?.length ? (
               <ul className="filter-check-list">
                 {check.items.map((it, i) => (
                   <li key={`${spec.key}-${i}`} data-status={it.status}>
@@ -1850,25 +1850,12 @@ const PROP_CSS = `
 .me-overrides{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
 .me-overrides label{display:flex;flex-direction:column;gap:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;color:rgba(243,234,248,.6);flex:1;min-width:120px;}
 .me-overrides input,.me-overrides select{width:100%;}
-.tech-shift-overall{display:flex;align-items:baseline;gap:10px;margin:4px 0 8px;}
-.tech-shift-level{font-family:var(--fm);font-size:28px;font-weight:700;letter-spacing:-.4px;color:#F3EAF8;}
-.tech-shift-overall[data-risk="Low"] .tech-shift-level{color:#6FE0A3;}
-.tech-shift-overall[data-risk="Medium"] .tech-shift-level{color:#E8B563;}
-.tech-shift-overall[data-risk="High"] .tech-shift-level{color:#F07178;}
-.tech-shift-level-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.55);}
-.tech-shift-dims{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:8px;}
-.tech-shift-dims li{display:grid;grid-template-columns:minmax(140px,1fr) 72px 2fr;gap:8px 12px;align-items:start;
-  padding:8px 10px;border-radius:10px;background:rgba(243,234,248,.04);border:1px solid rgba(243,234,248,.08);}
-.tech-shift-dim-label{font-family:var(--fm);font-size:11.5px;color:rgba(243,234,248,.82);}
-.tech-shift-dim-risk{font-family:var(--fm);font-size:11px;letter-spacing:.04em;font-weight:700;}
-.tech-shift-dims li[data-risk="Low"] .tech-shift-dim-risk{color:#6FE0A3;}
-.tech-shift-dims li[data-risk="Medium"] .tech-shift-dim-risk{color:#E8B563;}
-.tech-shift-dims li[data-risk="High"] .tech-shift-dim-risk{color:#F07178;}
-.tech-shift-dim-reason{font-size:12px;line-height:1.4;color:rgba(243,234,248,.7);}
-@media (max-width:720px){
-  .tech-shift-dims li{grid-template-columns:1fr auto;grid-template-rows:auto auto;}
-  .tech-shift-dim-reason{grid-column:1 / -1;}
-}
+.f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
+.f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
+  border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}
+.f4-analysis-dims{margin-top:10px;}
+.output-page .f4-analysis-dims{margin-top:12px;}
+.output-page .f4-analysis-dims li{font-size:13.5px;line-height:1.5;color:var(--ink-muted-85);}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;
   vertical-align:middle;flex-shrink:0;}
 .ai-wand svg{display:block;}

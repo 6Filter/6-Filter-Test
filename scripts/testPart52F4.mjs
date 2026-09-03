@@ -161,6 +161,11 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 assert.match(formSrc, /computed-risk/);
 assert.match(formSrc, /Use AI assessment/);
 assert.match(formSrc, /Override: Low/);
-assert.match(formSrc, /tech-shift-dims/);
+assert.match(formSrc, /f4-eval-points/);
+assert.match(formSrc, /DIMENSION_LABELS\[key\]/);
+assert.match(formSrc, /f4-analysis-dims/);
+assert.match(formSrc, /spec\.key !== "f4"/);
+assert.doesNotMatch(formSrc, /tech-shift-dim-reason/);
+assert.doesNotMatch(formSrc, /tech-shift-dims/);
 
 console.log("PASS Part 52 F4 structural obsolescence — seven dimensions, deterministic aggregate, override");

@@ -17,6 +17,7 @@ import PropositionForm from "./PropositionForm.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
+import { DIMENSION_LABELS } from "../lib/techShiftRisk.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -1507,7 +1508,7 @@ function CategoryIntelPanel({ filter, kind }) {
             <ul className="ci-dims">
               {Object.entries(filter.techShiftRisk.dimensions).map(([key, d]) => (
                 <li key={key}>
-                  <strong>{d.risk}</strong> — {d.reason}
+                  <strong>{DIMENSION_LABELS[key] || key}: {d.risk}</strong> — {d.reason}
                 </li>
               ))}
             </ul>
