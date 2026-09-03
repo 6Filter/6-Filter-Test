@@ -13,29 +13,42 @@ transfer as a last resort. Always report a finding — state clearly which tier 
 came from, never omit the tier, never present a tier-3 finding as if it were tier-1.
 ```
 
-## F1 — benchmark and category size
+## F1 — category intelligence + attribute validation
 
+Apply `category-intelligence/SKILL.md` in full: TAM triangulation (never a single method), competitive landscape, penetration, purchase frequency, per-capita consumption, price architecture.
+
+- **Stated attributes 1–3** are the BM's intended USPs. Independently identify the category's actual top purchase-decision attributes (public U&A citations, listings, reviews, trade press). For each stated attribute return `aligned` | `partial` | `not-core` against that set. Do not overwrite the human attributes — report the validation.
 - **Benchmark not named:** find currently-selling named competitors in the exact segment (tier-1 public audit citations when available; else e-com / filings / trade press). Name brand · variant · pack.
 - **Growth route / argument:** category value and growth from public Nielsen/Kantar citations when available; else triangulate demand / supply / company build-up; publish working P50 with tier.
 
-## F2 — cost, GST, qcom (auto-fill empty fields only)
+## F2 — cost, GST, qcom, competitive price and PCC (auto-fill empty fields only)
 
-Empty F2 fields may auto-fill from `runCostEstimate`. Finance signature stays human. MRP is formula-only (never researched).
+Empty F2 fields may auto-fill from `runCostEstimate`. Finance signature stays human. MRP is formula-only from COGS, net margin and GST (never a researched guess).
+
+**Q-com trajectory:** not today's Blinkit/Instamart rate card. Research where take-rate, commission, delivery-fee and visibility costs are heading over **3 years**, and what that does to net margin at this pack's MRP. Write that as `qcomTrajectory`.
+
+Also research, at the stated pack size (normalize if the found pack differs):
+- typical competitor / leader shelf price
+- category per-capita consumption (PCC)
+- market-leader PCC or volume share used as the PCC proxy
+
+These feed Filter 3's elasticity band. They do not replace the formula MRP.
 
 **GST rate:** analysed from the proposition name, category, and idea at the top of the page.
 Food products are usually 5% or 18%. Packaged snacks (namkeen, chips, extruded savoury) are typically 18%. Staple foods more often 5%. Personal care / homecare typically 18%. Store `gstRatePct` plus `gstBasis` (`Analysed by AI: …`). Do not leave GST blank.
 
-## F3 — margin elasticity (safe min–max band)
+## F3 — elasticity band around the Filter 2 MRP
 
-Research three inputs, then the engine computes the range — do not invent a ceiling if elasticity is missing:
+Filter 2's formula MRP is the centre. Research then compute a 5-year operating band around it:
 
-1. **Category average pack price** (Nielsen/Kantar cited avg first, else engines, else e-com listing average). Return `sourceTier`.
-2. **Inflation** for the category (reuse the Part 43 WPI/CPI recipe) plus the inflation-matching volume-loss observation that encodes elasticity.
-3. **Division margin floor** is supplied by the app (`getDivisionMarginFloor`) — do not research it.
+1. **Category / competitor pack price** at equal grammage (normalize; never use a sachet as a 100ml price).
+2. **Inflation** — CPI/WPI for the item group, plus commodity, capacity, shortage and listed-player outlook that would move COGS over 5 years.
+3. **Volume-loss elasticity** at an inflation-matching increase (10% volume-loss ceiling).
+4. **Division margin floor** is supplied by the app — do not research it.
 
-If no elasticity exists at any tier, return a structured miss rather than a fabricated `maxMarginPct`.
+Min cannot go below today's COGS ÷ (1 − floor). Max cannot go above the 10% volume-loss ceiling. If the Filter 2 MRP sits outside that band, recommend a new MRP — do not silently leave a false range.
 
-The stored field is `marginElasticity`: `{ minMarginPct, maxMarginPct, basis, sources, aiSourced }`.
+The stored field is `marginElasticity`: `{ minMrpInr, maxMrpInr, minMarginPct, maxMarginPct, recommendedMrpInr, basis, sources, aiSourced }`.
 
 ## F3 — volume loss on an inflation-matching increase
 
@@ -55,6 +68,8 @@ Used to recover the elasticity relationship (typically at price-index 100 / at-p
 ```
 
 ## F4 — structural obsolescence (`techShiftRisk`)
+
+Apply the same category-intelligence skill as Filter 1. Additionally search quick-commerce, e-commerce, social and internet behaviour for this format (share of new launches, urban habit shift, serum-vs-oil style substitution, subscription / planned-purchase moves). Use those signals as evidence inside the seven dimensions — do not replace the dimensions with a trend score.
 
 Assess whether the format is structurally exposed to a shift that has not happened yet — not whether today's trend line is up or down. Seven dimensions, each Low/Medium/High with a one-sentence evidence-grounded reason. If a dimension has no discoverable destabilizing signal, write `Low risk — no destabilizing signal found`. Do not return `overallRisk`; the app aggregates it.
 

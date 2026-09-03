@@ -433,7 +433,8 @@ function FieldControl({
           </>
         )}
         {range?.packSizeWarning ? <p className="derived-note error">{range.packSizeWarning}</p> : null}
-        {basisNote && !range?.rangeError && basisNote !== range?.packSizeWarning ? (
+        {range?.mrpAdjustmentNote ? <p className="derived-note error">{range.mrpAdjustmentNote}</p> : null}
+        {basisNote && !range?.rangeError && basisNote !== range?.packSizeWarning && basisNote !== range?.mrpAdjustmentNote ? (
           <p className="derived-note">{basisNote}</p>
         ) : null}
         <div className="me-overrides">

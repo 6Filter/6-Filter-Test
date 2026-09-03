@@ -86,7 +86,7 @@ const unverified = checkF1(
 );
 assert.match(unverified.items[1].text, /no verifiable competitive presence/);
 
-assert.match(RESEARCH_SCHEMA_VERSION, /f3-pack-normalize/);
+assert.match(RESEARCH_SCHEMA_VERSION, /f1-f3-linked/);
 
 const brief =
   "# Filter 1 brief\nIndulekha is a real HUL Ayurvedic hair-oil brand at about ₹400 crore annual sales. Hair strengthening is its core claim. Category size around ₹15,400 crore.\n" +

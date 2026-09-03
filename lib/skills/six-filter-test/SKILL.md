@@ -30,10 +30,10 @@ Uncertainty is allowed **as a labelled weaker tier**, not as silence.
 
 | Filter | Research this skill covers | Stays human / out of scope |
 |---|---|---|
-| F1 | Benchmark naming; category size / growth argument | Declared attributes 1–3 (BM); CMI hierarchy evidence / U&A source |
-| F2 | Cost / MRP / grammage / qcom trajectory estimates (auto-fill empty fields only) | Finance signature; human override of any estimate |
-| F3 | Category average price + inflation/elasticity to compute a safe margin band vs a 10% volume-loss cap over 5 years | Human override of either end of the band |
-| F4 | Seven-dimension structural obsolescence (`techShiftRisk`); overall risk aggregated in-app | Human override of the overall level only |
+| F1 | TAM / engines; competitor analysis; penetration, frequency, PCC; validate the 3 stated USPs against category key purchase attributes | Declared attributes 1–3 stay human-owned; CMI U&A source |
+| F2 | COGS + margin + pack → formula MRP; competitor pricing at equal grammage; category and leader PCC; 3-year q-com terms (not today's rate card) | Finance signature; human override of any estimate |
+| F3 | ± elasticity band around the Filter 2 MRP over 5 years (inflation, 10% volume-loss ceiling, margin floor). May recommend moving MRP if it sits outside the band | Human override of either end of the band |
+| F4 | Category-intelligence deep dive plus q-com / e-com / social / internet trends, scored as seven-dimension structural obsolescence | Human override of the overall level only |
 | F5 | Households Y3, trial %, repeat %, frequency, avg pack ₹ | CMI head signature |
 | F6 | **Nothing** — validation approval only, never researched or scored | Lab / consumer / pack panels |
 

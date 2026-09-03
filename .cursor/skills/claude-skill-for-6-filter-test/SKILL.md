@@ -22,7 +22,7 @@ Before changing scoring, first pass, or check copy, read:
 
 - Tier 1 public Nielsen/Kantar citations → tier 2 engines → tier 3 digital-proxy/analog. Always a finding; always report tier. Never "unsure" / "not available" as a field value.
 - No live Nielsen/Kantar feed — search publicly-cited figures only.
-- F1/F4: splice six-filter skill + source hierarchy into existing research prompts.
+- F1/F4: splice six-filter skill + full category-intelligence skill (TAM, competitors, penetration, frequency, PCC, digital) into research prompts. Validate the 3 stated USPs against category key attributes.
 - F2: cost / MRP / grammage / qcom terms may auto-fill empty fields from research (Part 32); Finance signature stays human-only.
 - F1/F3/F4/F5: suggestions remain accept/dismiss chips; never overwrite filled fields.
 - F6: untouched — validation approval only, never researched or scored.
