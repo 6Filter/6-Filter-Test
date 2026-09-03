@@ -34,7 +34,11 @@ const notCore = checkF1(
   }
 );
 assert.equal(notCore.items[0].status, "pending");
-assert.match(notCore.items[0].text, /hair fall control/);
+assert.match(notCore.items[0].text, /category currently sells on hair fall control, fragrance, and non-sticky feel/i);
+assert.match(notCore.items[0].text, /Sparkle finish requires primary research/i);
+assert.match(notCore.items[0].text, /general trade, modern trade, e-com and quick-commerce/i);
+assert.doesNotMatch(notCore.items[0].text, /needs validation/i);
+assert.doesNotMatch(notCore.items[0].text, /pending/i);
 
 const aligned = checkF1(
   {
@@ -93,6 +97,8 @@ assert.ok(tooLow.recommendedMrpInr >= 200);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /mrpAdjustmentNote/);
+assert.match(formSrc, /f2Cogs, f2Margin, f2Gst/);
+assert.match(formSrc, /result\.finalMrp\.toFixed\(2\)/);
 
 const f2Src = readFileSync(new URL("../lib/filters/runCostEstimate.js", import.meta.url), "utf8");
 assert.match(f2Src, /qcomTrajectory/);
