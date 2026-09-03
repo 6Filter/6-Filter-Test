@@ -69,16 +69,16 @@ const lowCheck = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Lo
 assert.equal(lowCheck.checkLabel, "Cleared");
 assert.ok(lowCheck.items.every((it) => it.status === "done"));
 
-const overridden = checkF4({
+const ignoredOverride = checkF4({
   techShiftRisk: {
     dimensions: twoHigh,
     overallRisk: "High",
     overallRiskOverride: "Low",
   },
 });
-assert.equal(overridden.checkLabel, "Cleared", "human override of the aggregate wins");
-assert.equal(overridden.items.length, 7, "dimensions stay visible after override");
-assert.ok(overridden.items.some((it) => /High risk/.test(it.text)));
+assert.equal(ignoredOverride.checkLabel, "Below floor", "AI aggregate wins — leftover override is ignored");
+assert.equal(ignoredOverride.items.length, 7, "dimensions stay visible");
+assert.ok(ignoredOverride.items.some((it) => /High risk/.test(it.text)));
 
 const unlocked = f4HasEnough({ techShiftRisk: { dimensions: allLow } });
 assert.equal(unlocked, true);
@@ -142,7 +142,8 @@ const overrideRisk = normalizeTechShiftRisk({
   overallRiskOverride: "Low",
 });
 assert.equal(overrideRisk.overallRisk, "High", "computed overall stays deterministic");
-assert.equal(effectiveOverallRisk(overrideRisk), "Low");
+assert.equal(effectiveOverallRisk(overrideRisk), "High", "leftover override must not change the AI overall");
+assert.equal(overrideRisk.overallRiskOverride, undefined);
 assert.equal(overrideRisk.dimensions.functionalCoreStability.risk, "High");
 
 const hashA = fingerprintResearchInput({
@@ -159,8 +160,9 @@ assert.equal(hashA, hashB, "identical ideas must share the research-input hash")
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /computed-risk/);
-assert.match(formSrc, /Use AI assessment/);
-assert.match(formSrc, /Override: Low/);
+assert.doesNotMatch(formSrc, /Use AI assessment/);
+assert.doesNotMatch(formSrc, /Override: Low/);
+assert.doesNotMatch(formSrc, /Overall risk override/);
 assert.match(formSrc, /f4-eval-points/);
 assert.match(formSrc, /DIMENSION_LABELS\[key\]/);
 assert.match(formSrc, /f4-analysis-dims/);
@@ -168,4 +170,4 @@ assert.match(formSrc, /spec\.key !== "f4"/);
 assert.doesNotMatch(formSrc, /tech-shift-dim-reason/);
 assert.doesNotMatch(formSrc, /tech-shift-dims/);
 
-console.log("PASS Part 52 F4 structural obsolescence — seven dimensions, deterministic aggregate, override");
+console.log("PASS Part 52 F4 structural obsolescence — seven dimensions, deterministic aggregate, AI overall only");

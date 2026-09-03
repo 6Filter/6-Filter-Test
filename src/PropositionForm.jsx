@@ -330,21 +330,7 @@ function FieldControl({
   const wand = aiSourced ? <AiWandMark /> : null;
 
   if (field.type === "computed-risk") {
-    const risk = value && typeof value === "object" ? value : {};
-    const dimensions = risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : null;
     const overall = effectiveOverallRisk(risk);
-    const override = risk.overallRiskOverride || "";
-    const patchOverride = (nextOverride) => {
-      if (!dimensions) return;
-      onChange({
-        ...risk,
-        dimensions,
-        overallRisk: risk.overallRisk,
-        sources: risk.sources || [],
-        aiSourced: !nextOverride,
-        overallRiskOverride: nextOverride || undefined,
-      });
-    };
     return (
       <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f4-risk="tech-shift">
         <div className="prop-label">
@@ -363,22 +349,6 @@ function FieldControl({
         ) : (
           <p className="derived-note">Submit the idea to score these seven points.</p>
         )}
-        <div className="me-overrides">
-          <label>
-            Overall risk override
-            <select
-              value={override}
-              disabled={locked || !dimensions}
-              title={lockTitle}
-              onChange={(e) => patchOverride(e.target.value)}
-            >
-              <option value="">Use AI assessment</option>
-              <option value="Low">Override: Low</option>
-              <option value="Medium">Override: Medium</option>
-              <option value="High">Override: High</option>
-            </select>
-          </label>
-        </div>
         {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
@@ -1156,10 +1126,9 @@ export default function PropositionForm({
       gstTouchedByHuman.current = true;
     }
     if (filterKey === "f4" && fieldKey === "techShiftRisk") {
-      const overridden = Boolean(value?.overallRiskOverride);
       setAiSourced((prev) => ({
         ...prev,
-        [sourcedPath("f4", "techShiftRisk")]: !overridden && Boolean(value?.dimensions),
+        [sourcedPath("f4", "techShiftRisk")]: Boolean(value?.dimensions),
       }));
     }
     noteEdit();
