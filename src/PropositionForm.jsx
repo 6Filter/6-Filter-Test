@@ -29,7 +29,7 @@ import {
   projectedScoreIfTopResolved,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
-import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
+import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaScaleImpactCopy } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -665,6 +665,8 @@ function GoNoGoResultPage({
   const dated = formatOutputDate(doc?.updatedAt || result.at);
   const arc = scoreArcColor(score.pct);
   const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
+  const scale = String(result.ideaScale || ideaScaleFromDoc(doc || {}) || "").trim() || "10g";
+  const scaleImpact = ideaScaleImpactCopy(scale);
 
   return (
     <div className="output-page gonogo-result-page">
@@ -686,7 +688,12 @@ function GoNoGoResultPage({
               {categoryName ? <span className="mono badge-chip">{categoryName}</span> : null}
               {divisionName ? <span className="mono badge-chip">{divisionName}</span> : null}
             </div>
-            <div className={`gonogo-badge tone-${tone}`}>{result.classification}</div>
+            <div className="gonogo-badge-row">
+              <div className={`gonogo-badge tone-${tone}`}>{result.classification}</div>
+              <span className="mono gonogo-scale-chip">
+                {scale} · {scaleImpact}
+              </span>
+            </div>
             <p className="gonogo-rationale">{rationale}</p>
           </div>
           <div
@@ -2104,13 +2111,18 @@ const PROP_CSS = `
   background:var(--badge-chip-bg);color:var(--badge-chip-text);
   border-radius:999px;padding:4px 10px;font-size:11px;letter-spacing:.04em;
 }
+.gonogo-badge-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;}
 .gonogo-badge{
   display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em;
-  padding:6px 12px;border-radius:999px;margin:0 0 12px;
+  padding:6px 12px;border-radius:999px;margin:0;
 }
 .gonogo-badge.tone-pass{background:rgba(126,224,168,.16);color:var(--pass);}
 .gonogo-badge.tone-watch{background:rgba(240,193,75,.16);color:var(--watch);}
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
+.gonogo-scale-chip{
+  background:var(--badge-chip-bg);color:var(--badge-chip-text);
+  border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.04em;
+}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
   width:132px;height:132px;border-radius:50%;flex-shrink:0;

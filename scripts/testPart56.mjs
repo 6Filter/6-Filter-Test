@@ -10,6 +10,7 @@ import {
   categoryCheckCopy,
   formIdeaLabel,
   ideaScaleFromDoc,
+  ideaScaleImpactCopy,
   ideaScaleLabel,
 } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
@@ -41,6 +42,9 @@ assert.equal(ideaScaleLabel(1), "10g");
 assert.equal(ideaScaleLabel(1.01), "100g");
 assert.equal(ideaScaleLabel(12), "100g");
 assert.equal(ideaScaleLabel(12.01), "1000g");
+assert.equal(ideaScaleImpactCopy("10g"), "up to ₹1 Cr");
+assert.equal(ideaScaleImpactCopy("100g"), "₹1–12 Cr");
+assert.equal(ideaScaleImpactCopy("1000g"), "above ₹12 Cr");
 
 assert.equal(ideaScaleFromDoc({}), "10g");
 assert.equal(
