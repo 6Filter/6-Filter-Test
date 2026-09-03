@@ -170,6 +170,35 @@ const hashWithIndulekhaAgain = researchHashFor({
 assert.notEqual(hashWithoutF1, hashWithIndulekha, "naming a benchmark must bust the research cache");
 assert.equal(hashWithIndulekha, hashWithIndulekhaAgain);
 
+assert.equal(
+  researchHashFor({
+    name: "Hair oil",
+    ideaDescription: "herbal  cooling\nhair oil",
+    category: "Hair oils",
+  }),
+  researchHashFor({
+    name: "HAIR OIL",
+    ideaDescription: "herbal cooling hair oil",
+    category: "Hair Oils",
+  }),
+  "whitespace and casing must not bust the research cache"
+);
+assert.equal(
+  researchHashFor({
+    name: "Hair oil",
+    ideaDescription: "herbal cooling hair oil",
+    category: "Hair oils",
+    f1: { benchmark: "Indulekha", declaredAttribute: "Hair strengthening", growthArgument: "first draft" },
+  }),
+  researchHashFor({
+    name: "Hair oil",
+    ideaDescription: "herbal cooling hair oil",
+    category: "Hair oils",
+    f1: { benchmark: "Indulekha", declaredAttribute: "Hair strengthening", growthArgument: "rewritten after AI fill" },
+  }),
+  "growth-argument prose must not bust the research cache"
+);
+
 const schemaDefaultFalse = resolveFilter1Verdict(
   {
     attribute: "Hair strengthening",
