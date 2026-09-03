@@ -78,8 +78,8 @@ const legacyHits = batch.length - legacyUnique;
 const nextHits = batch.length - nextUnique;
 assert.ok(nextHits > legacyHits, "normalized hash must raise hit rate on the debug batch");
 
-assert.equal(researchCacheResultLabel({ findings: true }), "HIT — reused, no API call");
-assert.equal(researchCacheResultLabel(null), "MISS — running fresh research");
+assert.equal(researchCacheResultLabel({ findings: true }), "HIT");
+assert.equal(researchCacheResultLabel(null), "MISS");
 
 const logs = [];
 const orig = console.log;
@@ -90,8 +90,8 @@ try {
 } finally {
   console.log = orig;
 }
-assert.match(logs[0], /\[primus\/research-cache\] hash=abc123 result=HIT — reused, no API call/);
-assert.match(logs[1], /\[primus\/research-cache\] hash=abc123 result=MISS — running fresh research/);
+assert.match(logs[0], /\[primus\/research-cache\] hash=abc123 result=HIT$/);
+assert.match(logs[1], /\[primus\/research-cache\] hash=abc123 result=MISS$/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /logResearchCacheLookup\(inputHash, cached\)/);

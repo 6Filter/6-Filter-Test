@@ -30,7 +30,6 @@ import {
   scoreArcColor,
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaScaleImpactCopy } from "../lib/ideaScale.js";
-import { gateInputKey, shouldReuseAnalysis } from "../lib/analysisStability.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -940,9 +939,6 @@ export default function PropositionForm({
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
     initial?.researchRunAt ? researchInputKey(initial) : ""
   );
-  const [gateKeyAtResult, setGateKeyAtResult] = useState(() =>
-    initial?.goNoGo?.classification ? gateInputKey(mergeProposition(initial)) : ""
-  );
   const fileRef = useRef(null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
@@ -972,7 +968,6 @@ export default function PropositionForm({
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
-    setGateKeyAtResult(initial?.goNoGo?.classification ? gateInputKey(filled.doc) : "");
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
@@ -991,7 +986,6 @@ export default function PropositionForm({
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
     setCurrentView("propositionForm");
-    setGateKeyAtResult(initial?.goNoGo?.classification ? gateInputKey(mergeProposition(initial)) : "");
     setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);
@@ -1505,19 +1499,6 @@ export default function PropositionForm({
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
     const hadResearchRunAt = Boolean(doc.researchRunAt);
-    const nextGateKey = gateInputKey(doc);
-    if (
-      shouldReuseAnalysis({
-        existingGoNoGo: goNoGo,
-        forceResearch: Boolean(submitOpts.forceResearch),
-        ideaChanged,
-        previousGateKey: gateKeyAtResult,
-        nextGateKey,
-      })
-    ) {
-      setCurrentView("goNoGoResult");
-      return;
-    }
     if (!goNoGo?.classification) {
       const preview = applyLocalGate(doc);
       setAdvisoryChecks(preview.checks);
@@ -1604,12 +1585,10 @@ export default function PropositionForm({
       at: new Date().toISOString(),
     };
     setGoNoGo(nextGo);
-    setGateKeyAtResult(gateInputKey(nextDoc));
     setJustSubmitted(true);
     setSummaryStale(false);
 
     await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
-    setGateKeyAtResult(gateInputKey(nextDoc));
     } finally {
       const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
