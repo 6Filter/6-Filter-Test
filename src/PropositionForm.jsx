@@ -735,8 +735,11 @@ function GoNoGoResultPage({
         {SIX_FILTERS_FORM.map((spec) => {
           const check = checks[spec.key] || {};
           const stored = stripFormAdminNarrative(String(result.filterNarratives?.[spec.key] || "").trim());
+          const awaiting = spec.key === "f6" && (check.checkLabel === "Awaiting panels" || check.infoLine);
           const narrative = rewriteUnmatchedDivisionCopy(
-            stored || fallbackFilterNarrative(check),
+            awaiting
+              ? (check.infoLine || "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist.")
+              : stored || fallbackFilterNarrative(check),
             categoryName
           );
           let compare = null;
