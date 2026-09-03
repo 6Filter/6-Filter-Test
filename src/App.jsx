@@ -17,7 +17,7 @@ import PropositionForm from "./PropositionForm.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
-import { DIMENSION_LABELS } from "../lib/techShiftRisk.js";
+import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -912,21 +912,21 @@ export default function App() {
     let system;
     let text;
     if (process && result?.efficiency && result?.feasibility && result?.scalability) {
-      const e = result.efficiency.score, f = result.feasibility.score, s = result.scalability.score;
+      const e = result.efficiency?.score, f = result.feasibility?.score, s = result.scalability?.score;
       system = "You draft concise, confident internal messages for a process owner submitting a process idea to their manager. Sentence case, no fluff, no emoji.";
       text =
         `Draft a short message to my manager submitting this process idea for review. Under 110 words. ` +
         `Confident but not overselling; end with a clear ask to review and greenlight a Luminar pilot.\n\n` +
         `PROCESS IDEA: ${result.idea}\nPOSITIONING: ${result.oneLiner}\n` +
-        `6 FILTER TEST PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Efficiency ${e}, Feasibility ${f}, Scalability ${s}).`;
+        `6 FILTER TEST PHASE-1 SCORE: ${Number.isFinite(Number(result.phase1)) ? Number(result.phase1).toFixed(1) : "—"}/${max} (Efficiency ${e}, Feasibility ${f}, Scalability ${s}).`;
     } else {
-      const n = result.novelty.score, m = result.market.score, ev = result.evidence.score;
+      const n = result.novelty?.score, m = result.market?.score, ev = result.evidence?.score;
       system = "You draft concise, confident internal messages for a product manager submitting an idea to their manager. Sentence case, no fluff, no emoji.";
       text =
         `Draft a short message to my manager submitting this product idea for review. Under 110 words. ` +
         `Confident but not overselling; end with a clear ask to review and greenlight the next validation phase.\n\n` +
         `IDEA: ${result.idea}\nPOSITIONING: ${result.oneLiner}\n` +
-        `6 FILTER TEST PHASE-1 SCORE: ${result.phase1.toFixed(1)}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
+        `6 FILTER TEST PHASE-1 SCORE: ${Number.isFinite(Number(result.phase1)) ? Number(result.phase1).toFixed(1) : "—"}/${max} (Novelty ${n}, Market Relevance ${m}, Evidence ${ev}).`;
     }
     const docNote = result.overallVerdict === "CLEARED" && result.supportingDocs?.length
       ? `\nSUPPORTING RESEARCH ATTACHED: ${result.supportingDocs.map((d) => d.name).join(", ")}. Mention in one line that supporting research is attached.`
@@ -1414,6 +1414,7 @@ function CategoryIntelPanel({ filter, kind }) {
   const growth = filter?.growthDecomposition || {};
   const badge = growthBadgeLabel(growth.classification);
   const notes = Array.isArray(filter?.calibrationNotes) ? filter.calibrationNotes : [];
+  const f4Dims = listTechShiftDimensions(filter?.techShiftRisk?.dimensions);
 
   async function exportWorkbook() {
     const runId = filter?.sizingRunId;
@@ -1504,11 +1505,11 @@ function CategoryIntelPanel({ filter, kind }) {
             Structural risk: <strong>{filter.overallRisk || filter.techShiftRisk?.overallRisk || "unassessed"}</strong>
           </p>
           {filter.obsolescenceVerdict && <p>{filter.obsolescenceVerdict}</p>}
-          {filter.techShiftRisk?.dimensions && (
+          {f4Dims.length > 0 && (
             <ul className="ci-dims">
-              {Object.entries(filter.techShiftRisk.dimensions).map(([key, d]) => (
-                <li key={key}>
-                  <strong>{DIMENSION_LABELS[key] || key}: {d.risk}</strong> — {d.reason}
+              {f4Dims.map((d) => (
+                <li key={d.key}>
+                  <strong>{d.label}: {d.risk}</strong> — {d.reason}
                 </li>
               ))}
             </ul>

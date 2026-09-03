@@ -21,7 +21,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
-import { computeMrp, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
 import {
@@ -183,9 +183,7 @@ function formatSuggestion(field, value) {
   }
   if (value && typeof value === "object" && !Array.isArray(value) && ("minMrpInr" in value || "maxMrpInr" in value || "minMarginPct" in value)) {
     const rupee = hydrateMarginElasticityMrp(value, null);
-    const min = rupee.minMrpInr == null || !Number.isFinite(Number(rupee.minMrpInr)) ? "—" : Number(rupee.minMrpInr).toFixed(0);
-    const max = rupee.maxMrpInr == null || !Number.isFinite(Number(rupee.maxMrpInr)) ? "—" : Number(rupee.maxMrpInr).toFixed(0);
-    return `₹${min}–₹${max}`;
+    return `${formatRupeeInr(rupee?.minMrpInr)}–${formatRupeeInr(rupee?.maxMrpInr)}`;
   }
   if (field?.type === "select" && Array.isArray(field.options)) {
     const opt = field.options.find((o) => String(o.v) === String(value));
@@ -330,6 +328,7 @@ function FieldControl({
   const wand = aiSourced ? <AiWandMark /> : null;
 
   if (field.type === "computed-risk") {
+    const risk = value && typeof value === "object" ? value : {};
     const overall = effectiveOverallRisk(risk);
     return (
       <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f4-risk="tech-shift">
@@ -357,7 +356,7 @@ function FieldControl({
   }
 
   if (field.type === "computed-range") {
-    const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale);
+    const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale) || {};
     const minMrp = range.minMrpInr;
     const maxMrp = range.maxMrpInr;
     const minInput = minMrp != null && Number.isFinite(Number(minMrp)) ? Number(Number(minMrp).toFixed(2)) : "";
@@ -387,9 +386,9 @@ function FieldControl({
         ) : (
           <>
             <div className="mrp-range-display">
-              <span className="me-min">₹{range?.minMrpInr != null && Number.isFinite(Number(range.minMrpInr)) ? Number(range.minMrpInr).toFixed(0) : "—"}</span>
+              <span className="me-min">{formatRupeeInr(range?.minMrpInr)}</span>
               <span className="me-sep">–</span>
-              <span className="me-max">₹{range?.maxMrpInr != null && Number.isFinite(Number(range.maxMrpInr)) ? Number(range.maxMrpInr).toFixed(0) : "—"}</span>
+              <span className="me-max">{formatRupeeInr(range?.maxMrpInr)}</span>
               {aiSourced ? <Wand2 size={13} className="ai-sourced-mark" /> : null}
             </div>
             <p className="derived-note">Safe MRP range over the next 5 years</p>
@@ -567,8 +566,9 @@ function toneFor(label) {
 }
 
 function ImprovementList({ advisoryChecks, category }) {
+  const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
   const pending = ["f1", "f2", "f3", "f4"].flatMap((k) =>
-    (advisoryChecks[k]?.items || [])
+    (checks[k]?.items || [])
       .filter((it) => it.status === "pending")
       .map((it) => ({
         filter: k.toUpperCase(),
@@ -1615,11 +1615,11 @@ export default function PropositionForm({
                       spec.key === "f2" && field.key === "mrpInr" ? (
                         <>
                           <p className="derived-note">
-                            MRP before tax: {mrpBaseInr != null ? `₹${mrpBaseInr.toFixed(2)}` : "—"}
+                            MRP before tax: {formatRupeeInr(mrpBaseInr, { digits: 2 })}
                           </p>
                           <p className="derived-note">
                             MRP after tax:{" "}
-                            {mrpFinalInr != null ? `₹${mrpFinalInr.toFixed(2)}` : "— (set a GST rate)"}
+                            {mrpFinalInr != null ? formatRupeeInr(mrpFinalInr, { digits: 2 }) : "— (set a GST rate)"}
                           </p>
                         </>
                       ) : null
