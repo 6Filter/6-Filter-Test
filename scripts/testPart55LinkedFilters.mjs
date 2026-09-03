@@ -14,7 +14,7 @@ const six = loadSixFilterSkill();
 assert.match(six, /Category Intelligence Without Syndicated Data/);
 assert.match(six, /validate the 3 stated USPs/i);
 
-assert.match(RESEARCH_SCHEMA_VERSION, /f1-f3-linked/);
+assert.match(RESEARCH_SCHEMA_VERSION, /f1-benchmark/);
 
 const notCore = checkF1(
   {

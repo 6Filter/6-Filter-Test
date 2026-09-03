@@ -1,5 +1,6 @@
 import "./enableResearchTrace.mjs";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { researchTextIsUsable, researchThenJson } from "../lib/llmJson.js";
 import {
   resolveFilter1Verdict,
@@ -9,7 +10,7 @@ import {
 import { BENCHMARK_UNVERIFIED_COPY } from "../lib/researchFailureCopy.js";
 import { buildResearchFindings } from "../lib/researchFindings.js";
 import { checkF1, checkF4 } from "../lib/filterChecks.js";
-import { RESEARCH_SCHEMA_VERSION } from "../lib/researchCache.js";
+import { RESEARCH_SCHEMA_VERSION, researchHashFor } from "../lib/researchCache.js";
 
 assert.equal(statedBenchmarkVerified("Indulekha", "Indulekha Bringha Hair Oil"), true);
 assert.equal(statedBenchmarkVerified("Qxzlph Brand 88421", "Indulekha Bhringa Hair Oil"), false);
@@ -27,12 +28,14 @@ assert.equal(swapped.estimatedBenchmarkExists, false);
 assert.equal(swapped.benchmarkName, "Qxzlph Brand 88421");
 const swappedFindings = buildResearchFindings({ filter1: swapped });
 assert.equal(swappedFindings.f1.benchmarkVerified, false);
-assert.equal(swappedFindings.f1.benchmarkEvidence, BENCHMARK_UNVERIFIED_COPY);
+assert.match(swappedFindings.f1.benchmarkEvidence, /did not verify Qxzlph Brand 88421/);
+assert.doesNotMatch(swappedFindings.f1.benchmarkEvidence, /purchase-decision attribute/);
 const swappedCheck = checkF1(
   { declaredAttribute: "Hair strengthening", benchmark: "Qxzlph Brand 88421", declaredGap: 2, growthRoute: "penetration", growthArgument: "x" },
   swappedFindings.f1
 );
-assert.match(swappedCheck.items[1].text, /no verifiable competitive presence/);
+assert.match(swappedCheck.items[1].text, /Qxzlph Brand 88421/);
+assert.match(swappedCheck.items[1].text, /did not verify|no verifiable/);
 assert.doesNotMatch(swappedCheck.items[1].text, /purchase-decision attribute/);
 
 assert.equal(researchTextIsUsable(""), false);
@@ -86,7 +89,7 @@ const unverified = checkF1(
 );
 assert.match(unverified.items[1].text, /no verifiable competitive presence/);
 
-assert.match(RESEARCH_SCHEMA_VERSION, /f1-f3-linked/);
+assert.match(RESEARCH_SCHEMA_VERSION, /f1-benchmark/);
 
 const brief =
   "# Filter 1 brief\nIndulekha is a real HUL Ayurvedic hair-oil brand at about ₹400 crore annual sales. Hair strengthening is its core claim. Category size around ₹15,400 crore.\n" +
@@ -146,5 +149,80 @@ const emptyTruncated = await researchThenJson({
 });
 assert.equal(emptyTruncated.error, "truncated");
 assert.equal(emptyTruncated.parsed, null);
+
+const hashWithoutF1 = researchHashFor({
+  name: "Hair oil",
+  ideaDescription: "herbal cooling hair oil",
+  category: "Hair oils",
+});
+const hashWithIndulekha = researchHashFor({
+  name: "Hair oil",
+  ideaDescription: "herbal cooling hair oil",
+  category: "Hair oils",
+  f1: { benchmark: "Indulekha", declaredAttribute: "Hair strengthening" },
+});
+const hashWithIndulekhaAgain = researchHashFor({
+  name: "Hair oil",
+  ideaDescription: "herbal cooling hair oil",
+  category: "Hair oils",
+  f1: { benchmark: "Indulekha", declaredAttribute: "Hair strengthening" },
+});
+assert.notEqual(hashWithoutF1, hashWithIndulekha, "naming a benchmark must bust the research cache");
+assert.equal(hashWithIndulekha, hashWithIndulekhaAgain);
+
+const schemaDefaultFalse = resolveFilter1Verdict(
+  {
+    attribute: "Hair strengthening",
+    benchmarkName: "Indulekha Bringha Hair Oil",
+    estimatedBenchmarkExists: false,
+    benchmarkFinding: "Indulekha Bringha is HUL's Ayurvedic hair-oil brand, currently listed across India.",
+    verdictReason: "Clears opportunity gate vs Indulekha on Hair strengthening.",
+    reconciliation: { status: "TIGHT", p50Cr: 15400 },
+  },
+  { attribute: "Hair strengthening", benchmarkName: "Indulekha" }
+);
+assert.equal(schemaDefaultFalse.estimatedBenchmarkExists, true);
+assert.equal(schemaDefaultFalse.benchmarkName, "Indulekha Bringha Hair Oil");
+const schemaFindings = buildResearchFindings({ filter1: schemaDefaultFalse });
+assert.equal(schemaFindings.f1.benchmarkVerified, true);
+assert.match(schemaFindings.f1.benchmarkEvidence, /HUL/);
+assert.doesNotMatch(schemaFindings.f1.benchmarkEvidence, /purchase-decision attribute/);
+
+const stalePlaceholder = checkF1(
+  {
+    declaredAttribute: "Hair strengthening",
+    declaredAttribute2: "Reduces hair breakage",
+    declaredAttribute3: "Shine boost",
+    benchmark: "Indulekha",
+    declaredGap: 4,
+    growthRoute: "penetration",
+    growthArgument: "share take",
+  },
+  {
+    benchmarkVerified: false,
+    benchmarkEvidence: "Missing evidence: name the purchase-decision attribute.",
+  }
+);
+assert.doesNotMatch(stalePlaceholder.items[1].text, /purchase-decision attribute/);
+assert.match(stalePlaceholder.items[1].text, /Indulekha/);
+
+const verifiedCheck = checkF1(
+  {
+    declaredAttribute: "Hair strengthening",
+    benchmark: "Indulekha",
+    declaredGap: 4,
+    growthRoute: "penetration",
+    growthArgument: "share take",
+  },
+  schemaFindings.f1
+);
+assert.equal(verifiedCheck.items[1].status, "done");
+assert.match(verifiedCheck.items[1].text, /Benchmark verified: Indulekha/);
+assert.match(verifiedCheck.items[1].text, /HUL/);
+
+const sizingSrc = readFileSync(new URL("../lib/categoryIntelligence/runSizing.js", import.meta.url), "utf8");
+assert.match(sizingSrc, /STATED_BENCHMARK must be researched as a named brand/);
+assert.match(sizingSrc, /benchmarkFinding/);
+assert.doesNotMatch(sizingSrc, /"estimatedBenchmarkExists":false/);
 
 console.log("PASS Part 53 research failure no longer masquerades as a missing attribute");

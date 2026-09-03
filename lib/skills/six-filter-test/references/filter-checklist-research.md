@@ -18,6 +18,7 @@ came from, never omit the tier, never present a tier-3 finding as if it were tie
 Apply `category-intelligence/SKILL.md` in full: TAM triangulation (never a single method), competitive landscape, penetration, purchase frequency, per-capita consumption, price architecture.
 
 - **Stated attributes 1–3** are the BM's intended USPs. Independently identify the category's actual top purchase-decision attributes. Evaluate saliency across general trade, modern trade, e-com and quick-commerce before scoring. Only mark `not-core` after that channel read. Do not overwrite the human attributes. Checklist copy when not-core: the category currently sells on X, Y, Z; the betted attribute requires primary research.
+- **Benchmark named:** search that exact brand (listings, company reports, trade press). Write a one-sentence finding unique to this brand (owner, SKU, currently selling in India). `estimatedBenchmarkExists` is true only after that search confirms it; false only after the search finds no such competitor. Never write "name the purchase-decision attribute" when STATED_ATTRIBUTE is already filled. Never invent a substitute brand.
 - **Benchmark not named:** find currently-selling named competitors in the exact segment (tier-1 public audit citations when available; else e-com / filings / trade press). Name brand · variant · pack.
 - **Growth route / argument:** category value and growth from public Nielsen/Kantar citations when available; else triangulate demand / supply / company build-up; publish working P50 with tier.
 
