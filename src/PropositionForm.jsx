@@ -661,7 +661,7 @@ function GoNoGoResultPage({
   const topTwo = improvementItems.slice(0, 2);
   const projected = projectedScoreIfTopResolved(score.pct, topTwo, 2);
   const coverage = countFiltersWithEvidence(doc || {});
-  const screened = formatScreenedDuration(result.screenedMs);
+  const screened = formatScreenedDuration(doc?.researchDurationMs);
   const dated = formatOutputDate(doc?.updatedAt || result.at);
   const arc = scoreArcColor(score.pct);
   const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
@@ -1400,7 +1400,7 @@ export default function PropositionForm({
     if (result?.proposition) setDoc(mergeProposition(result.proposition));
   }
 
-  async function runGoNoGoRead(propositionDoc = doc, providerOverride, timedFrom = Date.now()) {
+  async function runGoNoGoRead(propositionDoc = doc, providerOverride) {
     const id = propositionDoc?.id || propositionId;
     if (readingGoNoGo || !id) return null;
     const provider = providerOverride || llmProvider;
@@ -1423,7 +1423,6 @@ export default function PropositionForm({
       if (!nextGo.score && data.advisoryChecks) {
         nextGo.score = scoreAdvisoryChecks(data.advisoryChecks);
       }
-      nextGo.screenedMs = Math.max(0, Date.now() - timedFrom);
       setGoNoGo(nextGo);
       setDoc((prev) => ({ ...prev, goNoGo: nextGo }));
       if (data.advisoryChecks) {
@@ -1505,6 +1504,10 @@ export default function PropositionForm({
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
+    const hadResearchRunAt = Boolean(doc.researchRunAt);
+    const persistDuration = Boolean(
+      submitOpts.forceResearch || ideaChanged || !hadResearchRunAt
+    );
     const startedAt = Date.now();
     const expectedMs = expectedProcessMs({
       forceResearch: Boolean(submitOpts.forceResearch),
@@ -1512,11 +1515,13 @@ export default function PropositionForm({
       ideaChanged,
     });
     onProcessingChange?.({ busy: true, startedAt, expectedMs });
+    let savedOk = false;
     try {
     const result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
     });
     if (!result?.proposition) return;
+    savedOk = true;
     const saved = mergeProposition(result.proposition);
     const filled = result.suggestions
       ? applyResearchResult(result, saved)
@@ -1573,9 +1578,19 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
 
-    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider, startedAt);
+    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
     } finally {
+      const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
+      if (persistDuration && savedOk && propositionId) {
+        setDoc((prev) => ({ ...prev, researchDurationMs: elapsedMs }));
+        fetch(`/api/propositions/${encodeURIComponent(propositionId)}/go-nogo`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ durationOnly: true, researchDurationMs: elapsedMs }),
+        }).catch(() => {});
+      }
     }
   }
 

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   RESEARCH_PROCESS_MS,
   SAVE_PROCESS_MS,
+  asResearchDurationMs,
   expectedProcessMs,
   formatCountdown,
   processTimerCopy,
@@ -26,6 +27,11 @@ const done = processTimerCopy({ elapsedMs: 160000, expectedMs: 150000 });
 assert.equal(done.status, "overtime");
 assert.equal(done.remainingLabel, "Finishing…");
 
+assert.equal(asResearchDurationMs(12345), 12345);
+assert.equal(asResearchDurationMs(null), null);
+assert.equal(asResearchDurationMs(-1), null);
+assert.equal(asResearchDurationMs(5_000_000), 3_600_000);
+
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 assert.match(appSrc, /process-eta/);
 assert.match(appSrc, /onProcessingChange/);
@@ -34,5 +40,13 @@ assert.match(appSrc, /About .* left|processTimerCopy/);
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /onProcessingChange/);
 assert.match(formSrc, /expectedProcessMs/);
+assert.match(formSrc, /durationOnly: true/);
+assert.match(formSrc, /researchDurationMs: elapsedMs/);
+assert.match(formSrc, /formatScreenedDuration\(doc\?\.researchDurationMs\)/);
+assert.doesNotMatch(formSrc, /result\.screenedMs/);
+
+const gateSrc = readFileSync(new URL("../lib/propositionGateApi.js", import.meta.url), "utf8");
+assert.match(gateSrc, /durationOnly/);
+assert.match(gateSrc, /setResearchDurationMs/);
 
 console.log("PASS Part 53 process timer expected-time copy");

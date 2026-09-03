@@ -6,6 +6,7 @@ import {
   countFiltersWithEvidence,
   f2ActualVsFloor,
   f3ActualVsCeiling,
+  formatScreenedDuration,
   ownersForCheckItem,
   projectedScoreIfTopResolved,
   scoreArcColor,
@@ -104,6 +105,10 @@ assert.match(src, /See all next steps/);
 assert.doesNotMatch(src, /business impact/i);
 assert.doesNotMatch(src, /className="gonogo-scale"/);
 assert.doesNotMatch(src, /Export summary/);
+assert.match(src, /formatScreenedDuration\(doc\?\.researchDurationMs\)/);
+assert.doesNotMatch(src, /result\.screenedMs/);
+assert.equal(formatScreenedDuration(12000), "12s");
+assert.equal(formatScreenedDuration(null), null);
 
 const goNoGo = readFileSync(new URL("../lib/goNoGo.js", import.meta.url), "utf8");
 assert.doesNotMatch(goNoGo, /computeImprovementPointValues/);
