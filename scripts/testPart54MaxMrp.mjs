@@ -4,6 +4,7 @@ import { parseGrammageToNumber } from "../lib/filters/runCostEstimate.js";
 import {
   assembleMarginElasticity,
   normalizeCategoryAvgPrice,
+  pickFoundPackSize,
   solveForVolumeLossCeiling,
 } from "../lib/filters/runMarginElasticityResearch.js";
 import { checkF3 } from "../lib/filterChecks.js";
@@ -148,6 +149,61 @@ const belowFloor = recastMarginElasticityLive(aroundMrp, {
 });
 assert.equal(belowFloor.minMrpInr, 200);
 assert.ok(belowFloor.mrpAdjustmentNote);
+
+assert.equal(
+  pickFoundPackSize({
+    packSizeFound: "100ml",
+    basis: "e-com listing of a 10ml sachet at ₹81.67",
+    grammage: "100ml",
+  }),
+  "10ml"
+);
+
+const cheapSamePack = normalizeCategoryAvgPrice({
+  avgPriceInr: 152,
+  packSizeFound: "100ml",
+  grammage: "100ml",
+});
+const screenshot167 = assembleMarginElasticity({
+  cogsAtScale: 100,
+  netMarginAtScale: 80,
+  division: "Personal Care",
+  minMarginPct: 50,
+  categoryAvgPrice: { ...cheapSamePack, sourceTier: 3, sources: [] },
+  inflation: { ratePct: 10, volumeLossPct: 10, source: "CPI" },
+  grammage: "100ml",
+  mrpInr: 590,
+});
+assert.equal(screenshot167.rangeError, undefined, "must not flag when Filter 2 MRP can form a valid band");
+assert.ok(screenshot167.maxMrpInr > 200, `max ${screenshot167.maxMrpInr} must exceed min ₹200`);
+assert.ok(screenshot167.minMrpInr < 590 && screenshot167.maxMrpInr > 590);
+assert.doesNotMatch(String(screenshot167.basis || ""), /₹167/);
+assert.doesNotMatch(String(screenshot167.mrpAdjustmentNote || ""), /₹167/);
+
+const guardedNote = hydrateMarginElasticityMrp(
+  {
+    minMrpInr: 200,
+    maxMrpInr: 167,
+    recommendedMrpInr: 167,
+    mrpAdjustmentNote:
+      "Filter 2 MRP ₹590 sits above the 5-year competitive ceiling — move toward ₹167 to stay inside a one-in-ten volume-loss band.",
+    basis:
+      "Min MRP from today's COGS. Filter 2 MRP ₹590 sits above the 5-year competitive ceiling — move toward ₹167 to stay inside a one-in-ten volume-loss band.",
+  },
+  100
+);
+assert.equal(guardedNote.maxMrpInr, null);
+assert.equal(guardedNote.rangeError, INVALID_MRP_RANGE_COPY);
+assert.equal(guardedNote.recommendedMrpInr, null);
+assert.equal(guardedNote.mrpAdjustmentNote, null);
+assert.doesNotMatch(String(guardedNote.basis || ""), /₹167/);
+
+const researchSrc = readFileSync(new URL("../lib/filters/runMarginElasticityResearch.js", import.meta.url), "utf8");
+assert.match(researchSrc, /packSizeFound/);
+assert.match(researchSrc, /pricePerUnitWeight/);
+assert.match(researchSrc, /normalizedAvgPriceInr/);
+assert.match(researchSrc, /will not assume product grammage/);
+assert.doesNotMatch(researchSrc, /competitorPackSize \|\| grammage/);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /range\?\.rangeError/);
