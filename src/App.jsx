@@ -127,6 +127,7 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       fallbackProviders: Array.isArray(data.fallbackProviders) ? data.fallbackProviders : [],
       failedProvider: data.failedProvider || null,
       failedProviderLabel: data.failedProviderLabel || null,
+      researchRan: Boolean(data.researchRan),
     };
   } catch (e) {
     if (e?.name === "AbortError") {

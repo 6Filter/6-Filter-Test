@@ -49,6 +49,8 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 assert.match(apiSrc, /handlePropositionAutoFill/);
 assert.match(apiSrc, /fillGstIfNeeded/);
 assert.match(apiSrc, /applyDerivedAutoFill/);
+assert.match(apiSrc, /skipDerivedAutoFill/);
+assert.match(apiSrc, /researchRan: Boolean\(shouldRunResearch\)/);
 assert.match(apiSrc, /payloadForOwnershipCheck/);
 
 const routerSrc = readFileSync(new URL("../lib/apiRouter.js", import.meta.url), "utf8");

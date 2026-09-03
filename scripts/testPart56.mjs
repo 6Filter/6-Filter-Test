@@ -71,7 +71,27 @@ assert.equal(
   }),
   "1000g"
 );
-assert.equal(ideaScaleFromDoc({ researchFindings: { f1: { categoryTamCr: 8 } } }), "100g");
+assert.equal(ideaScaleFromDoc({ researchFindings: { f1: { categoryTamCr: 8 } } }), "10g");
+assert.equal(
+  ideaScaleFromDoc({
+    f1: { categoryTamCr: 14000 },
+    researchFindings: { f1: { categoryTamCr: 14000 } },
+  }),
+  "10g"
+);
+assert.equal(
+  ideaScaleFromDoc({
+    f5: {
+      householdsReachedY3Mn: 0.5,
+      trialRatePct: 10,
+      repeatConversionPct: 50,
+      purchaseFrequencyYr: 4,
+      avgPackValueInr: 50,
+    },
+    researchFindings: { f1: { categoryTamCr: 14000 } },
+  }),
+  "10g"
+);
 
 assert.equal(categoryCheckCopy("Hair care"), "Category: Hair care");
 assert.match(categoryCheckCopy(""), /not filled/);

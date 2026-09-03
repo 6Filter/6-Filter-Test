@@ -30,6 +30,7 @@ import {
   scoreArcColor,
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaScaleImpactCopy } from "../lib/ideaScale.js";
+import { gateInputKey, shouldReuseAnalysis } from "../lib/analysisStability.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -939,6 +940,9 @@ export default function PropositionForm({
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
     initial?.researchRunAt ? researchInputKey(initial) : ""
   );
+  const [gateKeyAtResult, setGateKeyAtResult] = useState(() =>
+    initial?.goNoGo?.classification ? gateInputKey(mergeProposition(initial)) : ""
+  );
   const fileRef = useRef(null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
@@ -958,15 +962,17 @@ export default function PropositionForm({
 
   useEffect(() => {
     const merged = mergeProposition(initial);
-    const filled = initial?.suggestions
-      ? mergeSuggestionsIntoDoc(merged, initial.suggestions)
-      : { doc: merged, sourced: {} };
+    const filled =
+      initial?.suggestions && !initial?.researchRunAt
+        ? mergeSuggestionsIntoDoc(merged, initial.suggestions)
+        : { doc: merged, sourced: {} };
     setDoc(filled.doc);
     setAiSourced(filled.sourced);
     setAiSuggestions(initial?.suggestions || null);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
+    setGateKeyAtResult(initial?.goNoGo?.classification ? gateInputKey(filled.doc) : "");
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
@@ -985,6 +991,7 @@ export default function PropositionForm({
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
     setCurrentView("propositionForm");
+    setGateKeyAtResult(initial?.goNoGo?.classification ? gateInputKey(mergeProposition(initial)) : "");
     setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);
@@ -1493,25 +1500,40 @@ export default function PropositionForm({
     }
     setLocalError("");
     setFailedBanner(null);
-    const preview = applyLocalGate(doc);
-    setAdvisoryChecks(preview.checks);
-    setSummaryChecks(preview.checks);
-    setGoNoGo({
-      classification: preview.classification,
-      rationale: preview.rationale,
-      score: preview.score,
-      ideaScale: preview.ideaScale,
-      ideaName: preview.ideaName,
-      category: preview.category,
-      at: new Date().toISOString(),
-    });
-    setJustSubmitted(true);
-    setSummaryStale(false);
     const provider = providerOverride || llmProvider;
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
     const hadResearchRunAt = Boolean(doc.researchRunAt);
+    const nextGateKey = gateInputKey(doc);
+    if (
+      shouldReuseAnalysis({
+        existingGoNoGo: goNoGo,
+        forceResearch: Boolean(submitOpts.forceResearch),
+        ideaChanged,
+        previousGateKey: gateKeyAtResult,
+        nextGateKey,
+      })
+    ) {
+      setCurrentView("goNoGoResult");
+      return;
+    }
+    if (!goNoGo?.classification) {
+      const preview = applyLocalGate(doc);
+      setAdvisoryChecks(preview.checks);
+      setSummaryChecks(preview.checks);
+      setGoNoGo({
+        classification: preview.classification,
+        rationale: preview.rationale,
+        score: preview.score,
+        ideaScale: preview.ideaScale,
+        ideaName: preview.ideaName,
+        category: preview.category,
+        at: new Date().toISOString(),
+      });
+    }
+    setJustSubmitted(true);
+    setSummaryStale(false);
     const persistDuration = Boolean(
       submitOpts.forceResearch || ideaChanged || !hadResearchRunAt
     );
@@ -1530,9 +1552,8 @@ export default function PropositionForm({
     if (!result?.proposition) return;
     savedOk = true;
     const saved = mergeProposition(result.proposition);
-    const filled = result.suggestions
-      ? applyResearchResult(result, saved)
-      : saved;
+    const researchRan = Boolean(result.researchRan) || (!hadResearchRunAt && result.suggestions);
+    const filled = researchRan && result.suggestions ? applyResearchResult(result, saved) : saved;
     if (result.researchError) {
       setLocalError(result.researchError);
       setFailedBanner({
@@ -1567,7 +1588,7 @@ export default function PropositionForm({
     const nextScore = scoreAdvisoryChecks(checks || {});
     const ideaName = formIdeaLabel(nextDoc);
     const category = formCategoryLabel(nextDoc);
-    setGoNoGo({
+    const nextGo = {
       classification,
       rationale: buildGateRationale({
         classification,
@@ -1581,11 +1602,14 @@ export default function PropositionForm({
       ideaName,
       category,
       at: new Date().toISOString(),
-    });
+    };
+    setGoNoGo(nextGo);
+    setGateKeyAtResult(gateInputKey(nextDoc));
     setJustSubmitted(true);
     setSummaryStale(false);
 
     await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
+    setGateKeyAtResult(gateInputKey(nextDoc));
     } finally {
       const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
