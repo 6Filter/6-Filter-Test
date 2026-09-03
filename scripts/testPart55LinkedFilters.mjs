@@ -75,12 +75,11 @@ const band = assembleMarginElasticity({
   grammage: "100ml",
   mrpInr: 500,
 });
-assert.equal(band.minMrpInr, 200);
-assert.ok(band.maxMrpInr > 800);
+assert.ok(Math.abs(band.minMrpInr - 450) < 0.01, `min should be max(floor 200, 500×0.9)=450, got ${band.minMrpInr}`);
+assert.ok(Math.abs(band.maxMrpInr - 550) < 0.01, `max should be 500×1.1=550, got ${band.maxMrpInr}`);
 assert.ok(band.elasticityDownPct > 0);
 assert.ok(band.elasticityUpPct > 0);
-assert.equal(band.recommendedMrpInr != null, true);
-assert.ok(Math.abs(band.recommendedMrpInr - 500) < 0.01, "₹500 sits inside 200–898");
+assert.ok(Math.abs(band.recommendedMrpInr - 500) < 0.01, "₹500 is the centre of 450–550");
 
 const tooLow = assembleMarginElasticity({
   cogsAtScale: 100,

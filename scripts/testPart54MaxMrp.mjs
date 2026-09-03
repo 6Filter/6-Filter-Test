@@ -121,35 +121,33 @@ assert.match(checked.items[0].text, /invalid result/);
 
 assert.equal(screenshot.inflationRatePct, 18.5);
 assert.equal(screenshot.volumeLossPct, 18.5);
+assert.equal(screenshot.volumeLossPriceIncreasePct, 10);
 
-const staleMin = recastMarginElasticityLive(
-  { ...screenshot, minMrpInr: 120 },
-  { cogsAtScale: 60, mrpInr: 354, division: "Personal Care" }
-);
-assert.equal(staleMin.minMrpInr, 120, "COGS 60 against a 50 percent floor is ₹120");
-
-const liveAfterCogs = recastMarginElasticityLive(staleMin, {
+const aroundMrp = recastMarginElasticityLive(screenshot, {
   cogsAtScale: 100,
   mrpInr: 590,
   division: "Personal Care",
 });
-assert.equal(liveAfterCogs.minMrpInr, 200, "min MRP must recast live when COGS changes");
-assert.ok(
-  Math.abs(liveAfterCogs.maxMrpInr - screenshot.maxMrpInr) < 0.02,
-  "max MRP recasts from the stored volume-loss ceiling, not from the frozen rupee"
-);
+assert.ok(Math.abs(aroundMrp.minMrpInr - 531) < 0.5, `min should sit just below MRP 590, got ${aroundMrp.minMrpInr}`);
+assert.ok(Math.abs(aroundMrp.maxMrpInr - 649) < 0.5, `max should sit just above MRP 590, got ${aroundMrp.maxMrpInr}`);
+assert.ok(aroundMrp.minMrpInr < 590 && aroundMrp.maxMrpInr > 590);
+assert.equal(aroundMrp.mrpAdjustmentNote, null);
 
-const liveAfterMargin = recastMarginElasticityLive(liveAfterCogs, {
+const afterCogs = recastMarginElasticityLive(aroundMrp, {
+  cogsAtScale: 60,
+  mrpInr: 354,
+  division: "Personal Care",
+});
+assert.ok(Math.abs(afterCogs.maxMrpInr - 389.4) < 0.05);
+assert.ok(afterCogs.minMrpInr < 354 && afterCogs.maxMrpInr > 354);
+
+const belowFloor = recastMarginElasticityLive(aroundMrp, {
   cogsAtScale: 100,
   mrpInr: 196.67,
   division: "Personal Care",
 });
-assert.equal(liveAfterMargin.minMrpInr, 200);
-assert.ok(
-  Math.abs(liveAfterMargin.maxMrpInr - screenshot.maxMrpInr) < 0.02,
-  "max stays the researched ceiling when only net margin / MRP changes"
-);
-assert.ok(liveAfterMargin.mrpAdjustmentNote || liveAfterCogs.mrpAdjustmentNote);
+assert.equal(belowFloor.minMrpInr, 200);
+assert.ok(belowFloor.mrpAdjustmentNote);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /range\?\.rangeError/);
