@@ -20,13 +20,13 @@ import {
   analysisCheckItems,
 } from "../lib/goNoGo.js";
 import {
+  closestPathToGo,
   computeImprovementPointValues,
   countFiltersWithEvidence,
   f2ActualVsFloor,
   f3ActualVsCeiling,
   formatOutputDate,
   formatScreenedDuration,
-  projectedScoreIfTopResolved,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaScaleImpactCopy } from "../lib/ideaScale.js";
@@ -658,8 +658,8 @@ function GoNoGoResultPage({
     ...it,
     text: rewriteUnmatchedDivisionCopy(it.text, categoryName),
   }));
-  const topTwo = improvementItems.slice(0, 2);
-  const projected = projectedScoreIfTopResolved(score.pct, topTwo, 2);
+  const path = closestPathToGo(checks, improvementItems);
+  const pathItems = path.items;
   const coverage = countFiltersWithEvidence(doc || {});
   const screened = formatScreenedDuration(doc?.researchDurationMs);
   const dated = formatOutputDate(doc?.updatedAt || result.at);
@@ -712,16 +712,22 @@ function GoNoGoResultPage({
           <p className="path-score-line">
             <span className="mono">{score.pct}%</span>
             <span className="path-arrow" aria-hidden="true">→</span>
-            <span className="mono path-projected">{projected}%</span>
-            {topTwo.length ? (
-              <span className="path-if">if the top {topTwo.length === 1 ? "item" : `${topTwo.length} items`} clear</span>
+            <span className="mono path-projected">{path.projectedPct}%</span>
+            {pathItems.length ? (
+              <span className="path-if">
+                {path.reachesGo
+                  ? `if the top ${pathItems.length === 1 ? "item" : `${pathItems.length} items`} clear`
+                  : `if ${pathItems.length === 1 ? "the remaining item clears" : `all ${pathItems.length} remaining items clear`} — still short of GO`}
+              </span>
             ) : (
-              <span className="path-if">nothing outstanding on the scored checklist</span>
+              <span className="path-if">
+                {path.reachesGo ? "already above 80" : "nothing outstanding on the scored checklist"}
+              </span>
             )}
           </p>
-          {topTwo.length ? (
+          {pathItems.length ? (
             <ul className="path-top-list">
-              {topTwo.map((it, i) => (
+              {pathItems.map((it, i) => (
                 <li key={`${it.filter}-${i}`}>
                   <span className="mono imp-filter-tag">{it.filter}</span>
                   {it.text}

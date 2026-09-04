@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fieldOwners } from "../lib/fieldOwnership.js";
 import {
+  closestPathToGo,
   computeImprovementPointValues,
   countFiltersWithEvidence,
   f2ActualVsFloor,
@@ -62,8 +63,52 @@ assert.deepEqual(ownersForCheckItem("f3", items[1].text), fieldOwners("marginEla
 assert.deepEqual(ownersForCheckItem("f1", "Benchmark named: Indulekha"), ["BM", "CMI"]);
 assert.deepEqual(ownersForCheckItem("f4", "User habit shift potential: High risk — habit may move"), ["CMI", "R&D"]);
 
-const projected = projectedScoreIfTopResolved(scored.pct, items, 2);
-assert.equal(projected, Math.min(100, scored.pct + items[0].pointValue + items[1].pointValue));
+const projected = projectedScoreIfTopResolved(checks, items, 2);
+assert.equal(projected, Math.round((100 * (scored.done + 2)) / scored.total));
+
+const notCoreCopy =
+  "The category currently sells on price-pack architecture / value-for-money, flavour range and regional relevance, brand salience/distribution reach, and health perception (baked/lower-oil). Distinctive crunch/texture requires primary research — it is not a salient purchase driver across general trade, modern trade, e-com and quick-commerce.";
+assert.deepEqual(ownersForCheckItem("f1", notCoreCopy), fieldOwners("declaredAttribute"));
+
+const chipsLike = {
+  f1: {
+    items: [
+      { status: "pending", text: notCoreCopy },
+      { status: "done", text: "Benchmark verified: Lay's" },
+      { status: "done", text: "Declared gap 3 clears the 2.0 floor" },
+      { status: "done", text: "Growth route and argument recorded, backed by researched category size" },
+    ],
+  },
+  f2: {
+    items: [
+      { status: "done", text: "MRP ₹49.17 · 60g" },
+      { status: "done", text: "Net margin 40% clears the 30% floor" },
+      { status: "done", text: "Quick-commerce terms assumption recorded" },
+    ],
+  },
+  f3: { items: [{ status: "done", text: "Filter 2 MRP sits within the safe ₹46–₹53 range" }] },
+  f4: {
+    items: [
+      { status: "pending", text: "Functional core stability: Medium risk — baked claim is fragile" },
+      { status: "done", text: "Consumption context stability: Low risk — leisure occasions hold" },
+      { status: "pending", text: "Manufacturing disruption risk: Medium risk — competing processes" },
+      { status: "pending", text: "User habit shift potential: High risk — better-for-you snacking" },
+      { status: "done", text: "Adjacent substitution threat: Low risk — alternatives exist" },
+      { status: "done", text: "Purchase frequency shift: Low risk — impulse packs remain" },
+      { status: "pending", text: "Regulatory disruption risk: Medium risk — labeling pressure" },
+    ],
+  },
+};
+const chipsScore = scoreAdvisoryChecks(chipsLike);
+assert.equal(chipsScore.done, 10);
+assert.equal(chipsScore.total, 15);
+assert.equal(chipsScore.pct, 67);
+const chipsItems = computeImprovementPointValues(chipsLike);
+const path = closestPathToGo(chipsLike, chipsItems);
+assert.equal(path.items.length, 3);
+assert.equal(path.projectedPct, 87);
+assert.equal(path.reachesGo, true);
+assert.notEqual(path.projectedPct, 81);
 
 assert.equal(scoreArcColor(40), "var(--fail)");
 assert.equal(scoreArcColor(70), "var(--watch)");
@@ -98,7 +143,7 @@ assert.match(src, /--bg:#0d0715/);
 assert.match(src, /--path-panel-bg:#151f2c/);
 assert.match(src, /Space Grotesk/);
 assert.match(src, /JetBrains Mono/);
-assert.match(src, /computeImprovementPointValues/);
+assert.match(src, /closestPathToGo/);
 assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);
 assert.match(src, /See all next steps/);
