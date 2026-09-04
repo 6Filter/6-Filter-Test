@@ -1,0 +1,47 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { checkF4 } from "../lib/filterChecks.js";
+import { previewAdvisoryChecks } from "../lib/goNoGo.js";
+import { TECH_SHIFT_DIMENSIONS } from "../lib/techShiftRisk.js";
+
+const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
+const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(apiSrc, /import \{ runFilter4 \} from "\.\/filters\/filter4TechShift\.js"/);
+
+assert.match(formSrc, /data-f4-state=\{hasBeenScored \? "scored" : "unscored"\}/);
+assert.match(formSrc, /className="f4-unscored-state"/);
+assert.match(formSrc, /className="pill-inert"/);
+assert.match(
+  formSrc,
+  /Submit the idea to run AI research across these seven points — response fields for any Medium or High/
+);
+assert.match(formSrc, /d\.risk === "Medium" \|\| d\.risk === "High"/);
+assert.match(formSrc, /className="dimension-response"/);
+
+const empty = checkF4({});
+assert.equal(empty.checkLabel, "Not yet run");
+assert.notEqual(empty.checkLabel, "Cleared");
+assert.match(empty.items[0].text, /not yet assessed/);
+assert.equal(empty.items[0].formAdmin, true);
+
+const emptyDims = checkF4({ techShiftRisk: { dimensions: {} } });
+assert.equal(emptyDims.checkLabel, "Not yet run");
+
+const allLow = Object.fromEntries(
+  TECH_SHIFT_DIMENSIONS.map((key) => [key, { risk: "Low", reason: `${key} stable` }])
+);
+const scoredLow = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } });
+assert.equal(scoredLow.checkLabel, "Cleared");
+
+const oneHigh = {
+  ...allLow,
+  functionalCoreStability: { risk: "High", reason: "format declining vs aerosol substitutes" },
+};
+const scoredHigh = checkF4({ techShiftRisk: { dimensions: oneHigh, overallRisk: "Medium" } });
+assert.equal(scoredHigh.checkLabel, "Evidence missing");
+
+const preview = previewAdvisoryChecks({ f4: {} });
+assert.equal(preview.f4.checkLabel, "Not yet run");
+assert.notEqual(preview.f4.checkLabel, "Cleared");
+
+console.log("PASS Part 66 F4 unscored state is distinct and never Cleared before dimensions exist");

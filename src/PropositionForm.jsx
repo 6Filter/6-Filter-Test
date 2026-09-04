@@ -361,6 +361,7 @@ function FieldControl({
     const risk = value && typeof value === "object" ? value : {};
     const overall = effectiveOverallRisk(risk);
     const dimensions = risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : {};
+    const hasBeenScored = Boolean(risk.dimensions) && Object.keys(dimensions).length > 0;
     const respondable = Object.entries(dimensions).filter(
       ([, d]) => d && (d.risk === "Medium" || d.risk === "High")
     );
@@ -375,59 +376,78 @@ function FieldControl({
       });
     };
     return (
-      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f4-risk="tech-shift">
+      <div
+        className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`}
+        title={lockTitle}
+        data-f4-risk="tech-shift"
+        data-f4-state={hasBeenScored ? "scored" : "unscored"}
+      >
         <div className="prop-label">
           {field.label}
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        <p className="prop-helper">Points scored</p>
-        <ul className="f4-eval-points">
-          {TECH_SHIFT_DIMENSIONS.map((key) => (
-            <li key={key}>{DIMENSION_LABELS[key]}</li>
-          ))}
-        </ul>
-        {overall ? (
-          <p className="derived-note">Current overall: {overall}</p>
-        ) : (
-          <p className="derived-note">Submit the idea to score these seven points.</p>
-        )}
-        {respondable.length ? (
-          <div className="f4-response-list">
-            {respondable.map(([key, d]) => (
-              <div key={key} className="dimension-response">
-                <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                <div className="dimension-finding original">
-                  Original: {d.risk} risk — {d.reason}
-                </div>
-                {d.reassessedRisk ? (
-                  <div className="dimension-finding reassessed">
-                    After response: {d.reassessedRisk} risk — {d.reassessedReason}
-                  </div>
-                ) : null}
-                <textarea
-                  rows={3}
-                  placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
-                  value={d.userResponse || ""}
-                  disabled={locked || reassessing}
-                  title={lockTitle}
-                  onChange={(e) => patchDimensionResponse(key, e.target.value)}
-                />
-              </div>
-            ))}
-            {typeof onReassess === "function" ? (
-              <button
-                type="button"
-                className="ghost f4-reassess"
-                disabled={locked || reassessing || !hasResponseText}
-                onClick={onReassess}
-              >
-                {reassessing ? <Loader2 size={15} className="spin" /> : null}
-                {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
-              </button>
-            ) : null}
+        {!hasBeenScored ? (
+          <div className="f4-unscored-state">
+            <div className="dimension-pills-inert">
+              {TECH_SHIFT_DIMENSIONS.map((key) => (
+                <span key={key} className="pill-inert">
+                  {DIMENSION_LABELS[key]}
+                </span>
+              ))}
+            </div>
+            <p className="f4-cta">
+              Submit the idea to run AI research across these seven points — response fields for any Medium or High
+              finding will appear here afterward.
+            </p>
           </div>
-        ) : null}
+        ) : (
+          <>
+            <p className="prop-helper">Points scored</p>
+            <ul className="f4-eval-points">
+              {TECH_SHIFT_DIMENSIONS.map((key) => (
+                <li key={key}>{DIMENSION_LABELS[key]}</li>
+              ))}
+            </ul>
+            {overall ? <p className="derived-note">Current overall: {overall}</p> : null}
+            {respondable.length ? (
+              <div className="f4-response-list">
+                {respondable.map(([key, d]) => (
+                  <div key={key} className="dimension-response">
+                    <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
+                    <div className="dimension-finding original">
+                      Original: {d.risk} risk — {d.reason}
+                    </div>
+                    {d.reassessedRisk ? (
+                      <div className="dimension-finding reassessed">
+                        After response: {d.reassessedRisk} risk — {d.reassessedReason}
+                      </div>
+                    ) : null}
+                    <textarea
+                      rows={3}
+                      placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
+                      value={d.userResponse || ""}
+                      disabled={locked || reassessing}
+                      title={lockTitle}
+                      onChange={(e) => patchDimensionResponse(key, e.target.value)}
+                    />
+                  </div>
+                ))}
+                {typeof onReassess === "function" ? (
+                  <button
+                    type="button"
+                    className="ghost f4-reassess"
+                    disabled={locked || reassessing || !hasResponseText}
+                    onClick={onReassess}
+                  >
+                    {reassessing ? <Loader2 size={15} className="spin" /> : null}
+                    {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </>
+        )}
         {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
@@ -2426,6 +2446,11 @@ const PROP_CSS = `
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
 .f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
   border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}
+.f4-unscored-state{display:flex;flex-direction:column;gap:10px;margin:4px 0 2px;}
+.dimension-pills-inert{display:flex;flex-wrap:wrap;gap:6px;}
+.pill-inert{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.38);
+  border:1px dashed rgba(243,234,248,.22);border-radius:999px;padding:5px 10px;}
+.f4-cta{margin:0;font-size:13px;line-height:1.5;color:var(--ink-secondary);}
 .f4-response-list{display:flex;flex-direction:column;gap:12px;margin:10px 0 4px;}
 .dimension-response{display:flex;flex-direction:column;gap:6px;padding:10px 12px;
   border:1px solid rgba(143,184,232,.22);border-radius:10px;background:rgba(143,184,232,.06);}

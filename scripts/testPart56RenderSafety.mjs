@@ -44,7 +44,7 @@ const f3Missing = checkF3({ cogsAtScale: 100, netMarginAtScale: 80 }, {});
 assert.equal(f3Missing.checkLabel, "Evidence missing");
 
 const f4Missing = checkF4({});
-assert.equal(f4Missing.checkLabel, "Cleared");
+assert.equal(f4Missing.checkLabel, "Not yet run");
 
 const f4NullCells = checkF4({
   techShiftRisk: {

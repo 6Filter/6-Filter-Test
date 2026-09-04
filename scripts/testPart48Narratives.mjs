@@ -34,6 +34,7 @@ assert.match(f2UnsignedFallback, /Nothing outstanding/);
 
 const f4pending = checkF4({});
 assert.match(f4pending.items[0].text, /not yet assessed/);
+assert.equal(f4pending.checkLabel, "Not yet run");
 const f4done = checkF4({
   techShiftRisk: {
     dimensions: {
