@@ -49,9 +49,11 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 assert.match(apiSrc, /hasSubmitterIdentity\(payload\)/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
-assert.match(appSrc, /h\.submitterName/);
-assert.match(appSrc, /h\.submitterDepartment/);
-assert.match(appSrc, /formatLogDate\(h\.updatedAt \|\| h\.createdAt\)/);
+const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
+assert.match(logSrc, /submitterName/);
+assert.match(logSrc, /submitterDepartment/);
+assert.match(logSrc, /createdAt \|\| h\.updatedAt/);
+assert.match(appSrc, /LogPage/);
 
 const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 assert.match(dbSrc, /submitter_name/);

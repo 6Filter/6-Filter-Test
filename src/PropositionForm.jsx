@@ -2,13 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
+  FORUM_VERDICT_FIELD,
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
+  VERDICT_NOTE_FIELD,
   hasSubmitterIdentity,
   mergeProposition,
 } from "../lib/propositionFields.js";
-import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
-import { isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
+import { canWriteField, ownerLabel, ownershipBanner } from "../lib/fieldOwnership.js";
+import {
+  canProceedToProofUpload,
+  hasManagerApproval,
+  isFilterUnlocked,
+  nextLockedHint,
+} from "../lib/filterUnlock.js";
+import {
+  canRequestManagerReview,
+  timeAgo,
+  viewerCanApproveManagerReview,
+} from "../lib/managerReview.js";
+import { sidebarNavItems, submitProgress } from "../lib/formProgress.js";
 import { isNamedBenchmark } from "../lib/benchmarkName.js";
 import {
   applyLocalGate,
@@ -706,6 +719,96 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
   );
 }
 
+function FilterTeaserCard({ spec, sub }) {
+  const f5f6 = spec.key === "f5" || spec.key === "f6";
+  return (
+    <div id={spec.key} className={`teaser-card${f5f6 ? " teaser-f5f6" : ""}`}>
+      <span className="teaser-badge">{spec.num}</span>
+      <div>
+        <div className="teaser-title">{spec.title}</div>
+        <div className="teaser-sub">{sub}</div>
+      </div>
+    </div>
+  );
+}
+
+function InlineFloorFail({ check }) {
+  if (check?.checkLabel !== "Below floor") return null;
+  const pending = (check.items || []).find((i) => i.status === "pending");
+  return (
+    <div className="inline-floor-fail">
+      <div className="fail-title">Not cleared — the gap is short of the floor</div>
+      {pending?.text ? <p>{pending.text}</p> : null}
+    </div>
+  );
+}
+
+function ManagerReviewPanel({
+  classification,
+  scorePct,
+  review,
+  currentUser,
+  onRequest,
+  onApprove,
+  busy,
+  comment,
+  onComment,
+}) {
+  if (classification === "NO-GO") return null;
+  if (classification !== "WATCH") return null;
+  const approved = hasManagerApproval({ managerReview: review, managerApproval: review });
+  const requestedAt = review?.requestedAt;
+  const canApprove = viewerCanApproveManagerReview(currentUser);
+
+  if (approved) {
+    return (
+      <div className="manager-review-panel is-approved">
+        <p>
+          Manager approved {review.approvedAt ? timeAgo(review.approvedAt) : ""}. Upload proof to unlock
+          Filters 5–6, the same as a GO read.
+        </p>
+        {review.comment ? <blockquote className="manager-comment">{review.comment}</blockquote> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="manager-review-panel">
+      <p>This idea isn&apos;t cleared yet, but a manager can approve it forward with a comment.</p>
+      {requestedAt ? (
+        <p className="manager-requested">Requested {timeAgo(requestedAt)}. Current read: WATCH at {scorePct}%</p>
+      ) : (
+        <button type="button" className="prop-save run" disabled={busy} onClick={onRequest}>
+          {busy ? <Loader2 size={15} className="spin" /> : null}
+          Request manager review
+        </button>
+      )}
+      {requestedAt && canApprove ? (
+        <div className="manager-review-form">
+          <p>Requested {timeAgo(requestedAt)}. Current read: WATCH at {scorePct}%.</p>
+          <textarea
+            placeholder="Comment — required to approve"
+            value={comment}
+            onChange={(e) => onComment(e.target.value)}
+            rows={3}
+          />
+          <button
+            type="button"
+            className="prop-save run"
+            disabled={busy || !String(comment || "").trim()}
+            onClick={onApprove}
+          >
+            {busy ? <Loader2 size={15} className="spin" /> : null}
+            Approve and unlock
+          </button>
+        </div>
+      ) : requestedAt && !canApprove ? (
+        <p className="manager-wait">Waiting for a manager (Admin or BH Forum) to approve with a comment.</p>
+      ) : null}
+    </div>
+  );
+}
+
 function GoNoGoResultPage({
   result,
   advisoryChecks,
@@ -715,6 +818,12 @@ function GoNoGoResultPage({
   onBack,
   onSubmit,
   saving,
+  currentUser,
+  onRequestReview,
+  onApproveReview,
+  managerBusy,
+  managerComment,
+  onManagerComment,
 }) {
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
@@ -881,12 +990,26 @@ function GoNoGoResultPage({
       ) : (
         <p className="gonogo-blocked-note">
           {isWatch
-            ? "WATCH — close the remaining Filter 1–4 gaps and Submit again. Upload and Filters 5–6 unlock only on GO."
+            ? "WATCH — a manager can approve this forward with a comment, or close the remaining Filter 1–4 gaps and Submit again. NO-GO (floor failure) cannot be overridden."
             : goNoGoIsFloorFailure(checks)
-              ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked until this reads GO."
+              ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked. NO-GO has no manager override."
               : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
         </p>
       )}
+
+      {isWatch ? (
+        <ManagerReviewPanel
+          classification={result.classification}
+          scorePct={score.pct}
+          review={doc?.managerReview}
+          currentUser={currentUser}
+          onRequest={onRequestReview}
+          onApprove={onApproveReview}
+          busy={managerBusy}
+          comment={managerComment}
+          onComment={onManagerComment}
+        />
+      ) : null}
 
       <div className="output-actions">
         <button
@@ -984,7 +1107,6 @@ export default function PropositionForm({
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
-  const [fileError, setFileError] = useState("");
   const [localError, setLocalError] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
   const [justSubmitted, setJustSubmitted] = useState(false);
@@ -1012,13 +1134,14 @@ export default function PropositionForm({
   const [managerText, setManagerText] = useState("");
   const [managerSubject, setManagerSubject] = useState("");
   const [managerCopied, setManagerCopied] = useState(false);
+  const [managerBusy, setManagerBusy] = useState(false);
+  const [managerComment, setManagerComment] = useState("");
   const [aiSourced, setAiSourced] = useState({});
   const [mrpBaseInr, setMrpBaseInr] = useState(null);
   const [mrpFinalInr, setMrpFinalInr] = useState(null);
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
     initial?.researchRunAt ? researchInputKey(initial) : ""
   );
-  const fileRef = useRef(null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
   const f3RangeTouchedByHuman = useRef(false);
@@ -1213,18 +1336,18 @@ export default function PropositionForm({
   }, [ideaName, ideaCategory, ideaText]);
 
   const propositionId = doc.id || initial?.id;
-  const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
-  const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
   const hasIdentity = hasSubmitterIdentity(doc);
-  const canSubmit = hasIdentity && (Boolean(doc.researchRunAt) || hasIdeaMaterial);
-  const proofGateReady = isFilterUnlocked("proof-gate", doc);
-  const f5Unlocked = isFilterUnlocked("f5", doc);
-  const sendManagerReady = isFilterUnlocked("send-manager", doc);
-  const unlockHint = nextLockedHint(doc);
+  const progress = submitProgress(doc);
+  const canSubmit = progress.requiredLeft === 0;
+  const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
+  const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
+  const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
+  const f5Unlocked = isFilterUnlocked("f5", liveDoc);
+  const sendManagerReady = isFilterUnlocked("send-manager", liveDoc);
+  const unlockHint = nextLockedHint(liveDoc);
   const unlockedFilterKeys = new Set(
-    SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, doc))
+    SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, liveDoc))
   );
-  const visibleFilters = SIX_FILTERS_FORM.filter((s) => unlockedFilterKeys.has(s.key));
   const f3Unlocked = unlockedFilterKeys.has("f3");
   const f3RangeEmpty = isMarginElasticityUnfilled(doc.f3?.marginElasticity);
   const marginElasticityLoading = Boolean(f3Filling || (saving && f3RangeEmpty && f3Unlocked));
@@ -1499,14 +1622,6 @@ export default function PropositionForm({
     }
   }
 
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || attachmentLocked) return;
-    const attachment = await readUploadFile(file, setFileError);
-    if (attachment) setTop("attachment", attachment);
-  }
-
   async function handleProofFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -1529,6 +1644,48 @@ export default function PropositionForm({
     setDoc(next);
     const result = await onSave(next, llmProvider);
     if (result?.proposition) setDoc(mergeProposition(result.proposition));
+  }
+
+  async function handleRequestManagerReview() {
+    if (!propositionId || managerBusy) return;
+    setManagerBusy(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/request-manager-review`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not request manager review.");
+      if (data.proposition) setDoc(mergeProposition({ ...doc, ...data.proposition }));
+      if (data.slackWarning) setLocalError(data.slackWarning);
+    } catch (e) {
+      setLocalError(e.message || "Could not request manager review.");
+    } finally {
+      setManagerBusy(false);
+    }
+  }
+
+  async function handleApproveManagerReview() {
+    if (!propositionId || managerBusy || !String(managerComment || "").trim()) return;
+    setManagerBusy(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/manager-approve`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: managerComment }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not approve.");
+      if (data.proposition) setDoc(mergeProposition({ ...doc, ...data.proposition }));
+      setManagerComment("");
+    } catch (e) {
+      setLocalError(e.message || "Could not approve.");
+    } finally {
+      setManagerBusy(false);
+    }
   }
 
   async function runGoNoGoRead(propositionDoc = doc, providerOverride) {
@@ -1616,7 +1773,11 @@ export default function PropositionForm({
       return;
     }
     if (!canSubmit) {
-      setLocalError("Describe the idea, or attach a file, before the first Submit.");
+      setLocalError(
+        progress.missingFieldLabels.length
+          ? `Fill ${progress.missingFieldLabels.join(", ")} before Submit.`
+          : "Fill the required fields before Submit."
+      );
       return;
     }
     setLocalError("");
@@ -1743,9 +1904,6 @@ export default function PropositionForm({
     fallbackUi?.providers?.length > 0
       ? fallbackUi.providers
       : configuredProviders.filter((p) => p.id !== (llmProvider || "claude"));
-  const ideaChangedSinceResearch = Boolean(
-    doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
-  );
 
   if (currentView === "goNoGoResult" && goNoGo?.classification) {
     return (
@@ -1761,83 +1919,108 @@ export default function PropositionForm({
           saving={saving || readingGoNoGo}
           onBack={() => setCurrentView("propositionForm")}
           onSubmit={() => handleSubmit()}
+          currentUser={currentUser}
+          onRequestReview={handleRequestManagerReview}
+          onApproveReview={handleApproveManagerReview}
+          managerBusy={managerBusy}
+          managerComment={managerComment}
+          onManagerComment={setManagerComment}
         />
       </main>
     );
   }
 
   return (
-    <main className="prop-page" data-view="propositionForm">
+    <main className="prop-page prop-form-page" data-view="propositionForm">
       <style>{PROP_CSS}</style>
 
-      <section className="prop-top">
-        <p className="prop-version">
-          {Number(doc.version) > 1
-            ? `v${doc.version} · last saved ${formatSavedAt(doc.updatedAt)}`
-            : "v1 · not yet saved for the team"}
-        </p>
-        <div className="prop-grid">
-          {PROPOSITION_TOP_FIELDS.map((field) => (
-            <div key={field.key} className={field.key === "ideaDescription" ? "span-2 prop-idea-block" : undefined}>
-              <FieldControl
-                field={field}
-                value={doc[field.key]}
-                onChange={(v) => setTop(field.key, v)}
-                currentUser={currentUser}
-                aiSourced={Boolean(aiSourced[sourcedPath("", field.key)])}
-                {...suggestionProps("", field, doc[field.key])}
-              />
-              {field.key === "ideaDescription" ? (
-                <div className="prop-attach">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
-                    onChange={handleFile}
-                    hidden
-                  />
-                  {!doc.attachment ? (
-                    <button
-                      type="button"
-                      className="ghost"
-                      disabled={saving || attachmentLocked}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <FileUp size={15} /> Upload PDF, Word, or image
-                    </button>
-                  ) : (
-                    <span className="chip file prop-file-chip">
-                      {doc.attachment.preview ? (
-                        <img src={doc.attachment.preview} alt="" />
-                      ) : (
-                        <FileText size={15} />
-                      )}
-                      {doc.attachment.name || "Attachment"}
-                      {!attachmentLocked ? (
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => setTop("attachment", null)}
-                        >
-                          <X size={12} />
-                        </button>
-                      ) : null}
-                    </span>
-                  )}
-                  {fileError ? (
-                    <div className="prop-err">
-                      <AlertTriangle size={14} /> {fileError}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
+      <div className="prop-form-shell">
+      <aside className="prop-sidebar">
+        <nav className="prop-side-nav" aria-label="Form sections">
+          {sidebarNavItems(liveDoc).map((item) => (
+            <a key={item.id} href={`#${item.id}`} className="prop-side-link">
+              <span className={`side-dot side-dot-${item.dot}`} aria-hidden="true" />
+              <span className="side-label">{item.label}</span>
+              <span className="mono side-count">{item.count}</span>
+            </a>
           ))}
-        </div>
+        </nav>
+        <p className="ownership-note">{ownershipBanner(currentUser?.role)}</p>
+        <p className="draft-saved mono">
+          {Number(doc.version) > 1 || doc.updatedAt
+            ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
+            : "Not yet saved for the team"}
+        </p>
+      </aside>
+
+      <div className="prop-form-main">
+      <section className="prop-identity-strip" aria-label="Submitter">
+        {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName" || f.key === "submitterDepartment").map(
+          (field) => (
+            <FieldControl
+              key={field.key}
+              field={field}
+              value={doc[field.key]}
+              onChange={(v) => setTop(field.key, v)}
+              currentUser={currentUser}
+              aiSourced={false}
+            />
+          )
+        )}
+      </section>
+
+      <section id="the-proposition" className="prop-form-hero">
+        <h1>Start with the idea</h1>
+        <p>Three fields. Research fills the rest, you edit it.</p>
+        <input
+          placeholder="e.g. Herbal cooling hair oil"
+          value={doc.name || ""}
+          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "name"))}
+          onChange={(e) => setTop("name", e.target.value)}
+          aria-label="Proposition name"
+        />
+        <input
+          placeholder="e.g. Hair oils"
+          value={doc.category || ""}
+          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "category"))}
+          onChange={(e) => setTop("category", e.target.value)}
+          aria-label="Category"
+        />
+        <textarea
+          placeholder="Describe the product idea."
+          value={doc.ideaDescription || ""}
+          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "ideaDescription"))}
+          onChange={(e) => setTop("ideaDescription", e.target.value)}
+          aria-label="Idea / insight description"
+          rows={4}
+        />
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
-      {visibleFilters.map((spec) => {
+      {SIX_FILTERS_FORM.map((spec) => {
+        const unlocked = unlockedFilterKeys.has(spec.key);
+        if (!unlocked && (spec.key === "f5" || spec.key === "f6")) {
+          return (
+            <FilterTeaserCard
+              key={spec.key}
+              spec={spec}
+              sub={
+                spec.key === "f5"
+                  ? "Opens once the idea reads GO and proof is uploaded."
+                  : "Opens together with Filter 5 after proof is uploaded."
+              }
+            />
+          );
+        }
+        if (!unlocked && (spec.key === "f3" || spec.key === "f4")) {
+          return (
+            <FilterTeaserCard
+              key={spec.key}
+              spec={spec}
+              sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
+            />
+          );
+        }
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
@@ -1850,7 +2033,8 @@ export default function PropositionForm({
         return (
           <section
             key={spec.key}
-            className="prop-filter"
+            id={spec.key}
+            className={`prop-filter${spec.key === "f5" || spec.key === "f6" ? " f5f6-card" : ""}`}
             style={{ borderLeftColor: spec.accentBg }}
           >
             <div className="prop-filter-h">
@@ -1874,6 +2058,7 @@ export default function PropositionForm({
                 <span className="check-pill" data-tone={toneFor(checkLabel)}>Check: {checkLabel}</span>
               </div>
             </div>
+            <InlineFloorFail check={check} />
 
             <div className="prop-grid">
               {spec.fields.map((field) =>
@@ -1950,13 +2135,43 @@ export default function PropositionForm({
                 {spec.crossCheckNote}
               </div>
             ) : null}
+            {spec.key === "f6" ? (
+              <>
+                <FieldControl
+                  field={FORUM_VERDICT_FIELD}
+                  value={values.forumVerdict}
+                  onChange={(v) => setFilter("f6", "forumVerdict", v)}
+                  currentUser={currentUser}
+                />
+                <FieldControl
+                  field={VERDICT_NOTE_FIELD}
+                  value={values.verdictNote}
+                  onChange={(v) => setFilter("f6", "verdictNote", v)}
+                  currentUser={currentUser}
+                />
+              </>
+            ) : null}
           </section>
         );
       })}
 
       {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
-      {goNoGo?.classification === "GO" && proofGateReady ? (
+      {canRequestManagerReview(liveDoc) || hasManagerApproval(liveDoc) ? (
+        <ManagerReviewPanel
+          classification={liveDoc.goNoGo?.classification}
+          scorePct={liveDoc.goNoGo?.score?.pct}
+          review={doc.managerReview}
+          currentUser={currentUser}
+          onRequest={handleRequestManagerReview}
+          onApprove={handleApproveManagerReview}
+          busy={managerBusy}
+          comment={managerComment}
+          onComment={setManagerComment}
+        />
+      ) : null}
+
+      {mayUploadProof ? (
         <ProofUploadPanel
           proof={doc.marketResearchProof}
           onPick={handleProofFile}
@@ -1967,6 +2182,7 @@ export default function PropositionForm({
         />
       ) : null}
 
+      {(error || localError || fallbackUi) ? (
       <section className="prop-submit-footer">
         {error || localError ? (
           <div className="prop-err" role="alert">
@@ -2021,48 +2237,49 @@ export default function PropositionForm({
             </p>
           </div>
         ) : null}
-        <div className="prop-actions">
-          <button
-            type="button"
-            className="prop-save run"
-            disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
-            onClick={() => handleSubmit()}
-            title={
-              !hasIdentity
-                ? "Enter your name and department before Submit"
-                : !canSubmit
-                ? "Describe the idea or attach a file before the first Submit"
-                : marginElasticityLoading
-                  ? "Wait for the safe MRP range — submitting again will not speed this up"
-                  : undefined
-            }
-          >
-            {saving || readingGoNoGo || marginElasticityLoading ? <Loader2 size={15} className="spin" /> : null}
-            {savedFlash
-              ? "Submitted"
-              : readingGoNoGo
-                ? "Analysing…"
-                : saving
-                  ? "Submitting…"
-                  : marginElasticityLoading
-                    ? "Calculating MRP range…"
-                    : "Submit"}
-          </button>
-          {sendManagerReady ? (
-            <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
-              <Send size={15} /> Send to Manager
-            </button>
-          ) : null}
-        </div>
-        <p className="prop-submit-note">
-          Submitting publishes a new version — everyone opening this page sees the latest entries.
-          {ideaChangedSinceResearch
-            ? " Re-running research — this may return a different result than before."
-            : !doc.researchRunAt
-              ? " The first submit also runs research once and offers suggestions on empty fields."
-              : " Research already ran for this proposition; later Submits only save."}
-        </p>
       </section>
+      ) : null}
+      </div>
+      </div>
+
+      <div className="submit-bar">
+        <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
+        <span><b>{progress.requiredLeft}</b> required fields left before you can submit</span>
+        <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
+        <span className="save-state">
+          v{doc.version || 1} · {Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team"}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleSubmit()}
+          disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
+          title={
+            !hasIdentity
+              ? "Enter your name and department before Submit"
+              : !canSubmit
+              ? progress.missingFieldLabels.join(", ")
+              : marginElasticityLoading
+                ? "Wait for the safe MRP range — submitting again will not speed this up"
+                : undefined
+          }
+        >
+          {saving || readingGoNoGo || marginElasticityLoading ? <Loader2 size={15} className="spin" /> : null}
+          {savedFlash
+            ? "Submitted"
+            : readingGoNoGo
+              ? "Analysing…"
+              : saving
+                ? "Submitting…"
+                : marginElasticityLoading
+                  ? "Calculating MRP range…"
+                  : "Submit for verdict"}
+        </button>
+        {sendManagerReady ? (
+          <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
+            <Send size={15} /> Send to Manager
+          </button>
+        ) : null}
+      </div>
 
       {managerOpen ? (
         <div className="modal-bg" onClick={() => setManagerOpen(false)}>
@@ -2107,7 +2324,79 @@ export default function PropositionForm({
 }
 
 const PROP_CSS = `
+.prop-form-page{
+  --bg:#120818; --header-bg:#0d0512; --header-border:#2a1836;
+  --sidebar-hover:#1d1029; --sidebar-active:#241333;
+  --card-bg:#1a0f25; --card-border:#2c1a3c;
+  --f5f6-card-bg:#170d20; --f5f6-card-border:#26162f;
+  --input-bg:#160c1f; --input-border:#38234c;
+  --ink:#efe8f5; --ink-secondary:#a795bb; --ink-secondary-2:#9a89ae;
+  --ink-muted:#8a76a3; --ink-muted-2:#7e6b95; --ink-muted-3:#6d5c80;
+  --accent:#8b5cf6; --accent-light:#c4b5fd; --accent-lighter:#ddd6fe;
+  --f1-dot:#a78bfa; --f2-dot:#34d399; --f3-dot:#d9a520; --f4-dot:#60a5fa;
+  --required-dot:#f472b6;
+  --floor-fail-bg:#2a1220; --floor-fail-border:#7f2547; --floor-fail-text:#fda4c0; --floor-fail-body:#e8c9d7;
+  font-family:'Sora',system-ui,sans-serif;
+  background:var(--bg); color:var(--ink);
+  max-width:none; margin:0; padding:20px 24px 120px;
+}
+.prop-form-page .mono{font-family:'IBM Plex Mono',monospace;}
+.prop-form-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;align-items:start;}
+.prop-sidebar{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:14px;padding:8px 0;}
+.prop-side-nav{display:flex;flex-direction:column;gap:2px;}
+.prop-side-link{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;color:var(--ink-secondary);text-decoration:none;font-size:13px;}
+.prop-side-link:hover{background:var(--sidebar-hover);color:var(--ink);}
+.prop-side-link:active,.prop-side-link:focus{background:var(--sidebar-active);}
+.side-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.side-dot-required{background:var(--required-dot);}
+.side-dot-f1{background:var(--f1-dot);}
+.side-dot-f2{background:var(--f2-dot);}
+.side-dot-f3{background:var(--f3-dot);}
+.side-dot-f4{background:var(--f4-dot);}
+.side-dot-f5,.side-dot-f6{background:var(--accent);}
+.side-label{flex:1;}
+.side-count{font-size:11px;color:var(--ink-muted);}
+.ownership-note{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink-muted);}
+.draft-saved{margin:0;font-size:11px;color:var(--ink-muted-3);}
+.prop-form-main{min-width:0;display:flex;flex-direction:column;gap:16px;}
+.prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
+.prop-form-hero{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;}
+.prop-form-hero h1{margin:0;font-size:28px;letter-spacing:-.4px;font-weight:700;}
+.prop-form-hero > p{margin:0 0 4px;color:var(--ink-secondary);font-size:14.5px;}
+.prop-form-page input,.prop-form-page select,.prop-form-page textarea{
+  width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:12px;
+  color:var(--ink);font-family:inherit;font-size:14.5px;padding:11px 13px;outline:none;}
+.prop-form-page textarea{min-height:84px;resize:vertical;}
+.inline-floor-fail{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--floor-fail-bg);border:1px solid var(--floor-fail-border);}
+.inline-floor-fail .fail-title{font-weight:700;color:var(--floor-fail-text);margin:0 0 6px;font-size:13.5px;}
+.inline-floor-fail p{margin:0;color:var(--floor-fail-body);font-size:13px;line-height:1.45;}
+.teaser-card{display:flex;align-items:center;gap:14px;background:var(--f5f6-card-bg);border:1px dashed var(--f5f6-card-border);border-radius:16px;padding:16px 18px;}
+.teaser-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent-light);background:rgba(139,92,246,.16);border-radius:8px;padding:8px 10px;}
+.teaser-title{font-weight:600;font-size:15px;}
+.teaser-sub{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
+.prop-form-page .prop-filter{background:var(--card-bg);border:1px solid var(--card-border);}
+.prop-form-page .f5f6-card{background:var(--f5f6-card-bg);border-color:var(--f5f6-card-border);}
+.manager-review-panel{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;}
+.manager-review-panel p{margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-secondary);}
+.manager-review-form{display:flex;flex-direction:column;gap:8px;}
+.manager-comment{margin:0;padding:10px 12px;border-left:3px solid var(--accent);color:var(--ink);font-size:13.5px;}
+.submit-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
+  background:var(--header-bg);border-top:1px solid var(--header-border);
+  padding:12px 24px 14px;color:var(--ink);font-family:'Sora',system-ui,sans-serif;
+}
+.submit-bar .progress-track{flex:1 1 160px;height:6px;border-radius:999px;background:#2a1836;overflow:hidden;min-width:120px;}
+.submit-bar .progress-fill{height:100%;background:var(--accent);border-radius:999px;}
+.submit-bar .field-list{font-size:11px;color:var(--ink-muted);flex:1 1 180px;}
+.submit-bar .save-state{font-size:12px;color:var(--ink-muted-2);}
+.submit-bar button{
+  display:inline-flex;align-items:center;gap:8px;margin-left:auto;
+  background:var(--accent);color:#efe8f5;border:none;border-radius:999px;
+  padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;}
+.submit-bar button:disabled{opacity:.55;cursor:not-allowed;}
 .prop-page{max-width:1080px;margin:0 auto;padding:0 28px 72px;color:#F3EAF8;}
+.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 120px;color:var(--ink);}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
 .prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
@@ -2400,5 +2689,10 @@ const PROP_CSS = `
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
   .prop-page{padding:0 16px 56px;}
+  .prop-form-shell{grid-template-columns:1fr;}
+  .prop-sidebar{position:static;}
+  .prop-identity-strip{grid-template-columns:1fr;}
+  .prop-page.prop-form-page{padding:16px 16px 140px;}
+  .submit-bar{padding:10px 16px 12px;}
 }
 `;

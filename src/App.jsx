@@ -14,6 +14,7 @@ import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
 import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
+import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
@@ -151,32 +152,6 @@ async function deleteAllPropositions() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not delete all propositions.");
   return data.deleted;
-}
-
-function propositionVerdict(v) {
-  if (v === "paper-cleared") return { label: "Paper cleared", key: "pass" };
-  if (v === "gate-open") return { label: "Gate open", key: "pass" };
-  if (v === "pass") return { label: "Cleared", key: "pass" };
-  if (v === "failed" || v === "fail") return { label: "Failed", key: "fail" };
-  if (v === "escalated") return { label: "Escalated", key: "watch" };
-  return { label: "Open", key: "watch" };
-}
-
-function formatLogDate(ts) {
-  const raw = ts;
-  let d;
-  if (raw == null || raw === "") d = new Date();
-  else if (typeof raw === "number") d = new Date(raw);
-  else if (/^\d+$/.test(String(raw))) d = new Date(Number(raw));
-  else d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd = {}, provider = "claude") {
@@ -1215,98 +1190,21 @@ export default function App() {
       )}
 
       {view === "log" && (
-        <main className="log-page">
-          <section className="panel log-panel">
-            <div className="panel-tab">Log · History</div>
-            <div className="log-head">
-              <div>
-                <h2 className="log-title">Proposition log</h2>
-                <p className="log-sub">
-                  Name, department, idea, and submission time for every saved proposition.
-                  Click a row to open the evidence form, or the trash icon to delete it.
-                </p>
-              </div>
-              <div className="log-head-actions">
-                <button type="button" className="ghost" onClick={openLogTab} disabled={logLoading || deletingAll}>
-                  {logLoading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
-                  Refresh
-                </button>
-                <button
-                  type="button"
-                  className="ghost danger"
-                  onClick={confirmAndDeleteAll}
-                  disabled={
-                    logLoading ||
-                    deletingAll ||
-                    propositionList.length === 0 ||
-                    (sessionUser && sessionUser.role !== "ADMIN")
-                  }
-                >
-                  {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
-                  Delete all
-                </button>
-              </div>
-            </div>
-
-            {logError && <div className="err"><AlertTriangle size={14} /> {logError}</div>}
-
-            {logLoading && propositionList.length === 0 ? (
-              <div className="log-empty"><Loader2 size={18} className="spin" /> Loading propositions…</div>
-            ) : logHistory.length === 0 ? (
-              <div className="log-empty">
-                No propositions yet. Use NPD Screen or Enter your proposition here to start one.
-              </div>
-            ) : (
-              <div className="log-list">
-                {logHistory.map((h) => {
-                  const isOpening = openingId === h.id;
-                  const isDeleting = deletingId === h.id;
-                  const pf = propositionVerdict(h.finalVerdict);
-                  return (
-                    <div key={h.id} className="log-item">
-                    <div className="log-row-wrap">
-                      <button
-                        type="button"
-                        className="log-row"
-                        onClick={() => openProposition(h, "log")}
-                        disabled={loading || Boolean(deletingId) || deletingAll}
-                      >
-                        <span className={`log-status log-status-${pf.key}`}>{isOpening ? <Loader2 size={14} className="spin" /> : pf.label}</span>
-                        <span className="log-submitter">{h.submitterName || "—"}</span>
-                        <span className="log-dept">{h.submitterDepartment || "—"}</span>
-                        <span className="log-idea">
-                          <span className="log-idea-title">{h.name || h.ideaDescription || "Untitled idea"}</span>
-                          <span className="log-idea-meta">
-                            {[h.submitterName, h.submitterDepartment, formatLogDate(h.updatedAt || h.createdAt)]
-                              .filter((part) => part && part !== "—")
-                              .join(" · ")}
-                          </span>
-                        </span>
-                        <span className="log-date">{formatLogDate(h.updatedAt || h.createdAt)}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="log-del"
-                        aria-label="Delete this proposition"
-                        title="Delete proposition"
-                        disabled={
-                          loading ||
-                          Boolean(deletingId) ||
-                          deletingAll ||
-                          (sessionUser && sessionUser.role !== "ADMIN" && sessionUser.role !== "BM")
-                        }
-                        onClick={() => confirmDeleteProposition(h, "log")}
-                      >
-                        {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
-                      </button>
-                    </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </main>
+        <LogPage
+          rows={logHistory}
+          loading={logLoading}
+          error={logError}
+          onRefresh={openLogTab}
+          onDeleteAll={confirmAndDeleteAll}
+          onDeleteRow={(h) => confirmDeleteProposition(h, "log")}
+          onOpen={(h) => openProposition(h, "log")}
+          deletingAll={deletingAll}
+          deletingId={deletingId}
+          openingId={openingId}
+          canDeleteAll={!sessionUser || sessionUser.role === "ADMIN"}
+          canDeleteRow={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
+          openingDisabled={loading}
+        />
       )}
 
       {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
@@ -2105,7 +2003,7 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 .primus *{box-sizing:border-box;}
 .screen-spec {
   --bg: #170C25; --card: #191919; --panel: #22113A; --panel-2: #2A1841;
@@ -2131,13 +2029,13 @@ const CSS = `
   --accent-rgb: 227,169,63; --pass-rgb: 111,191,115; --fail-rgb: 226,113,107; --ink-rgb: 236,234,227;
 }
 .screen-log {
-  --bg: #F5F2EA; --card: #FBFAF7; --panel: #FBFAF7; --panel-2: #EFEBE1; --border: #E4DECF; --border-2: #DCD5C6;
-  --ink: #14202B; --ink-deep: #14202B; --muted: #5A6673; --muted-2: #7C8592; --muted-3: #8A93A0; --faint: #B5AF9F;
-  --accent: #0C558F; --accent-hover: #08406D; --accent-on: #FBFAF7;
-  --pass: #1F7A4C; --fail: #B23A2E; --watch: #B0771F;
-  --bg-soft: #EFEBE1; --line: #E4DECF; --line-soft: #DCD5C6;
-  --gold: #0C558F; --gold-ink: #FBFAF7; --teal: #0C558F; --coral: #B23A2E; --sky: #0C558F;
-  --accent-rgb: 12,85,143; --pass-rgb: 31,122,76; --fail-rgb: 178,58,46; --ink-rgb: 20,32,43;
+  --bg: #F2EFE5; --card: #FFFDF8; --panel: #FFFDF8; --panel-2: #FBF8EF; --border: #E6E1D1; --border-2: #E6E1D1;
+  --ink: #16202B; --ink-deep: #16202B; --muted: #5C5647; --muted-2: #6E6858; --muted-3: #8C8574; --faint: #A39C8B;
+  --accent: #16202B; --accent-hover: #0d141c; --accent-on: #FFFDF8;
+  --pass: #2F7A54; --fail: #A3402F; --watch: #C7962A;
+  --bg-soft: #FBF8EF; --line: #E6E1D1; --line-soft: #F1ECDD;
+  --gold: #16202B; --gold-ink: #FFFDF8; --teal: #2F7A54; --coral: #A3402F; --sky: #3A4A5C;
+  --accent-rgb: 22,32,43; --pass-rgb: 47,122,84; --fail-rgb: 163,64,47; --ink-rgb: 22,32,43;
 }
 .screen-verdict {
   --bg: #0B1B2A; --card: #12283C; --panel: #12283C; --panel-2: #163044;
@@ -2352,12 +2250,17 @@ const CSS = `
 .log-status-approved,.log-status-passed,.log-status-pass{background:rgba(36,168,102,.12);color:#1F8A55;}
 .log-status-promising,.log-status-needs,.log-status-watch{background:rgba(201,162,39,.16);color:#8A6E12;}
 .log-status-rejected,.log-status-failed,.log-status-fail{background:rgba(228,87,87,.12);color:#C53D3D;}
+.log-status-completed{background:rgba(139,92,246,.14);color:#6d28d9;}
+.log-impact{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--ink);}
+.log-summary-text{display:block;margin-top:4px;font-size:12px;line-height:1.4;color:var(--muted);max-width:52ch;}
 .log-weight{font-family:var(--fm);font-size:11px;color:var(--ink);letter-spacing:.04em;}
 .log-submitter,.log-dept{font-family:var(--fm);font-size:12px;color:var(--ink);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .log-dept{letter-spacing:.04em;text-transform:uppercase;font-size:11px;color:var(--muted);}
-.log-idea{font-size:13.5px;color:var(--ink-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.log-idea{font-size:13.5px;color:var(--ink-deep);min-width:0;}
 .log-idea-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .log-idea-meta{display:none;margin-top:2px;font-size:11px;color:var(--muted);font-family:var(--fm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-impact{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--ink);white-space:normal;}
+.log-summary-text{display:block;margin-top:4px;font-size:12px;line-height:1.4;color:var(--muted);white-space:normal;max-width:52ch;}
 .log-date{font-size:11.5px;color:var(--muted);text-align:right;font-family:var(--fm);}
 .hist-more{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:none;border:none;color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 0;}
 .hist-more:hover{color:var(--ink-deep);}
@@ -2631,4 +2534,4 @@ const CSS = `
   .filter-strip{grid-template-columns:1fr;}
 }
 @media(prefers-reduced-motion:reduce){.pulse,.primus .masthead,.primus .grid,.primus .result{animation:none;}.run:hover{transform:none;}}
-`;
+` + LOG_PAGE_CSS;
