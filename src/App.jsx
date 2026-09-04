@@ -1510,7 +1510,10 @@ function CategoryIntelPanel({ filter, kind }) {
             <ul className="ci-dims">
               {f4Dims.map((d) => (
                 <li key={d.key}>
-                  <strong>{d.label}: {d.risk}</strong> — {d.reason}
+                  <strong>{d.label}: {d.effectiveRisk || d.risk}</strong> — {d.reassessedReason || d.reason}
+                  {d.reassessedRisk ? (
+                    <span className="ci-dim-original"> (original {d.risk}: {d.reason})</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

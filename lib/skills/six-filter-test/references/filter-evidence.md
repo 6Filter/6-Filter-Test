@@ -30,7 +30,7 @@ Web search for cost/channel analogs. Empty F2 fields may auto-fill from `runCost
 |---|---|---|
 | Technology & habit shift risk not yet assessed | Skill + web: emerging tech, patents, regulation, adjacent-category innovation | `techShiftRisk` |
 
-`techShiftRisk` is `{ dimensions: { functionalCoreStability, consumptionContextStability, manufacturingDisruptionRisk, userHabitShiftPotential, adjacentSubstitutionThreat, purchaseFrequencyShift, regulatoryDisruptionRisk }, overallRisk, sources, aiSourced }`. Each dimension is `{ risk: Low|Medium|High, reason }`. The model must not supply `overallRisk` — the app computes it (`2+ High → High`, `1 High or 3+ Medium → Medium`, else `Low`). High overall = `Below floor`. Medium = `Evidence missing`. Human may override only the overall level.
+`techShiftRisk` is `{ dimensions: { functionalCoreStability, consumptionContextStability, manufacturingDisruptionRisk, userHabitShiftPotential, adjacentSubstitutionThreat, purchaseFrequencyShift, regulatoryDisruptionRisk }, overallRisk, sources, aiSourced }`. Each dimension is `{ risk: Low|Medium|High, reason, userResponse?, reassessedRisk?, reassessedReason? }`. The model must not supply `overallRisk` — the app computes it (`2+ High → High`, `1 High or 3+ Medium → Medium`, else `Low`) from `reassessedRisk` when present, otherwise original `risk`. High overall = `Below floor`. Medium = `Evidence missing`. A written `userResponse` is judged, never accepted at face value; original `risk`/`reason` are never overwritten.
 
 ## Filter 5 → `f5`
 

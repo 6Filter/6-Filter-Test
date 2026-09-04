@@ -89,6 +89,8 @@ Assess whether the format is structurally exposed to a shift that has not happen
 }
 ```
 
+Human responses to Medium/High dimensions are stored as `userResponse` on that cell. AI re-judges them into `reassessedRisk` / `reassessedReason` without overwriting the original `risk` / `reason`. Overall uses the reassessed rating when present. Vague reassurance must not move a rating.
+
 ## F5 — five sizing factors
 
 Always fill all five. Stronger tier on one factor must not be laundered onto a weaker factor — use `factorTiers` per factor.

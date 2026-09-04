@@ -314,6 +314,8 @@ function FieldControl({
   cogsAtScale = null,
   inactive = false,
   inactiveHint = "",
+  onReassess,
+  reassessing = false,
 }) {
   const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
@@ -342,6 +344,20 @@ function FieldControl({
   if (field.type === "computed-risk") {
     const risk = value && typeof value === "object" ? value : {};
     const overall = effectiveOverallRisk(risk);
+    const dimensions = risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : {};
+    const respondable = Object.entries(dimensions).filter(
+      ([, d]) => d && (d.risk === "Medium" || d.risk === "High")
+    );
+    const hasResponseText = respondable.some(([, d]) => String(d?.userResponse || "").trim());
+    const patchDimensionResponse = (key, userResponse) => {
+      const cell = { ...(dimensions[key] || {}), userResponse };
+      delete cell.reassessedRisk;
+      delete cell.reassessedReason;
+      onChange({
+        ...risk,
+        dimensions: { ...dimensions, [key]: cell },
+      });
+    };
     return (
       <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f4-risk="tech-shift">
         <div className="prop-label">
@@ -360,6 +376,42 @@ function FieldControl({
         ) : (
           <p className="derived-note">Submit the idea to score these seven points.</p>
         )}
+        {respondable.length ? (
+          <div className="f4-response-list">
+            {respondable.map(([key, d]) => (
+              <div key={key} className="dimension-response">
+                <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
+                <div className="dimension-finding original">
+                  Original: {d.risk} risk — {d.reason}
+                </div>
+                {d.reassessedRisk ? (
+                  <div className="dimension-finding reassessed">
+                    After response: {d.reassessedRisk} risk — {d.reassessedReason}
+                  </div>
+                ) : null}
+                <textarea
+                  rows={3}
+                  placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
+                  value={d.userResponse || ""}
+                  disabled={locked || reassessing}
+                  title={lockTitle}
+                  onChange={(e) => patchDimensionResponse(key, e.target.value)}
+                />
+              </div>
+            ))}
+            {typeof onReassess === "function" ? (
+              <button
+                type="button"
+                className="ghost f4-reassess"
+                disabled={locked || reassessing || !hasResponseText}
+                onClick={onReassess}
+              >
+                {reassessing ? <Loader2 size={15} className="spin" /> : null}
+                {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
@@ -627,7 +679,15 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
       </div>
       <h3>{spec.title}</h3>
       <p>{narrative}</p>
-      {compare ? (
+      {spec.key === "f4" && items.length ? (
+        <ul className="f4-analysis-dims">
+          {items.map((it, i) => (
+            <li key={`${spec.key}-dim-${i}`} data-status={it.status}>
+              {it.text}
+            </li>
+          ))}
+        </ul>
+      ) : compare ? (
         <FilterComparePair {...compare} />
       ) : total ? (
         <div className="filter-progress" aria-label={`${done} of ${total} items`}>
@@ -964,6 +1024,7 @@ export default function PropositionForm({
   const docRef = useRef(doc);
   const aiSourcedRef = useRef({});
   const [f3Filling, setF3Filling] = useState(false);
+  const [f4Reassessing, setF4Reassessing] = useState(false);
 
   useEffect(() => {
     docRef.current = doc;
@@ -1266,6 +1327,46 @@ export default function PropositionForm({
     }));
   }
 
+  async function handleReassessF4() {
+    if (!propositionId || f4Reassessing || saving) return;
+    const risk = doc.f4?.techShiftRisk;
+    const hasText = Object.values(risk?.dimensions || {}).some((d) =>
+      String(d?.userResponse || "").trim()
+    );
+    if (!hasText) return;
+    setF4Reassessing(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/reassess-f4`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: llmProvider,
+          techShiftRisk: risk,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLocalError(data.error || "Could not re-assess Filter 4 responses.");
+        return;
+      }
+      if (data.proposition) {
+        const next = mergeProposition(data.proposition);
+        setDoc(next);
+        if (data.advisoryChecks) {
+          setAdvisoryChecks(data.advisoryChecks);
+          setSummaryChecks(data.advisoryChecks);
+        }
+        if (next.goNoGo?.classification) setGoNoGo(next.goNoGo);
+      }
+    } catch (e) {
+      setLocalError(e.message || "Could not re-assess Filter 4 responses.");
+    } finally {
+      setF4Reassessing(false);
+    }
+  }
+
   function setTop(key, value) {
     noteEdit();
     markEdited("", key);
@@ -1505,7 +1606,7 @@ export default function PropositionForm({
   }
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
-    if (saving || f3Filling) return;
+    if (saving || f3Filling || f4Reassessing) return;
     if (!canSubmit) {
       setLocalError("Describe the idea, or attach a file, before the first Submit.");
       return;
@@ -1811,6 +1912,8 @@ export default function PropositionForm({
                     loading={
                       spec.key === "f3" && field.key === "marginElasticity" && marginElasticityLoading
                     }
+                    onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
+                    reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
                     liveNote=""
                     breakdownNote={
                       spec.key === "f2" && field.key === "gstRatePct"
@@ -2025,6 +2128,15 @@ const PROP_CSS = `
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
 .f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
   border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}
+.f4-response-list{display:flex;flex-direction:column;gap:12px;margin:10px 0 4px;}
+.dimension-response{display:flex;flex-direction:column;gap:6px;padding:10px 12px;
+  border:1px solid rgba(143,184,232,.22);border-radius:10px;background:rgba(143,184,232,.06);}
+.dimension-response-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.78);}
+.dimension-finding{font-size:12.5px;line-height:1.45;color:rgba(243,234,248,.82);}
+.dimension-finding.original{color:rgba(243,234,248,.78);}
+.dimension-finding.reassessed{color:#C9A0E8;}
+.dimension-response textarea{width:100%;min-height:72px;}
+.f4-reassess{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;}
 .f4-analysis-dims{margin-top:10px;}
 .output-page .f4-analysis-dims{margin-top:12px;}
 .output-page .f4-analysis-dims li{font-size:13.5px;line-height:1.5;color:var(--ink-muted-85);}

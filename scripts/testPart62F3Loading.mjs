@@ -41,7 +41,7 @@ assert.match(formSrc, /Calculating safe MRP range/);
 assert.match(formSrc, /No range calculated yet — Submit to run the AI first pass/);
 assert.match(formSrc, /className="me-loading"/);
 assert.match(formSrc, /disabled=\{saving \|\| readingGoNoGo \|\| !canSubmit \|\| marginElasticityLoading\}/);
-assert.match(formSrc, /if \(saving \|\| f3Filling\) return/);
+assert.match(formSrc, /if \(saving \|\| f3Filling \|\| f4Reassessing\) return/);
 assert.match(formSrc, /f3CheckPending \? "Calculating…" : check\.checkLabel/);
 
 console.log("PASS Part 62 F3 loading state and empty-range must not Clear");
