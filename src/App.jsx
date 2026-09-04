@@ -772,6 +772,9 @@ export default function App() {
           name: saved.name,
           category: saved.category,
           division: saved.division,
+          submitterName: saved.submitterName,
+          submitterDepartment: saved.submitterDepartment,
+          ideaDescription: saved.ideaDescription,
           finalVerdict: saved.finalVerdict,
           version: saved.version,
           createdAt: saved.createdAt,
@@ -1219,6 +1222,7 @@ export default function App() {
               <div>
                 <h2 className="log-title">Proposition log</h2>
                 <p className="log-sub">
+                  Name, department, idea, and submission time for every saved proposition.
                   Click a row to open the evidence form, or the trash icon to delete it.
                 </p>
               </div>
@@ -1268,10 +1272,17 @@ export default function App() {
                         disabled={loading || Boolean(deletingId) || deletingAll}
                       >
                         <span className={`log-status log-status-${pf.key}`}>{isOpening ? <Loader2 size={14} className="spin" /> : pf.label}</span>
-                        <span className="log-weight">{h.category || "—"}</span>
-                        <span className="log-weight">{h.division || "—"}</span>
-                        <span className="log-idea">{h.name || "Untitled proposition"}</span>
-                        <span className="log-date">{formatLogDate(h.updatedAt)}</span>
+                        <span className="log-submitter">{h.submitterName || "—"}</span>
+                        <span className="log-dept">{h.submitterDepartment || "—"}</span>
+                        <span className="log-idea">
+                          <span className="log-idea-title">{h.name || h.ideaDescription || "Untitled idea"}</span>
+                          <span className="log-idea-meta">
+                            {[h.submitterName, h.submitterDepartment, formatLogDate(h.updatedAt || h.createdAt)]
+                              .filter((part) => part && part !== "—")
+                              .join(" · ")}
+                          </span>
+                        </span>
+                        <span className="log-date">{formatLogDate(h.updatedAt || h.createdAt)}</span>
                       </button>
                       <button
                         type="button"
@@ -2333,7 +2344,7 @@ const CSS = `
 .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--muted);font-size:14px;}
 .log-list{display:flex;flex-direction:column;border-top:1px solid var(--line-soft);}
 .log-item{border-bottom:1px solid var(--line-soft);}
-.log-row{display:grid;grid-template-columns:92px minmax(120px,.4fr) minmax(0,1fr) 160px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
+.log-row{display:grid;grid-template-columns:92px minmax(110px,.28fr) 90px minmax(0,1fr) 150px;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;background:none;border:none;padding:14px 4px;cursor:pointer;border-radius:8px;transition:background .15s;}
 .log-row:hover{background:var(--bg-soft);}
 .log-row:disabled{opacity:.6;cursor:wait;}
 .log-score{font-family:var(--fm);font-weight:700;font-size:18px;}
@@ -2342,7 +2353,11 @@ const CSS = `
 .log-status-promising,.log-status-needs,.log-status-watch{background:rgba(201,162,39,.16);color:#8A6E12;}
 .log-status-rejected,.log-status-failed,.log-status-fail{background:rgba(228,87,87,.12);color:#C53D3D;}
 .log-weight{font-family:var(--fm);font-size:11px;color:var(--ink);letter-spacing:.04em;}
-.log-idea{font-size:13.5px;color:var(--ink-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-submitter,.log-dept{font-family:var(--fm);font-size:12px;color:var(--ink);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-dept{letter-spacing:.04em;text-transform:uppercase;font-size:11px;color:var(--muted);}
+.log-idea{font-size:13.5px;color:var(--ink-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.log-idea-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-idea-meta{display:none;margin-top:2px;font-size:11px;color:var(--muted);font-family:var(--fm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .log-date{font-size:11.5px;color:var(--muted);text-align:right;font-family:var(--fm);}
 .hist-more{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:none;border:none;color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 0;}
 .hist-more:hover{color:var(--ink-deep);}
@@ -2607,8 +2622,9 @@ const CSS = `
   .panel.console{min-height:0;padding:26px 22px 22px;}
   .primus textarea.idea-input{min-height:160px;}
   .top-nav{order:3;width:100%;margin:8px 0 0;margin-right:0;}
-  .log-row{grid-template-columns:84px minmax(80px,.45fr) minmax(0,1fr);gap:8px;}
-  .log-date,.log-model{display:none;}
+  .log-row{grid-template-columns:84px minmax(0,1fr);gap:8px;}
+  .log-submitter,.log-dept,.log-date,.log-model{display:none;}
+  .log-idea-meta{display:block;}
   .log-outcome{padding:0 4px 12px;}
   .log-outcome-fields{grid-template-columns:1fr;}
   .npd-grid{grid-template-columns:1fr;}

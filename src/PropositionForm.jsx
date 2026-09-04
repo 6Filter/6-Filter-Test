@@ -4,6 +4,7 @@ import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
+  hasSubmitterIdentity,
   mergeProposition,
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel } from "../lib/fieldOwnership.js";
@@ -70,6 +71,8 @@ const SUGGEST_BLOCKLIST = new Set([
   "forumVerdict",
   "verdictNote",
   "name",
+  "submitterName",
+  "submitterDepartment",
 ]);
 
 const AI_AUTO_SKIP = new Set([
@@ -1212,7 +1215,8 @@ export default function PropositionForm({
   const propositionId = doc.id || initial?.id;
   const attachmentLocked = Boolean(currentUser && !canWriteField(currentUser.role, "attachment"));
   const hasIdeaMaterial = Boolean(String(doc.ideaDescription || "").trim() || doc.attachment?.data);
-  const canSubmit = Boolean(doc.researchRunAt) || hasIdeaMaterial;
+  const hasIdentity = hasSubmitterIdentity(doc);
+  const canSubmit = hasIdentity && (Boolean(doc.researchRunAt) || hasIdeaMaterial);
   const proofGateReady = isFilterUnlocked("proof-gate", doc);
   const f5Unlocked = isFilterUnlocked("f5", doc);
   const sendManagerReady = isFilterUnlocked("send-manager", doc);
@@ -1607,6 +1611,10 @@ export default function PropositionForm({
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
+    if (!hasSubmitterIdentity(doc)) {
+      setLocalError("Enter your name and select your department before Submit.");
+      return;
+    }
     if (!canSubmit) {
       setLocalError("Describe the idea, or attach a file, before the first Submit.");
       return;
@@ -2020,7 +2028,9 @@ export default function PropositionForm({
             disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
             onClick={() => handleSubmit()}
             title={
-              !canSubmit
+              !hasIdentity
+                ? "Enter your name and department before Submit"
+                : !canSubmit
                 ? "Describe the idea or attach a file before the first Submit"
                 : marginElasticityLoading
                   ? "Wait for the safe MRP range — submitting again will not speed this up"
