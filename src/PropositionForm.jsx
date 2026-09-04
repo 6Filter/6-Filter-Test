@@ -1179,7 +1179,6 @@ export default function PropositionForm({
   useEffect(() => {
     setAiDismissed({});
     setAiPassMeta(null);
-    setFileError("");
     setLocalError("");
     setFallbackUi(null);
     setFallbackChoice("");

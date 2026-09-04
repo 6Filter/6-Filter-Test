@@ -29,6 +29,7 @@ assert.doesNotMatch(formSrc, /Open anyway/);
 assert.doesNotMatch(formSrc, /Run research & pre-fill/);
 assert.doesNotMatch(formSrc, /Upload PDF, Word, or image/);
 assert.doesNotMatch(formSrc, /key: "division"/);
+assert.doesNotMatch(formSrc, /setFileError/);
 
 const empty = submitProgress({});
 assert.equal(empty.requiredLeft, 5);
