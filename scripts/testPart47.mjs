@@ -37,7 +37,7 @@ const range = {
   minMarginPct,
   maxMarginPct,
 };
-const declared = { netMarginAtScale: 30 };
+const declared = { cogsAtScale: cogs, netMarginAtScale: 30 };
 const before = checkF3(declared, { marginElasticity: range });
 assert(before.checkLabel === "Cleared", `30% should sit in ${minMarginPct}–${maxMarginPct.toFixed(1)}, got ${before.checkLabel}`);
 assert(/₹63–₹105|₹62–₹105/.test(before.items[0].text), before.items[0].text);

@@ -77,7 +77,7 @@ assert.equal(filterCheckScore(f1Blank).total, 0);
 assert.doesNotMatch(fallbackFilterNarrative(f1Blank), /not yet declared|Benchmark not named|Declared gap missing/i);
 
 const f3Blank = checkF3({}, {});
-assert.equal(f3Blank.checkLabel, "Cleared");
+assert.equal(f3Blank.checkLabel, "Evidence missing");
 assert.doesNotMatch(fallbackFilterNarrative(f3Blank), /not yet computed/i);
 
 const mixedScore = scoreAdvisoryChecks({

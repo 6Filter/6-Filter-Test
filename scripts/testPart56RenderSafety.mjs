@@ -41,7 +41,7 @@ assert.equal(f3NullMax.checkLabel, "Evidence missing");
 assert.doesNotMatch(JSON.stringify(f3NullMax), /toFixed/);
 
 const f3Missing = checkF3({ cogsAtScale: 100, netMarginAtScale: 80 }, {});
-assert.equal(f3Missing.checkLabel, "Cleared");
+assert.equal(f3Missing.checkLabel, "Evidence missing");
 
 const f4Missing = checkF4({});
 assert.equal(f4Missing.checkLabel, "Cleared");

@@ -308,6 +308,7 @@ function FieldControl({
   currentUser,
   aiSourced = false,
   liveNote = "",
+  loading = false,
   breakdownNote = "",
   taxNotes = null,
   cogsAtScale = null,
@@ -392,9 +393,14 @@ function FieldControl({
           {wand}
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        {range?.rangeError ? (
+        {loading ? (
+          <div className="me-loading" role="status" aria-live="polite">
+            <Loader2 size={16} className="spin" aria-hidden="true" />
+            Calculating safe MRP range — checking category pricing and inflation data…
+          </div>
+        ) : range?.rangeError ? (
           <p className="derived-note error">{range.rangeError}</p>
-        ) : (
+        ) : minInput !== "" || maxInput !== "" ? (
           <>
             <div className="mrp-range-display">
               <span className="me-min">{formatRupeeInr(range?.minMrpInr)}</span>
@@ -404,6 +410,11 @@ function FieldControl({
             </div>
             <p className="derived-note">Safe MRP range over the next 5 years</p>
           </>
+        ) : (
+          <p className="derived-note">
+            No range calculated yet — Submit to run the AI first pass, or enter values
+            manually below.
+          </p>
         )}
         {range?.packSizeWarning ? <p className="derived-note error">{range.packSizeWarning}</p> : null}
         {range?.mrpAdjustmentNote ? <p className="derived-note error">{range.mrpAdjustmentNote}</p> : null}
@@ -417,8 +428,8 @@ function FieldControl({
               type="number"
               step="any"
               value={minInput}
-              disabled={locked}
-              title={lockTitle}
+              disabled={locked || loading}
+              title={loading ? "Wait for the AI range before editing, or enter values after it finishes" : lockTitle}
               onChange={(e) => patchMrp("minMrpInr", e.target.value)}
             />
           </label>
@@ -428,14 +439,14 @@ function FieldControl({
               type="number"
               step="any"
               value={maxInput}
-              disabled={locked}
-              title={lockTitle}
+              disabled={locked || loading}
+              title={loading ? "Wait for the AI range before editing, or enter values after it finishes" : lockTitle}
               onChange={(e) => patchMrp("maxMrpInr", e.target.value)}
             />
           </label>
         </div>
-        {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
-        {liveNote ? <p className="derived-note">{liveNote}</p> : null}
+        {aiSourced && !loading ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        {!loading && liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
       </div>
     );
@@ -1150,6 +1161,8 @@ export default function PropositionForm({
   );
   const visibleFilters = SIX_FILTERS_FORM.filter((s) => unlockedFilterKeys.has(s.key));
   const f3Unlocked = unlockedFilterKeys.has("f3");
+  const f3RangeEmpty = isMarginElasticityUnfilled(doc.f3?.marginElasticity);
+  const marginElasticityLoading = Boolean(f3Filling || (saving && f3RangeEmpty && f3Unlocked));
 
   useEffect(() => {
     if (!propositionId || !f3Unlocked || saving) return undefined;
@@ -1492,7 +1505,7 @@ export default function PropositionForm({
   }
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
-    if (saving) return;
+    if (saving || f3Filling) return;
     if (!canSubmit) {
       setLocalError("Describe the idea, or attach a file, before the first Submit.");
       return;
@@ -1718,8 +1731,10 @@ export default function PropositionForm({
       {visibleFilters.map((spec) => {
         const values = doc[spec.key] || {};
         const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
+        const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
+        const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
-        const visibleItems = analysisCheckItems(check.items);
+        const visibleItems = f3CheckPending ? [] : analysisCheckItems(check.items);
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
@@ -1747,7 +1762,7 @@ export default function PropositionForm({
                       : `${filterScore.done}/${filterScore.total} · ${filterScore.pct}%`}
                   </span>
                 ) : null}
-                <span className="check-pill" data-tone={toneFor(check.checkLabel)}>Check: {check.checkLabel}</span>
+                <span className="check-pill" data-tone={toneFor(checkLabel)}>Check: {checkLabel}</span>
               </div>
             </div>
 
@@ -1793,11 +1808,10 @@ export default function PropositionForm({
                         </>
                       ) : null
                     }
-                    liveNote={
-                      spec.key === "f3" && field.key === "marginElasticity" && f3Filling
-                        ? "Computing safe MRP range from inflation and category pricing…"
-                        : ""
+                    loading={
+                      spec.key === "f3" && field.key === "marginElasticity" && marginElasticityLoading
                     }
+                    liveNote=""
                     breakdownNote={
                       spec.key === "f2" && field.key === "gstRatePct"
                         ? String(values.gstBasis || "").trim()
@@ -1900,22 +1914,26 @@ export default function PropositionForm({
           <button
             type="button"
             className="prop-save run"
-            disabled={saving || readingGoNoGo || !canSubmit}
+            disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
             onClick={() => handleSubmit()}
             title={
               !canSubmit
                 ? "Describe the idea or attach a file before the first Submit"
-                : undefined
+                : marginElasticityLoading
+                  ? "Wait for the safe MRP range — submitting again will not speed this up"
+                  : undefined
             }
           >
-            {saving || readingGoNoGo ? <Loader2 size={15} className="spin" /> : null}
+            {saving || readingGoNoGo || marginElasticityLoading ? <Loader2 size={15} className="spin" /> : null}
             {savedFlash
               ? "Submitted"
               : readingGoNoGo
                 ? "Analysing…"
                 : saving
                   ? "Submitting…"
-                  : "Submit"}
+                  : marginElasticityLoading
+                    ? "Calculating MRP range…"
+                    : "Submit"}
           </button>
           {sendManagerReady ? (
             <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
@@ -1998,6 +2016,12 @@ const PROP_CSS = `
 .me-overrides{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
 .me-overrides label{display:flex;flex-direction:column;gap:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;color:rgba(243,234,248,.6);flex:1;min-width:120px;}
 .me-overrides input,.me-overrides select{width:100%;}
+.me-loading{display:flex;align-items:flex-start;gap:10px;margin:8px 0 4px;padding:10px 12px;
+  border:1px solid rgba(201,160,232,.28);border-radius:10px;background:rgba(201,160,232,.08);
+  font-size:13px;line-height:1.45;color:rgba(243,234,248,.88);}
+.me-loading .spin{flex-shrink:0;margin-top:2px;}
+.spin{animation:sp 1s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
 .f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
   border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}

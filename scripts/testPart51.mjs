@@ -32,7 +32,7 @@ assert.equal(merged.f3.marginElasticity.minMrpInr, 62.5);
 assert.ok(merged.f3.marginElasticity.maxMrpInr > 80);
 
 const check = checkF3(
-  { netMarginAtScale: 30 },
+  { cogsAtScale: 50, netMarginAtScale: 30 },
   { marginElasticity: merged.f3.marginElasticity }
 );
 assert.doesNotMatch(check.items[0].text, /%/);

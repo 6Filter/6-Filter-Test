@@ -21,9 +21,15 @@ const f1Growth = SIX_FILTERS_FORM.find((f) => f.key === "f1")?.fields.find((f) =
 assert(f1Growth?.label === "Growth Route", `growthRoute label should be Growth Route, got ${f1Growth?.label}`);
 
 const missing = checkF3({ netMarginAtScale: 40 }, {});
-assert(missing.checkLabel === "Cleared", "empty range is a form-admin gap, not a scored miss");
+assert(missing.checkLabel === "Evidence missing", "empty range must not read as Cleared");
 assert(/not yet computed/i.test(missing.items[0].text), missing.items[0].text);
 assert(missing.items[0].formAdmin === true, "empty F3 range must be form-admin");
+
+const pctOnly = checkF3(
+  { netMarginAtScale: 40 },
+  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
+);
+assert(pctOnly.checkLabel === "Evidence missing", "a %-only band with empty MRP must not Clear");
 
 const noMargin = checkF3(
   {},
@@ -34,21 +40,21 @@ assert(/isn't entered yet/i.test(noMargin.items[0].text), noMargin.items[0].text
 assert(noMargin.items[0].formAdmin === true, "empty F2 margin against a range must be form-admin");
 
 const cleared = checkF3(
-  { netMarginAtScale: 40 },
+  { netMarginAtScale: 40, mrpInr: 80 },
   { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(cleared.checkLabel === "Cleared", `inside band should clear, got ${cleared.checkLabel}`);
 assert(/safe ₹61–₹111 range/.test(cleared.items[0].text), cleared.items[0].text);
 
 const below = checkF3(
-  { netMarginAtScale: 10 },
+  { netMarginAtScale: 10, mrpInr: 50 },
   { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(below.checkLabel === "Below floor", "below min should be Below floor");
 assert(/below the safe ₹61 floor/.test(below.items[0].text), below.items[0].text);
 
 const above = checkF3(
-  { netMarginAtScale: 70 },
+  { netMarginAtScale: 70, mrpInr: 200 },
   { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
 );
 assert(above.checkLabel === "Below floor", "above max should be Below floor");
