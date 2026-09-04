@@ -70,7 +70,7 @@ const floorChecks = {
 };
 
 const classification = computeGoNoGo(floorChecks);
-assert.equal(classification, "WATCH");
+assert.equal(classification, "NO-GO");
 assert.equal(goNoGoIsFloorFailure(floorChecks), true);
 
 assert.equal(
@@ -118,7 +118,7 @@ const generated = await generateFilterNarratives({
     f4: "No material structural exposure found.",
   }),
 });
-assert.equal(computeGoNoGo(floorChecks), "WATCH");
+assert.equal(computeGoNoGo(floorChecks), "NO-GO");
 assert.equal(goNoGoIsFloorFailure(floorChecks), true);
 assert.match(generated.f3, /₹70 ceiling|analytical floor failure/);
 assert.doesNotMatch(generated.f3, /This filter is cleared/);

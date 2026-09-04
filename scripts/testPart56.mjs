@@ -23,7 +23,8 @@ function items(done, pending) {
 }
 
 assert.equal(classifyGoNoGoFromScore(0), "NO-GO");
-assert.equal(classifyGoNoGoFromScore(60), "NO-GO");
+assert.equal(classifyGoNoGoFromScore(59), "NO-GO");
+assert.equal(classifyGoNoGoFromScore(60), "WATCH");
 assert.equal(classifyGoNoGoFromScore(61), "WATCH");
 assert.equal(classifyGoNoGoFromScore(80), "WATCH");
 assert.equal(classifyGoNoGoFromScore(81), "GO");
@@ -32,7 +33,7 @@ assert.equal(goNoGoTone("WATCH"), "watch");
 assert.equal(goNoGoTone("GO"), "pass");
 assert.equal(goNoGoTone("NO-GO"), "fail");
 
-assert.equal(computeGoNoGo({ f1: { items: items(6, 4) } }), "NO-GO");
+assert.equal(computeGoNoGo({ f1: { items: items(6, 4) } }), "WATCH");
 assert.equal(computeGoNoGo({ f1: { items: items(7, 3) } }), "WATCH");
 assert.equal(computeGoNoGo({ f1: { items: items(8, 2) } }), "WATCH");
 assert.equal(computeGoNoGo({ f1: { items: items(13, 3) } }), "GO");

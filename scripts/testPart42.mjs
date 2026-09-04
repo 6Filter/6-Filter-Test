@@ -30,15 +30,16 @@ assert(goNoGoTone(go) === "pass", "GO should use pass tone");
 assert(classifyGoNoGoFromScore(81) === "GO", "81 is GO");
 assert(classifyGoNoGoFromScore(80) === "WATCH", "80 is WATCH");
 assert(classifyGoNoGoFromScore(61) === "WATCH", "61 is WATCH");
-assert(classifyGoNoGoFromScore(60) === "NO-GO", "60 is NO-GO");
+assert(classifyGoNoGoFromScore(60) === "WATCH", "60 is WATCH");
+assert(classifyGoNoGoFromScore(59) === "NO-GO", "59 is NO-GO");
 
 const incomplete = computeGoNoGo({
   f1: { checkLabel: "Evidence missing", items: items(0, 4) },
-  f2: { checkLabel: "Cleared", items: items(2, 0) },
+  f2: { checkLabel: "Cleared", items: items(1, 1) },
   f3: { checkLabel: "Cleared", items: items(2, 0) },
   f4: { checkLabel: "Cleared", items: items(2, 0) },
 });
-assert(incomplete === "NO-GO", "Evidence missing should fold into NO-GO");
+assert(incomplete === "NO-GO", "a sub-60 score with no floor failure is NO-GO");
 assert(
   !goNoGoIsFloorFailure({
     f1: { checkLabel: "Evidence missing" },

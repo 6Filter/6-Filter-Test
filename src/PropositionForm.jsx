@@ -681,7 +681,7 @@ function GoNoGoResultPage({
       </header>
 
       <div className="output-hero-row">
-        <section className={`gonogo-hero tone-${tone}`}>
+        <section className={`gonogo-hero tone-${tone}`} data-tone={tone}>
           <div className="gonogo-hero-copy">
             {idea ? <h1 className="gonogo-idea">{idea}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}
             <div className="gonogo-chips">
@@ -689,7 +689,7 @@ function GoNoGoResultPage({
               {divisionName ? <span className="mono badge-chip">{divisionName}</span> : null}
             </div>
             <div className="gonogo-badge-row">
-              <div className={`gonogo-badge tone-${tone}`}>{result.classification}</div>
+              <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{result.classification}</div>
               <span className="mono gonogo-scale-chip">
                 {scale} · {scaleImpact}
               </span>
@@ -702,8 +702,7 @@ function GoNoGoResultPage({
             aria-label={`Score ${score.pct}%`}
           >
             <div className="score-ring-inner">
-              <strong className="mono">{score.pct}</strong>
-              <span className="mono">/100</span>
+              <strong className="mono gonogo-score">{score.pct}%</strong>
             </div>
           </div>
         </section>
