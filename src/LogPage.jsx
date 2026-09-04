@@ -4,10 +4,12 @@ import {
   filterLogRows,
   filterSegments,
   filterStageLabel,
+  isUntouchedDraft,
   logRowForCsv,
   logStats,
   propositionStatus,
   propositionsToCsv,
+  researchWasUsed,
   submittedParts,
 } from "../lib/logStatus.js";
 
@@ -17,6 +19,7 @@ const PILLS = [
   { id: "CLEARED", label: "Cleared" },
   { id: "STOPPED", label: "Stopped" },
   { id: "REVIEW", label: "Review" },
+  { id: "ai-used", label: "AI used" },
 ];
 
 const CHIP = {
@@ -57,19 +60,25 @@ export default function LogPage({
   error = "",
   onRefresh,
   onDeleteAll,
+  onCleanupUntouched,
   onDeleteRow,
   onOpen,
   deletingAll = false,
+  deletingUntouched = false,
   deletingId = "",
   openingId = "",
   canDeleteAll = true,
   canDeleteRow = true,
+  canCleanup = true,
   openingDisabled = false,
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const stats = useMemo(() => logStats(rows), [rows]);
   const filtered = useMemo(() => filterLogRows(rows, { query, status }), [rows, query, status]);
+  const aiUsedCount = useMemo(() => rows.filter((r) => researchWasUsed(r)).length, [rows]);
+  const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
+  const busy = loading || deletingAll || deletingUntouched;
   const pillCounts = useMemo(
     () => ({
       ALL: stats.total,
@@ -77,8 +86,9 @@ export default function LogPage({
       CLEARED: stats.cleared,
       STOPPED: stats.stopped,
       REVIEW: stats.review,
+      "ai-used": aiUsedCount,
     }),
-    [stats]
+    [stats, aiUsedCount]
   );
 
   function handleExport() {
@@ -116,7 +126,7 @@ export default function LogPage({
             </p>
           </div>
           <div className="log-head-actions">
-            <button type="button" className="log-btn" onClick={onRefresh} disabled={loading || deletingAll}>
+            <button type="button" className="log-btn" onClick={onRefresh} disabled={busy}>
               {loading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
               Refresh
             </button>
@@ -124,16 +134,25 @@ export default function LogPage({
               type="button"
               className="log-btn"
               onClick={handleExport}
-              disabled={loading || filtered.length === 0}
+              disabled={busy || filtered.length === 0}
             >
               <Download size={15} />
               Export CSV
             </button>
             <button
               type="button"
+              className="log-btn"
+              onClick={onCleanupUntouched}
+              disabled={busy || untouchedCount === 0 || !canCleanup}
+            >
+              {deletingUntouched ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+              Clean up untouched drafts ({untouchedCount})
+            </button>
+            <button
+              type="button"
               className="log-btn log-btn-danger"
               onClick={onDeleteAll}
-              disabled={loading || deletingAll || rows.length === 0 || !canDeleteAll}
+              disabled={busy || rows.length === 0 || !canDeleteAll}
             >
               {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Delete all
@@ -219,6 +238,8 @@ export default function LogPage({
                   const stage = filterStageLabel(h, checks, segs);
                   const when = submittedParts(h.createdAt || h.updatedAt);
                   const idea = String(h.ideaDescription || "").trim();
+                  const usedAi = researchWasUsed(h);
+                  const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched;
                   return (
                     <tr key={h.id} className="log-tr">
                       <td>
@@ -226,11 +247,16 @@ export default function LogPage({
                           type="button"
                           className="log-open"
                           onClick={() => onOpen(h)}
-                          disabled={openingDisabled || Boolean(deletingId) || deletingAll}
+                          disabled={rowBusy}
                         >
-                          <span className={`log-chip ${chip.cls}`}>
-                            {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
-                          </span>
+                          <div className="log-status-cell">
+                            <span className={`log-chip ${chip.cls}`}>
+                              {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
+                            </span>
+                            <span className={`research-badge ${usedAi ? "used" : "unused"}`}>
+                              {usedAi ? "AI used" : "No API calls"}
+                            </span>
+                          </div>
                         </button>
                       </td>
                       <td>
@@ -238,7 +264,7 @@ export default function LogPage({
                           type="button"
                           className="log-open log-prop-cell"
                           onClick={() => onOpen(h)}
-                          disabled={openingDisabled || Boolean(deletingId) || deletingAll}
+                          disabled={rowBusy}
                         >
                           <span className="log-prop-name">{h.name || "Untitled idea"}</span>
                           <span className="log-prop-owner">{h.submitterName || "—"}</span>
@@ -251,7 +277,7 @@ export default function LogPage({
                           className="log-open log-idea-cell"
                           title={idea || undefined}
                           onClick={() => onOpen(h)}
-                          disabled={openingDisabled || Boolean(deletingId) || deletingAll}
+                          disabled={rowBusy}
                         >
                           {idea || "—"}
                         </button>
@@ -269,12 +295,7 @@ export default function LogPage({
                           className="log-del"
                           aria-label="Delete this proposition"
                           title="Delete proposition"
-                          disabled={
-                            openingDisabled ||
-                            Boolean(deletingId) ||
-                            deletingAll ||
-                            !canDeleteRow
-                          }
+                          disabled={rowBusy || !canDeleteRow}
                           onClick={() => onDeleteRow(h)}
                         >
                           {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
@@ -358,6 +379,10 @@ export const LOG_PAGE_CSS = `
 .log-chip.chip-cleared{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .log-chip.chip-stopped{background:var(--chip-stopped-bg);color:var(--chip-stopped-fg);}
 .log-chip.chip-review{background:var(--chip-review-bg);color:var(--chip-review-fg);}
+.log-status-cell{display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
+.research-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:650;letter-spacing:.02em;padding:3px 8px;border-radius:999px;white-space:nowrap;}
+.research-badge.used{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
+.research-badge.unused{background:var(--none);color:var(--ink-muted);}
 .log-prop-cell{display:flex;flex-direction:column;gap:2px;}
 .log-prop-name{font-weight:650;color:var(--ink);}
 .log-prop-owner{font-size:12px;color:var(--ink-secondary);}

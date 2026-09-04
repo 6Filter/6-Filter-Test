@@ -19,6 +19,7 @@ import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
+import { isUntouchedDraft } from "../lib/logStatus.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -152,6 +153,13 @@ async function deleteAllPropositions() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not delete all propositions.");
   return data.deleted;
+}
+
+async function deleteUntouchedDrafts() {
+  const res = await apiFetch("/api/propositions/cleanup-untouched", { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not clean up untouched drafts.");
+  return data;
 }
 
 async function analyzeAndStoreIdea(idea, image = null, ideaType = "product", npd = {}, provider = "claude") {
@@ -559,6 +567,7 @@ export default function App() {
   const [escalateError, setEscalateError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [deletingUntouched, setDeletingUntouched] = useState(false);
   const [llmProvider, setLlmProvider] = useState(DEFAULT_LLM_PROVIDER);
   const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [outcomeOpenId, setOutcomeOpenId] = useState(null);
@@ -751,6 +760,13 @@ export default function App() {
           submitterDepartment: saved.submitterDepartment,
           ideaDescription: saved.ideaDescription,
           finalVerdict: saved.finalVerdict,
+          finalSummary: saved.finalSummary || null,
+          classification: saved.goNoGo?.classification || saved.classification || "",
+          goNoGo: saved.goNoGo || null,
+          managerReview: saved.managerReview || null,
+          managerReviewRequested: Boolean(saved.managerReview?.requestedAt),
+          advisoryChecks: saved.advisoryChecks || {},
+          researchRunAt: saved.researchRunAt || null,
           version: saved.version,
           createdAt: saved.createdAt,
           updatedAt: saved.updatedAt,
@@ -769,7 +785,7 @@ export default function App() {
   }
 
   async function confirmDeleteProposition(row, source = "form") {
-    if (!row?.id || deletingId || deletingAll) return;
+    if (!row?.id || deletingId || deletingAll || deletingUntouched) return;
     const ok = window.confirm("Delete this proposition? This cannot be undone.");
     if (!ok) return;
     setDeletingId(row.id);
@@ -792,7 +808,7 @@ export default function App() {
   }
 
   async function confirmAndDeleteAll() {
-    if (deletingAll || deletingId) return;
+    if (deletingAll || deletingId || deletingUntouched) return;
     const count = propositionList.length;
     if (!count) return;
     const ok = window.confirm(`Delete all ${count} propositions? This cannot be undone.`);
@@ -807,6 +823,29 @@ export default function App() {
       setLogError(e.message || "Could not delete all propositions.");
     } finally {
       setDeletingAll(false);
+    }
+  }
+
+  async function confirmAndDeleteUntouchedDrafts() {
+    if (deletingAll || deletingId || deletingUntouched) return;
+    const untouchedCount = propositionList.filter((r) => isUntouchedDraft(r)).length;
+    if (!untouchedCount) return;
+    const ok = window.confirm(
+      `Remove ${untouchedCount} completely untouched drafts? Nothing with any content will be deleted.`
+    );
+    if (!ok) return;
+    setDeletingUntouched(true);
+    setLogError("");
+    try {
+      const res = await deleteUntouchedDrafts();
+      const gone = new Set(Array.isArray(res?.ids) ? res.ids : []);
+      setPropositionList((rows) => rows.filter((r) => !gone.has(r.id)));
+      if (proposition?.id && gone.has(proposition.id)) setProposition(null);
+      await refreshHistories();
+    } catch (e) {
+      setLogError(e.message || "Could not clean up untouched drafts.");
+    } finally {
+      setDeletingUntouched(false);
     }
   }
 
@@ -1196,13 +1235,16 @@ export default function App() {
           error={logError}
           onRefresh={openLogTab}
           onDeleteAll={confirmAndDeleteAll}
+          onCleanupUntouched={confirmAndDeleteUntouchedDrafts}
           onDeleteRow={(h) => confirmDeleteProposition(h, "log")}
           onOpen={(h) => openProposition(h, "log")}
           deletingAll={deletingAll}
+          deletingUntouched={deletingUntouched}
           deletingId={deletingId}
           openingId={openingId}
           canDeleteAll={!sessionUser || sessionUser.role === "ADMIN"}
           canDeleteRow={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
+          canCleanup={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
           openingDisabled={loading}
         />
       )}

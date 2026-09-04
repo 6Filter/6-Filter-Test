@@ -129,7 +129,7 @@ const csv = propositionsToCsv([
     time: "15:01",
   },
 ]);
-assert.match(csv, /^Status,Proposition,Owner,Department,Idea,Stage,Submitted\n/);
+assert.match(csv, /^Status,Research,Proposition,Owner,Department,Idea,Stage,Submitted\n/);
 assert.match(csv, /"Oil ""plus"""/);
 assert.match(csv, /"04 Sep 2026 15:01"/);
 
