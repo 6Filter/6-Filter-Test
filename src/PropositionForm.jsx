@@ -128,6 +128,7 @@ function applyAiAutoFill(current, suggested, { overwritePaths = {}, filterKey = 
     const path = sourcedPath(filterKey, key);
     const gstOwned = overwritePaths[sourcedPath(filterKey, "gstRatePct")];
     if (key === "gstBasis" && !isUnfilledValue(now.gstRatePct) && !gstOwned && !overwritePaths[path]) continue;
+    // Grammage / COGS / margin: same empty-field guard as Part 44 — never overwrite a typed or already-sourced value.
     if (!isUnfilledValue(now[key]) && !overwritePaths[path]) continue;
     next[key] = val;
     sourced[key] = true;
@@ -1372,6 +1373,7 @@ export default function PropositionForm({
   const marginElasticityLoading = Boolean(f3Filling || (saving && f3RangeEmpty && f3Unlocked));
 
   useEffect(() => {
+    if (initial?.researchRunAt || docRef.current?.researchRunAt) return undefined;
     if (!propositionId || !f3Unlocked || saving) return undefined;
     if (f3RangeTouchedByHuman.current) return undefined;
     if (!isMarginElasticityUnfilled(docRef.current?.f3?.marginElasticity)) return undefined;
@@ -1409,7 +1411,7 @@ export default function PropositionForm({
       f3AutoFillRequested.current = false;
       setF3Filling(false);
     };
-  }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider]);
+  }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider, initial?.researchRunAt]);
 
   useEffect(() => {
     if (!propositionId) return undefined;
