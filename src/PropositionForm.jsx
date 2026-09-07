@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Loader2, Send, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Info, Loader2, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   FORUM_VERDICT_FIELD,
@@ -818,6 +818,8 @@ function ManagerReviewPanel({
   busy,
   comment,
   onComment,
+  slackNotice = "",
+  onDismissSlack,
 }) {
   if (classification === "NO-GO") return null;
   if (classification !== "WATCH") return null;
@@ -869,6 +871,17 @@ function ManagerReviewPanel({
         </div>
       ) : requestedAt && !canApprove ? (
         <p className="manager-wait">Waiting for a manager (Admin or BH Forum) to approve with a comment.</p>
+      ) : null}
+      {slackNotice ? (
+        <div className="prop-notice" role="status">
+          <Info size={14} />
+          <span>{slackNotice}</span>
+          {typeof onDismissSlack === "function" ? (
+            <button type="button" onClick={onDismissSlack} aria-label="Dismiss Slack notice">
+              <X size={12} />
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -1173,6 +1186,7 @@ export default function PropositionForm({
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
   const [localError, setLocalError] = useState("");
+  const [slackNotice, setSlackNotice] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [summaryStale, setSummaryStale] = useState(false);
@@ -1246,6 +1260,7 @@ export default function PropositionForm({
     setAiDismissed({});
     setAiPassMeta(null);
     setLocalError("");
+    setSlackNotice("");
     setFallbackUi(null);
     setFallbackChoice("");
     setProofError("");
@@ -1747,6 +1762,7 @@ export default function PropositionForm({
     if (!propositionId || managerBusy) return;
     setManagerBusy(true);
     setLocalError("");
+    setSlackNotice("");
     try {
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/request-manager-review`, {
         method: "POST",
@@ -1755,7 +1771,7 @@ export default function PropositionForm({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not request manager review.");
       if (data.proposition) setDoc(mergeProposition({ ...doc, ...data.proposition }));
-      if (data.slackWarning) setLocalError(data.slackWarning);
+      if (data.slackWarning) setSlackNotice(data.slackWarning);
     } catch (e) {
       setLocalError(e.message || "Could not request manager review.");
     } finally {
@@ -2270,6 +2286,8 @@ export default function PropositionForm({
           busy={managerBusy}
           comment={managerComment}
           onComment={setManagerComment}
+          slackNotice={slackNotice}
+          onDismissSlack={() => setSlackNotice("")}
         />
       ) : null}
 
@@ -2437,6 +2455,7 @@ const PROP_CSS = `
   --accent:#8b5cf6; --accent-light:#c4b5fd; --accent-lighter:#ddd6fe;
   --f1-dot:#a78bfa; --f2-dot:#34d399; --f3-dot:#d9a520; --f4-dot:#60a5fa;
   --required-dot:#f472b6;
+  --chip-review-bg:#E5E8EC; --chip-review-fg:#3A4A5C;
   --floor-fail-bg:#2a1220; --floor-fail-border:#7f2547; --floor-fail-text:#fda4c0; --floor-fail-body:#e8c9d7;
   font-family:'Sora',system-ui,sans-serif;
   background:var(--bg); color:var(--ink);
@@ -2613,6 +2632,10 @@ const PROP_CSS = `
 .ai-pass-sources ul{margin:8px 0 0;padding-left:18px;}
 .ai-pass-sources a{color:#C9AEEF;}
 .prop-err{margin:10px 0 0;color:#E2716B;font-size:13px;display:flex;align-items:center;gap:6px;}
+.prop-notice{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:10px 14px;border-radius:10px;
+  background:var(--chip-review-bg, #E5E8EC);color:var(--chip-review-fg, #3A4A5C);font-size:13px;line-height:1.4;}
+.prop-notice span{flex:1;}
+.prop-notice button{border:none;background:transparent;color:inherit;cursor:pointer;display:inline-flex;padding:2px;}
 .prop-fallback{margin:12px 0 0;padding:14px 16px;border-radius:12px;
   background:rgba(226,113,107,.08);border:1px solid rgba(226,113,107,.35);}
 .prop-fallback-lede{margin:0 0 12px;font-size:13px;line-height:1.45;color:#F3EAF8;}
