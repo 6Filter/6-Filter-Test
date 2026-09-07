@@ -28,8 +28,8 @@ assert.match(src, /Closest path to GO/);
 assert.match(src, /\{result\.classification\}/);
 assert.match(src, /className="gonogo-idea"/);
 assert.match(src, /\{idea\}/);
-assert.doesNotMatch(src, /gonogo-scale-chip/);
-assert.doesNotMatch(src, /ideaScaleImpactCopy/);
-assert.doesNotMatch(src, /Up to ₹1 Cr business impact/i);
+assert.match(src, /className="gonogo-scale-chip"/);
+assert.match(src, /ideaSizeFromF5/);
+assert.match(src, /sizeTier\.derivation/);
 
 console.log("PASS Part 50 output-page tokens are scoped to GoNoGoResultPage");

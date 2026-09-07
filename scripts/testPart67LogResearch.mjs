@@ -60,7 +60,7 @@ assert.match(dbSrc, /researchRunAt: r\.research_run_at/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /handlePropositionsCleanupUntouched/);
-assert.match(apiSrc, /const proposition = await createProposition\(\)/);
+assert.match(apiSrc, /const proposition = await createProposition\(/);
 
 const routerSrc = readFileSync(new URL("../lib/apiRouter.js", import.meta.url), "utf8");
 assert.match(routerSrc, /\/api\/propositions\/cleanup-untouched/);

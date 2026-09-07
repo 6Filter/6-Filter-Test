@@ -141,6 +141,17 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
   }
 }
 
+async function saveDraftSilently(id, payload) {
+  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ proposition: payload }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not save draft.");
+  return data.proposition;
+}
+
 async function deletePropositionById(id) {
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, { method: "DELETE" });
   const data = await res.json().catch(() => ({}));
@@ -784,6 +795,42 @@ export default function App() {
     }
   }
 
+  async function savePropositionDraft(doc) {
+    if (!doc?.id) return null;
+    try {
+      const saved = await saveDraftSilently(doc.id, doc);
+      if (saved?.id) {
+        setPropositionList((rows) => {
+          const next = {
+            id: saved.id,
+            name: saved.name,
+            category: saved.category,
+            division: saved.division,
+            createdByUserId: saved.createdByUserId,
+            submitterName: saved.submitterName,
+            submitterDepartment: saved.submitterDepartment,
+            ideaDescription: saved.ideaDescription,
+            finalVerdict: saved.finalVerdict,
+            finalSummary: saved.finalSummary || null,
+            classification: saved.goNoGo?.classification || saved.classification || "",
+            goNoGo: saved.goNoGo || null,
+            managerReview: saved.managerReview || null,
+            managerReviewRequested: Boolean(saved.managerReview?.requestedAt),
+            advisoryChecks: saved.advisoryChecks || {},
+            researchRunAt: saved.researchRunAt || null,
+            version: saved.version,
+            createdAt: saved.createdAt,
+            updatedAt: saved.updatedAt,
+          };
+          return [next, ...rows.filter((r) => r.id !== saved.id)];
+        });
+      }
+      return saved;
+    } catch {
+      return null;
+    }
+  }
+
   async function confirmDeleteProposition(row, source = "form") {
     if (!row?.id || deletingId || deletingAll || deletingUntouched) return;
     const ok = window.confirm("Delete this proposition? This cannot be undone.");
@@ -1203,6 +1250,7 @@ export default function App() {
         <PropositionForm
           initial={proposition}
           onSave={savePropositionForTeam}
+          onSaveDraft={savePropositionDraft}
           saving={savingProp}
           savedFlash={savedFlash}
           error={error}
@@ -2093,10 +2141,12 @@ const CSS = `
   min-height:100vh; padding:32px 28px 48px; line-height:1.5;
 }
 html:has(.screen-log), body:has(.screen-log) { background:#F2EFE5; }
+html:has(.prop-form-page), body:has(.prop-form-page) { background:#120818; }
+html:has(.output-page), body:has(.output-page) { background:#0d0715; }
 .primus h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:2px 0 0;color:var(--ink);}
 .primus h1 .dot{color:var(--ink-deep);}
 .eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
-.masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 32px;animation:rise .45s ease both;}
+.masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 24px;}
 .page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;}
 .page-back{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--fd);transition:background .15s,border-color .15s;}
 .page-back:hover{background:var(--card);border-color:rgba(var(--accent-rgb, 0,108,180),.35);color:var(--ink-deep);}

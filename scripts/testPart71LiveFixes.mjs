@@ -7,10 +7,9 @@ const log = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8")
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const status = readFileSync(new URL("../lib/logStatus.js", import.meta.url), "utf8");
 
-assert.doesNotMatch(form, /gonogo-scale-chip/);
-assert.doesNotMatch(form, /ideaScaleImpactCopy/);
-assert.doesNotMatch(form, /1000g ·/);
-assert.doesNotMatch(form, /above ₹12 Cr/);
+assert.match(form, /gonogo-scale-chip/);
+assert.match(form, /ideaSizeFromF5/);
+assert.match(form, /sizeTier\.derivation/);
 assert.doesNotMatch(app, /ideaWeight \? ` · \$\{ideaWeight\}`/);
 assert.doesNotMatch(app, /sc-fin-label">Classification/);
 assert.doesNotMatch(app, /\{ideaWeight \|\| "—"\}/);
@@ -22,8 +21,8 @@ assert.match(html, /background:\s*transparent/);
 
 assert.match(app, /min-height:100vh/);
 assert.match(app, /html:has\(\.screen-log\)/);
-assert.match(form, /align-items:stretch/);
-assert.match(form, /min-height:168px;height:100%/);
+assert.match(form, /align-items:start/);
+assert.match(form, /height:auto/);
 assert.match(form, /\.prop-page\.output-page\{[^}]*max-width:none/);
 assert.match(form, /\.prop-page\.prop-form-page\{[^}]*margin:0 -28px -48px/);
 

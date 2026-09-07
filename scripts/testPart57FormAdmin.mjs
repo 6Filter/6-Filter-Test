@@ -72,9 +72,9 @@ assert.doesNotMatch(rationale, /Finance/);
 assert.doesNotMatch(rationale, /not yet declared/);
 
 const f1Blank = checkF1({});
-assert.ok(f1Blank.items.every((it) => isFormAdminCheck(it)));
+assert.equal(f1Blank.checkLabel, "Not yet run");
+assert.equal(f1Blank.items.length, 0);
 assert.equal(filterCheckScore(f1Blank).total, 0);
-assert.doesNotMatch(fallbackFilterNarrative(f1Blank), /not yet declared|Benchmark not named|Declared gap missing/i);
 
 const f3Blank = checkF3({}, {});
 assert.equal(f3Blank.checkLabel, "Evidence missing");

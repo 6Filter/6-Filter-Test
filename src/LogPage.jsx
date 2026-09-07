@@ -330,7 +330,6 @@ export const LOG_PAGE_CSS = `
   color:var(--ink); background:var(--bg);
   max-width:1180px;margin:0 auto;
   display:flex;flex-direction:column;gap:18px;
-  min-height:calc(100vh - 180px);
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
@@ -368,7 +367,7 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
-.log-table-wrap{overflow:auto;margin:0 -8px;}
+.log-table-wrap{overflow:auto;margin:0;}
 .log-table{width:100%;border-collapse:collapse;border-spacing:0;min-width:880px;}
 .log-table th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:10px 12px;border-bottom:1px solid var(--table-border);font-weight:700;}
 .log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:middle;background:var(--card-bg);}

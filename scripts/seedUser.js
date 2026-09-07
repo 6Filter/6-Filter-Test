@@ -25,9 +25,9 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
-const [name, email, password, role] = process.argv.slice(2);
+const [name, email, password, role, division] = process.argv.slice(2);
 if (!name || !email || !password || !role) {
-  console.error('Usage: node scripts/seedUser.js "Name" email@ck.com password ROLE');
+  console.error('Usage: node scripts/seedUser.js "Name" email@ck.com password ROLE [division]');
   console.error(`ROLE is one of: ${USER_ROLES.join(", ")}`);
   process.exit(1);
 }
@@ -44,5 +44,6 @@ const user = await createUser({
   email,
   passwordHash: hashPassword(password),
   role,
+  division: division || "",
 });
-console.log(`Seeded ${user.name} <${user.email}> as ${user.role}`);
+console.log(`Seeded ${user.name} <${user.email}> as ${user.role}${user.division ? ` (${user.division})` : ""}`);

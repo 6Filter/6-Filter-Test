@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Info, Loader2, Send, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Info, Loader2, RefreshCw, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import {
   FORUM_VERDICT_FIELD,
@@ -32,6 +32,7 @@ import {
   goNoGoTone,
   scoreAdvisoryChecks,
   analysisCheckItems,
+  previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import {
   closestPathToGo,
@@ -43,7 +44,7 @@ import {
   formatScreenedDuration,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
-import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
+import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeFromF5 } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -56,6 +57,7 @@ import {
   isTechShiftRiskUnfilled,
   normalizeTechShiftRisk,
 } from "../lib/techShiftRisk.js";
+import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -256,6 +258,22 @@ function SuggestionChip({ field, suggestion, basis, onAccept, onDismiss }) {
   );
 }
 
+function FieldRefreshControl({ onRefresh, refreshing, locked }) {
+  if (typeof onRefresh !== "function") return null;
+  return (
+    <button
+      type="button"
+      className="field-refresh"
+      disabled={locked || refreshing}
+      onClick={onRefresh}
+      title="Deliberate re-run that bypasses cache — the result may differ from the last estimate."
+    >
+      {refreshing ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />}
+      {refreshing ? "Re-running…" : "Re-run this estimate"}
+    </button>
+  );
+}
+
 function isImageUpload(name, mime) {
   return (
     String(mime || "").startsWith("image/") ||
@@ -339,6 +357,8 @@ function FieldControl({
   onClearFile,
   fileError = "",
   fileBusy = false,
+  onRefresh,
+  refreshing = false,
 }) {
   const fileRef = useRef(null);
   const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
@@ -393,6 +413,7 @@ function FieldControl({
         <div className="prop-label">
           {field.label}
           {wand}
+          <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         {!hasBeenScored ? (
@@ -487,6 +508,7 @@ function FieldControl({
         <div className="prop-label">
           {field.label}
           {wand}
+          <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         {loading ? (
@@ -624,6 +646,7 @@ function FieldControl({
         <span className="prop-label">
           {field.label}
           {wand}
+          <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
         </span>
         {input}
       </label>
@@ -717,6 +740,7 @@ function AiPassResultBanner({ meta }) {
 function toneFor(label) {
   if (label === "Cleared" || label === "Exempt") return "pass";
   if (label === "Below floor") return "fail";
+  if (label === "Not yet run") return "idle";
   return "watch";
 }
 
@@ -727,6 +751,7 @@ function filterCardTone(check, specKey) {
   }
   if (label === "Cleared" || label === "Exempt") return "pass";
   if (label === "Below floor") return "fail";
+  if (label === "Not yet run") return "idle";
   return "watch";
 }
 
@@ -926,6 +951,7 @@ function GoNoGoResultPage({
   const dated = formatOutputDate(doc?.updatedAt || result.at);
   const arc = scoreArcColor(score.pct);
   const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
+  const sizeTier = ideaSizeFromF5(doc?.f5);
 
   return (
     <div className="gonogo-result-page">
@@ -949,7 +975,13 @@ function GoNoGoResultPage({
             </div>
             <div className="gonogo-badge-row">
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{result.classification}</div>
+              {sizeTier ? (
+                <span className="gonogo-scale-chip" title={sizeTier.derivation}>
+                  {sizeTier.tier} · {sizeTier.label}
+                </span>
+              ) : null}
             </div>
+            {sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
             <p className="gonogo-rationale">{rationale}</p>
           </div>
           <div
@@ -1167,6 +1199,7 @@ function researchInputKey(doc) {
 export default function PropositionForm({
   initial,
   onSave,
+  onSaveDraft,
   saving,
   savedFlash,
   error,
@@ -1226,6 +1259,15 @@ export default function PropositionForm({
   const aiSourcedRef = useRef({});
   const [f3Filling, setF3Filling] = useState(false);
   const [f4Reassessing, setF4Reassessing] = useState(false);
+  const [refreshingField, setRefreshingField] = useState("");
+  const [conceptCardBusy, setConceptCardBusy] = useState(false);
+  const [conceptCardError, setConceptCardError] = useState("");
+  const [draftSaveState, setDraftSaveState] = useState("");
+  const conceptCardRef = useRef(null);
+  const skipDraftRef = useRef(true);
+  const draftDirtyRef = useRef(false);
+  const onSaveDraftRef = useRef(onSaveDraft);
+  onSaveDraftRef.current = onSaveDraft;
 
   useEffect(() => {
     docRef.current = doc;
@@ -1249,6 +1291,8 @@ export default function PropositionForm({
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
+    skipDraftRef.current = true;
+    draftDirtyRef.current = false;
   }, [initial?.id]);
 
   useEffect(() => {
@@ -1416,6 +1460,7 @@ export default function PropositionForm({
   const progress = submitProgress(doc);
   const canSubmit = progress.requiredLeft === 0;
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
+  const livePreviewChecks = previewAdvisoryChecks(liveDoc);
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
   const f5Unlocked = isFilterUnlocked("f5", liveDoc);
@@ -1468,6 +1513,40 @@ export default function PropositionForm({
       setF3Filling(false);
     };
   }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider, initial?.researchRunAt]);
+
+  useEffect(() => {
+    if (skipDraftRef.current) {
+      skipDraftRef.current = false;
+      return undefined;
+    }
+    if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
+    draftDirtyRef.current = true;
+    const t = window.setTimeout(() => {
+      const snap = docRef.current;
+      if (!snap?.id) return;
+      Promise.resolve(onSaveDraftRef.current?.(snap))
+        .then((saved) => {
+          if (!saved) {
+            setDraftSaveState("Draft not saved");
+            return;
+          }
+          draftDirtyRef.current = false;
+          setDraftSaveState("Draft saved");
+        })
+        .catch(() => {
+          setDraftSaveState("Draft not saved");
+        });
+    }, 2000);
+    return () => window.clearTimeout(t);
+  }, [doc, propositionId, saving]);
+
+  useEffect(() => {
+    return () => {
+      if (draftDirtyRef.current && typeof onSaveDraftRef.current === "function" && docRef.current?.id) {
+        Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!propositionId) return undefined;
@@ -1568,6 +1647,76 @@ export default function PropositionForm({
       setLocalError(e.message || "Could not re-assess Filter 4 responses.");
     } finally {
       setF4Reassessing(false);
+    }
+  }
+
+  async function handleRefreshField(fieldKey) {
+    if (!propositionId || refreshingField || saving) return;
+    setRefreshingField(fieldKey);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/refresh-field`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          field: fieldKey,
+          provider: llmProvider,
+          proposition: docRef.current,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLocalError(data.error || "Could not re-run that estimate.");
+        return;
+      }
+      const filterKey = data.filterKey;
+      const nextKey = data.fieldKey || fieldKey;
+      noteEdit();
+      setDoc((prev) => {
+        const nextFilter = { ...(prev[filterKey] || {}), [nextKey]: data.value };
+        if (data.extra && typeof data.extra === "object") Object.assign(nextFilter, data.extra);
+        return { ...prev, [filterKey]: nextFilter };
+      });
+      setAiSourced((prev) => ({ ...prev, [sourcedPath(filterKey, nextKey)]: true }));
+    } catch (e) {
+      setLocalError(e.message || "Could not re-run that estimate.");
+    } finally {
+      setRefreshingField("");
+    }
+  }
+
+  async function handleConceptCardFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !propositionId) return;
+    setConceptCardError("");
+    setConceptCardBusy(true);
+    try {
+      const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: false, allowImage: true });
+      if (!uploaded) return;
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setConceptCardError(data.error || "Could not read that concept card.");
+        return;
+      }
+      if (data.suggestions) {
+        setAiSuggestions((prev) => ({
+          ...(prev || {}),
+          top: { ...(prev?.top || {}), ...(data.suggestions.top || {}) },
+          f1: { ...(prev?.f1 || {}), ...(data.suggestions.f1 || {}) },
+        }));
+      }
+    } catch (err) {
+      setConceptCardError(err.message || "Could not read that concept card.");
+    } finally {
+      setConceptCardBusy(false);
     }
   }
 
@@ -2089,11 +2238,29 @@ export default function PropositionForm({
         />
         <input
           placeholder="e.g. Hair oils"
+          list="primus-fmcg-categories"
           value={doc.category || ""}
           disabled={Boolean(currentUser && !canWriteField(currentUser.role, "category"))}
           onChange={(e) => setTop("category", e.target.value)}
           aria-label="Category"
         />
+        <datalist id="primus-fmcg-categories">
+          {FMCG_CATEGORIES.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
+        <p className="prop-helper">{FMCG_CATEGORY_LIST_NOTE}</p>
+        {(() => {
+          const sp = suggestionProps("", { key: "category" }, doc.category);
+          return sp.suggestion != null ? (
+            <SuggestionChip
+              field={{ key: "category" }}
+              suggestion={sp.suggestion}
+              onAccept={sp.onAcceptSuggestion}
+              onDismiss={sp.onDismissSuggestion}
+            />
+          ) : null;
+        })()}
         <textarea
           placeholder="Describe the product idea."
           value={doc.ideaDescription || ""}
@@ -2102,6 +2269,41 @@ export default function PropositionForm({
           aria-label="Idea / insight description"
           rows={4}
         />
+        {(() => {
+          const sp = suggestionProps("", { key: "ideaDescription", type: "textarea" }, doc.ideaDescription);
+          return sp.suggestion != null ? (
+            <SuggestionChip
+              field={{ key: "ideaDescription", type: "textarea" }}
+              suggestion={sp.suggestion}
+              onAccept={sp.onAcceptSuggestion}
+              onDismiss={sp.onDismissSuggestion}
+            />
+          ) : null;
+        })()}
+        <div className="prop-attach concept-card-upload">
+          <input
+            ref={conceptCardRef}
+            type="file"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            hidden
+            onChange={handleConceptCardFile}
+          />
+          <button
+            type="button"
+            className="ghost"
+            disabled={conceptCardBusy || Boolean(currentUser && !canWriteField(currentUser.role, "ideaDescription"))}
+            onClick={() => conceptCardRef.current?.click()}
+          >
+            {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
+            Upload concept card
+          </button>
+          <span className="prop-helper">Separate from the Filter 1 source-file attach. Extracts only fields the document states.</span>
+        </div>
+        {conceptCardError ? (
+          <div className="prop-err">
+            <AlertTriangle size={14} /> {conceptCardError}
+          </div>
+        ) : null}
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
@@ -2130,7 +2332,10 @@ export default function PropositionForm({
           );
         }
         const values = doc[spec.key] || {};
-        const check = advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
+        const check =
+          spec.key === "f1" || spec.key === "f3" || spec.key === "f4"
+            ? livePreviewChecks[spec.key]
+            : advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
@@ -2220,6 +2425,14 @@ export default function PropositionForm({
                     }
                     onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
                     reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
+                    onRefresh={
+                      (spec.key === "f2" && ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
+                      (spec.key === "f3" && field.key === "marginElasticity") ||
+                      (spec.key === "f4" && field.key === "techShiftRisk")
+                        ? () => handleRefreshField(field.key)
+                        : undefined
+                    }
+                    refreshing={refreshingField === field.key}
                     liveNote=""
                     breakdownNote={
                       spec.key === "f2" && field.key === "gstRatePct"
@@ -2362,7 +2575,7 @@ export default function PropositionForm({
         <span><b>{progress.requiredLeft}</b> required fields left before you can submit</span>
         <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
         <span className="save-state">
-          v{doc.version || 1} · {Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team"}
+          v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
         </span>
         <button
           type="button"
@@ -2680,6 +2893,19 @@ const PROP_CSS = `
   border-radius:999px;padding:4px 10px;font-size:11px;letter-spacing:.04em;
 }
 .gonogo-badge-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;}
+.gonogo-scale-chip{
+  display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;
+  padding:6px 12px;border-radius:999px;background:var(--badge-chip-bg);color:var(--badge-chip-text);
+}
+.gonogo-scale-derivation{margin:0 0 12px;font-size:12.5px;line-height:1.45;color:var(--ink-muted);}
+.field-refresh{
+  display:inline-flex;align-items:center;gap:6px;margin-left:8px;
+  border:1px solid rgba(201,174,239,.35);background:transparent;color:#C9AEEF;
+  border-radius:999px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;
+}
+.field-refresh:disabled{opacity:.55;cursor:not-allowed;}
+.concept-card-upload{align-items:flex-start;}
+.concept-card-upload .prop-helper{margin:0;max-width:420px;}
 .gonogo-badge{
   display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em;
   padding:6px 12px;border-radius:999px;margin:0;
@@ -2717,10 +2943,10 @@ const PROP_CSS = `
   border-radius:999px;padding:3px 8px;margin-top:1px;
   color:#0d0715;background:var(--watch);
 }
-.filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px;align-items:stretch;}
+.filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px;align-items:start;}
 .filter-status-card{
   background:var(--card-bg);border:1px solid var(--card-border);border-left-width:4px;
-  border-radius:16px;padding:16px 16px 14px;min-height:168px;height:100%;
+  border-radius:16px;padding:16px 16px 14px;height:auto;
   display:flex;flex-direction:column;gap:8px;
 }
 .filter-status-card[data-tone="pass"]{border-left-color:var(--pass);}
@@ -2731,7 +2957,7 @@ const PROP_CSS = `
 .filter-status-badge{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--badge-chip-text);}
 .filter-status-label{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-muted);}
 .filter-status-card h3{margin:0;font-size:15px;font-weight:600;letter-spacing:-.2px;color:var(--ink);}
-.filter-status-card p{margin:0;font-size:13px;line-height:1.5;color:var(--ink-secondary);flex:1;}
+.filter-status-card p{margin:0;font-size:13px;line-height:1.5;color:var(--ink-secondary);}
 .filter-progress{display:flex;align-items:center;gap:10px;margin-top:4px;}
 .filter-progress-track{flex:1;height:6px;border-radius:999px;background:#2a1a3f;overflow:hidden;}
 .filter-progress-fill{height:100%;background:var(--pass);border-radius:999px;}
@@ -2783,7 +3009,7 @@ const PROP_CSS = `
 .prop-mgr-modal .msg-area{width:100%;min-height:160px;margin:12px 0;background:var(--bg-soft,#22113A);
   border:1px solid rgba(243,234,248,.14);border-radius:12px;color:#F3EAF8;padding:12px;font-family:var(--fd);}
 .prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
-  border-radius:16px;padding:18px 20px 16px;margin:0 0 16px;}
+  border-radius:16px;padding:18px 20px 16px;margin:0;}
 .prop-filter.is-locked{opacity:.78;}
 .prop-filter-h{display:flex;align-items:flex-start;gap:12px;margin:0 0 14px;}
 .prop-badge{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-family:var(--fm);
@@ -2801,6 +3027,7 @@ const PROP_CSS = `
 .check-pill[data-tone="pass"]{color:var(--pass);background:rgba(var(--pass-rgb),.16);}
 .check-pill[data-tone="fail"]{color:var(--fail);background:rgba(var(--fail-rgb),.16);}
 .check-pill[data-tone="watch"]{color:var(--watch);background:rgba(232,181,99,.16);}
+.check-pill[data-tone="idle"]{color:rgba(243,234,248,.55);background:rgba(243,234,248,.08);}
 .prop-cross{margin:12px 0 4px;padding:8px 12px;border-radius:10px;font-size:12.5px;
   background:rgba(232,181,99,.1);color:#E8B563;border:1px dashed rgba(232,181,99,.4);}
 .prop-computed{background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;padding:12px 14px;
