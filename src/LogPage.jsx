@@ -328,7 +328,7 @@ export const LOG_PAGE_CSS = `
   --danger-text:#A3402F; --danger-border:#EBD3CC; --danger-hover-bg:#FBF1EE;
   font-family:'Plus Jakarta Sans',system-ui,sans-serif;
   color:var(--ink); background:var(--bg);
-  max-width:1180px;margin:0 auto;
+  max-width:1180px;margin:0 auto;padding:16px 28px 40px;
   display:flex;flex-direction:column;gap:18px;
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
@@ -399,5 +399,6 @@ export const LOG_PAGE_CSS = `
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
 @media (max-width:860px){
   .log-stats{grid-template-columns:1fr;}
+  .log-page{padding:16px 16px 32px;}
 }
 `;
