@@ -9,6 +9,11 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render App
+      - name: Ping Render App (web + db)
         run: |
-          curl -s -o /dev/null -w "%{http_code}\n" https://ck-6-filter-test.onrender.com
+          web=$(curl -sS -o /dev/null -w "%{http_code}" https://ck-6-filter-test.onrender.com)
+          echo "$web"
+          db=$(curl -sS -o /dev/null -w "%{http_code}" https://ck-6-filter-test.onrender.com/api/health)
+          echo "$db"
+          test "$web" = "200"
+          test "$db" = "200"

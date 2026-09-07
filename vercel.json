@@ -53,6 +53,9 @@
     },
     "api/auth/me.js": {
       "maxDuration": 10
+    },
+    "api/health.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
