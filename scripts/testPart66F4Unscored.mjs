@@ -21,8 +21,7 @@ assert.match(formSrc, /className="dimension-response"/);
 const empty = checkF4({});
 assert.equal(empty.checkLabel, "Not yet run");
 assert.notEqual(empty.checkLabel, "Cleared");
-assert.match(empty.items[0].text, /not yet assessed/);
-assert.equal(empty.items[0].formAdmin, true);
+assert.deepEqual(empty.items, []);
 
 const emptyDims = checkF4({ techShiftRisk: { dimensions: {} } });
 assert.equal(emptyDims.checkLabel, "Not yet run");

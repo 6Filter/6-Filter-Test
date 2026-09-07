@@ -12,11 +12,15 @@ import { fallbackFilterNarrative } from "../lib/filterNarrativeText.js";
 const unsigned = financeSignatureCopy(false);
 
 const emptyF2 = previewAdvisoryChecks({ f2: { financeSigned: false } }).f2;
-assert.equal(emptyF2.items.at(-1).text, unsigned);
-assert.equal(isFormAdminCheck(emptyF2.items.at(-1)), true);
-assert.equal(analysisCheckItems(emptyF2.items).length, 0);
+assert.equal(emptyF2.checkLabel, "Not yet run");
+assert.deepEqual(emptyF2.items, []);
 assert.equal(filterCheckScore(emptyF2).total, 0);
 assert.equal(filterCheckScore(emptyF2).pct, 0);
+
+const startedF2 = previewAdvisoryChecks({ f2: { financeSigned: false, netMarginAtScale: 40 } }).f2;
+assert.equal(startedF2.items.at(-1).text, unsigned);
+assert.equal(isFormAdminCheck(startedF2.items.at(-1)), true);
+assert.notEqual(startedF2.checkLabel, "Not yet run");
 
 const signedSame = previewAdvisoryChecks({
   f2: {
@@ -77,7 +81,7 @@ assert.equal(f1Blank.items.length, 0);
 assert.equal(filterCheckScore(f1Blank).total, 0);
 
 const f3Blank = checkF3({}, {});
-assert.equal(f3Blank.checkLabel, "Evidence missing");
+assert.equal(f3Blank.checkLabel, "Not yet run");
 assert.doesNotMatch(fallbackFilterNarrative(f3Blank), /not yet computed/i);
 
 const mixedScore = scoreAdvisoryChecks({

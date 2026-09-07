@@ -148,7 +148,7 @@ assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);
 assert.match(src, /See all next steps/);
 assert.match(src, /gonogo-scale-chip/);
-assert.match(src, /ideaSizeFromF5/);
+assert.match(src, /ideaSizeForResult|ideaSizeFromF5/);
 assert.doesNotMatch(src, /Export summary/);
 assert.match(src, /formatScreenedDuration\(doc\?\.researchDurationMs\)/);
 assert.doesNotMatch(src, /result\.screenedMs/);

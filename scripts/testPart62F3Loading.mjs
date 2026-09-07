@@ -5,8 +5,8 @@ import { filterCheckScore } from "../lib/goNoGo.js";
 import { isMarginElasticityUnfilled } from "../lib/mrpFormula.js";
 
 const empty = checkF3({ netMarginAtScale: 40 }, {});
-assert.equal(empty.checkLabel, "Evidence missing");
-assert.equal(empty.items[0].formAdmin, true);
+assert.equal(empty.checkLabel, "Not yet run");
+assert.deepEqual(empty.items, []);
 assert.equal(filterCheckScore(empty).total, 0, "empty F3 still must not score as a gap");
 
 const pctOnly = checkF3(

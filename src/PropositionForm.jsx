@@ -34,6 +34,7 @@ import {
   analysisCheckItems,
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
+import { hasAnyRealInput } from "../lib/filterChecks.js";
 import {
   closestPathToGo,
   computeImprovementPointValues,
@@ -44,9 +45,10 @@ import {
   formatScreenedDuration,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
-import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeFromF5 } from "../lib/ideaScale.js";
+import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
+import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
@@ -751,8 +753,28 @@ function filterCardTone(check, specKey) {
   }
   if (label === "Cleared" || label === "Exempt") return "pass";
   if (label === "Below floor") return "fail";
-  if (label === "Not yet run") return "idle";
+  if (label === "Not yet run" || label === "Locked") return "idle";
   return "watch";
+}
+
+function recordPrimusError(label, err) {
+  console.error(`[primus] ${label}`, err);
+  if (typeof window === "undefined") return;
+  window.__primusErrors = Array.isArray(window.__primusErrors) ? window.__primusErrors : [];
+  window.__primusErrors.push({
+    label,
+    message: String(err?.message || err),
+    stack: String(err?.stack || ""),
+  });
+}
+
+function safeCall(label, fn, fallback) {
+  try {
+    return fn();
+  } catch (err) {
+    recordPrimusError(label, err);
+    return fallback;
+  }
 }
 
 function FilterComparePair({ label, actual, target, unit }) {
@@ -809,7 +831,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
   );
 }
 
-function FilterTeaserCard({ spec, sub }) {
+function FilterTeaserCard({ spec, sub, checkLabel }) {
   const f5f6 = spec.key === "f5" || spec.key === "f6";
   return (
     <div id={spec.key} className={`teaser-card${f5f6 ? " teaser-f5f6" : ""}`}>
@@ -818,6 +840,11 @@ function FilterTeaserCard({ spec, sub }) {
         <div className="teaser-title">{spec.title}</div>
         <div className="teaser-sub">{sub}</div>
       </div>
+      {checkLabel ? (
+        <span className="check-pill" data-tone={toneFor(checkLabel)}>
+          Check: {checkLabel}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -877,7 +904,6 @@ function ManagerReviewPanel({
       )}
       {requestedAt && canApprove ? (
         <div className="manager-review-form">
-          <p>Requested {timeAgo(requestedAt)}. Current read: WATCH at {scorePct}%.</p>
           <textarea
             placeholder="Comment — required to approve"
             value={comment}
@@ -930,28 +956,44 @@ function GoNoGoResultPage({
 }) {
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  const score = result.score?.total
-    ? result.score
-    : scoreAdvisoryChecks(checks);
+  const scoreRaw = result.score?.total ? result.score : scoreAdvisoryChecks(checks);
+  const scorePct = Number.isFinite(Number(scoreRaw?.pct)) ? Number(scoreRaw.pct) : 0;
+  const score = { ...(scoreRaw && typeof scoreRaw === "object" ? scoreRaw : {}), pct: scorePct };
   const tone = goNoGoTone(result.classification);
   const isGo = result.classification === "GO";
   const isWatch = result.classification === "WATCH";
   const categoryName = String(category || result.category || "").trim();
   const divisionName = String(doc?.division || "").trim();
   const idea = String(ideaName || result.ideaName || "").trim();
-  const rationale = rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName);
-  const improvementItems = computeImprovementPointValues(checks).map((it) => ({
-    ...it,
-    text: rewriteUnmatchedDivisionCopy(it.text, categoryName),
-  }));
-  const path = closestPathToGo(checks, improvementItems);
-  const pathItems = path.items;
-  const coverage = countFiltersWithEvidence(doc || {});
+  const rationale = safeCall(
+    "hero rationale",
+    () => rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName),
+    String(result.rationale || "No rationale returned.")
+  );
+  const improvementItems = safeCall(
+    "improvement items",
+    () =>
+      computeImprovementPointValues(checks).map((it) => ({
+        ...it,
+        text: rewriteUnmatchedDivisionCopy(it.text, categoryName),
+      })),
+    []
+  );
+  const path = safeCall(
+    "closest path to GO",
+    () => closestPathToGo(checks, improvementItems),
+    { items: [], projectedPct: scorePct, reachesGo: scorePct > 80 }
+  );
+  const pathItems = Array.isArray(path?.items) ? path.items : [];
+  const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {
+    have: 0,
+    total: 6,
+  });
   const screened = formatScreenedDuration(doc?.researchDurationMs);
   const dated = formatOutputDate(doc?.updatedAt || result.at);
   const arc = scoreArcColor(score.pct);
-  const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
-  const sizeTier = ideaSizeFromF5(doc?.f5);
+  const ringPct = Math.max(0, Math.min(100, scorePct));
+  const sizeTier = safeCall("gram badge", () => ideaSizeForResult(doc || {}), null);
 
   return (
     <div className="gonogo-result-page">
@@ -976,8 +1018,15 @@ function GoNoGoResultPage({
             <div className="gonogo-badge-row">
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{result.classification}</div>
               {sizeTier ? (
-                <span className="gonogo-scale-chip" title={sizeTier.derivation}>
+                <span
+                  className="gonogo-scale-chip idea-size-badge"
+                  data-provisional={sizeTier.provisional ? "true" : "false"}
+                  title={sizeTier.derivation}
+                >
                   {sizeTier.tier} · {sizeTier.label}
+                  {sizeTier.provisional ? (
+                    <span className="provisional-tag">estimated, pre-GO</span>
+                  ) : null}
                 </span>
               ) : null}
             </div>
@@ -995,6 +1044,13 @@ function GoNoGoResultPage({
           </div>
         </section>
 
+        <ErrorBoundary
+          fallback={
+            <aside className="path-panel">
+              <p className="gonogo-blocked-note">This section hit an error. The verdict above is still valid.</p>
+            </aside>
+          }
+        >
         <aside className="path-panel">
           <div className="panel-kicker mono">Closest path to GO</div>
           <p className="path-score-line">
@@ -1029,12 +1085,33 @@ function GoNoGoResultPage({
             <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
           ) : null}
         </aside>
+        </ErrorBoundary>
       </div>
 
+      <ErrorBoundary
+        fallback={
+          <p className="gonogo-blocked-note">This section hit an error. The verdict above is still valid.</p>
+        }
+      >
       <div className="filter-grid">
         {SIX_FILTERS_FORM.map((spec) => {
-          const check = checks[spec.key] || {};
-          const stored = stripFormAdminNarrative(String(result.filterNarratives?.[spec.key] || "").trim());
+          const f5f6Locked =
+            (spec.key === "f5" || spec.key === "f6") &&
+            !isFilterUnlocked(spec.key, doc || {}) &&
+            hasAnyRealInput(doc?.[spec.key] || {});
+          const check = f5f6Locked
+            ? {
+                checkLabel: spec.key === "f6" ? "Awaiting panels" : "Locked",
+                items: [],
+                infoLine:
+                  spec.key === "f6"
+                    ? "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist."
+                    : undefined,
+              }
+            : checks[spec.key] || {};
+          const stored = f5f6Locked
+            ? ""
+            : stripFormAdminNarrative(String(result.filterNarratives?.[spec.key] || "").trim());
           const awaiting = spec.key === "f6" && (check.checkLabel === "Awaiting panels" || check.infoLine);
           const narrative = rewriteUnmatchedDivisionCopy(
             awaiting
@@ -1130,6 +1207,7 @@ function GoNoGoResultPage({
           <ArrowLeft size={15} /> Back to filters
         </button>
       </div>
+      </ErrorBoundary>
     </div>
   );
 }
@@ -1754,6 +1832,15 @@ export default function PropositionForm({
       if (filterKey === "f2" && fieldKey === "gstRatePct") {
         nextFilter.gstBasis = "";
       }
+      if (
+        filterKey === "f5" &&
+        fieldKey !== "forumVerdict" &&
+        fieldKey !== "verdictNote" &&
+        fieldKey !== "confirmedByHuman" &&
+        isFilterUnlocked("f5", prev)
+      ) {
+        nextFilter.confirmedByHuman = true;
+      }
       return {
         ...prev,
         [filterKey]: nextFilter,
@@ -2314,6 +2401,9 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
+              checkLabel={
+                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+              }
               sub={
                 spec.key === "f5"
                   ? "Opens once the idea reads GO and proof is uploaded."
@@ -2327,15 +2417,18 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
+              checkLabel={
+                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+              }
               sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
             />
           );
         }
         const values = doc[spec.key] || {};
         const check =
-          spec.key === "f1" || spec.key === "f3" || spec.key === "f4"
+          spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
             ? livePreviewChecks[spec.key]
-            : advisoryChecks?.[spec.key] || { checkLabel: "Evidence missing", items: [] };
+            : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
@@ -2700,6 +2793,7 @@ const PROP_CSS = `
 .inline-floor-fail .fail-title{font-weight:700;color:var(--floor-fail-text);margin:0 0 6px;font-size:13.5px;}
 .inline-floor-fail p{margin:0;color:var(--floor-fail-body);font-size:13px;line-height:1.45;}
 .teaser-card{display:flex;align-items:center;gap:14px;background:var(--f5f6-card-bg);border:1px dashed var(--f5f6-card-border);border-radius:16px;padding:16px 18px;}
+.teaser-card .check-pill{margin-left:auto;flex-shrink:0;}
 .teaser-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent-light);background:rgba(139,92,246,.16);border-radius:8px;padding:8px 10px;}
 .teaser-title{font-weight:600;font-size:15px;}
 .teaser-sub{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
@@ -2879,14 +2973,18 @@ const PROP_CSS = `
   background:var(--header-bg);border:1px solid var(--header-border);border-radius:12px;
   font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-muted);
 }
-.output-hero-row{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin:0 0 20px;}
+.output-hero-row{
+  display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin:0 0 20px;
+  align-items:start;min-height:11.25rem;position:relative;z-index:1;
+}
 .gonogo-hero{
   display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
-  padding:24px 22px;border-radius:18px;margin:0;
+  padding:24px 22px;border-radius:18px;margin:0;min-height:11.25rem;
   background:var(--hero-bg);border:1px solid var(--hero-border);
+  position:relative;z-index:1;isolation:isolate;
 }
 .gonogo-hero-copy{min-width:0;flex:1;}
-.gonogo-idea{margin:0 0 10px;font-size:26px;font-weight:700;letter-spacing:-.4px;line-height:1.2;color:var(--ink);}
+.output-page h1.gonogo-idea{margin:0 0 10px;font-size:26px;font-weight:700;letter-spacing:-.4px;line-height:1.2;color:var(--ink);}
 .gonogo-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
 .badge-chip{
   background:var(--badge-chip-bg);color:var(--badge-chip-text);
@@ -2894,8 +2992,13 @@ const PROP_CSS = `
 }
 .gonogo-badge-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;}
 .gonogo-scale-chip{
-  display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700;letter-spacing:.04em;
   padding:6px 12px;border-radius:999px;background:var(--badge-chip-bg);color:var(--badge-chip-text);
+}
+.gonogo-scale-chip[data-provisional="true"]{opacity:.95;}
+.provisional-tag{
+  font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--watch);opacity:.9;
 }
 .gonogo-scale-derivation{margin:0 0 12px;font-size:12.5px;line-height:1.45;color:var(--ink-muted);}
 .field-refresh{

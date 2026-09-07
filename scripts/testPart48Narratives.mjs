@@ -24,17 +24,23 @@ assert.match(unsigned, /unconfirmed figures are treated as a gap/);
 assert.equal(financeSignatureCopy(true), "Finance has confirmed the margin computation");
 
 const preview = previewAdvisoryChecks({ f2: { financeSigned: false } });
-assert.equal(preview.f2.items.at(-1).text, unsigned);
-assert.equal(preview.f2.items.at(-1).formAdmin, true);
-assert.equal(preview.f2.checkLabel, "Cleared");
+assert.equal(preview.f2.checkLabel, "Not yet run");
+assert.deepEqual(preview.f2.items, []);
 
 const f2UnsignedFallback = fallbackFilterNarrative(preview.f2);
 assert.doesNotMatch(f2UnsignedFallback, /Finance/i);
-assert.match(f2UnsignedFallback, /Nothing outstanding/);
+assert.match(f2UnsignedFallback, /not been run yet/i);
+
+const f2Filled = previewAdvisoryChecks({
+  f2: { financeSigned: false, cogsAtScale: 40, netMarginAtScale: 52 },
+}).f2;
+assert.notEqual(f2Filled.checkLabel, "Not yet run");
+assert.equal(f2Filled.items.at(-1).text, unsigned);
+assert.equal(f2Filled.items.at(-1).formAdmin, true);
 
 const f4pending = checkF4({});
-assert.match(f4pending.items[0].text, /not yet assessed/);
 assert.equal(f4pending.checkLabel, "Not yet run");
+assert.deepEqual(f4pending.items, []);
 const f4done = checkF4({
   techShiftRisk: {
     dimensions: {

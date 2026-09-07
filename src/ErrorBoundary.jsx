@@ -17,6 +17,7 @@ export class ErrorBoundary extends React.Component {
 
   componentDidMount() {
     if (typeof window === "undefined") return;
+    if (this.props.fallback) return;
     if (new URLSearchParams(window.location.search).get("debugError") === "1") {
       this.setState({
         error: new Error("Debug ErrorBoundary test — remove ?debugError=1 from the URL after reporting."),
@@ -26,6 +27,7 @@ export class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.error) {
+      if (this.props.fallback) return this.props.fallback;
       const { message, stack } = errorFallbackDetails(this.state.error);
       return (
         <div

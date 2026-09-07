@@ -8,7 +8,7 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const status = readFileSync(new URL("../lib/logStatus.js", import.meta.url), "utf8");
 
 assert.match(form, /gonogo-scale-chip/);
-assert.match(form, /ideaSizeFromF5/);
+assert.match(form, /ideaSizeForResult|ideaSizeFromF5/);
 assert.match(form, /sizeTier\.derivation/);
 assert.doesNotMatch(app, /ideaWeight \? ` · \$\{ideaWeight\}`/);
 assert.doesNotMatch(app, /sc-fin-label">Classification/);

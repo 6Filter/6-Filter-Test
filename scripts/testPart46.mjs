@@ -21,9 +21,8 @@ const f1Growth = SIX_FILTERS_FORM.find((f) => f.key === "f1")?.fields.find((f) =
 assert(f1Growth?.label === "Growth Route", `growthRoute label should be Growth Route, got ${f1Growth?.label}`);
 
 const missing = checkF3({ netMarginAtScale: 40 }, {});
-assert(missing.checkLabel === "Evidence missing", "empty range must not read as Cleared");
-assert(/not yet computed/i.test(missing.items[0].text), missing.items[0].text);
-assert(missing.items[0].formAdmin === true, "empty F3 range must be form-admin");
+assert(missing.checkLabel === "Not yet run", "empty F3 must not read as Cleared");
+assert(missing.items.length === 0, "blank F3 has no check items yet");
 
 const pctOnly = checkF3(
   { netMarginAtScale: 40 },

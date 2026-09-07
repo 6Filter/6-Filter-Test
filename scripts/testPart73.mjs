@@ -24,6 +24,16 @@ assert.notEqual(preview.f1.checkLabel, "Cleared");
 assert.equal(ideaSizeTier(null), null);
 assert.equal(ideaSizeFromF5({}), null);
 assert.equal(ideaSizeFromF5({ householdsReachedY3Mn: 10 }), null);
+assert.equal(
+  ideaSizeFromF5({
+    householdsReachedY3Mn: 3.2,
+    trialRatePct: 45,
+    repeatConversionPct: 30,
+    purchaseFrequencyYr: 5,
+    avgPackValueInr: 120,
+  }),
+  null
+);
 assert.deepEqual(ideaSizeTier(0.4), { tier: "10g", label: "up to ₹1 Cr" });
 assert.deepEqual(ideaSizeTier(8), { tier: "100g", label: "₹1–12 Cr" });
 assert.deepEqual(ideaSizeTier(20), { tier: "1000g", label: "above ₹12 Cr" });
@@ -34,6 +44,7 @@ const sized = ideaSizeFromF5({
   repeatConversionPct: 40,
   purchaseFrequencyYr: 6,
   avgPackValueInr: 80,
+  computedRevenue: 38.4,
 });
 assert.ok(sized);
 assert.equal(sized.tier, "1000g");
