@@ -139,7 +139,19 @@ assert.equal(isClaimingNoCompetitor({ declaredGap: 0 }), true);
 assert.equal(isClaimingNoCompetitor({ declaredGap: "", benchmark: "" }), true);
 assert.equal(isClaimingNoCompetitor({ declaredGap: 0, benchmark: "none" }), true);
 assert.equal(isClaimingNoCompetitor({ declaredGap: 1.5 }), false);
-assert.equal(isClaimingNoCompetitor({ declaredGap: 0, benchmark: "Parachute Advansed" }), false);
+assert.equal(
+  isClaimingNoCompetitor({ declaredGap: 0, benchmark: "Parachute Advansed" }),
+  true,
+  "unverified text in the benchmark field is not a real competitor"
+);
+assert.equal(
+  isClaimingNoCompetitor(
+    { declaredGap: 0, benchmark: "Parachute Advansed" },
+    { benchmarkVerified: true }
+  ),
+  false,
+  "a verified named competitor with gap 0 must not take the first-mover exception"
+);
 assert.equal(isClaimingNoCompetitor({ declaredGap: 2.2 }), false);
 
 const novelF1 = {
