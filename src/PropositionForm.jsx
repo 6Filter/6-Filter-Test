@@ -94,6 +94,7 @@ const AI_AUTO_SKIP = new Set([
   "cmiHeadSigned",
   "pureCommodity",
   "mrpInr",
+  "evidenceSourceFile",
 ]);
 
 function sourcedPath(filterKey, fieldKey) {
@@ -333,7 +334,13 @@ function FieldControl({
   inactiveHint = "",
   onReassess,
   reassessing = false,
+  fileValue = null,
+  onPickFile,
+  onClearFile,
+  fileError = "",
+  fileBusy = false,
 }) {
+  const fileRef = useRef(null);
   const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range" || field.type === "computed-risk";
@@ -626,6 +633,43 @@ function FieldControl({
       {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
       {!taxNotes && liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
       {chip}
+      {field.fileKey ? (
+        <div className="prop-attach">
+          <input
+            ref={fileRef}
+            type="file"
+            accept={field.fileAccept || ".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.csv"}
+            hidden
+            onChange={onPickFile}
+          />
+          {!fileValue?.name ? (
+            <button
+              type="button"
+              className="ghost"
+              disabled={locked || fileBusy}
+              onClick={() => fileRef.current?.click()}
+            >
+              <FileUp size={15} />
+              {field.fileLabel || "Upload source file"}
+            </button>
+          ) : (
+            <span className="chip file prop-file-chip">
+              <FileText size={15} />
+              {fileValue.name}
+              {!locked && !fileBusy ? (
+                <button type="button" onClick={onClearFile} aria-label="Remove source file">
+                  <X size={12} />
+                </button>
+              ) : null}
+            </span>
+          )}
+          {fileError ? (
+            <div className="prop-err">
+              <AlertTriangle size={14} /> {fileError}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1150,6 +1194,7 @@ export default function PropositionForm({
   const [currentView, setCurrentView] = useState("propositionForm");
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
+  const [evidenceFileError, setEvidenceFileError] = useState("");
   const [managerOpen, setManagerOpen] = useState(false);
   const [managerLoading, setManagerLoading] = useState(false);
   const [managerText, setManagerText] = useState("");
@@ -1204,6 +1249,7 @@ export default function PropositionForm({
     setFallbackUi(null);
     setFallbackChoice("");
     setProofError("");
+    setEvidenceFileError("");
     setJustSubmitted(false);
     setSummaryStale(false);
     setSummaryChecks(null);
@@ -1609,17 +1655,27 @@ export default function PropositionForm({
     };
   }
 
-  async function readUploadFile(file, setErr) {
+  async function readUploadFile(file, setErr, { allowExcel = false, allowImage = true } = {}) {
     const name = String(file.name || "").toLowerCase();
     const mime = String(file.type || "").toLowerCase();
+    const excel =
+      allowExcel &&
+      (mime.includes("spreadsheet") ||
+        mime.includes("excel") ||
+        /\.(xlsx?|xlsm|csv)$/i.test(name));
     const ok =
-      isImageUpload(name, mime) ||
+      (allowImage && isImageUpload(name, mime)) ||
       mime === "application/pdf" ||
       mime === "application/msword" ||
       mime.includes("wordprocessingml") ||
-      /\.(pdf|docx?)$/i.test(name);
+      /\.(pdf|docx?)$/i.test(name) ||
+      excel;
     if (!ok) {
-      setErr("Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP).");
+      setErr(
+        allowExcel
+          ? "Upload a Word file (.doc / .docx), PDF, or Excel file (.xls / .xlsx)."
+          : "Upload a PDF, Word file (.doc / .docx), or image (JPG, PNG, GIF, WebP, BMP)."
+      );
       return null;
     }
     if (file.size > 8 * 1024 * 1024) {
@@ -1641,6 +1697,26 @@ export default function PropositionForm({
       setErr("Could not read that file. Try a JPG or PNG.");
       return null;
     }
+  }
+
+  async function handleEvidenceSourceFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || saving) return;
+    const uploaded = await readUploadFile(file, setEvidenceFileError, {
+      allowExcel: true,
+      allowImage: false,
+    });
+    if (!uploaded) return;
+    setFilter("f1", "evidenceSourceFile", uploaded);
+    noteEdit();
+  }
+
+  function clearEvidenceSourceFile() {
+    if (saving) return;
+    setFilter("f1", "evidenceSourceFile", null);
+    setEvidenceFileError("");
+    noteEdit();
   }
 
   async function handleProofFile(e) {
@@ -2105,6 +2181,11 @@ export default function PropositionForm({
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}
                     aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                    fileValue={field.fileKey ? values[field.fileKey] : null}
+                    onPickFile={field.fileKey ? handleEvidenceSourceFile : undefined}
+                    onClearFile={field.fileKey ? clearEvidenceSourceFile : undefined}
+                    fileError={field.fileKey ? evidenceFileError : ""}
+                    fileBusy={field.fileKey ? saving : false}
                     inactive={
                       spec.key === "f1" && field.key === "declaredGap" && !isNamedBenchmark(values.benchmark)
                     }
@@ -2470,8 +2551,9 @@ const PROP_CSS = `
 .ai-wand svg{display:block;}
 .prop-field.is-ai input,.prop-field.is-ai select,.prop-field.is-ai textarea{
   border-color:rgba(201,160,232,.45);}
-.prop-helper{font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;}
-.prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.prop-helper{display:block;font-size:11.5px;color:rgba(243,234,248,.48);line-height:1.4;white-space:normal;}
+.prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px;}
+.prop-attach .ghost{padding:8px 12px;font-size:12.5px;}
 .prop-file-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
   background:rgba(201,174,239,.12);border:1px solid rgba(201,174,239,.28);font-size:13px;}
 .prop-file-chip img{width:22px;height:22px;object-fit:cover;border-radius:4px;}
