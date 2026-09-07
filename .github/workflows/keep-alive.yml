@@ -1,0 +1,14 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'  # Every 14 minutes
+  workflow_dispatch:        # Allows you to run it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" https://ck-6-filter-test.onrender.com
