@@ -1795,7 +1795,6 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
   }
 
   const revenueInfo = revenueDisplayFor(result);
-  const ideaWeight = result.gramClass || revenueInfo.weight;
   const hasNpd = Boolean(result.overallVerdict || result.filter1 || result.filter2);
   const hero = heroVerdict(result);
   const score = scoreOutOf100(result);
@@ -1847,7 +1846,6 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
               : npd.divisionFit?.isNewCategory
                 ? ` · ${npd.divisionFit.generalCategory} (new category)`
                 : ""}
-            {ideaWeight ? ` · ${ideaWeight}` : ""}
           </p>
           {result.revenueCalibrationNote ? (
             <p className="gram-cal-note">{result.revenueCalibrationNote}</p>
@@ -1934,10 +1932,6 @@ function Readout({ result, onEscalate, onNewScreen, onUploadSupportingDoc, onRem
             <div className="sc-finance-item">
               <span className="sc-fin-label">Revenue Potential</span>
               <span className="sc-fin-val">{revenueInfo.label}</span>
-            </div>
-            <div className="sc-finance-item">
-              <span className="sc-fin-label">Classification</span>
-              <span className="sc-fin-val">{ideaWeight || "—"}</span>
               {result.revenueCalibrationNote ? (
                 <span className="gram-cal-note">{result.revenueCalibrationNote}</span>
               ) : null}
@@ -2096,8 +2090,9 @@ const CSS = `
   --fd:'Plus Jakarta Sans',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
   --shadow:0 10px 30px rgba(20,32,43,.07); --shadow-hover:0 14px 36px rgba(20,32,43,.1);
   font-family:var(--fd); color:var(--ink); background: var(--bg);
-  min-height:100%; padding:32px 28px 48px; line-height:1.5;
+  min-height:100vh; padding:32px 28px 48px; line-height:1.5;
 }
+html:has(.screen-log), body:has(.screen-log) { background:#F2EFE5; }
 .primus h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:2px 0 0;color:var(--ink);}
 .primus h1 .dot{color:var(--ink-deep);}
 .eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
@@ -2275,7 +2270,7 @@ const CSS = `
 .grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,.85fr);gap:24px;align-items:start;animation:rise .5s ease .05s both;}
 .result{max-width:720px;margin:0 auto;animation:rise .45s ease both;}
 .result.result-wide{max-width:1280px;}
-.log-page{max-width:1080px;margin:0 auto;animation:rise .45s ease both;}
+.log-page{max-width:1180px;margin:0 auto;}
 .log-panel{padding-top:28px;}
 .log-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
 .log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}

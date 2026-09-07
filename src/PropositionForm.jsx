@@ -43,7 +43,7 @@ import {
   formatScreenedDuration,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
-import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaScaleImpactCopy } from "../lib/ideaScale.js";
+import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
@@ -926,11 +926,9 @@ function GoNoGoResultPage({
   const dated = formatOutputDate(doc?.updatedAt || result.at);
   const arc = scoreArcColor(score.pct);
   const ringPct = Math.max(0, Math.min(100, Number(score.pct) || 0));
-  const scale = String(result.ideaScale || ideaScaleFromDoc(doc || {}) || "").trim() || "10g";
-  const scaleImpact = ideaScaleImpactCopy(scale);
 
   return (
-    <div className="output-page gonogo-result-page">
+    <div className="gonogo-result-page">
       <header className="output-meta">
         <span className="mono">
           IDEA · v4 RULESET{dated ? ` · ${dated}` : ""}
@@ -951,9 +949,6 @@ function GoNoGoResultPage({
             </div>
             <div className="gonogo-badge-row">
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{result.classification}</div>
-              <span className="mono gonogo-scale-chip">
-                {scale} · {scaleImpact}
-              </span>
             </div>
             <p className="gonogo-rationale">{rationale}</p>
           </div>
@@ -2516,8 +2511,9 @@ const PROP_CSS = `
   background:var(--accent);color:#efe8f5;border:none;border-radius:999px;
   padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;}
 .submit-bar button:disabled{opacity:.55;cursor:not-allowed;}
-.prop-page{max-width:1080px;margin:0 auto;padding:0 28px 72px;color:#F3EAF8;}
-.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 120px;color:var(--ink);}
+.prop-page{max-width:1080px;margin:0 auto;padding:0 28px 40px;color:#F3EAF8;}
+.prop-page.prop-form-page{max-width:none;margin:0 -28px -48px;padding:20px 24px 120px;color:var(--ink);}
+.prop-page.output-page{max-width:none;margin:0 -28px -48px;min-height:calc(100vh - 140px);padding:8px 32px 40px;}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
 .prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
@@ -2661,8 +2657,6 @@ const PROP_CSS = `
   background:var(--bg-gradient), var(--bg);
   color:var(--ink);
   font-family:'Space Grotesk',system-ui,sans-serif;
-  min-height:60vh;
-  padding:8px 4px 28px;
 }
 .output-page .mono{font-family:'JetBrains Mono',monospace;}
 .prop-page.output-page{color:var(--ink);}
@@ -2693,10 +2687,6 @@ const PROP_CSS = `
 .gonogo-badge.tone-pass{background:rgba(126,224,168,.16);color:var(--pass);}
 .gonogo-badge.tone-watch{background:rgba(240,193,75,.16);color:var(--watch);}
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
-.gonogo-scale-chip{
-  background:rgba(126,224,168,.16);color:var(--pass);
-  border-radius:999px;padding:6px 12px;font-size:11px;letter-spacing:.04em;font-weight:700;
-}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
   width:132px;height:132px;border-radius:50%;flex-shrink:0;
@@ -2727,10 +2717,10 @@ const PROP_CSS = `
   border-radius:999px;padding:3px 8px;margin-top:1px;
   color:#0d0715;background:var(--watch);
 }
-.filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px;}
+.filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px;align-items:stretch;}
 .filter-status-card{
   background:var(--card-bg);border:1px solid var(--card-border);border-left-width:4px;
-  border-radius:16px;padding:16px 16px 14px;min-height:168px;
+  border-radius:16px;padding:16px 16px 14px;min-height:168px;height:100%;
   display:flex;flex-direction:column;gap:8px;
 }
 .filter-status-card[data-tone="pass"]{border-left-color:var(--pass);}
@@ -2819,11 +2809,12 @@ const PROP_CSS = `
 @media (max-width:760px){
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
-  .prop-page{padding:0 16px 56px;}
+  .prop-page{padding:0 16px 40px;}
   .prop-form-shell{grid-template-columns:1fr;}
   .prop-sidebar{position:static;}
   .prop-identity-strip{grid-template-columns:1fr;}
-  .prop-page.prop-form-page{padding:16px 16px 140px;}
+  .prop-page.prop-form-page{margin:0 -16px -48px;padding:16px 16px 140px;}
+  .prop-page.output-page{margin:0 -16px -48px;padding:8px 16px 32px;}
   .submit-bar{padding:10px 16px 12px;}
 }
 `;

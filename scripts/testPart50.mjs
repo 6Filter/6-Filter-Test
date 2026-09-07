@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 
-assert.match(src, /className="output-page gonogo-result-page"/);
+assert.match(src, /className="gonogo-result-page"/);
 assert.match(src, /className="prop-page output-page"/);
-assert.match(src, /<main className="prop-page" data-view="propositionForm">/);
+assert.match(src, /<main className="prop-page prop-form-page" data-view="propositionForm">/);
 
 const tokenBlock = src.slice(src.indexOf(".output-page{"), src.indexOf(".proof-panel"));
 assert.match(tokenBlock, /--bg:#0d0715/);
@@ -28,9 +28,8 @@ assert.match(src, /Closest path to GO/);
 assert.match(src, /\{result\.classification\}/);
 assert.match(src, /className="gonogo-idea"/);
 assert.match(src, /\{idea\}/);
-assert.match(src, /gonogo-scale-chip/);
-assert.match(src, /\.gonogo-scale-chip\{[\s\S]*?color:var\(--pass\)/);
-assert.match(src, /ideaScaleImpactCopy/);
+assert.doesNotMatch(src, /gonogo-scale-chip/);
+assert.doesNotMatch(src, /ideaScaleImpactCopy/);
 assert.doesNotMatch(src, /Up to ₹1 Cr business impact/i);
 
 console.log("PASS Part 50 output-page tokens are scoped to GoNoGoResultPage");

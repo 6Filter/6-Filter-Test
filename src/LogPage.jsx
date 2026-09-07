@@ -327,9 +327,10 @@ export const LOG_PAGE_CSS = `
   --pill-active-bg:#16202B; --pill-active-fg:#FFFDF8;
   --danger-text:#A3402F; --danger-border:#EBD3CC; --danger-hover-bg:#FBF1EE;
   font-family:'Plus Jakarta Sans',system-ui,sans-serif;
-  color:var(--ink);
-  max-width:1180px;margin:0 auto;animation:rise .45s ease both;
+  color:var(--ink); background:var(--bg);
+  max-width:1180px;margin:0 auto;
   display:flex;flex-direction:column;gap:18px;
+  min-height:calc(100vh - 180px);
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
@@ -368,10 +369,10 @@ export const LOG_PAGE_CSS = `
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
 .log-table-wrap{overflow:auto;margin:0 -8px;}
-.log-table{width:100%;border-collapse:collapse;min-width:880px;}
+.log-table{width:100%;border-collapse:collapse;border-spacing:0;min-width:880px;}
 .log-table th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:10px 12px;border-bottom:1px solid var(--table-border);font-weight:700;}
-.log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:middle;}
-.log-tr:hover{background:var(--table-row-hover);}
+.log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:middle;background:var(--card-bg);}
+.log-tr:hover td{background:var(--table-row-hover);}
 .log-open{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;}
 .log-open:disabled{opacity:.6;cursor:wait;}
 .log-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;}
