@@ -2140,6 +2140,8 @@ const CSS = `
   font-family:var(--fd); color:var(--ink); background: var(--bg);
   min-height:100vh; padding:32px 28px 48px; line-height:1.5;
 }
+/* Beats .primus padding (same spec as .screen-spec { padding:0 }, which lost on source order). */
+.primus.screen-spec{padding:0;}
 html:has(.screen-log), body:has(.screen-log) { background:#F2EFE5; }
 html:has(.prop-form-page), body:has(.prop-form-page) { background:#120818; }
 html:has(.output-page), body:has(.output-page) { background:#0d0715; }
@@ -2148,6 +2150,7 @@ html:has(.output-page), body:has(.output-page) { background:#0d0715; }
 .eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
 .masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 24px;}
 .page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;}
+.screen-spec .page-back-bar{max-width:none;width:100%;margin:0;padding:8px 28px 0;}
 .page-back{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--fd);transition:background .15s,border-color .15s;}
 .page-back:hover{background:var(--card);border-color:rgba(var(--accent-rgb, 0,108,180),.35);color:var(--ink-deep);}
 .hist-row:disabled{opacity:.65;cursor:wait;}

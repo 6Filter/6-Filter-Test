@@ -370,7 +370,7 @@ export const LOG_PAGE_CSS = `
 .log-table-wrap{overflow:auto;margin:0;}
 .log-table{width:100%;border-collapse:collapse;border-spacing:0;min-width:880px;}
 .log-table th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:10px 12px;border-bottom:1px solid var(--table-border);font-weight:700;}
-.log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:middle;background:var(--card-bg);}
+.log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);}
 .log-tr:hover td{background:var(--table-row-hover);}
 .log-open{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;}
 .log-open:disabled{opacity:.6;cursor:wait;}
@@ -384,7 +384,7 @@ export const LOG_PAGE_CSS = `
 .research-badge.used{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .research-badge.unused{background:var(--none);color:var(--ink-muted);}
 .log-prop-cell{display:flex;flex-direction:column;gap:2px;}
-.log-prop-name{font-weight:650;color:var(--ink);}
+.log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .log-prop-owner{font-size:12px;color:var(--ink-secondary);}
 .log-dept-cell{font-size:12px;color:var(--ink-secondary-2);white-space:nowrap;}
 .log-idea-cell{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-secondary);font-size:13px;}
