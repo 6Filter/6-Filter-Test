@@ -50,6 +50,7 @@ function FilterBar({ segments, stage }) {
 
 export default function LogPage({
   rows = [],
+  totalInTable = 0,
   loading = false,
   error = "",
   onRefresh,
@@ -90,6 +91,7 @@ export default function LogPage({
     [scopedForPills]
   );
   const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
+  const hiddenOlderCount = Math.max(0, Number(totalInTable) - rows.length);
   const busy = loading || deletingAll || deletingUntouched || exporting;
   const scopedStats = useMemo(() => logStats(scopedForPills), [scopedForPills]);
   const pillCounts = useMemo(
@@ -259,6 +261,13 @@ export default function LogPage({
           </div>
         </div>
 
+        {hiddenOlderCount > 0 ? (
+          <div className="log-err" role="status">
+            <AlertTriangle size={14} /> Showing the {rows.length} most recently updated of {totalInTable}{" "}
+            saved ideas. The older {hiddenOlderCount} are still stored and are not in this list or its Excel
+            export.
+          </div>
+        ) : null}
         {error ? (
           <div className="log-err" role="alert">
             <AlertTriangle size={14} /> {error}

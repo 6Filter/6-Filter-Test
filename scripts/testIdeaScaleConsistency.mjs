@@ -7,6 +7,7 @@ import {
   ideaSizeFromF5,
 } from "../lib/ideaScale.js";
 import { classifyIdeaWeight } from "../lib/scoring.js";
+import { computeF5Revenue } from "../lib/propositionScoring.js";
 
 const scaleSrc = readFileSync(new URL("../lib/ideaScale.js", import.meta.url), "utf8");
 assert.match(scaleSrc, /LOCKED/);
@@ -19,6 +20,7 @@ assert.doesNotMatch(
 );
 const exportSrc = readFileSync(new URL("../lib/logExport.js", import.meta.url), "utf8");
 assert.match(exportSrc, /ideaSizeForResult/);
+assert.match(exportSrc, /goNoGo\?\.ideaScale/, "export must keep stored scale when F5 is absent from the list row");
 
 const staleVsLive = {
   householdsReachedY3Mn: 0.5,
@@ -63,7 +65,19 @@ assert.equal(ideaSizeForResult({ f5: justOverTwelve }).tier, "1000g");
 assert.equal(ideaSizeFromF5({ ...staleVsLive, computedRevenue: null }), null);
 
 assert.equal(classifyIdeaWeight(0.5), "10g");
+assert.equal(classifyIdeaWeight(1), "10g", "₹1 Cr is still 10g — scoring must not mint 100g");
+assert.equal(classifyIdeaWeight(1.01), "100g");
 assert.equal(classifyIdeaWeight(12), "100g");
 assert.equal(classifyIdeaWeight(12.01), "1000g");
+assert.equal(classifyIdeaWeight(Number.NaN), "10g", "missing revenue must not jump to 1000g");
+assert.equal(classifyIdeaWeight(undefined), "10g");
+assert.equal(classifyIdeaWeight(1), ideaScaleFromDoc({ f5: atOneCr }));
+assert.equal(classifyIdeaWeight(1.01), ideaScaleFromDoc({ f5: justOverOne }));
+assert.equal(classifyIdeaWeight(12), ideaScaleFromDoc({ f5: atTwelve }));
+assert.equal(classifyIdeaWeight(12.01), ideaScaleFromDoc({ f5: justOverTwelve }));
 
-console.log("idea scale: badge, gate, and F5 helper now agree on the live year-3 figure");
+assert.equal(computeF5Revenue(staleVsLive), 0.5, "F5 scoring must use the live product, not a leftover rupee figure");
+assert.equal(computeF5Revenue({ ...staleVsLive, computedRevenue: null }), 0.5);
+assert.equal(computeF5Revenue({ computedRevenue: 25 }), null, "stored rupees without the five factors do not score F5");
+
+console.log("idea scale: badge, gate, scoring, and F5 helper now agree on the live year-3 figure");

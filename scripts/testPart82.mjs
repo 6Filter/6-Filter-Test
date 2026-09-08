@@ -175,6 +175,17 @@ assert.equal(flat.classification, "WATCH");
 assert.equal(flat.scorePercent, 73);
 assert.equal(flat.ideaSizeTier, "1000g");
 assert.equal(flat.ideaSizeEstimatedOrConfirmed, "estimated");
+const listSummary = flattenProposition({
+  id: "list-only",
+  name: "List row without F5 payload",
+  goNoGo: { classification: "WATCH", ideaScale: "1000g", score: { pct: 73 } },
+});
+assert.equal(
+  listSummary.ideaSizeTier,
+  "1000g",
+  "Excel fallback must keep the stored idea scale when the list row has no F5 factors"
+);
+assert.equal(listSummary.ideaSizeEstimatedOrConfirmed, "");
 assert.equal(flat.managerReviewComment, "Proceed to proof");
 assert.equal(flat.managerApprovedBy, "BH Forum");
 assert.equal(flat["f1.checkLabel"], "Cleared");

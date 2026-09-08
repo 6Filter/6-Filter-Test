@@ -1,4 +1,5 @@
 /** Browser-safe UI helpers (mirrors lib/scoring.js formulas). */
+import { ideaScaleLabel } from "../lib/ideaScale.js";
 export function scoreToFive(score100) {
   return Math.max(1, Math.min(5, Math.round(Number(score100) / 20) || 1));
 }
@@ -21,10 +22,8 @@ export function toneOf(pts, maxPoints = 60) {
 }
 
 export function classifyIdeaWeight(revenueCrores) {
-  // < ₹1 Cr → 10g | ₹1–12 Cr → 100g | > ₹12 Cr → 1000g
-  if (revenueCrores < 1) return "10g";
-  if (revenueCrores <= 12) return "100g";
-  return "1000g";
+  // Same locked bands as the badge / gate / log: ≤ ₹1 Cr → 10g | ≤ ₹12 Cr → 100g | else 1000g
+  return ideaScaleLabel(revenueCrores);
 }
 
 export function formatRevenueFromCrores(cr) {
