@@ -41,8 +41,12 @@ assert.equal(await verifyDepartmentPassword("R&D", "part90-rd-secret"), true);
 assert.equal(await verifyDepartmentPassword("R&D", "wrong"), false);
 assert.equal(await verifyDepartmentPassword("CIA", "part90-rd-secret"), false);
 
+const beforeRd = await getDepartmentPasswordHash("R&D");
+process.env.DEPT_PASSWORD_HASH_RD = hashPassword("must-not-overwrite-existing");
+process.env.DEPT_PASSWORD_HASH_CIA = process.env.DEPT_PASSWORD_HASH_CIA || hashPassword("cia-bootstrap-fill");
 const boot = await bootstrapDepartmentPasswordsFromEnv();
-assert.equal(boot.bootstrapped, false, "existing rows must not be wiped by bootstrap");
+assert.equal(await getDepartmentPasswordHash("R&D"), beforeRd, "bootstrap must not overwrite existing hashes");
+assert.equal(await verifyDepartmentPassword("R&D", "part90-rd-secret"), true);
 
 const rows = [
   { id: "a", submitterDepartment: "R&D", division: "Foods", name: "Pickle", classification: "WATCH" },
