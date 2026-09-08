@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   computeIdeaRevenueCr,
   ideaScaleFromDoc,
@@ -6,6 +7,18 @@ import {
   ideaSizeFromF5,
 } from "../lib/ideaScale.js";
 import { classifyIdeaWeight } from "../lib/scoring.js";
+
+const scaleSrc = readFileSync(new URL("../lib/ideaScale.js", import.meta.url), "utf8");
+assert.match(scaleSrc, /LOCKED/);
+assert.match(scaleSrc, /const cr = ideaBusinessCr\(/);
+assert.match(scaleSrc, /const sized = ideaSizeForResult\(doc\)/);
+assert.doesNotMatch(
+  scaleSrc,
+  /numOrNull\(f5\.computedRevenue\) \?\?/,
+  "badge must not prefer a stored rupee figure over the live five-factor product"
+);
+const exportSrc = readFileSync(new URL("../lib/logExport.js", import.meta.url), "utf8");
+assert.match(exportSrc, /ideaSizeForResult/);
 
 const staleVsLive = {
   householdsReachedY3Mn: 0.5,
