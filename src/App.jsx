@@ -1294,6 +1294,7 @@ export default function App() {
           canDeleteRow={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
           canCleanup={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
           openingDisabled={loading}
+          onFetchFull={async (id) => fetchPropositionById(id)}
         />
       )}
 

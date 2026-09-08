@@ -148,9 +148,10 @@ const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf
 assert.match(logSrc, /--bg:#F2EFE5/);
 assert.match(logSrc, /Plus Jakarta Sans/);
 assert.match(logSrc, /IBM Plex Mono/);
-assert.match(logSrc, /Export CSV/);
+assert.match(logSrc, /Export all/);
+assert.match(logSrc, /log-scoped-filters/);
+assert.match(logSrc, /Export this idea/);
 assert.match(logSrc, /Delete all/);
-assert.match(logSrc, /createObjectURL/);
 assert.doesNotMatch(logSrc, /#120818/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");

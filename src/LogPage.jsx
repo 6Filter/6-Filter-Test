@@ -1,16 +1,22 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Download, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
+  exportPropositionsToExcel,
+  resolveFullPropositions,
+} from "../lib/logExport.js";
+import {
+  applyScopedFilters,
   filterLogRows,
   filterSegments,
   filterStageLabel,
   isUntouchedDraft,
-  logRowForCsv,
   logStats,
   propositionStatus,
-  propositionsToCsv,
   researchWasUsed,
+  rowPerson,
+  rowTeam,
   submittedParts,
+  uniqueLogValues,
 } from "../lib/logStatus.js";
 
 const PILLS = [
@@ -28,18 +34,6 @@ const CHIP = {
   STOPPED: { label: "Stopped", cls: "chip-stopped" },
   REVIEW: { label: "Review", cls: "chip-review" },
 };
-
-function downloadCsvFile(text, filename) {
-  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
 function FilterBar({ segments, stage }) {
   return (
@@ -71,29 +65,71 @@ export default function LogPage({
   canDeleteRow = true,
   canCleanup = true,
   openingDisabled = false,
+  onFetchFull,
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [teamFilter, setTeamFilter] = useState("");
+  const [personFilter, setPersonFilter] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportingId, setExportingId] = useState("");
+  const [exportError, setExportError] = useState("");
+  const uniqueDepartments = useMemo(() => uniqueLogValues(rows, rowTeam), [rows]);
+  const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
-  const filtered = useMemo(() => filterLogRows(rows, { query, status }), [rows, query, status]);
-  const aiUsedCount = useMemo(() => rows.filter((r) => researchWasUsed(r)).length, [rows]);
+  const filtered = useMemo(
+    () => filterLogRows(rows, { query, status, teamFilter, personFilter }),
+    [rows, query, status, teamFilter, personFilter]
+  );
+  const scopedForPills = useMemo(
+    () => applyScopedFilters(rows, { teamFilter, personFilter }),
+    [rows, teamFilter, personFilter]
+  );
+  const aiUsedCount = useMemo(
+    () => scopedForPills.filter((r) => researchWasUsed(r)).length,
+    [scopedForPills]
+  );
   const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
-  const busy = loading || deletingAll || deletingUntouched;
+  const busy = loading || deletingAll || deletingUntouched || exporting;
+  const scopedStats = useMemo(() => logStats(scopedForPills), [scopedForPills]);
   const pillCounts = useMemo(
     () => ({
-      ALL: stats.total,
-      OPEN: stats.open,
-      CLEARED: stats.cleared,
-      STOPPED: stats.stopped,
-      REVIEW: stats.review,
+      ALL: scopedStats.total,
+      OPEN: scopedStats.open,
+      CLEARED: scopedStats.cleared,
+      STOPPED: scopedStats.stopped,
+      REVIEW: scopedStats.review,
       "ai-used": aiUsedCount,
     }),
-    [stats, aiUsedCount]
+    [scopedStats, aiUsedCount]
   );
 
-  function handleExport() {
-    const csvRows = filtered.map(logRowForCsv);
-    downloadCsvFile(propositionsToCsv(csvRows), "proposition-log.csv");
+  function exportHint() {
+    if (personFilter) return `propositions-${personFilter}`;
+    if (teamFilter) return `propositions-${teamFilter}`;
+    return "propositions";
+  }
+
+  async function handleExport(rowsToExport, hint) {
+    if (!rowsToExport?.length || exporting) return;
+    setExportError("");
+    setExporting(true);
+    try {
+      const full = await resolveFullPropositions(rowsToExport, onFetchFull);
+      exportPropositionsToExcel(full, hint || exportHint());
+    } catch (e) {
+      setExportError(e.message || "Could not export Excel.");
+    } finally {
+      setExporting(false);
+      setExportingId("");
+    }
+  }
+
+  async function handleExportRow(row) {
+    if (!row?.id || exporting) return;
+    setExportingId(row.id);
+    const hint = String(row.name || "idea").trim() || "idea";
+    await handleExport([row], hint);
   }
 
   return (
@@ -133,11 +169,13 @@ export default function LogPage({
             <button
               type="button"
               className="log-btn"
-              onClick={handleExport}
+              onClick={() => handleExport(filtered)}
               disabled={busy || filtered.length === 0}
             >
-              <Download size={15} />
-              Export CSV
+              {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+              {personFilter || teamFilter
+                ? `Export (${filtered.length} matching)`
+                : "Export all"}
             </button>
             <button
               type="button"
@@ -171,6 +209,30 @@ export default function LogPage({
               aria-label="Search name, department, or idea"
             />
           </label>
+          <div className="log-scoped-filters">
+            <label>
+              <span className="sr-only">Department</span>
+              <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+                <option value="">All departments</option>
+                {uniqueDepartments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Submitter</span>
+              <select value={personFilter} onChange={(e) => setPersonFilter(e.target.value)}>
+                <option value="">All submitters</option>
+                {uniqueSubmitters.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="log-pills" role="tablist" aria-label="Status filter">
             {PILLS.map((p) => (
               <button
@@ -202,6 +264,11 @@ export default function LogPage({
             <AlertTriangle size={14} /> {error}
           </div>
         ) : null}
+        {exportError ? (
+          <div className="log-err" role="alert">
+            <AlertTriangle size={14} /> {exportError}
+          </div>
+        ) : null}
 
         {loading && rows.length === 0 ? (
           <div className="log-empty">
@@ -224,7 +291,7 @@ export default function LogPage({
                   <th>Idea</th>
                   <th>Filters</th>
                   <th>Submitted</th>
-                  <th className="log-th-del"><span className="sr-only">Delete</span></th>
+                  <th className="log-th-del"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -239,7 +306,8 @@ export default function LogPage({
                   const when = submittedParts(h.createdAt || h.updatedAt);
                   const idea = String(h.ideaDescription || "").trim();
                   const usedAi = researchWasUsed(h);
-                  const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched;
+                  const isExportingRow = exportingId === h.id;
+                  const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched || exporting;
                   return (
                     <tr key={h.id} className="log-tr">
                       <td>
@@ -290,16 +358,28 @@ export default function LogPage({
                         <span>{when.time}</span>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="log-del"
-                          aria-label="Delete this proposition"
-                          title="Delete proposition"
-                          disabled={rowBusy || !canDeleteRow}
-                          onClick={() => onDeleteRow(h)}
-                        >
-                          {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
-                        </button>
+                        <div className="log-row-actions">
+                          <button
+                            type="button"
+                            className="log-del log-export-row"
+                            aria-label="Export this idea"
+                            title="Export this idea"
+                            disabled={rowBusy}
+                            onClick={() => handleExportRow(h)}
+                          >
+                            {isExportingRow ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="log-del"
+                            aria-label="Delete this proposition"
+                            title="Delete proposition"
+                            disabled={rowBusy || !canDeleteRow}
+                            onClick={() => onDeleteRow(h)}
+                          >
+                            {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -351,6 +431,11 @@ export const LOG_PAGE_CSS = `
 .log-toolbar{display:flex;flex-direction:column;gap:12px;margin:0 0 12px;}
 .log-search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:0 12px;color:var(--ink-muted);}
 .log-search input{flex:1;border:0;background:transparent;padding:10px 0;font-family:inherit;font-size:14px;color:var(--ink);outline:none;}
+.log-scoped-filters{display:flex;flex-wrap:wrap;gap:8px;}
+.log-scoped-filters select{
+  min-width:180px;background:#fff;border:1px solid var(--card-border);border-radius:12px;
+  padding:9px 12px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;
+}
 .log-pills{display:flex;flex-wrap:wrap;gap:6px;}
 .log-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--card-border);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink-secondary-2);cursor:pointer;font-family:inherit;}
 .log-pill span{font-size:11px;color:var(--ink-muted);}
@@ -393,7 +478,8 @@ export const LOG_PAGE_CSS = `
 .log-seg-bit{display:block;height:100%;border-radius:999px;background:var(--none);}
 .log-stage{font-size:11px;color:var(--ink-muted-2);line-height:1.35;}
 .log-submitted{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-secondary);white-space:nowrap;}
-.log-th-del,.log-table td:last-child{width:44px;text-align:right;}
+.log-th-del,.log-table td:last-child{width:84px;text-align:right;}
+.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:2px;}
 .log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;}
 .log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);color:var(--danger-text);}
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
