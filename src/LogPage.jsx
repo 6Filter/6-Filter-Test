@@ -5,8 +5,8 @@ import {
   resolveFullPropositions,
 } from "../lib/logExport.js";
 import {
+  applyLogStatusFilter,
   applyScopedFilters,
-  filterLogRows,
   filterSegments,
   filterStageLabel,
   isUntouchedDraft,
@@ -77,21 +77,21 @@ export default function LogPage({
   const uniqueDepartments = useMemo(() => uniqueLogValues(rows, rowTeam), [rows]);
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
-  const filtered = useMemo(
-    () => filterLogRows(rows, { query, status, teamFilter, personFilter }),
-    [rows, query, status, teamFilter, personFilter]
+  const scopedRows = useMemo(
+    () => applyScopedFilters(rows, { teamFilter, personFilter, searchText: query }),
+    [rows, teamFilter, personFilter, query]
   );
-  const scopedForPills = useMemo(
-    () => applyScopedFilters(rows, { teamFilter, personFilter }),
-    [rows, teamFilter, personFilter]
+  const filteredRows = useMemo(
+    () => applyLogStatusFilter(scopedRows, status),
+    [scopedRows, status]
   );
   const aiUsedCount = useMemo(
-    () => scopedForPills.filter((r) => researchWasUsed(r)).length,
-    [scopedForPills]
+    () => scopedRows.filter((r) => researchWasUsed(r)).length,
+    [scopedRows]
   );
   const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
   const busy = loading || deletingAll || deletingUntouched || exporting;
-  const scopedStats = useMemo(() => logStats(scopedForPills), [scopedForPills]);
+  const scopedStats = useMemo(() => logStats(scopedRows), [scopedRows]);
   const pillCounts = useMemo(
     () => ({
       ALL: scopedStats.total,
@@ -169,12 +169,12 @@ export default function LogPage({
             <button
               type="button"
               className="log-btn"
-              onClick={() => handleExport(filtered)}
-              disabled={busy || filtered.length === 0}
+              onClick={() => handleExport(filteredRows)}
+              disabled={busy || filteredRows.length === 0}
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
-              {personFilter || teamFilter
-                ? `Export (${filtered.length} matching)`
+              {personFilter || teamFilter || query.trim() || status !== "ALL"
+                ? `Export (${filteredRows.length} matching)`
                 : "Export all"}
             </button>
             <button
@@ -274,7 +274,7 @@ export default function LogPage({
           <div className="log-empty">
             <Loader2 size={18} className="spin" /> Loading propositions…
           </div>
-        ) : filtered.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="log-empty">
             {rows.length === 0
               ? "No propositions yet. Use NPD Screen or Enter your proposition here to start one."
@@ -282,12 +282,12 @@ export default function LogPage({
           </div>
         ) : (
           <div className="log-table-wrap">
-            <table className="log-table">
+            <table className="log-table" aria-rowcount={filteredRows.length}>
               <thead>
                 <tr>
                   <th>Status</th>
                   <th>Proposition</th>
-                  <th>Department</th>
+                  <th>Team</th>
                   <th>Idea</th>
                   <th>Filters</th>
                   <th>Submitted</th>
@@ -295,7 +295,7 @@ export default function LogPage({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((h) => {
+                {filteredRows.map((h) => {
                   const isOpening = openingId === h.id;
                   const isDeleting = deletingId === h.id;
                   const st = propositionStatus(h);
@@ -305,6 +305,8 @@ export default function LogPage({
                   const stage = filterStageLabel(h, checks, segs);
                   const when = submittedParts(h.createdAt || h.updatedAt);
                   const idea = String(h.ideaDescription || "").trim();
+                  const team = rowTeam(h) || "—";
+                  const division = String(h.division || "").trim();
                   const usedAi = researchWasUsed(h);
                   const isExportingRow = exportingId === h.id;
                   const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched || exporting;
@@ -338,7 +340,12 @@ export default function LogPage({
                           <span className="log-prop-owner">{h.submitterName || "—"}</span>
                         </button>
                       </td>
-                      <td className="mono log-dept-cell">{h.division || h.submitterDepartment || "—"}</td>
+                      <td className="mono log-dept-cell">
+                        <span className="log-dept-team">{team}</span>
+                        {division && division !== team ? (
+                          <span className="log-dept-division">{division}</span>
+                        ) : null}
+                      </td>
                       <td>
                         <button
                           type="button"
@@ -472,6 +479,8 @@ export const LOG_PAGE_CSS = `
 .log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .log-prop-owner{font-size:12px;color:var(--ink-secondary);}
 .log-dept-cell{font-size:12px;color:var(--ink-secondary-2);white-space:nowrap;}
+.log-dept-team{display:block;font-weight:650;color:var(--ink);}
+.log-dept-division{display:block;font-size:11px;color:var(--ink-muted);margin-top:2px;}
 .log-idea-cell{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-secondary);font-size:13px;}
 .log-filters-cell{min-width:140px;}
 .log-seg{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;height:8px;margin:0 0 6px;}

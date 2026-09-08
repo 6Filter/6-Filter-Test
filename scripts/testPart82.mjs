@@ -71,6 +71,18 @@ assert.equal(together[0].name, "Plex shot");
 assert.equal(filterLogRows(rows, { teamFilter: "NPD", status: "STOPPED" }).length, 0);
 assert.equal(filterLogRows(rows, { teamFilter: "R&D", status: "STOPPED" }).length, 1);
 
+const foodsRd = {
+  id: "d",
+  name: "Low sodium Pickle variants",
+  division: "Foods",
+  submitterDepartment: "R&D",
+  submitterName: "Sushmitha S",
+  ideaDescription: "pickle",
+  classification: "WATCH",
+};
+assert.equal(applyScopedFilters([foodsRd], { teamFilter: "R&D" }).length, 1);
+assert.equal(applyScopedFilters([foodsRd], { teamFilter: "Foods" }).length, 0);
+
 assert.equal(getNestedValue({ f2: { mrpInr: 210 } }, "f2.mrpInr"), 210);
 
 const deo = {
