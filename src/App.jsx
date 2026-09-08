@@ -83,7 +83,9 @@ async function fetchPropositionList(limit = 100) {
   const res = await apiFetch(`/api/propositions?limit=${limit}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load propositions.");
-  return Array.isArray(data.propositions) ? data.propositions : [];
+  const propositions = Array.isArray(data.propositions) ? data.propositions : [];
+  const total = Number.isFinite(Number(data.total)) ? Number(data.total) : propositions.length;
+  return { propositions, total };
 }
 
 function attachAdvisory(data) {
@@ -558,6 +560,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [productHistory, setProductHistory] = useState([]);
   const [propositionList, setPropositionList] = useState([]);
+  const [propositionListTotal, setPropositionListTotal] = useState(0);
   const [proposition, setProposition] = useState(null);
   const [savingProp, setSavingProp] = useState(false);
   const [processJob, setProcessJob] = useState(null);
@@ -588,9 +591,10 @@ export default function App() {
   const [outcomeMsg, setOutcomeMsg] = useState("");
 
   async function refreshHistories() {
-    const propositions = await fetchPropositionList(2000);
+    const { propositions, total } = await fetchPropositionList(2000);
     setPropositionList(propositions);
-    return { propositions };
+    setPropositionListTotal(total);
+    return { propositions, total };
   }
 
   async function confirmDeleteRun(h, source = "spec") {
@@ -841,6 +845,7 @@ export default function App() {
     try {
       await deletePropositionById(row.id);
       setPropositionList((rows) => rows.filter((r) => r.id !== row.id));
+      setPropositionListTotal((n) => Math.max(0, n - 1));
       if (proposition?.id === row.id) {
         setProposition(null);
         setView(source === "log" ? "log" : returnView === "log" ? "log" : "spec");
@@ -856,7 +861,7 @@ export default function App() {
 
   async function confirmAndDeleteAll() {
     if (deletingAll || deletingId || deletingUntouched) return;
-    const count = propositionList.length;
+    const count = propositionListTotal || propositionList.length;
     if (!count) return;
     const ok = window.confirm(`Delete all ${count} propositions? This cannot be undone.`);
     if (!ok) return;
@@ -865,6 +870,7 @@ export default function App() {
     try {
       await deleteAllPropositions();
       setPropositionList([]);
+      setPropositionListTotal(0);
       setProposition(null);
     } catch (e) {
       setLogError(e.message || "Could not delete all propositions.");
@@ -1279,6 +1285,7 @@ export default function App() {
       {view === "log" && (
         <LogPage
           rows={logHistory}
+          tableTotal={propositionListTotal}
           loading={logLoading}
           error={logError}
           onRefresh={openLogTab}

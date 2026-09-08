@@ -50,6 +50,7 @@ function FilterBar({ segments, stage }) {
 
 export default function LogPage({
   rows = [],
+  tableTotal = 0,
   loading = false,
   error = "",
   onRefresh,
@@ -74,6 +75,7 @@ export default function LogPage({
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState("");
   const [exportError, setExportError] = useState("");
+  const hiddenOlderCount = rows.length >= 2000 ? Math.max(0, Number(tableTotal || 0) - rows.length) : 0;
   const uniqueDepartments = useMemo(() => uniqueLogValues(rows, rowTeam), [rows]);
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
@@ -259,6 +261,12 @@ export default function LogPage({
           </div>
         </div>
 
+        {hiddenOlderCount > 0 ? (
+          <div className="log-warn" role="status">
+            <AlertTriangle size={14} /> {hiddenOlderCount} older{" "}
+            {hiddenOlderCount === 1 ? "idea is" : "ideas are"} still stored and are not in this list or its Excel export.
+          </div>
+        ) : null}
         {error ? (
           <div className="log-err" role="alert">
             <AlertTriangle size={14} /> {error}
@@ -451,6 +459,7 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-review,.log-seg-bit.tone-review{background:var(--review);}
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
+.log-warn{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--chip-open-bg);color:var(--chip-open-fg);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
 .log-table-wrap{overflow:auto;margin:0;}
 .log-table{width:100%;border-collapse:collapse;border-spacing:0;min-width:880px;}

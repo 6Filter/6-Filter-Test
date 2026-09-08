@@ -7,6 +7,7 @@ import {
   ideaSizeFromF5,
 } from "../lib/ideaScale.js";
 import { classifyIdeaWeight } from "../lib/scoring.js";
+import { classifyIdeaWeight as classifyIdeaWeightUi } from "../src/scoringUi.js";
 
 const scaleSrc = readFileSync(new URL("../lib/ideaScale.js", import.meta.url), "utf8");
 assert.match(scaleSrc, /LOCKED/);
@@ -19,6 +20,12 @@ assert.doesNotMatch(
 );
 const exportSrc = readFileSync(new URL("../lib/logExport.js", import.meta.url), "utf8");
 assert.match(exportSrc, /ideaSizeForResult/);
+assert.match(exportSrc, /goNoGo\?\.ideaScale/);
+assert.doesNotMatch(exportSrc, /ideaScaleFromDoc\(prop\)/);
+const scoringSrc = readFileSync(new URL("../lib/scoring.js", import.meta.url), "utf8");
+assert.match(scoringSrc, /return ideaScaleLabel\(revenueCrores\)/);
+const f5Src = readFileSync(new URL("../lib/propositionScoring.js", import.meta.url), "utf8");
+assert.match(f5Src, /computeIdeaRevenueCr\(\{ \.\.\.f5, computedRevenue: null \}\)/);
 
 const staleVsLive = {
   householdsReachedY3Mn: 0.5,
@@ -36,6 +43,11 @@ const fromDoc = ideaScaleFromDoc({ f5: staleVsLive });
 const badge = ideaSizeForResult({ f5: staleVsLive });
 const fromF5 = ideaSizeFromF5(staleVsLive);
 
+assert.equal(
+  computeIdeaRevenueCr({ ...staleVsLive, computedRevenue: null }),
+  0.5,
+  "F5 scoring uses the live product, not a leftover rupee"
+);
 assert.equal(fromDoc, "10g", "gate/log scale must follow the five live factors");
 assert.equal(badge.tier, "10g", "results badge must follow the same live factors");
 assert.equal(fromF5.tier, "10g", "F5 helper must not keep a stale stored rupee figure");
@@ -63,7 +75,14 @@ assert.equal(ideaSizeForResult({ f5: justOverTwelve }).tier, "1000g");
 assert.equal(ideaSizeFromF5({ ...staleVsLive, computedRevenue: null }), null);
 
 assert.equal(classifyIdeaWeight(0.5), "10g");
+assert.equal(classifyIdeaWeight(1), "10g", "exactly ₹1 Cr stays 10g — same as the badge");
+assert.equal(classifyIdeaWeight(1.01), "100g");
 assert.equal(classifyIdeaWeight(12), "100g");
 assert.equal(classifyIdeaWeight(12.01), "1000g");
+assert.equal(classifyIdeaWeight(Number.NaN), "10g", "missing revenue must not jump to 1000g");
+assert.equal(classifyIdeaWeight(undefined), "10g");
+assert.equal(classifyIdeaWeightUi(1), "10g");
+assert.equal(classifyIdeaWeightUi(1.01), "100g");
+assert.equal(classifyIdeaWeightUi(Number.NaN), "10g");
 
 console.log("idea scale: badge, gate, and F5 helper now agree on the live year-3 figure");

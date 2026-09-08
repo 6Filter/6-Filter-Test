@@ -35,6 +35,7 @@ assert.equal(
   null
 );
 assert.deepEqual(ideaSizeTier(0.4), { tier: "10g", label: "up to ₹1 Cr" });
+assert.deepEqual(ideaSizeTier(1), { tier: "10g", label: "up to ₹1 Cr" });
 assert.deepEqual(ideaSizeTier(8), { tier: "100g", label: "₹1–12 Cr" });
 assert.deepEqual(ideaSizeTier(20), { tier: "1000g", label: "above ₹12 Cr" });
 
