@@ -30,6 +30,14 @@ services:
         fromDatabase:
           name: primus-ai-db
           property: connectionString
+      - key: DEPT_PASSWORD_HASH_RD
+        sync: false
+      - key: DEPT_PASSWORD_HASH_CIA
+        sync: false
+      - key: DEPT_PASSWORD_HASH_MARKETING
+        sync: false
+      - key: DEPT_PASSWORD_HASH_NPD
+        sync: false
 
 databases:
   - name: primus-ai-db

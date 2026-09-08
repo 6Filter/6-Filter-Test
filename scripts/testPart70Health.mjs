@@ -32,6 +32,9 @@ const res = {
 };
 await handleHealth({ method: "GET" }, res);
 assert.equal(captured[0].status, 200);
-assert.deepEqual(JSON.parse(captured[0].body), { ok: true, db: "warm" });
+const healthBody = JSON.parse(captured[0].body);
+assert.equal(healthBody.ok, true);
+assert.equal(healthBody.db, "warm");
+assert.equal(typeof healthBody.propositions, "number");
 
 console.log("PASS Part 70 health route warms the database");

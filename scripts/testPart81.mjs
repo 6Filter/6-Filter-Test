@@ -22,15 +22,16 @@ assert.match(apiSrc, /\[primus\/propositions\] total in table:/);
 assert.match(appSrc, /fetchPropositionList\(LIST_PROPOSITIONS_CAP\)/);
 assert.doesNotMatch(appSrc, /fetchPropositionList\(100\)/);
 
-assert.match(dbSrc, /DELETE FROM propositions RETURNING id/);
+assert.match(dbSrc, /DELETE FROM propositions WHERE submitter_department = \$1 RETURNING id/);
 assert.match(
   dbSrc,
   /DELETE FROM propositions\s+WHERE research_run_at IS NULL/
 );
+assert.match(apiSrc, /deleteAllPropositions\(unlockedDepartment\)/);
 assert.doesNotMatch(
   dbSrc,
   /DELETE FROM propositions[\s\S]{0,220}LIMIT/,
   "deleteAll / deleteUntouchedDrafts must not inherit the list cap"
 );
 
-console.log("Part 81: list cap is 2000; delete-all and untouched-draft cleanup stay unscoped.");
+console.log("Part 81: list cap is 2000; department-gated deletes are scoped to submitter_department.");

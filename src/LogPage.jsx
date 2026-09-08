@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   exportPropositionsToExcel,
@@ -18,6 +18,7 @@ import {
   submittedParts,
   uniqueLogValues,
 } from "../lib/logStatus.js";
+import { LOG_UNLOCK_DEPARTMENTS } from "../lib/departmentAuth.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -69,17 +70,23 @@ export default function LogPage({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [teamFilter, setTeamFilter] = useState("");
   const [personFilter, setPersonFilter] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState("");
   const [exportError, setExportError] = useState("");
-  const uniqueDepartments = useMemo(() => uniqueLogValues(rows, rowTeam), [rows]);
+  const [gateReady, setGateReady] = useState(false);
+  const [unlockedDepartment, setUnlockedDepartment] = useState(null);
+  const [selectedDept, setSelectedDept] = useState("");
+  const [password, setPassword] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlockError, setUnlockError] = useState("");
+  const refreshRef = useRef(onRefresh);
+  refreshRef.current = onRefresh;
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
   const scopedRows = useMemo(
-    () => applyScopedFilters(rows, { teamFilter, personFilter, searchText: query }),
-    [rows, teamFilter, personFilter, query]
+    () => applyScopedFilters(rows, { personFilter, searchText: query }),
+    [rows, personFilter, query]
   );
   const filteredRows = useMemo(
     () => applyLogStatusFilter(scopedRows, status),
@@ -106,7 +113,7 @@ export default function LogPage({
 
   function exportHint() {
     if (personFilter) return `propositions-${personFilter}`;
-    if (teamFilter) return `propositions-${teamFilter}`;
+    if (unlockedDepartment) return `propositions-${unlockedDepartment}`;
     return "propositions";
   }
 
@@ -130,6 +137,121 @@ export default function LogPage({
     setExportingId(row.id);
     const hint = String(row.name || "idea").trim() || "idea";
     await handleExport([row], hint);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/department-auth/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const dept = data.department || null;
+        setUnlockedDepartment(dept);
+        setGateReady(true);
+        if (dept) refreshRef.current?.();
+      })
+      .catch(() => {
+        if (!cancelled) setGateReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleUnlock(e) {
+    e?.preventDefault?.();
+    if (!selectedDept || !password || unlocking) return;
+    setUnlocking(true);
+    setUnlockError("");
+    try {
+      const res = await fetch("/api/department-auth/unlock", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ department: selectedDept, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not unlock.");
+      setPassword("");
+      setUnlockedDepartment(data.department);
+      refreshRef.current?.();
+    } catch (err) {
+      setUnlockError(err.message || "Could not unlock.");
+      setUnlockedDepartment(null);
+    } finally {
+      setUnlocking(false);
+    }
+  }
+
+  async function handleSwitchDepartment() {
+    try {
+      await fetch("/api/department-auth/lock", { method: "POST", credentials: "include" });
+    } catch {
+      /* still lock locally */
+    }
+    setUnlockedDepartment(null);
+    setPassword("");
+    setUnlockError("");
+  }
+
+  if (!gateReady) {
+    return (
+      <main className="log-page">
+        <div className="log-empty">
+          <Loader2 size={18} className="spin" /> Opening log…
+        </div>
+      </main>
+    );
+  }
+
+  if (!unlockedDepartment) {
+    return (
+      <main className="log-page">
+        <form className="log-lock-screen" onSubmit={handleUnlock}>
+          <p className="mono log-stat-kicker">Proposition log</p>
+          <h2 className="log-title">Unlock with your department password</h2>
+          <p className="log-sub">
+            This is a shared team password, not a personal login. It lasts for this browser session only.
+          </p>
+          <label className="log-lock-label">
+            Department
+            <select
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              disabled={unlocking}
+              required
+            >
+              <option value="">Select your department</option>
+              {LOG_UNLOCK_DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="log-lock-label">
+            Password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={unlocking}
+              required
+            />
+          </label>
+          {unlockError ? (
+            <div className="log-err" role="alert">
+              <AlertTriangle size={14} /> {unlockError}
+            </div>
+          ) : null}
+          <button type="submit" className="log-btn" disabled={unlocking || !selectedDept || !password}>
+            {unlocking ? <Loader2 size={15} className="spin" /> : null}
+            Unlock
+          </button>
+        </form>
+      </main>
+    );
   }
 
   return (
@@ -157,11 +279,15 @@ export default function LogPage({
           <div>
             <h2 className="log-title">Proposition log</h2>
             <p className="log-sub">
-              Every saved idea, with live filter status. Search, filter, or export the current view.
+              Viewing {unlockedDepartment} submissions. Search, filter, or export this department only.
               Click a row to open the form.
             </p>
           </div>
           <div className="log-head-actions">
+            <span className="mono log-unlock-badge">{unlockedDepartment}</span>
+            <button type="button" className="log-btn" onClick={handleSwitchDepartment} disabled={busy}>
+              Switch department
+            </button>
             <button type="button" className="log-btn" onClick={onRefresh} disabled={busy}>
               {loading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
               Refresh
@@ -173,7 +299,7 @@ export default function LogPage({
               disabled={busy || filteredRows.length === 0}
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
-              {personFilter || teamFilter || query.trim() || status !== "ALL"
+              {personFilter || query.trim() || status !== "ALL"
                 ? `Export (${filteredRows.length} matching)`
                 : "Export all"}
             </button>
@@ -210,17 +336,6 @@ export default function LogPage({
             />
           </label>
           <div className="log-scoped-filters">
-            <label>
-              <span className="sr-only">Department</span>
-              <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-                <option value="">All departments</option>
-                {uniqueDepartments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label>
               <span className="sr-only">Submitter</span>
               <select value={personFilter} onChange={(e) => setPersonFilter(e.target.value)}>
@@ -430,6 +545,13 @@ export const LOG_PAGE_CSS = `
 .log-page .log-title{margin:0 0 6px;font-size:22px;color:var(--ink);}
 .log-page .log-sub{margin:0;font-size:13px;color:var(--ink-secondary);max-width:560px;line-height:1.45;}
 .log-page .log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.log-unlock-badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
+.log-lock-screen{max-width:420px;margin:48px auto;background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;}
+.log-lock-label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--ink);}
+.log-lock-label select,.log-lock-label input{
+  background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:10px 12px;
+  font-family:inherit;font-size:14px;font-weight:500;color:var(--ink);
+}
 .log-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--card-border);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;}
 .log-btn:hover{background:var(--table-row-hover);}
 .log-btn:disabled{opacity:.5;cursor:not-allowed;}

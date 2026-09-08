@@ -3,6 +3,7 @@ dist
 .env
 .env.local
 .env*.local
+.department-passwords.local
 data/
 john text
 john text.txt
