@@ -175,6 +175,20 @@ assert.equal(flat.classification, "WATCH");
 assert.equal(flat.scorePercent, 73);
 assert.equal(flat.ideaSizeTier, "1000g");
 assert.equal(flat.ideaSizeEstimatedOrConfirmed, "estimated");
+
+const listRowNoF5 = {
+  id: "thin-row",
+  name: "List row without F5",
+  goNoGo: { classification: "WATCH", ideaScale: "100g", score: { pct: 72 } },
+};
+const thin = flattenProposition(listRowNoF5);
+assert.equal(thin.ideaSizeTier, "100g", "export must keep stored ideaScale when the list row has no F5");
+assert.equal(thin.ideaSizeEstimatedOrConfirmed, "stored");
+assert.equal(
+  flattenProposition({ id: "empty" }).ideaSizeTier,
+  "",
+  "empty list row must not mint a fake 10g"
+);
 assert.equal(flat.managerReviewComment, "Proceed to proof");
 assert.equal(flat.managerApprovedBy, "BH Forum");
 assert.equal(flat["f1.checkLabel"], "Cleared");

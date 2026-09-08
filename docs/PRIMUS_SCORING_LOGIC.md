@@ -8,8 +8,8 @@ Process ideas are unchanged: Efficiency / Feasibility / Scalability. See the Leg
 
 | Class | Meaning | Revenue band (3-year potential) |
 |---|---|---|
-| **10g** | Small commercial weight | < ₹1 Cr |
-| **100g** | Mid commercial weight | ₹1 – ₹12 Cr |
+| **10g** | Small commercial weight | ≤ ₹1 Cr |
+| **100g** | Mid commercial weight | above ₹1 Cr to ₹12 Cr |
 | **1000g** | Strong commercial weight | > ₹12 Cr |
 
 Bands are `classifyIdeaWeight()` in `lib/scoring.js`. Missing evidence on a deterministic filter is a **FAIL**, not a silent default.
@@ -202,8 +202,8 @@ Classification is derived from **estimated revenue in crores**, not directly fro
 
 | Revenue | Classification | Meaning |
 |---------|----------------|---------|
-| **&lt; ₹1 Cr** | **10g** | Small commercial weight |
-| **₹1 – 12 Cr** | **100g** | Mid commercial weight |
+| **≤ ₹1 Cr** | **10g** | Small commercial weight |
+| **above ₹1 – 12 Cr** | **100g** | Mid commercial weight |
 | **&gt; ₹12 Cr** | **1000g** | Strong commercial weight |
 
 ---
@@ -246,7 +246,7 @@ Status:  <30 Rejected | 30–40 Promising | >40 Approved
         ↓
 Matrix:  round(score/20) as X/5
         ↓
-Revenue →  <₹1 Cr = 10g | ₹1–12 Cr = 100g | >₹12 Cr = 1000g
+Revenue →  ≤₹1 Cr = 10g | above ₹1–12 Cr = 100g | >₹12 Cr = 1000g
 ```
 
 ---
