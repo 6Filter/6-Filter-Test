@@ -63,6 +63,7 @@ assert.equal(ideaSizeForResult({ f5: justOverTwelve }).tier, "1000g");
 assert.equal(ideaSizeFromF5({ ...staleVsLive, computedRevenue: null }), null);
 
 assert.equal(classifyIdeaWeight(0.5), "10g");
+assert.equal(classifyIdeaWeight(1), "10g");
 assert.equal(classifyIdeaWeight(12), "100g");
 assert.equal(classifyIdeaWeight(12.01), "1000g");
 

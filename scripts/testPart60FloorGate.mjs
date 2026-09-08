@@ -76,7 +76,7 @@ const unverified = checkF1(
 assert.equal(unverified.items[1].status, "pending");
 
 const range = { minMrpInr: 80, maxMrpInr: 120, minMarginPct: 12, maxMarginPct: 28 };
-assert.equal(checkF3({}, { marginElasticity: {} }).items[0].formAdmin, true);
+assert.equal(checkF3({}, { marginElasticity: {} }).checkLabel, "Not yet run");
 assert.equal(
   checkF3({ cogsAtScale: 70, netMarginAtScale: 20, gstRatePct: 18 }, { marginElasticity: range }).checkLabel,
   "Cleared"
@@ -192,7 +192,9 @@ assert.ok(formSrc.indexOf("className=\"filter-grid\"") > heroEnd);
 
 const goSrc = readFileSync(new URL("../lib/goNoGo.js", import.meta.url), "utf8");
 assert.match(goSrc, /if \(goNoGoIsFloorFailure\(advisoryChecks\)\) return "NO-GO"/);
-assert.match(goSrc, /if \(score > 80\) return "GO"/);
-assert.match(goSrc, /if \(score >= 60\) return "WATCH"/);
+assert.match(goSrc, /from "\.\/lockedConstants\.js"/);
+assert.match(goSrc, /classifyGoNoGoFromBands/);
+assert.doesNotMatch(goSrc, /if \(score > 80\) return "GO"/);
+assert.doesNotMatch(goSrc, /if \(score >= 60\) return "WATCH"/);
 
 console.log("PASS Part 60 floor gate before percentage, one hero score");

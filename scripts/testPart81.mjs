@@ -6,18 +6,20 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
 assert.match(dbSrc, /export async function countPropositions\(/);
+assert.match(dbSrc, /LIST_PROPOSITIONS_CAP/);
 assert.match(
   dbSrc,
-  /Math\.min\(2000, Math\.max\(1, Math\.floor\(Number\(limit\)\)\)\)/,
-  "listPropositions ceiling must be 2000"
+  /Math\.min\(LIST_PROPOSITIONS_CAP, Math\.max\(1, Math\.floor\(Number\(limit\)\)\)\)/,
+  "listPropositions ceiling must use LIST_PROPOSITIONS_CAP"
 );
 assert.doesNotMatch(dbSrc, /Math\.min\(200, Math\.max\(1, Math\.floor\(Number\(limit\)\)\)\)/);
 
-assert.match(apiSrc, /Math\.min\(2000, Math\.floor\(n\)\)/);
+assert.match(apiSrc, /LIST_PROPOSITIONS_CAP/);
+assert.match(apiSrc, /Math\.min\(LIST_PROPOSITIONS_CAP, Math\.floor\(n\)\)/);
 assert.doesNotMatch(apiSrc, /Math\.min\(200, Math\.floor\(n\)\)/);
 assert.match(apiSrc, /\[primus\/propositions\] total in table:/);
 
-assert.match(appSrc, /fetchPropositionList\(2000\)/);
+assert.match(appSrc, /fetchPropositionList\(LIST_PROPOSITIONS_CAP\)/);
 assert.doesNotMatch(appSrc, /fetchPropositionList\(100\)/);
 
 assert.match(dbSrc, /DELETE FROM propositions RETURNING id/);

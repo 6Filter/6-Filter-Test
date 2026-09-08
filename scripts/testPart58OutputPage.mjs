@@ -157,6 +157,7 @@ assert.equal(formatScreenedDuration(null), null);
 
 const goNoGo = readFileSync(new URL("../lib/goNoGo.js", import.meta.url), "utf8");
 assert.doesNotMatch(goNoGo, /computeImprovementPointValues/);
-assert.match(goNoGo, /<60 NO-GO · 60–80 WATCH · >80 GO/);
+assert.match(goNoGo, /lockedConstants/);
+assert.match(goNoGo, /classifyGoNoGoFromBands/);
 
 console.log("PASS Part 58 output-page point values, owners, and reference tokens");

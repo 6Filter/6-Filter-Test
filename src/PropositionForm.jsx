@@ -35,6 +35,7 @@ import {
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
+import { isGoScore } from "../lib/lockedConstants.js";
 import {
   closestPathToGo,
   computeImprovementPointValues,
@@ -982,7 +983,7 @@ function GoNoGoResultPage({
   const path = safeCall(
     "closest path to GO",
     () => closestPathToGo(checks, improvementItems),
-    { items: [], projectedPct: scorePct, reachesGo: scorePct > 80 }
+    { items: [], projectedPct: scorePct, reachesGo: isGoScore(scorePct) }
   );
   const pathItems = Array.isArray(path?.items) ? path.items : [];
   const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {

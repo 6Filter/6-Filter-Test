@@ -20,6 +20,7 @@ import LoginScreen from "./LoginScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
+import { LIST_PROPOSITIONS_CAP } from "../lib/lockedConstants.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -588,7 +589,7 @@ export default function App() {
   const [outcomeMsg, setOutcomeMsg] = useState("");
 
   async function refreshHistories() {
-    const propositions = await fetchPropositionList(2000);
+    const propositions = await fetchPropositionList(LIST_PROPOSITIONS_CAP);
     setPropositionList(propositions);
     return { propositions };
   }

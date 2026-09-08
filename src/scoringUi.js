@@ -1,4 +1,6 @@
 /** Browser-safe UI helpers (mirrors lib/scoring.js formulas). */
+import { classifyIdeaWeightFromBands, IDEA_WEIGHT_BANDS } from "../lib/lockedConstants.js";
+
 export function scoreToFive(score100) {
   return Math.max(1, Math.min(5, Math.round(Number(score100) / 20) || 1));
 }
@@ -21,17 +23,14 @@ export function toneOf(pts, maxPoints = 60) {
 }
 
 export function classifyIdeaWeight(revenueCrores) {
-  // < ₹1 Cr → 10g | ₹1–12 Cr → 100g | > ₹12 Cr → 1000g
-  if (revenueCrores < 1) return "10g";
-  if (revenueCrores <= 12) return "100g";
-  return "1000g";
+  return classifyIdeaWeightFromBands(revenueCrores);
 }
 
 export function formatRevenueFromCrores(cr) {
   const value = Number(cr);
   if (!Number.isFinite(value) || value <= 0) return "₹3 – ₹10 Lakhs";
   if (value < 0.01) return "< ₹1 Lakh";
-  if (value < 1) {
+  if (value < IDEA_WEIGHT_BANDS.TIER_10G_MAX) {
     const lakhs = value * 100;
     if (lakhs < 10) return `₹${lakhs.toFixed(1)} Lakhs`;
     return `₹${Math.round(lakhs)} Lakhs`;

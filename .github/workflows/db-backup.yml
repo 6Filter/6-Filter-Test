@@ -1,0 +1,30 @@
+name: Daily Propositions Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Dump propositions table
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGSSLMODE: require
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL secret is not set — add it in repo Settings → Secrets → Actions"
+            exit 1
+          fi
+          pg_dump "$DATABASE_URL" --table=propositions --data-only --format=custom \
+            -f "propositions-backup-$(date +%F).dump"
+      - name: Upload to durable storage
+        uses: actions/upload-artifact@v4
+        with:
+          name: propositions-backup-${{ github.run_id }}
+          path: "*.dump"
+          retention-days: 90
