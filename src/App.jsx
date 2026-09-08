@@ -588,7 +588,7 @@ export default function App() {
   const [outcomeMsg, setOutcomeMsg] = useState("");
 
   async function refreshHistories() {
-    const propositions = await fetchPropositionList(100);
+    const propositions = await fetchPropositionList(2000);
     setPropositionList(propositions);
     return { propositions };
   }
