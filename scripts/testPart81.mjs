@@ -16,9 +16,19 @@ assert.doesNotMatch(dbSrc, /Math\.min\(200, Math\.max\(1, Math\.floor\(Number\(l
 assert.match(apiSrc, /Math\.min\(2000, Math\.floor\(n\)\)/);
 assert.doesNotMatch(apiSrc, /Math\.min\(200, Math\.floor\(n\)\)/);
 assert.match(apiSrc, /\[primus\/propositions\] total in table:/);
+assert.match(apiSrc, /sendJson\(res, 200, \{ propositions, total \}\)/);
+
+assert.match(appSrc, /data\.total/);
+assert.match(appSrc, /setPropositionListTotal/);
+assert.match(appSrc, /totalInTable=\{propositionListTotal\}/);
 
 assert.match(appSrc, /fetchPropositionList\(2000\)/);
 assert.doesNotMatch(appSrc, /fetchPropositionList\(100\)/);
+
+const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
+assert.match(logSrc, /hiddenOlderCount/);
+assert.match(logSrc, /totalInTable/);
+assert.match(logSrc, /are still stored and are not in this list or its Excel/);
 
 assert.match(dbSrc, /DELETE FROM propositions RETURNING id/);
 assert.match(
