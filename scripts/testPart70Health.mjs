@@ -17,7 +17,9 @@ assert.match(vercel, /handleHealth/);
 assert.match(vercel, /auth: false/);
 
 const ping = await pingDatabase();
-assert.deepEqual(ping, { ok: true, db: "warm" });
+assert.equal(ping.ok, true);
+assert.equal(typeof ping.usePostgres, "boolean");
+assert.ok(ping.db === "postgres" || ping.db === "file");
 
 const captured = [];
 const res = {
@@ -34,7 +36,8 @@ await handleHealth({ method: "GET" }, res);
 assert.equal(captured[0].status, 200);
 const healthBody = JSON.parse(captured[0].body);
 assert.equal(healthBody.ok, true);
-assert.equal(healthBody.db, "warm");
+assert.equal(typeof healthBody.usePostgres, "boolean");
+assert.equal(healthBody.db, ping.db);
 assert.equal(typeof healthBody.propositions, "number");
 
 console.log("PASS Part 70 health route warms the database");

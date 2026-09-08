@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { hashPassword } from "../lib/auth.js";
 import { canViewProposition } from "../lib/propositionAccess.js";
 import { matchesUnlockedDepartment, verifyDepartmentPassword } from "../lib/departmentAuth.js";
+import { initDb, upsertDepartmentPasswordHash } from "../lib/db.js";
 
 const rdFoods = {
   id: "1",
@@ -26,11 +27,11 @@ assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), false);
 assert.equal(canViewProposition({ role: "ADMIN" }, npdSnacks), true);
 assert.equal(canViewProposition(null, rdFoods), true, "form create/edit stays open without a Log unlock");
 
-process.env.DEPT_PASSWORD_HASH_RD = hashPassword("correct-horse");
-assert.equal(verifyDepartmentPassword("R&D", "correct-horse"), true);
-assert.equal(verifyDepartmentPassword("R&D", "wrong-password"), false);
-assert.equal(verifyDepartmentPassword("CIA", "correct-horse"), false);
-delete process.env.DEPT_PASSWORD_HASH_RD;
+await initDb();
+await upsertDepartmentPasswordHash("R&D", hashPassword("correct-horse"));
+assert.equal(await verifyDepartmentPassword("R&D", "correct-horse"), true);
+assert.equal(await verifyDepartmentPassword("R&D", "wrong-password"), false);
+assert.equal(await verifyDepartmentPassword("CIA", "correct-horse"), false);
 
 const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(pageSrc, /log-lock-screen/);
@@ -57,7 +58,7 @@ assert.doesNotMatch(
 
 const authSrc = readFileSync(new URL("../lib/departmentAuth.js", import.meta.url), "utf8");
 assert.doesNotMatch(authSrc, /password\s*[:=]\s*["'][^"']+["']/i);
-assert.match(authSrc, /DEPT_PASSWORD_HASH_RD/);
+assert.match(authSrc, /getDepartmentPasswordHash/);
 
 const cookieSrc = readFileSync(new URL("../lib/auth.js", import.meta.url), "utf8");
 assert.match(cookieSrc, /primus_dept/);
