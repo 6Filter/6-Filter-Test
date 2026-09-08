@@ -36,6 +36,12 @@ const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "ut
 assert.match(pageSrc, /log-lock-screen/);
 assert.match(pageSrc, /\/api\/department-auth\/unlock/);
 assert.match(pageSrc, /Unlock with your department password/);
+assert.match(pageSrc, /departmentAuthConstants\.js/);
+assert.doesNotMatch(
+  pageSrc,
+  /from ["']\.\.\/lib\/departmentAuth\.js["']/,
+  "LogPage must not import departmentAuth.js (pulls node:crypto via auth.js)"
+);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /deleteAllPropositions\(unlockedDepartment\)/);

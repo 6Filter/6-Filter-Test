@@ -18,7 +18,7 @@ import {
   submittedParts,
   uniqueLogValues,
 } from "../lib/logStatus.js";
-import { LOG_UNLOCK_DEPARTMENTS } from "../lib/departmentAuth.js";
+import { LOG_UNLOCK_DEPARTMENTS } from "../lib/departmentAuthConstants.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
