@@ -27,7 +27,8 @@ assert.match(
   dbSrc,
   /DELETE FROM propositions\s+WHERE research_run_at IS NULL/
 );
-assert.match(apiSrc, /deleteAllPropositions\(unlockedDepartment\)/);
+assert.match(apiSrc, /deleteAllPropositions\(wipeScope\)/);
+assert.match(apiSrc, /isMasterUnlock/);
 assert.doesNotMatch(
   dbSrc,
   /DELETE FROM propositions[\s\S]{0,220}LIMIT/,

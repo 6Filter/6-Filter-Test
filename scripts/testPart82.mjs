@@ -209,7 +209,8 @@ assert.equal(XLSX.utils.sheet_to_json(scopedOut.Sheets.Propositions).length, 2);
 
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /log-scoped-filters/);
-assert.match(logSrc, /LOG_UNLOCK_DEPARTMENTS/);
+assert.match(logSrc, /LOG_UNLOCK_OPTIONS/);
+assert.match(logSrc, /isMasterUnlock/);
 assert.match(logSrc, /uniqueSubmitters/);
 assert.match(logSrc, /Export this idea/);
 assert.match(logSrc, /exportPropositionsToExcel/);

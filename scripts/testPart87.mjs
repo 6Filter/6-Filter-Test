@@ -25,6 +25,8 @@ assert.equal(matchesUnlockedDepartment(npdSnacks, "R&D"), false);
 assert.equal(canViewProposition({ department: "R&D" }, rdFoods), true);
 assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), false);
 assert.equal(canViewProposition({ role: "ADMIN" }, npdSnacks), true);
+assert.equal(canViewProposition({ department: "Master" }, rdFoods), true);
+assert.equal(canViewProposition({ department: "Master" }, npdSnacks), true);
 assert.equal(canViewProposition(null, rdFoods), true, "form create/edit stays open without a Log unlock");
 
 await initDb();
@@ -45,8 +47,9 @@ assert.doesNotMatch(
 );
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
-assert.match(apiSrc, /deleteAllPropositions\(unlockedDepartment\)/);
+assert.match(apiSrc, /deleteAllPropositions\(wipeScope\)/);
 assert.match(apiSrc, /deleteUntouchedDrafts\(unlockedDepartment\)/);
+assert.match(apiSrc, /isMasterUnlock/);
 assert.match(apiSrc, /departmentUnlockRequired/);
 
 const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");

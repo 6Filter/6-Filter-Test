@@ -6,6 +6,7 @@
  *   set DEPT_PASSWORD_CIA=...
  *   set DEPT_PASSWORD_MARKETING=...
  *   set DEPT_PASSWORD_NPD=...
+ *   set DEPT_PASSWORD_MASTER=...
  *   set DATABASE_URL=...   # required for production Postgres
  *   node scripts/seedDepartmentPasswords.mjs
  *
@@ -14,7 +15,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { scryptHash } from "../lib/auth.js";
 import { initDb, isUsingPostgres, upsertDepartmentPasswordHash } from "../lib/db.js";
-import { LOG_UNLOCK_DEPARTMENTS } from "../lib/departmentAuthConstants.js";
+import { LOG_UNLOCK_OPTIONS, LOG_MASTER_UNLOCK } from "../lib/departmentAuthConstants.js";
 
 function loadEnvFile(path) {
   const out = {};
@@ -44,12 +45,13 @@ const passwords = {
   CIA: process.env.DEPT_PASSWORD_CIA || "",
   Marketing: process.env.DEPT_PASSWORD_MARKETING || "",
   NPD: process.env.DEPT_PASSWORD_NPD || "",
+  [LOG_MASTER_UNLOCK]: process.env.DEPT_PASSWORD_MASTER || "",
 };
 
 await initDb();
 const store = isUsingPostgres() ? "postgres" : "file";
 let written = 0;
-for (const dept of LOG_UNLOCK_DEPARTMENTS) {
+for (const dept of LOG_UNLOCK_OPTIONS) {
   const plaintext = String(passwords[dept] || "").trim();
   if (!plaintext) {
     console.warn(`skip ${dept}: no plaintext in DEPT_PASSWORD_*`);

@@ -18,7 +18,7 @@ import {
   submittedParts,
   uniqueLogValues,
 } from "../lib/logStatus.js";
-import { LOG_UNLOCK_DEPARTMENTS } from "../lib/departmentAuthConstants.js";
+import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -98,6 +98,8 @@ export default function LogPage({
   );
   const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
   const busy = loading || deletingAll || deletingUntouched || exporting;
+  const masterView = isMasterUnlock(unlockedDepartment);
+  const allowWipe = !masterView;
   const scopedStats = useMemo(() => logStats(scopedRows), [scopedRows]);
   const pillCounts = useMemo(
     () => ({
@@ -222,7 +224,7 @@ export default function LogPage({
               required
             >
               <option value="">Select your department</option>
-              {LOG_UNLOCK_DEPARTMENTS.map((d) => (
+              {LOG_UNLOCK_OPTIONS.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
@@ -279,7 +281,9 @@ export default function LogPage({
           <div>
             <h2 className="log-title">Proposition log</h2>
             <p className="log-sub">
-              Viewing {unlockedDepartment} submissions. Search, filter, or export this department only.
+              {isMasterUnlock(unlockedDepartment)
+                ? "Viewing all department submissions. Search, filter, or export across teams."
+                : `Viewing ${unlockedDepartment} submissions. Search, filter, or export this department only.`}{" "}
               Click a row to open the form.
             </p>
           </div>
@@ -307,7 +311,8 @@ export default function LogPage({
               type="button"
               className="log-btn"
               onClick={onCleanupUntouched}
-              disabled={busy || untouchedCount === 0 || !canCleanup}
+              disabled={busy || untouchedCount === 0 || !canCleanup || !allowWipe}
+              title={masterView ? "Switch to a department to clean up drafts" : undefined}
             >
               {deletingUntouched ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Clean up untouched drafts ({untouchedCount})
@@ -316,7 +321,8 @@ export default function LogPage({
               type="button"
               className="log-btn log-btn-danger"
               onClick={onDeleteAll}
-              disabled={busy || rows.length === 0 || !canDeleteAll}
+              disabled={busy || rows.length === 0 || !canDeleteAll || !allowWipe}
+              title={masterView ? "Switch to a department to delete" : undefined}
             >
               {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Delete all

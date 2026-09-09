@@ -38,6 +38,8 @@ services:
         sync: false
       - key: DEPT_PASSWORD_HASH_NPD
         sync: false
+      - key: DEPT_PASSWORD_HASH_MASTER
+        sync: false
 
 databases:
   - name: primus-ai-db
