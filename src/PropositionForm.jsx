@@ -1375,8 +1375,6 @@ export default function PropositionForm({
     setAiPassMeta(null);
     setLocalError("");
     setSlackNotice("");
-    setFallbackUi(null);
-    setFallbackChoice("");
     setProofError("");
     setEvidenceFileError("");
     setJustSubmitted(false);
@@ -2869,14 +2867,6 @@ const PROP_CSS = `
   background:var(--chip-review-bg, #E5E8EC);color:var(--chip-review-fg, #3A4A5C);font-size:13px;line-height:1.4;}
 .prop-notice span{flex:1;}
 .prop-notice button{border:none;background:transparent;color:inherit;cursor:pointer;display:inline-flex;padding:2px;}
-.prop-fallback{margin:12px 0 0;padding:14px 16px;border-radius:12px;
-  background:rgba(226,113,107,.08);border:1px solid rgba(226,113,107,.35);}
-.prop-fallback-lede{margin:0 0 12px;font-size:13px;line-height:1.45;color:#F3EAF8;}
-.prop-fallback-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;}
-.prop-fallback-pick{display:flex;flex-direction:column;gap:6px;min-width:200px;flex:1;}
-.prop-fallback-pick span{font-family:var(--fm);font-size:11px;letter-spacing:.04em;
-  color:rgba(243,234,248,.75);}
-.prop-fallback-hint{margin:10px 0 0;font-size:12px;color:rgba(243,234,248,.55);line-height:1.4;}
 .unlock-hint{margin:0 0 14px;font-size:13px;color:rgba(243,234,248,.58);line-height:1.4;}
 .output-page{
   --bg:#0d0715;
