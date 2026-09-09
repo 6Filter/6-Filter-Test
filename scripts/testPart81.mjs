@@ -27,12 +27,12 @@ assert.match(
   dbSrc,
   /DELETE FROM propositions\s+WHERE research_run_at IS NULL/
 );
-assert.match(apiSrc, /deleteAllPropositions\(wipeScope\)/);
-assert.match(apiSrc, /isMasterUnlock/);
+assert.match(apiSrc, /deleteAllPropositions\(null\)/);
+assert.match(apiSrc, /canDeleteLogProposition/);
 assert.doesNotMatch(
   dbSrc,
   /DELETE FROM propositions[\s\S]{0,220}LIMIT/,
   "deleteAll / deleteUntouchedDrafts must not inherit the list cap"
 );
 
-console.log("Part 81: list cap is 2000; department-gated deletes are scoped to submitter_department.");
+console.log("Part 81: list cap is 2000; Log deletes require Master unlock.");

@@ -850,7 +850,9 @@ export default function App() {
     if (deletingAll || deletingId || deletingUntouched) return;
     const count = propositionList.length;
     if (!count) return;
-    const ok = window.confirm(`Delete all ${count} propositions for this department? Other departments are not touched. This cannot be undone.`);
+    const ok = window.confirm(
+      `Delete ALL propositions in the log (every department)? This cannot be undone.`
+    );
     if (!ok) return;
     setDeletingAll(true);
     setLogError("");
@@ -870,7 +872,7 @@ export default function App() {
     const untouchedCount = propositionList.filter((r) => isUntouchedDraft(r)).length;
     if (!untouchedCount) return;
     const ok = window.confirm(
-      `Remove ${untouchedCount} completely untouched drafts for this department? Nothing with any content will be deleted.`
+      `Remove ${untouchedCount} completely untouched drafts across all departments? Nothing with any content will be deleted.`
     );
     if (!ok) return;
     setDeletingUntouched(true);

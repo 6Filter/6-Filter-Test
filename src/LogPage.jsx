@@ -99,7 +99,7 @@ export default function LogPage({
   const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
   const busy = loading || deletingAll || deletingUntouched || exporting;
   const masterView = isMasterUnlock(unlockedDepartment);
-  const allowWipe = !masterView;
+  const allowDelete = masterView;
   const scopedStats = useMemo(() => logStats(scopedRows), [scopedRows]);
   const pillCounts = useMemo(
     () => ({
@@ -311,8 +311,8 @@ export default function LogPage({
               type="button"
               className="log-btn"
               onClick={onCleanupUntouched}
-              disabled={busy || untouchedCount === 0 || !canCleanup || !allowWipe}
-              title={masterView ? "Switch to a department to clean up drafts" : undefined}
+              disabled={busy || untouchedCount === 0 || !canCleanup || !allowDelete}
+              title={masterView ? undefined : "Only Master can delete"}
             >
               {deletingUntouched ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Clean up untouched drafts ({untouchedCount})
@@ -321,8 +321,8 @@ export default function LogPage({
               type="button"
               className="log-btn log-btn-danger"
               onClick={onDeleteAll}
-              disabled={busy || rows.length === 0 || !canDeleteAll || !allowWipe}
-              title={masterView ? "Switch to a department to delete" : undefined}
+              disabled={busy || rows.length === 0 || !canDeleteAll || !allowDelete}
+              title={masterView ? undefined : "Only Master can delete"}
             >
               {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Delete all
@@ -497,16 +497,18 @@ export default function LogPage({
                           >
                             {isExportingRow ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
                           </button>
+                          {allowDelete && canDeleteRow ? (
                           <button
                             type="button"
                             className="log-del"
                             aria-label="Delete this proposition"
                             title="Delete proposition"
-                            disabled={rowBusy || !canDeleteRow}
+                            disabled={rowBusy}
                             onClick={() => onDeleteRow(h)}
                           >
                             {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
                           </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

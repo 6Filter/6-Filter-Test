@@ -7,8 +7,13 @@ import {
   matchesUnlockedDepartment,
   verifyDepartmentPassword,
 } from "../lib/departmentAuth.js";
-import { canRunDepartmentWipe, canViewProposition } from "../lib/propositionAccess.js";
+import {
+  canDeleteLogProposition,
+  canRunDepartmentWipe,
+  canViewProposition,
+} from "../lib/propositionAccess.js";
 import { initDb, upsertDepartmentPasswordHash } from "../lib/db.js";
+import { readFileSync } from "node:fs";
 
 const rd = { id: "1", submitterDepartment: "R&D", division: "Foods", name: "Pickle" };
 const npd = { id: "2", submitterDepartment: "NPD", division: "Snacks", name: "Dal" };
@@ -19,12 +24,22 @@ assert.equal(matchesUnlockedDepartment(rd, LOG_MASTER_UNLOCK), true);
 assert.equal(matchesUnlockedDepartment(npd, LOG_MASTER_UNLOCK), true);
 assert.equal(canViewProposition({ department: LOG_MASTER_UNLOCK }, rd), true);
 assert.equal(canViewProposition({ department: LOG_MASTER_UNLOCK }, npd), true);
+assert.equal(canDeleteLogProposition({ department: LOG_MASTER_UNLOCK }), true);
+assert.equal(canDeleteLogProposition({ department: "R&D" }), false);
+assert.equal(canRunDepartmentWipe({ department: "R&D" }), false);
 assert.equal(canRunDepartmentWipe({ department: LOG_MASTER_UNLOCK }), false);
-assert.equal(canRunDepartmentWipe({ department: "R&D" }), true);
+
+const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
+assert.match(pageSrc, /allowDelete/);
+assert.match(pageSrc, /Only Master can delete/);
+
+const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(apiSrc, /canDeleteLogProposition/);
+assert.match(apiSrc, /Only Master unlock can delete propositions/);
 
 await initDb();
 await upsertDepartmentPasswordHash(LOG_MASTER_UNLOCK, hashPassword("Iwillnottellthepassword"));
 assert.equal(await verifyDepartmentPassword(LOG_MASTER_UNLOCK, "Iwillnottellthepassword"), true);
 assert.equal(await verifyDepartmentPassword(LOG_MASTER_UNLOCK, "wrong"), false);
 
-console.log("PASS Master unlock: sees all teams, wipe blocked, password verifies");
+console.log("PASS Master unlock: sees all teams; only Master may delete");
