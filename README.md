@@ -32,7 +32,6 @@ Render is the live host: [https://ck-6-filter-test.onrender.com](https://ck-6-fi
 | `REQUIRE_AUTH` | Optional; set `true` only when turning login back on |
 | `SESSION_SECRET` | Required only when `REQUIRE_AUTH=true` |
 | `ALLOWED_ORIGIN` | Optional; defaults to `https://ck-6-filter-test.onrender.com` |
-| Other model keys | Optional comparison providers |
 
 Vercel-style `api/*.js` handlers still exist as a fallback. They import the **same** CORS, session, and ownership modules as `server.js` — do not copy those rules into a second place.
 

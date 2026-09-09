@@ -8,7 +8,7 @@ import {
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
-import { DEFAULT_LLM_PROVIDER, LLM_CATALOG, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
+import { DEFAULT_LLM_PROVIDER, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { hideFilterTalk } from "../lib/publicCopy.js";
 import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/weightage/deriveMoves.js";
@@ -581,7 +581,6 @@ export default function App() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingUntouched, setDeletingUntouched] = useState(false);
   const [llmProvider, setLlmProvider] = useState(DEFAULT_LLM_PROVIDER);
-  const [providerStatus, setProviderStatus] = useState(LLM_CATALOG);
   const [outcomeOpenId, setOutcomeOpenId] = useState(null);
   const [outcomeMargin, setOutcomeMargin] = useState("");
   const [outcomeRevenue, setOutcomeRevenue] = useState("");
@@ -642,19 +641,6 @@ export default function App() {
   useEffect(() => {
     refreshHistories().catch(() => {});
     setLlmProvider(DEFAULT_LLM_PROVIDER);
-    try {
-      localStorage.setItem("primus-llm-provider", DEFAULT_LLM_PROVIDER);
-    } catch {
-      /* ignore */
-    }
-    apiFetch("/api/providers")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.providers) && data.providers.length) {
-          setProviderStatus(data.providers);
-        }
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1200,33 +1186,6 @@ export default function App() {
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
         ) : null}
-        <label className="model-switch" title="Compare NPD results across models. Keys stay on the server.">
-          <span className="pulse" />
-          <span className="model-switch-lbl">Model</span>
-          <select
-            value={llmProvider}
-            onChange={(e) => {
-              const next = normalizeProvider(e.target.value);
-              setLlmProvider(next);
-              try {
-                localStorage.setItem("primus-llm-provider", next);
-              } catch {
-                /* ignore */
-              }
-            }}
-            aria-label="LLM provider"
-          >
-            {providerStatus.map((p) => (
-              <option key={p.id} value={p.id} disabled={p.configured === false}>
-                {p.label}
-                {p.id === "claude" ? " · default" : ""}
-                {p.configured === false
-                  ? ` · not configured (set ${p.envKey || "API key"} on Render)`
-                  : ""}
-              </option>
-            ))}
-          </select>
-        </label>
         {sessionUser ? (
         <div className="session-chip">
           <span>
@@ -1262,17 +1221,7 @@ export default function App() {
           error={error}
           currentUser={sessionUser}
           llmProvider={llmProvider}
-          providerStatus={providerStatus}
           onProcessingChange={(job) => setProcessJob(job?.busy ? job : null)}
-          onLlmProviderChange={(next) => {
-            const id = normalizeProvider(next);
-            setLlmProvider(id);
-            try {
-              localStorage.setItem("primus-llm-provider", id);
-            } catch {
-              /* ignore */
-            }
-          }}
         />
       )}
 

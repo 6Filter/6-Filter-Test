@@ -1284,8 +1284,6 @@ export default function PropositionForm({
   error,
   currentUser,
   llmProvider = "claude",
-  providerStatus = [],
-  onLlmProviderChange,
   onProcessingChange,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
@@ -1298,8 +1296,6 @@ export default function PropositionForm({
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [summaryStale, setSummaryStale] = useState(false);
   const [summaryChecks, setSummaryChecks] = useState(null);
-  const [fallbackUi, setFallbackUi] = useState(null);
-  const [fallbackChoice, setFallbackChoice] = useState("");
   const [failedBanner, setFailedBanner] = useState(null);
 
   function bannerErrorText(label, body) {
@@ -2171,24 +2167,11 @@ export default function PropositionForm({
     if (result.researchError) {
       setLocalError(result.researchError);
       setFailedBanner({
-        label: result.failedProviderLabel || provider || "Model",
+        label: result.failedProviderLabel || provider || "Claude",
         provider: result.failedProvider || provider,
         body: result.researchError,
       });
-      if (result.suggestFallback && result.fallbackProviders?.length) {
-        const nextChoice =
-          result.fallbackProviders.find((p) => p.id === fallbackChoice)?.id ||
-          result.fallbackProviders[0].id;
-        setFallbackUi({
-          failedLabel: result.failedProviderLabel || "Claude",
-          providers: result.fallbackProviders,
-        });
-        setFallbackChoice(nextChoice);
-      } else {
-        setFallbackUi(null);
-      }
     } else {
-      setFallbackUi(null);
       setLocalError("");
       setFailedBanner(null);
     }
@@ -2236,19 +2219,6 @@ export default function PropositionForm({
       }
     }
   }
-
-  function handleRetryWithFallback() {
-    const next = fallbackChoice || fallbackOptions[0]?.id;
-    if (!next || saving) return;
-    if (typeof onLlmProviderChange === "function") onLlmProviderChange(next);
-    handleSubmit(next, { forceResearch: true });
-  }
-
-  const configuredProviders = (providerStatus || []).filter((p) => p.configured !== false);
-  const fallbackOptions =
-    fallbackUi?.providers?.length > 0
-      ? fallbackUi.providers
-      : configuredProviders.filter((p) => p.id !== (llmProvider || "claude"));
 
   if (currentView === "goNoGoResult" && goNoGo?.classification) {
     return (
@@ -2604,7 +2574,7 @@ export default function PropositionForm({
         />
       ) : null}
 
-      {(error || localError || fallbackUi) ? (
+      {(error || localError) ? (
       <section className="prop-submit-footer">
         {error || localError ? (
           <div className="prop-err" role="alert">
@@ -2616,47 +2586,6 @@ export default function PropositionForm({
             ) : (
               error || localError
             )}
-          </div>
-        ) : null}
-        {fallbackUi && fallbackOptions.length > 0 ? (
-          <div className="prop-fallback" role="region" aria-label="Model fallback">
-            <p className="prop-fallback-lede">
-              {fallbackUi.failedLabel} could not complete research. Re-running research — this may
-              return a different result than before. Pick another configured model and retry — your
-              idea and form entries stay as they are.
-            </p>
-            <div className="prop-fallback-row">
-              <label className="prop-fallback-pick">
-                <span>Next model</span>
-                <select
-                  value={fallbackChoice || fallbackOptions[0]?.id || ""}
-                  onChange={(e) => setFallbackChoice(e.target.value)}
-                  disabled={saving}
-                  aria-label="Fallback LLM provider"
-                >
-                  {fallbackOptions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                      {p.hint ? ` · ${p.hint}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                className="prop-save run"
-                disabled={saving || !(fallbackChoice || fallbackOptions[0]?.id)}
-                onClick={handleRetryWithFallback}
-              >
-                {saving ? <Loader2 size={15} className="spin" /> : null}
-                Retry with{" "}
-                {fallbackOptions.find((p) => p.id === (fallbackChoice || fallbackOptions[0]?.id))
-                  ?.label || "fallback"}
-              </button>
-            </div>
-            <p className="prop-fallback-hint">
-              You can also switch the header Model control anytime; Submit uses that selection.
-            </p>
           </div>
         ) : null}
       </section>

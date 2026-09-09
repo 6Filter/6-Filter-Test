@@ -6,17 +6,6 @@ import { redactSecrets, sendJson } from "./lib/http.js";
 const ENV_KEYS = [
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_MODEL",
-  "GEMINI_API_KEY",
-  "GEMINI_MODEL",
-  "GOOGLE_API_KEY",
-  "GOOGLE_GENERATIVE_AI_API_KEY",
-  "GOOGLE_AI_API_KEY",
-  "GROQ_API_KEY",
-  "GROQ_MODEL",
-  "DEEPSEEK_API_KEY",
-  "DEEPSEEK_MODEL",
-  "OPENAI_API_KEY",
-  "OPENAI_MODEL",
   "DATABASE_URL",
   "POSTGRES_URL",
   "SESSION_SECRET",
@@ -34,9 +23,6 @@ function applyEnv(env) {
   }
   if (env.VITE_ANTHROPIC_MODEL && !process.env.ANTHROPIC_MODEL) {
     process.env.ANTHROPIC_MODEL = env.VITE_ANTHROPIC_MODEL;
-  }
-  if (env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
-    process.env.GEMINI_API_KEY = env.GOOGLE_API_KEY;
   }
 }
 
