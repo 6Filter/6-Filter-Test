@@ -7,6 +7,8 @@ import {
   measureSyndicatedTokenDelta,
   formatUnscopedSyndicatedPrompt,
   formatSyndicatedLookup,
+  maxUsesForMatch,
+  EXACT_CATEGORY_MATCH_MAX_USES,
 } from "../lib/syndicatedLookup.js";
 import { buildScopedSearchQuery, scopedSearchInstruction } from "../lib/scopedSearch.js";
 import { checkF1, evaluateDeclaredGap, isClaimingNoCompetitor } from "../lib/filterChecks.js";
@@ -211,7 +213,7 @@ const short = checkF1(shortGap, {
 assert.equal(short.checkLabel, "Below floor");
 const shortItem = short.items.find((it) => /1\.5/.test(it.text));
 assert.equal(shortItem.status, "pending");
-assert.match(shortItem.text, /below the 2\.0 floor/);
+assert.match(shortItem.text, /below the 2(?:\.0)? floor/);
 assert.doesNotMatch(shortItem.text, /first-mover|No established competitor/);
 
 const hashA = fingerprintNoCompetitor({
@@ -229,13 +231,30 @@ const hashC = fingerprintNoCompetitor({
 assert.equal(hashA, hashB);
 assert.notEqual(hashA, hashC);
 
+assert.equal(maxUsesForMatch("category", "category", 4), EXACT_CATEGORY_MATCH_MAX_USES);
+assert.equal(maxUsesForMatch("category", "category", 3), EXACT_CATEGORY_MATCH_MAX_USES);
+assert.equal(maxUsesForMatch("family", "family", 4), 4);
+assert.equal(maxUsesForMatch("none", "none", 4), 4);
+assert.equal(maxUsesForMatch("category", "family", 4), 4);
+assert.equal(maxUsesForMatch("family", "category", 4), 4);
+assert.equal(maxUsesForMatch("category", "none", 4), 4);
+assert.equal(maxUsesForMatch("none", "category", 4), 4);
+assert.equal(EXACT_CATEGORY_MATCH_MAX_USES, 1);
+
 const lookupSrc = readFileSync(new URL("../lib/syndicatedLookup.js", import.meta.url), "utf8");
 assert.match(lookupSrc, /lookupSyndicatedData/);
+assert.match(lookupSrc, /maxUsesForMatch/);
 assert.doesNotMatch(lookupSrc, /function scoreMatch|function bestRow/);
 assert.match(readFileSync(new URL("../lib/categoryIntelligence/runSizing.js", import.meta.url), "utf8"), /withCategoryScope/);
+assert.match(readFileSync(new URL("../lib/categoryIntelligence/runSizing.js", import.meta.url), "utf8"), /maxUsesForMatch/);
 assert.match(readFileSync(new URL("../lib/filters/runNoCompetitorCheck.js", import.meta.url), "utf8"), /fingerprintNoCompetitor/);
+assert.match(readFileSync(new URL("../lib/filters/runNoCompetitorCheck.js", import.meta.url), "utf8"), /maxUsesForMatch/);
 assert.match(readFileSync(new URL("../lib/filterChecks.js", import.meta.url), "utf8"), /evaluateDeclaredGap/);
+assert.match(
+  readFileSync(new URL("../lib/categoryScopedResearch.js", import.meta.url), "utf8"),
+  /nielsenMatchedOn/
+);
 
 console.log(
-  `PASS Part 76 category-scoped syndicated lookup (${snacksDelta.tokensSaved} tokens saved on Snacks vs full file) and no-competitor exception`
+  `PASS Part 76 category-scoped syndicated lookup (${snacksDelta.tokensSaved} tokens saved on Snacks vs full file), no-competitor exception, and maxUsesForMatch`
 );
