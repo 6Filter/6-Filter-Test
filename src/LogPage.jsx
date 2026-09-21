@@ -19,6 +19,7 @@ import {
   uniqueLogValues,
 } from "../lib/logStatus.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
+import { ideaSizeForResult } from "../lib/ideaScale.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -421,6 +422,7 @@ export default function LogPage({
                 <tr>
                   <th>Status</th>
                   <th>Proposition</th>
+                  <th>Scale</th>
                   <th>Team</th>
                   <th>Idea</th>
                   <th>Filters</th>
@@ -444,6 +446,8 @@ export default function LogPage({
                   const usedAi = researchWasUsed(h);
                   const isExportingRow = exportingId === h.id;
                   const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched || exporting;
+                  const screened = Boolean(h.goNoGo?.classification || h.classification);
+                  const sizeTier = screened ? ideaSizeForResult(h) : null;
                   return (
                     <tr key={h.id} className="log-tr">
                       <td>
@@ -473,6 +477,19 @@ export default function LogPage({
                           <span className="log-prop-name">{h.name || "Untitled idea"}</span>
                           <span className="log-prop-owner">{h.submitterName || "—"}</span>
                         </button>
+                      </td>
+                      <td className="mono log-scale-cell">
+                        {sizeTier ? (
+                          <span
+                            className="log-scale-chip"
+                            data-provisional={sizeTier.provisional ? "true" : "false"}
+                            title={sizeTier.derivation || sizeTier.label}
+                          >
+                            {sizeTier.tier}
+                          </span>
+                        ) : (
+                          <span className="log-scale-empty">—</span>
+                        )}
                       </td>
                       <td className="mono log-dept-cell">
                         <span className="log-dept-team">{team}</span>
@@ -614,6 +631,13 @@ export const LOG_PAGE_CSS = `
 .log-chip.chip-cleared{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .log-chip.chip-stopped{background:var(--chip-stopped-bg);color:var(--chip-stopped-fg);}
 .log-chip.chip-review{background:var(--chip-review-bg);color:var(--chip-review-fg);}
+.log-scale-cell{white-space:nowrap;vertical-align:middle;}
+.log-scale-chip{
+  display:inline-flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:5px 10px;border-radius:999px;background:#E8E4D6;color:#3A3428;
+}
+.log-scale-chip[data-provisional="true"]{opacity:.9;}
+.log-scale-empty{color:var(--ink-muted);font-size:12px;}
 .log-status-cell{display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
 .research-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:650;letter-spacing:.02em;padding:3px 8px;border-radius:999px;white-space:nowrap;}
 .research-badge.used{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}

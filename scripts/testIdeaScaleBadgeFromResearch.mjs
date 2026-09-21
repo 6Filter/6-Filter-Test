@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { ideaSizeForResult, ideaScaleFromDoc } from "../lib/ideaScale.js";
 import {
   buildResearchFindings,
@@ -53,6 +54,19 @@ assert.ok(badgeFromLegacy, "legacy findings + suggestions.f5 must still mint a b
 assert.equal(badgeFromLegacy.tier, ideaScaleFromDoc({ researchFindings: enriched }));
 
 const emptyBadge = ideaSizeForResult({ goNoGo: { classification: "WATCH" }, f5: {} });
-assert.equal(emptyBadge, null, "no factors → no fabricated gram badge");
+assert.ok(emptyBadge, "screened ideas without F5 still show a default gram badge");
+assert.equal(emptyBadge.tier, "10g");
+assert.equal(emptyBadge.provisional, true);
+
+const storedBadge = ideaSizeForResult({
+  goNoGo: { classification: "WATCH", ideaScale: "100g" },
+  f5: {},
+});
+assert.equal(storedBadge.tier, "100g");
+
+const logPage = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
+assert.match(logPage, /log-scale-chip/);
+assert.match(logPage, /ideaSizeForResult/);
+assert.match(logPage, /<th>Scale<\/th>/);
 
 console.log("PASS idea-scale badge from researchFindings.f5");
