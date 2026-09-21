@@ -2173,7 +2173,9 @@ export default function PropositionForm({
       setLocalError("");
       setFailedBanner(null);
     }
-    const nextDoc = filled;
+    const nextDoc = result.suggestions
+      ? { ...filled, suggestions: result.suggestions }
+      : filled;
     setDoc(nextDoc);
     if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
     const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;

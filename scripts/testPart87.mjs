@@ -27,7 +27,7 @@ assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), false);
 assert.equal(canViewProposition({ role: "ADMIN" }, npdSnacks), true);
 assert.equal(canViewProposition({ department: "Master" }, rdFoods), true);
 assert.equal(canViewProposition({ department: "Master" }, npdSnacks), true);
-assert.equal(canViewProposition(null, rdFoods), true, "form create/edit stays open without a Log unlock");
+assert.equal(canViewProposition(null, rdFoods), false, "Part 93: platform requires team unlock");
 
 await initDb();
 await upsertDepartmentPasswordHash("R&D", hashPassword("correct-horse"));

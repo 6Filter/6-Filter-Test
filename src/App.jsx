@@ -17,10 +17,12 @@ import PropositionForm from "./PropositionForm.jsx";
 import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
+import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
 import { LIST_PROPOSITIONS_CAP } from "../lib/lockedConstants.js";
+import { isMasterUnlock } from "../lib/departmentAuthConstants.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -552,6 +554,8 @@ export default function App() {
   const [sessionUser, setSessionUser] = useState(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [teamSession, setTeamSession] = useState(null); // { department, unlockedAt }
+  const [teamGateReady, setTeamGateReady] = useState(false);
   const [view, setView] = useState("spec");
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -637,6 +641,39 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/department-auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const dept = data.department || null;
+        setTeamSession(dept ? { department: dept, unlockedAt: Date.now() } : null);
+        setTeamGateReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTeamSession(null);
+          setTeamGateReady(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function lockTeamSession() {
+    try {
+      await apiFetch("/api/department-auth/lock", { method: "POST" });
+    } catch {
+      /* still clear locally */
+    }
+    setTeamSession(null);
+    setProposition(null);
+    setPropositionList([]);
+    setView("spec");
+  }
 
   useEffect(() => {
     refreshHistories().catch(() => {});
@@ -1129,7 +1166,7 @@ export default function App() {
     setView("spec");
   }
 
-  if (sessionLoading) {
+  if (sessionLoading || !teamGateReady) {
     return (
       <div className="primus screen-spec" style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#F3EAF8" }}>
         <Loader2 size={22} className="spin" />
@@ -1139,6 +1176,16 @@ export default function App() {
 
   if (authRequired && !sessionUser) {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
+  }
+
+  if (!teamSession?.department) {
+    return (
+      <div className={`primus screen-log`}>
+        <style>{CSS}</style>
+        <style>{LOG_PAGE_CSS}</style>
+        <TeamUnlockScreen onUnlock={setTeamSession} />
+      </div>
+    );
   }
 
   return (
@@ -1188,6 +1235,15 @@ export default function App() {
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
         ) : null}
+        <div className="session-chip">
+          <span>
+            {teamSession.department}
+            <em>{isMasterUnlock(teamSession.department) ? "view all" : "billed"}</em>
+          </span>
+          <button type="button" className="ghost sq" onClick={lockTeamSession} aria-label="Switch team">
+            Switch
+          </button>
+        </div>
         {sessionUser ? (
         <div className="session-chip">
           <span>
@@ -1239,6 +1295,8 @@ export default function App() {
           loading={logLoading}
           error={logError}
           onRefresh={loadLogRows}
+          unlockedDepartment={teamSession.department}
+          onSwitchDepartment={lockTeamSession}
           onDeleteAll={confirmAndDeleteAll}
           onCleanupUntouched={confirmAndDeleteUntouchedDrafts}
           onDeleteRow={(h) => confirmDeleteProposition(h, "log")}
@@ -1247,9 +1305,9 @@ export default function App() {
           deletingUntouched={deletingUntouched}
           deletingId={deletingId}
           openingId={openingId}
-          canDeleteAll={!sessionUser || sessionUser.role === "ADMIN"}
-          canDeleteRow={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
-          canCleanup={!sessionUser || sessionUser.role === "ADMIN" || sessionUser.role === "BM"}
+          canDeleteAll={isMasterUnlock(teamSession.department)}
+          canDeleteRow={isMasterUnlock(teamSession.department)}
+          canCleanup={isMasterUnlock(teamSession.department)}
           openingDisabled={loading}
           onFetchFull={async (id) => fetchPropositionById(id)}
         />

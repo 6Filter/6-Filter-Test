@@ -30,6 +30,16 @@ services:
         sync: false
       - key: DEPT_PASSWORD_HASH_MASTER
         sync: false
+      - key: DEPT_API_KEY_RD
+        sync: false
+      - key: DEPT_API_KEY_CIA
+        sync: false
+      - key: DEPT_API_KEY_MARKETING
+        sync: false
+      - key: DEPT_API_KEY_NPD
+        sync: false
+      - key: DEPARTMENT_KEY_ENCRYPTION_SECRET
+        sync: false
 
 databases:
   - name: primus-ai-db

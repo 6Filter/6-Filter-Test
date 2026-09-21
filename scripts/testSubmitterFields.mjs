@@ -50,10 +50,11 @@ assert.match(apiSrc, /hasSubmitterIdentity\(payload\)/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
-assert.match(logSrc, /submitterName/);
-assert.match(logSrc, /submitterDepartment/);
+assert.match(logSrc, /rowPerson/);
+assert.match(logSrc, /rowTeam/);
 assert.match(logSrc, /createdAt \|\| h\.updatedAt/);
 assert.match(appSrc, /LogPage/);
+assert.match(appSrc, /TeamUnlockScreen/);
 
 const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 assert.match(dbSrc, /submitter_name/);

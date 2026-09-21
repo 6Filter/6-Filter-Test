@@ -67,6 +67,8 @@ export default function LogPage({
   canCleanup = true,
   openingDisabled = false,
   onFetchFull,
+  unlockedDepartment: unlockedDepartmentProp = undefined,
+  onSwitchDepartment = null,
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -74,14 +76,16 @@ export default function LogPage({
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState("");
   const [exportError, setExportError] = useState("");
-  const [gateReady, setGateReady] = useState(false);
-  const [unlockedDepartment, setUnlockedDepartment] = useState(null);
+  const [gateReady, setGateReady] = useState(unlockedDepartmentProp !== undefined);
+  const [unlockedDepartmentLocal, setUnlockedDepartmentLocal] = useState(null);
   const [selectedDept, setSelectedDept] = useState("");
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
+  const unlockedDepartment =
+    unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
   const scopedRows = useMemo(
@@ -142,13 +146,18 @@ export default function LogPage({
   }
 
   useEffect(() => {
+    if (unlockedDepartmentProp !== undefined) {
+      setGateReady(true);
+      if (unlockedDepartmentProp) refreshRef.current?.();
+      return undefined;
+    }
     let cancelled = false;
     fetch("/api/department-auth/me", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
         const dept = data.department || null;
-        setUnlockedDepartment(dept);
+        setUnlockedDepartmentLocal(dept);
         setGateReady(true);
         if (dept) refreshRef.current?.();
       })
@@ -158,7 +167,7 @@ export default function LogPage({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [unlockedDepartmentProp]);
 
   async function handleUnlock(e) {
     e?.preventDefault?.();
@@ -175,23 +184,27 @@ export default function LogPage({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not unlock.");
       setPassword("");
-      setUnlockedDepartment(data.department);
+      setUnlockedDepartmentLocal(data.department);
       refreshRef.current?.();
     } catch (err) {
       setUnlockError(err.message || "Could not unlock.");
-      setUnlockedDepartment(null);
+      setUnlockedDepartmentLocal(null);
     } finally {
       setUnlocking(false);
     }
   }
 
   async function handleSwitchDepartment() {
+    if (typeof onSwitchDepartment === "function") {
+      await onSwitchDepartment();
+      return;
+    }
     try {
       await fetch("/api/department-auth/lock", { method: "POST", credentials: "include" });
     } catch {
       /* still lock locally */
     }
-    setUnlockedDepartment(null);
+    setUnlockedDepartmentLocal(null);
     setPassword("");
     setUnlockError("");
   }
