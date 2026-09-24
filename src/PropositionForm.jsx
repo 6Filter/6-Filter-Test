@@ -1308,7 +1308,9 @@ export default function PropositionForm({
     return stripped || raw;
   }
   const [goNoGo, setGoNoGo] = useState(() => initial?.goNoGo || null);
-  const [currentView, setCurrentView] = useState("propositionForm");
+  const [currentView, setCurrentView] = useState(() =>
+    initial?.goNoGo?.classification ? "goNoGoResult" : "propositionForm"
+  );
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
   const [evidenceFileError, setEvidenceFileError] = useState("");
@@ -1381,7 +1383,7 @@ export default function PropositionForm({
     setSummaryStale(false);
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
-    setCurrentView("propositionForm");
+    setCurrentView(initial?.goNoGo?.classification ? "goNoGoResult" : "propositionForm");
     setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);

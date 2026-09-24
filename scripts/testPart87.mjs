@@ -24,6 +24,12 @@ assert.equal(matchesUnlockedDepartment(npdSnacks, "R&D"), false);
 
 assert.equal(canViewProposition({ department: "R&D" }, rdFoods), true);
 assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), false);
+assert.equal(
+  canViewProposition({ department: "NPD" }, { id: "draft", submitterDepartment: "" }),
+  true,
+  "unlocked team must see unassigned drafts so Submit can persist a verdict"
+);
+assert.equal(matchesUnlockedDepartment({ submitterDepartment: "" }, "NPD"), true);
 assert.equal(canViewProposition({ role: "ADMIN" }, npdSnacks), true);
 assert.equal(canViewProposition({ department: "Master" }, rdFoods), true);
 assert.equal(canViewProposition({ department: "Master" }, npdSnacks), true);
@@ -47,6 +53,7 @@ assert.doesNotMatch(
 );
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(apiSrc, /submitterDepartment: department/);
 assert.match(apiSrc, /deleteAllPropositions\(null\)/);
 assert.match(apiSrc, /deleteUntouchedDrafts\(null\)/);
 assert.match(apiSrc, /canDeleteLogProposition/);
