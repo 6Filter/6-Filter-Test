@@ -327,7 +327,15 @@ function readFileAsAttachment(file, isImage) {
                 ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 : String(file.name).toLowerCase().endsWith(".doc")
                   ? "application/msword"
-                  : "application/octet-stream"),
+                  : /\.xlsx$/i.test(file.name)
+                    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    : /\.xlsm$/i.test(file.name)
+                      ? "application/vnd.ms-excel.sheet.macroenabled.12"
+                      : /\.xls$/i.test(file.name)
+                        ? "application/vnd.ms-excel"
+                        : /\.csv$/i.test(file.name)
+                          ? "text/csv"
+                          : "application/octet-stream"),
         data,
         preview: isImage ? result : null,
       });
@@ -1768,7 +1776,7 @@ export default function PropositionForm({
     setConceptCardError("");
     setConceptCardBusy(true);
     try {
-      const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: false, allowImage: true });
+      const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
@@ -2344,7 +2352,7 @@ export default function PropositionForm({
           <input
             ref={conceptCardRef}
             type="file"
-            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             hidden
             onChange={handleConceptCardFile}
           />
@@ -2357,7 +2365,7 @@ export default function PropositionForm({
             {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
             Upload concept card
           </button>
-          <span className="prop-helper">Separate from the Filter 1 source-file attach. Extracts only fields the document states.</span>
+          <span className="prop-helper">PDF, Word, or Excel. Separate from the Filter 1 source-file attach. Extracts only fields the document states.</span>
         </div>
         {conceptCardError ? (
           <div className="prop-err">
