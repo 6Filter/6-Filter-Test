@@ -9,12 +9,13 @@ and category-scoping context only.
 
 | Session | Key source |
 |---|---|
-| R&D / CIA / Marketing / NPD | Encrypted `department_api_keys` (bootstrapped from `DEPT_API_KEY_*`) |
+| R&D / CIA / Marketing / NPD | Encrypted `department_api_keys` (bootstrapped from `DEPT_API_KEY_*`). If that team key is unset, `ANTHROPIC_API_KEY` so auto-populate still runs. |
 | Master | Infrastructure `ANTHROPIC_API_KEY` |
 | Scripts / CI with no session | Infrastructure `ANTHROPIC_API_KEY` |
 
 There is **no silent fallback** from one team's exhausted key onto another team's
-key. Credit failures return a hard, visible error naming the department.
+key. A missing team key may use the shared infra key. Credit failures return a
+hard, visible error naming the department.
 
 ## Cross-department research-cache policy — **REUSE**
 

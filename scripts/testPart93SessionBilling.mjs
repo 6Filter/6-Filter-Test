@@ -28,6 +28,29 @@ assert.equal(infra.source, "ANTHROPIC_API_KEY");
 const master = await resolveBillingApiKey("Master");
 assert.equal(master.source, "ANTHROPIC_API_KEY");
 
+const prevNpd = process.env.DEPT_API_KEY_NPD;
+const prevAnt = process.env.ANTHROPIC_API_KEY;
+delete process.env.DEPT_API_KEY_NPD;
+process.env.ANTHROPIC_API_KEY = "sk-ant-infra-for-autopopulate-test";
+const npd = await resolveBillingApiKey("NPD");
+assert.ok(npd.apiKey, "NPD must resolve a key so F2/F3/F5 numbers can auto-populate");
+assert.ok(
+  npd.source === "ANTHROPIC_API_KEY" ||
+    npd.source === "DEPT_API_KEY_NPD" ||
+    String(npd.source).startsWith("department_api_keys:"),
+  `unexpected billing source ${npd.source}`
+);
+if (npd.source === "ANTHROPIC_API_KEY") {
+  assert.equal(npd.apiKey, "sk-ant-infra-for-autopopulate-test");
+}
+if (prevNpd) process.env.DEPT_API_KEY_NPD = prevNpd;
+else delete process.env.DEPT_API_KEY_NPD;
+if (prevAnt) process.env.ANTHROPIC_API_KEY = prevAnt;
+else delete process.env.ANTHROPIC_API_KEY;
+
+const billingSrc = readFileSync(new URL("../lib/departmentApiKeys.js", import.meta.url), "utf8");
+assert.match(billingSrc, /using ANTHROPIC_API_KEY so numbers can auto-populate/);
+
 // Credit error attribution — no fallback language
 assert.equal(isAnthropicCreditFailure(402, "payment required"), true);
 const creditErr = billingCreditExhaustedError("CIA");
