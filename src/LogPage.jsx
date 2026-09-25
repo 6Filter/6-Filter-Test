@@ -21,6 +21,7 @@ import {
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
 import { formatIdeaWipeLabel, ideaWipeAt } from "../lib/lockedConstants.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
+import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -75,6 +76,7 @@ export default function LogPage({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [personFilter, setPersonFilter] = useState("");
+  const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState("");
   const [exportError, setExportError] = useState("");
@@ -91,8 +93,8 @@ export default function LogPage({
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
   const scopedRows = useMemo(
-    () => applyScopedFilters(rows, { personFilter, searchText: query }),
-    [rows, personFilter, query]
+    () => applyScopedFilters(rows, { personFilter, categoryGroupFilter, searchText: query }),
+    [rows, personFilter, categoryGroupFilter, query]
   );
   const filteredRows = useMemo(
     () => applyLogStatusFilter(scopedRows, status),
@@ -121,6 +123,7 @@ export default function LogPage({
 
   function exportHint() {
     if (personFilter) return `propositions-${personFilter}`;
+    if (categoryGroupFilter) return `propositions-${categoryGroupFilter}`;
     if (unlockedDepartment) return `propositions-${unlockedDepartment}`;
     return "propositions";
   }
@@ -318,7 +321,7 @@ export default function LogPage({
               disabled={busy || filteredRows.length === 0}
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
-              {personFilter || query.trim() || status !== "ALL"
+              {personFilter || categoryGroupFilter || query.trim() || status !== "ALL"
                 ? `Export (${filteredRows.length} matching)`
                 : "Export all"}
             </button>
@@ -364,6 +367,21 @@ export default function LogPage({
                 {uniqueSubmitters.map((p) => (
                   <option key={p} value={p}>
                     {p}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Category</span>
+              <select
+                value={categoryGroupFilter}
+                onChange={(e) => setCategoryGroupFilter(e.target.value)}
+                aria-label="Filter by category"
+              >
+                <option value="">All categories</option>
+                {CATEGORY_GROUPS.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
                   </option>
                 ))}
               </select>
@@ -450,6 +468,7 @@ export default function LogPage({
                   const screened = Boolean(h.goNoGo?.classification || h.classification);
                   const sizeTier = screened ? ideaSizeForResult(h) : null;
                   const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
+                  const categoryGroup = rowCategoryGroup(h);
                   return (
                     <tr key={h.id} className="log-tr">
                       <td>
@@ -481,6 +500,11 @@ export default function LogPage({
                             {h.name || "Untitled idea"}
                           </span>
                           <span className="log-prop-owner">{h.submitterName || "—"}</span>
+                          {categoryGroup ? (
+                            <span className="log-prop-group">
+                              {h.category ? `${h.category} · ${categoryGroup}` : categoryGroup}
+                            </span>
+                          ) : null}
                         </button>
                       </td>
                       <td className="mono log-scale-cell">
@@ -651,6 +675,7 @@ export const LOG_PAGE_CSS = `
 .log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .log-wipe-chip{display:inline-block;margin:0 8px 2px 0;padding:2px 8px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:10px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;}
 .log-prop-owner{font-size:12px;color:var(--ink-secondary);}
+.log-prop-group{font-size:11px;color:var(--ink-muted);font-weight:600;}
 .log-dept-cell{font-size:12px;color:var(--ink-secondary-2);white-space:nowrap;}
 .log-dept-team{display:block;font-weight:650;color:var(--ink);}
 .log-dept-division{display:block;font-size:11px;color:var(--ink-muted);margin-top:2px;}
