@@ -1808,8 +1808,16 @@ export default function PropositionForm({
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.conceptCardName) {
+        const nextName = data.conceptCardName;
+        setConceptCardName(nextName);
+        // Keep every field the person already typed. The response must not
+        // replace the form with the row from when the upload started.
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: nextName },
+        }));
+      }
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
