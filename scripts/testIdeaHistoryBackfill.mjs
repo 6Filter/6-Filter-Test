@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { ideaWipeAt, PRIOR_IDEA_STORE_WIPE_AT, IDEA_STORE_WIPE_AT } from "../lib/lockedConstants.js";
 import {
   ideaNameFromText,
   mapIdeaVerdict,
@@ -49,5 +50,9 @@ assert.doesNotMatch(dbSrc, /rows\.slice\(0,\s*200\)/);
 const ideasApi = readFileSync(new URL("../lib/ideasApi.js", import.meta.url), "utf8");
 assert.match(ideasApi, /LIST_PROPOSITIONS_CAP/);
 assert.doesNotMatch(ideasApi, /Math\.min\(100,/);
+
+assert.equal(ideaWipeAt({ createdAt: "2026-01-15T10:00:00.000Z" }), PRIOR_IDEA_STORE_WIPE_AT);
+assert.equal(ideaWipeAt({ createdAt: "2026-09-25T06:00:00.000Z" }), IDEA_STORE_WIPE_AT);
+assert.equal(ideaWipeAt({ wipeAt: "2026-12-01T00:00:00.000Z" }), "2026-12-01T00:00:00.000Z");
 
 console.log("PASS idea history auto-populates the Log from stored screens");

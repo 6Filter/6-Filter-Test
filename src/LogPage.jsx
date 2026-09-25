@@ -19,23 +19,18 @@ import {
   uniqueLogValues,
 } from "../lib/logStatus.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
-import { IDEA_STORE_WIPE_AT } from "../lib/lockedConstants.js";
+import { IDEA_STORE_WIPE_AT, formatIdeaWipeLabel, ideaWipeAt } from "../lib/lockedConstants.js";
+import { ideaSizeForResult } from "../lib/ideaScale.js";
 
-const IDEA_WIPE_LABEL = new Date(IDEA_STORE_WIPE_AT).toLocaleDateString("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "Asia/Kolkata",
-});
+const IDEA_WIPE_LABEL = formatIdeaWipeLabel(IDEA_STORE_WIPE_AT, { long: true });
 
 function IdeaWipeNotice() {
   return (
     <p className="log-wipe-notice" role="status">
-      Ideas in this log are wiped out on <strong>{IDEA_WIPE_LABEL}</strong>.
+      Ideas in this log are wiped out on <strong>{IDEA_WIPE_LABEL}</strong>. Each row also shows its own wipe date.
     </p>
   );
 }
-import { ideaSizeForResult } from "../lib/ideaScale.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -466,6 +461,7 @@ export default function LogPage({
                   const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched || exporting;
                   const screened = Boolean(h.goNoGo?.classification || h.classification);
                   const sizeTier = screened ? ideaSizeForResult(h) : null;
+                  const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
                   return (
                     <tr key={h.id} className="log-tr">
                       <td>
@@ -492,7 +488,10 @@ export default function LogPage({
                           onClick={() => onOpen(h)}
                           disabled={rowBusy}
                         >
-                          <span className="log-prop-name">{h.name || "Untitled idea"}</span>
+                          <span className="log-prop-name">
+                            {wipeLabel ? <span className="log-wipe-chip">Wipes {wipeLabel}</span> : null}
+                            {h.name || "Untitled idea"}
+                          </span>
                           <span className="log-prop-owner">{h.submitterName || "—"}</span>
                         </button>
                       </td>
@@ -664,6 +663,7 @@ export const LOG_PAGE_CSS = `
 .research-badge.unused{background:var(--none);color:var(--ink-muted);}
 .log-prop-cell{display:flex;flex-direction:column;gap:2px;}
 .log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.log-wipe-chip{display:inline-block;margin:0 8px 2px 0;padding:2px 8px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:10px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;}
 .log-prop-owner{font-size:12px;color:var(--ink-secondary);}
 .log-dept-cell{font-size:12px;color:var(--ink-secondary-2);white-space:nowrap;}
 .log-dept-team{display:block;font-weight:650;color:var(--ink);}
