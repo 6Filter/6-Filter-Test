@@ -55,6 +55,8 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 assert.match(apiSrc, /shouldForkLogResubmit/);
 assert.match(apiSrc, /const asNew = Boolean\(body\?\.asNew\)/);
 assert.match(apiSrc, /forkedFrom = opened\.id/);
+assert.match(apiSrc, /id: _openedId/);
+assert.match(apiSrc, /let outProposition = \{ \.\.\.advisory\.proposition, id: targetId \}/);
 assert.match(apiSrc, /withAdvisory\(derivedProposition, \{ attachGate: true \}\)/);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
