@@ -21,7 +21,7 @@ import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
-import { LIST_PROPOSITIONS_CAP, IDEA_STORE_WIPE_AT } from "../lib/lockedConstants.js";
+import { LIST_PROPOSITIONS_CAP } from "../lib/lockedConstants.js";
 import { isMasterUnlock } from "../lib/departmentAuthConstants.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
@@ -1256,31 +1256,6 @@ export default function App() {
         </div>
         ) : null}
       </header>
-
-      <p
-        role="status"
-        style={{
-          margin: "0 28px 8px",
-          background: "#FBF1EE",
-          border: "1px solid #EBD3CC",
-          borderRadius: 14,
-          padding: "12px 16px",
-          fontSize: 14,
-          color: "#A3402F",
-          lineHeight: 1.4,
-        }}
-      >
-        Ideas in this log are wiped out on{" "}
-        <strong>
-          {new Date(IDEA_STORE_WIPE_AT).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            timeZone: "Asia/Kolkata",
-          })}
-        </strong>
-        .
-      </p>
 
       {backLabel && (
         <div className="page-back-bar">
