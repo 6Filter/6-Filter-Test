@@ -19,6 +19,22 @@ import {
   uniqueLogValues,
 } from "../lib/logStatus.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
+import { IDEA_STORE_WIPE_AT } from "../lib/lockedConstants.js";
+
+const IDEA_WIPE_LABEL = new Date(IDEA_STORE_WIPE_AT).toLocaleDateString("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Kolkata",
+});
+
+function IdeaWipeNotice() {
+  return (
+    <p className="log-wipe-notice" role="status">
+      Ideas in this log are wiped out on <strong>{IDEA_WIPE_LABEL}</strong>.
+    </p>
+  );
+}
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 
 const PILLS = [
@@ -223,6 +239,7 @@ export default function LogPage({
   if (!unlockedDepartment) {
     return (
       <main className="log-page">
+        <IdeaWipeNotice />
         <form className="log-lock-screen" onSubmit={handleUnlock}>
           <p className="mono log-stat-kicker">Proposition log</p>
           <h2 className="log-title">Unlock with your department password</h2>
@@ -272,6 +289,7 @@ export default function LogPage({
 
   return (
     <main className="log-page">
+      <IdeaWipeNotice />
       <div className="log-stats">
         <article className="log-stat-card">
           <div className="mono log-stat-kicker">Submitted</div>
@@ -573,6 +591,8 @@ export const LOG_PAGE_CSS = `
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+.log-wipe-notice{margin:0;background:#FBF1EE;border:1px solid var(--danger-border);border-radius:14px;padding:12px 16px;font-size:14px;color:var(--danger-text);line-height:1.4;}
+.log-wipe-notice strong{font-weight:700;}
 .log-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
 .log-stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 18px;}
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
