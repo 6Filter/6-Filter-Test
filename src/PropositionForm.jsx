@@ -1351,6 +1351,9 @@ export default function PropositionForm({
   const [refreshingField, setRefreshingField] = useState("");
   const [conceptCardBusy, setConceptCardBusy] = useState(false);
   const [conceptCardError, setConceptCardError] = useState("");
+  const [conceptCardName, setConceptCardName] = useState(() =>
+    String(initial?.f1?.conceptCardName || "").trim()
+  );
   const [draftSaveState, setDraftSaveState] = useState("");
   const conceptCardRef = useRef(null);
   const skipDraftRef = useRef(true);
@@ -1376,6 +1379,7 @@ export default function PropositionForm({
     setAiSuggestions(initial?.suggestions || null);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
     setGoNoGo(initial?.goNoGo || null);
+    setConceptCardName(String(initial?.f1?.conceptCardName || "").trim());
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
@@ -1782,6 +1786,7 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
+      setConceptCardName(uploaded.name || file.name);
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -1790,9 +1795,12 @@ export default function PropositionForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
+      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1801,6 +1809,7 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
+      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2369,6 +2378,12 @@ export default function PropositionForm({
             {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
             Upload concept card
           </button>
+          {conceptCardName ? (
+            <span className="chip file prop-file-chip">
+              <FileText size={15} />
+              {conceptCardName}
+            </span>
+          ) : null}
           <span className="prop-helper">PDF, Word, or Excel. Separate from the Filter 1 source-file attach. Extracts only fields the document states.</span>
         </div>
         {conceptCardError ? (
