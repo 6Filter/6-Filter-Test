@@ -1280,7 +1280,11 @@ function researchInputKey(doc) {
     : attach?.name
       ? `name:${attach.name}`
       : "";
-  return `${String(doc?.name || "").trim().toLowerCase()}|${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attachSig}`;
+  const f1 = doc?.f1 && typeof doc.f1 === "object" ? doc.f1 : {};
+  const attrs = [f1.declaredAttribute, f1.declaredAttribute2, f1.declaredAttribute3, f1.benchmark]
+    .map((v) => String(v || "").trim().toLowerCase())
+    .join("|");
+  return `${String(doc?.name || "").trim().toLowerCase()}|${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attrs}|${attachSig}`;
 }
 
 export default function PropositionForm({

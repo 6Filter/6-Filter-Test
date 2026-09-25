@@ -38,6 +38,29 @@ assert.match(notCore.items[0].text, /category currently sells on hair fall contr
 assert.match(notCore.items[0].text, /Sparkle finish requires primary research/i);
 assert.match(notCore.items[0].text, /general trade, modern trade, e-com and quick-commerce/i);
 assert.doesNotMatch(notCore.items[0].text, /needs validation/i);
+
+const replaced = checkF1(
+  {
+    declaredAttribute: "less hair fall after oiling",
+    declaredAttribute2: "cooling feel that lasts",
+    declaredAttribute3: "ayurvedic herb story",
+    benchmark: "Parachute",
+    declaredGap: 2.5,
+    growthRoute: "penetration",
+    growthArgument: "households",
+  },
+  {
+    categoryKeyAttributes: ["hair-fall reduction", "ayurvedic ingredient story"],
+    attributeValidation: [
+      { stated: "no sticky residue", status: "not-core", note: "old attribute" },
+      { stated: "less hair fall after oiling", status: "aligned", note: "driver" },
+    ],
+    benchmarkVerified: true,
+    categorySizeFound: true,
+  }
+);
+assert.equal(replaced.items[0].status, "done");
+assert.doesNotMatch(replaced.items[0].text, /no sticky residue/i);
 assert.doesNotMatch(notCore.items[0].text, /pending/i);
 
 const aligned = checkF1(
