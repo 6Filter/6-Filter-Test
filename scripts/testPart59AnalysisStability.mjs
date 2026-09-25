@@ -176,7 +176,7 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 assert.match(apiSrc, /skipDerivedAutoFill/);
 assert.match(apiSrc, /researchRan: Boolean\(shouldRunResearch\)/);
 assert.match(apiSrc, /goNoGo: _clientStoredResult/);
-assert.match(apiSrc, /computeAllAdvisoryChecks\(proposition\)/);
+assert.match(apiSrc, /computeAllAdvisoryChecks\(enriched\)/);
 
 const gateSrc = readFileSync(new URL("../lib/propositionGateApi.js", import.meta.url), "utf8");
 assert.doesNotMatch(gateSrc, /shouldReuseAnalysis/);

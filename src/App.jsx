@@ -109,14 +109,19 @@ async function fetchPropositionById(id) {
   return attachAdvisory(data);
 }
 
-async function putProposition(id, payload, provider = "claude", { forceResearch = false } = {}) {
+async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 180000);
   try {
     const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proposition: payload, provider, forceResearch: Boolean(forceResearch) }),
+      body: JSON.stringify({
+        proposition: payload,
+        provider,
+        forceResearch: Boolean(forceResearch),
+        asNew: Boolean(asNew),
+      }),
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
@@ -133,6 +138,8 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       failedProvider: data.failedProvider || null,
       failedProviderLabel: data.failedProviderLabel || null,
       researchRan: Boolean(data.researchRan),
+      forked: Boolean(data.forked),
+      forkedFrom: data.forkedFrom || null,
     };
   } catch (e) {
     if (e?.name === "AbortError") {
@@ -787,6 +794,7 @@ export default function App() {
     try {
       const result = await putProposition(doc.id, doc, provider, {
         forceResearch: Boolean(saveOpts?.forceResearch),
+        asNew: Boolean(saveOpts?.asNew),
       });
       const saved = result.proposition;
       setProposition(saved);

@@ -34,6 +34,7 @@ import {
   analysisCheckItems,
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
+import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
@@ -1339,6 +1340,7 @@ export default function PropositionForm({
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
     initial?.researchRunAt ? researchInputKey(initial) : ""
   );
+  const sourceDocRef = useRef(initial || null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
   const f3RangeTouchedByHuman = useRef(false);
@@ -1381,6 +1383,7 @@ export default function PropositionForm({
     setGoNoGo(initial?.goNoGo || null);
     setConceptCardName(String(initial?.f1?.conceptCardName || "").trim());
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
+    sourceDocRef.current = filled.doc;
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
@@ -1611,6 +1614,7 @@ export default function PropositionForm({
       return undefined;
     }
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
+    if (isScoredProposition(sourceDocRef.current)) return undefined;
     draftDirtyRef.current = true;
     const t = window.setTimeout(() => {
       const snap = docRef.current;
@@ -1633,7 +1637,12 @@ export default function PropositionForm({
 
   useEffect(() => {
     return () => {
-      if (draftDirtyRef.current && typeof onSaveDraftRef.current === "function" && docRef.current?.id) {
+      if (
+        draftDirtyRef.current &&
+        typeof onSaveDraftRef.current === "function" &&
+        docRef.current?.id &&
+        !isScoredProposition(sourceDocRef.current)
+      ) {
         Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
       }
     };
@@ -2148,6 +2157,7 @@ export default function PropositionForm({
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
+    const asNew = shouldForkLogResubmit(sourceDocRef.current, doc);
     const hadResearchRunAt = Boolean(doc.researchRunAt);
     if (!goNoGo?.classification) {
       const preview = applyLocalGate(doc);
@@ -2166,19 +2176,21 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
     const persistDuration = Boolean(
-      submitOpts.forceResearch || ideaChanged || !hadResearchRunAt
+      submitOpts.forceResearch || ideaChanged || asNew || !hadResearchRunAt
     );
     const startedAt = Date.now();
     const expectedMs = expectedProcessMs({
       forceResearch: Boolean(submitOpts.forceResearch),
-      researchRunAt: doc.researchRunAt,
-      ideaChanged,
+      researchRunAt: asNew ? null : doc.researchRunAt,
+      ideaChanged: ideaChanged || asNew,
     });
     onProcessingChange?.({ busy: true, startedAt, expectedMs });
     let savedOk = false;
+    let result = null;
     try {
-    const result = await onSave(doc, provider, {
+    result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
+      asNew,
     });
     if (!result?.proposition) return;
     savedOk = true;
@@ -2204,36 +2216,45 @@ export default function PropositionForm({
     const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
-    const classification = computeGoNoGo(checks || {});
-    const nextScore = scoreAdvisoryChecks(checks || {});
+    const savedGo = result.proposition.goNoGo && typeof result.proposition.goNoGo === "object"
+      ? result.proposition.goNoGo
+      : null;
+    const classification = savedGo?.classification || computeGoNoGo(checks || {});
+    const nextScore = savedGo?.score || scoreAdvisoryChecks(checks || {});
     const ideaName = formIdeaLabel(nextDoc);
     const category = formCategoryLabel(nextDoc);
     const nextGo = {
       classification,
-      rationale: buildGateRationale({
-        classification,
-        score: nextScore,
-        checks: checks || {},
-        ideaName,
-        category,
-      }),
+      rationale:
+        savedGo?.rationale ||
+        buildGateRationale({
+          classification,
+          score: nextScore,
+          checks: checks || {},
+          ideaName,
+          category,
+        }),
       score: nextScore,
-      ideaScale: ideaScaleFromDoc(nextDoc),
+      ideaScale: savedGo?.ideaScale || ideaScaleFromDoc(nextDoc),
       ideaName,
       category,
-      at: new Date().toISOString(),
+      at: savedGo?.at || new Date().toISOString(),
+      ...(savedGo?.filterNarratives ? { filterNarratives: savedGo.filterNarratives } : {}),
     };
     setGoNoGo(nextGo);
     setJustSubmitted(true);
     setSummaryStale(false);
+    sourceDocRef.current = nextDoc;
+    if (nextGo.classification) setCurrentView("goNoGoResult");
 
     await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
     } finally {
       const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
-      if (persistDuration && savedOk && propositionId) {
+      const durationId = result?.proposition?.id || propositionId;
+      if (persistDuration && savedOk && durationId) {
         setDoc((prev) => ({ ...prev, researchDurationMs: elapsedMs }));
-        fetch(`/api/propositions/${encodeURIComponent(propositionId)}/go-nogo`, {
+        fetch(`/api/propositions/${encodeURIComponent(durationId)}/go-nogo`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
