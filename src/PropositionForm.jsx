@@ -1808,8 +1808,14 @@ export default function PropositionForm({
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      const savedName = String(data.conceptCardName || "").trim();
+      if (savedName) {
+        setConceptCardName(savedName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: savedName },
+        }));
+      }
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
