@@ -276,6 +276,9 @@ export default function LogPage({
 
   return (
     <main className="log-page">
+      <p className="log-export-notice" role="status">
+        Kindly export your ideas to make sure you always have a copy of the same as the ideas will be wiped out because of no storage
+      </p>
       <div className="log-stats">
         <article className="log-stat-card">
           <div className="mono log-stat-kicker">Submitted</div>
@@ -602,6 +605,11 @@ export const LOG_PAGE_CSS = `
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+.log-export-notice{
+  margin:0;padding:12px 16px;border-radius:12px;
+  background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);
+  font-size:13px;line-height:1.45;font-weight:600;
+}
 .log-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
 .log-stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 18px;}
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
