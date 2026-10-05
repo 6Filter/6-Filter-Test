@@ -304,7 +304,7 @@ export default function LogPage({
             <p className="log-sub">
               {isMasterUnlock(unlockedDepartment)
                 ? "Viewing all department submissions. Search, filter, or export across teams."
-                : `Viewing ${unlockedDepartment} submissions. Search, filter, or export this department only.`}{" "}
+                : `Viewing ${unlockedDepartment} submissions, plus every idea submitted in September. Search, filter, or export this list.`}{" "}
               Click a row to open the form.
             </p>
           </div>
