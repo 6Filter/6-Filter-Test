@@ -20,26 +20,18 @@ const npdSnacks = {
 
 assert.equal(matchesUnlockedDepartment(rdFoods, "R&D"), true, "R&D unlock is submitter team, not Foods division");
 assert.equal(matchesUnlockedDepartment(rdFoods, "Foods"), false);
-assert.equal(matchesUnlockedDepartment(npdSnacks, "R&D"), false);
-assert.equal(
-  matchesUnlockedDepartment(
-    { ...npdSnacks, createdAt: "2026-09-25T07:12:12.612Z" },
-    "R&D"
-  ),
-  true,
-  "September 2026 ideas show on every team's Log"
-);
+assert.equal(matchesUnlockedDepartment(npdSnacks, "R&D"), true, "every unlocked team sees every stored idea");
 assert.equal(
   matchesUnlockedDepartment(
     { ...npdSnacks, createdAt: "2026-10-02T04:00:00.000Z" },
-    "R&D"
+    "CIA"
   ),
-  false,
-  "October ideas stay on the submitter team"
+  true,
+  "ideas from any month show on every team's Log"
 );
 
 assert.equal(canViewProposition({ department: "R&D" }, rdFoods), true);
-assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), false);
+assert.equal(canViewProposition({ department: "R&D" }, npdSnacks), true);
 assert.equal(
   canViewProposition({ department: "NPD" }, { id: "draft", submitterDepartment: "" }),
   true,

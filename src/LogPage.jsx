@@ -281,9 +281,9 @@ export default function LogPage({
       </p>
       <div className="log-stats">
         <article className="log-stat-card">
-          <div className="mono log-stat-kicker">Submitted</div>
-          <div className="log-stat-value">{stats.submittedThisMonth}</div>
-          <p>Propositions created this month</p>
+          <div className="mono log-stat-kicker">Ideas in the log</div>
+          <div className="log-stat-value">{stats.total}</div>
+          <p>Every idea entered so far{stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month` : ""}</p>
         </article>
         <article className="log-stat-card">
           <div className="mono log-stat-kicker">Cleared all six</div>
@@ -303,8 +303,8 @@ export default function LogPage({
             <h2 className="log-title">Proposition log</h2>
             <p className="log-sub">
               {isMasterUnlock(unlockedDepartment)
-                ? "Viewing all department submissions. Search, filter, or export across teams."
-                : `Viewing ${unlockedDepartment} submissions, plus every idea submitted in September. Search, filter, or export this list.`}{" "}
+                ? "Viewing every idea entered so far, across all teams. Search, filter, or export."
+                : `Viewing every idea entered so far. Search, filter, or export.`}{" "}
               Click a row to open the form.
             </p>
           </div>
