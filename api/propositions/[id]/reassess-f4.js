@@ -11,6 +11,11 @@ export default async function handler(req, res) {
       ? decodeURIComponent(req.url.split("?")[0].split("/").filter(Boolean).slice(-2)[0] || "")
       : null);
 
+  if (!id) {
+    sendJson(res, 400, { error: "Proposition id is required." });
+    return;
+  }
+
   await handlePropositionReassessF4(req, res, id, {
     readBody: readJsonBody,
     sendJson,
