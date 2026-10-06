@@ -17,11 +17,12 @@ export default async function handler(req, res) {
     req.query?.docId ??
     (docIdx >= 0 && parts[docIdx + 1] ? decodeURIComponent(parts[docIdx + 1]) : null);
 
-  if (!id) {
+  const badId = (value) => !value || value === "undefined" || value.includes("/") || value.includes("..");
+  if (badId(id)) {
     sendJson(res, 400, { error: "Idea id is required." });
     return;
   }
-  if (!docId) {
+  if (badId(docId)) {
     sendJson(res, 400, { error: "Document id is required." });
     return;
   }
