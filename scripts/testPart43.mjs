@@ -46,13 +46,13 @@ assert(withLoss.f2?.mrpInr == null, "suggestions must not seed MRP — formula o
 const withoutIndex = buildSuggestions({}, {}, null, null, null, null);
 assert(withoutIndex.f3?.marginElasticity == null, "no margin-elasticity suggestion without a research result");
 
-const fixture = fs.readFileSync("scripts/testF2Cost.mjs", "utf8");
-assert(!/\b5\.3\b/.test(fixture), "testF2Cost.mjs still contains a 5.3-shaped fixture");
+const fixture = fs.readFileSync("scripts/manual-f2Cost.mjs", "utf8");
+assert(!/\b5\.3\b/.test(fixture), "manual-f2Cost.mjs still contains a 5.3-shaped fixture");
 assert(
   !/mrpInr\s*[:=]\s*5/.test(fixture),
-  "testF2Cost.mjs appears to hardcode an MRP rather than calling live research"
+  "manual-f2Cost.mjs appears to hardcode an MRP rather than calling live research"
 );
 
 console.log("part43 ok");
 console.log("three MRPs:", a.finalMrp.toFixed(2), b.finalMrp.toFixed(2), c.finalMrp.toFixed(2));
-console.log("testF2Cost.mjs: no 5.3 fixture; live Groq cost-estimate script only");
+console.log("manual-f2Cost.mjs: no 5.3 fixture; live Groq cost-estimate script only");

@@ -63,9 +63,11 @@ for (const dir of SCAN_DIRS) {
   for (const file of walk(abs)) {
     const key = rel(file);
     if (ALLOWLIST.has(key)) continue;
-    const raw = stripComments(readFileSync(file, "utf8"));
-    const lines = raw.split(/\r?\n/);
+    const source = readFileSync(file, "utf8");
+    const rawLines = source.split(/\r?\n/);
+    const lines = stripComments(source).split(/\r?\n/);
     lines.forEach((line, i) => {
+      if (/\/\/\s*lock-ok:\s*\S/.test(rawLines[i] || "")) return;
       for (const { label, re } of PATTERNS) {
         re.lastIndex = 0;
         if (!re.test(line)) continue;

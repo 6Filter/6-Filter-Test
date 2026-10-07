@@ -43,9 +43,13 @@ assert.equal(scoreAdvisoryChecks(highPctF2Floor).pct >= 80, true);
 assert.equal(goNoGoIsFloorFailure(highPctF2Floor), true);
 assert.equal(computeGoNoGo(highPctF2Floor), "NO-GO");
 
-assert.equal(computeGoNoGo({ f1: { items: items(6, 4) } }), "WATCH");
-assert.equal(computeGoNoGo({ f1: { items: items(8, 2) } }), "WATCH");
-assert.equal(computeGoNoGo({ f1: { items: items(19, 1) } }), "GO");
+function allFour(done, pending) {
+  const check = { checkLabel: "Cleared", items: items(done, pending) };
+  return { f1: check, f2: check, f3: check, f4: check };
+}
+assert.equal(computeGoNoGo(allFour(6, 4)), "WATCH");
+assert.equal(computeGoNoGo(allFour(8, 2)), "WATCH");
+assert.equal(computeGoNoGo(allFour(19, 1)), "GO");
 
 const namedOnly = checkF1(
   { declaredAttribute: "cooling", benchmark: "5", declaredGap: 5, growthRoute: "penetration", growthArgument: "5" },

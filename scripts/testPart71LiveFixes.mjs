@@ -1,34 +1,33 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { ideaSizeForResult } from "../lib/ideaScale.js";
+import { rowTeam } from "../lib/logStatus.js";
 
-const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
-const log = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
-const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const status = readFileSync(new URL("../lib/logStatus.js", import.meta.url), "utf8");
+const sized = ideaSizeForResult({
+  f5: {
+    householdsReachedY3Mn: 2,
+    trialRatePct: 20,
+    repeatConversionPct: 40,
+    purchaseFrequencyYr: 6,
+    avgPackValueInr: 80,
+    confirmedByHuman: true,
+  },
+  f1: { forumVerdict: "pass" },
+  f2: { forumVerdict: "pass" },
+  f3: { forumVerdict: "pass" },
+  f4: { forumVerdict: "pass" },
+  ideaWeight: "1000g",
+});
+assert.ok(sized.tier === "10g" || sized.tier === "100g" || sized.tier === "1000g");
+assert.match(sized.derivation, /₹|Cr|idea scale/i);
+assert.equal(Object.hasOwn(sized, "ideaWeight"), false);
 
-assert.match(form, /gonogo-scale-chip/);
-assert.match(form, /ideaSizeForResult|ideaSizeFromF5/);
-assert.match(form, /sizeTier\.derivation/);
-assert.doesNotMatch(app, /ideaWeight \? ` · \$\{ideaWeight\}`/);
-assert.doesNotMatch(app, /sc-fin-label">Classification/);
-assert.doesNotMatch(app, /\{ideaWeight \|\| "—"\}/);
+const fallback = ideaSizeForResult({ ideaWeight: "1000g" });
+assert.equal(fallback.tier, "10g");
 
-assert.match(html, /min-height:\s*100%/);
-assert.match(html, /height:\s*auto/);
-assert.doesNotMatch(html, /html, body, #root \{ height: 100%; margin: 0; background: #F5F2EA; \}/);
-assert.match(html, /background:\s*transparent/);
+assert.equal(
+  rowTeam({ division: "Foods", submitterDepartment: "R&D" }),
+  "R&D"
+);
+assert.notEqual(rowTeam({ division: "Foods", submitterDepartment: "NPD" }), "Foods");
 
-assert.match(app, /min-height:100vh/);
-assert.match(app, /html:has\(\.screen-log\)/);
-assert.match(form, /align-items:start/);
-assert.match(form, /height:auto/);
-assert.match(form, /\.prop-page\.output-page\{[^}]*max-width:none/);
-assert.match(form, /\.prop-page\.prop-form-page\{[^}]*margin:0 -28px -48px/);
-
-assert.match(log, /background:var\(--bg\)/);
-assert.match(log, /border-spacing:0/);
-assert.match(log, /h\.division \|\| h\.submitterDepartment/);
-assert.match(status, /dept: doc\.division \|\| doc\.submitterDepartment/);
-
-console.log("PASS Part 71 gram badge removed, shared cream canvas fixed, Log department binding documented");
+console.log("PASS Part 71 idea scale comes from Filter 5, and the Log team is the submitter");

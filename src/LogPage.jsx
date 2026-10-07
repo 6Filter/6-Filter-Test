@@ -78,6 +78,8 @@ export default function LogPage({
   const [personFilter, setPersonFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllTyped, setDeleteAllTyped] = useState("");
   const [exportingId, setExportingId] = useState("");
   const [exportError, setExportError] = useState("");
   const [gateReady, setGateReady] = useState(unlockedDepartmentProp !== undefined);
@@ -341,7 +343,10 @@ export default function LogPage({
             <button
               type="button"
               className="log-btn log-btn-danger"
-              onClick={onDeleteAll}
+              onClick={() => {
+                setDeleteAllTyped("");
+                setDeleteAllOpen(true);
+              }}
               disabled={busy || rows.length === 0 || !canDeleteAll || !allowDelete}
               title={masterView ? undefined : "Only Master can delete"}
             >
@@ -350,6 +355,64 @@ export default function LogPage({
             </button>
           </div>
         </div>
+
+        {deleteAllOpen && (
+          <form
+            className="log-delete-all"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const phrase = `DELETE ALL ${rows.length}`;
+              if (deleteAllTyped !== phrase) return;
+              setDeleteAllOpen(false);
+              setDeleteAllTyped("");
+              onDeleteAll(phrase);
+            }}
+          >
+            <p>
+              This removes every idea in the log. Export a copy first, then type{" "}
+              <strong>{`DELETE ALL ${rows.length}`}</strong> to enable delete.
+            </p>
+            <button
+              type="button"
+              className="log-btn"
+              onClick={() => handleExport(rows)}
+              disabled={exporting || rows.length === 0}
+            >
+              {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+              Export all
+            </button>
+            <label className="log-lock-label">
+              Confirmation
+              <input
+                value={deleteAllTyped}
+                onChange={(e) => setDeleteAllTyped(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label="Type DELETE ALL and the row count"
+              />
+            </label>
+            <div className="log-delete-all-actions">
+              <button
+                type="submit"
+                className="log-btn log-btn-danger"
+                disabled={deleteAllTyped !== `DELETE ALL ${rows.length}` || deletingAll}
+              >
+                {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                Delete all
+              </button>
+              <button
+                type="button"
+                className="log-btn"
+                onClick={() => {
+                  setDeleteAllOpen(false);
+                  setDeleteAllTyped("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="log-toolbar">
           <label className="log-search">
@@ -630,6 +693,9 @@ export const LOG_PAGE_CSS = `
 .log-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--card-border);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;}
 .log-btn:hover{background:var(--table-row-hover);}
 .log-btn:disabled{opacity:.5;cursor:not-allowed;}
+.log-delete-all{margin:0 0 14px;padding:14px 16px;border:1px solid var(--danger-border);border-radius:14px;background:var(--card-bg);display:flex;flex-direction:column;gap:10px;}
+.log-delete-all p{margin:0;font-size:13px;line-height:1.45;color:var(--ink);}
+.log-delete-all-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .log-btn-danger{color:var(--danger-text);border-color:var(--danger-border);}
 .log-btn-danger:hover:not(:disabled){background:var(--danger-hover-bg);}
 .log-toolbar{display:flex;flex-direction:column;gap:12px;margin:0 0 12px;}

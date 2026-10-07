@@ -33,10 +33,14 @@ assert.equal(goNoGoTone("WATCH"), "watch");
 assert.equal(goNoGoTone("GO"), "pass");
 assert.equal(goNoGoTone("NO-GO"), "fail");
 
-assert.equal(computeGoNoGo({ f1: { items: items(6, 4) } }), "WATCH");
-assert.equal(computeGoNoGo({ f1: { items: items(7, 3) } }), "WATCH");
-assert.equal(computeGoNoGo({ f1: { items: items(8, 2) } }), "WATCH");
-assert.equal(computeGoNoGo({ f1: { items: items(13, 3) } }), "GO");
+function allFour(done, pending) {
+  const check = { checkLabel: "Cleared", items: items(done, pending) };
+  return { f1: check, f2: check, f3: check, f4: check };
+}
+assert.equal(computeGoNoGo(allFour(6, 4)), "WATCH");
+assert.equal(computeGoNoGo(allFour(7, 3)), "WATCH");
+assert.equal(computeGoNoGo(allFour(8, 2)), "WATCH");
+assert.equal(computeGoNoGo(allFour(13, 3)), "GO");
 
 assert.equal(ideaScaleLabel(0), "10g");
 assert.equal(ideaScaleLabel(1), "10g");

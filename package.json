@@ -10,7 +10,7 @@
     "start": "node server.js",
     "seed-user": "node scripts/seedUser.js",
     "check:locks": "node scripts/checkNoDuplicateThresholds.mjs",
-    "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/testIdeaScaleConsistency.mjs && node scripts/testIdeaScaleBadgeFromResearch.mjs && node scripts/testOutputVerdictAndGrammage.mjs && node scripts/testConceptCardOfficeFiles.mjs && node scripts/testIdeaHistoryBackfill.mjs && node scripts/testCategoryGroupLog.mjs && node scripts/testLogResubmitFork.mjs && node scripts/testPart56.mjs && node scripts/testPart75.mjs && node scripts/testPart42.mjs && node scripts/testPart60FloorGate.mjs && node scripts/testPart65Log.mjs && node scripts/testPart76.mjs && node scripts/testPart81.mjs && node scripts/testPart82.mjs && node scripts/testPart85.mjs && node scripts/testPart86.mjs && node scripts/testPart87.mjs && node scripts/testPart90.mjs && node scripts/testDepartmentUnlockCredentials.mjs && node scripts/testPart91CategorySizingCache.mjs && node scripts/testPart92FormulaSheetHelpers.mjs && node scripts/testPart93SessionBilling.mjs && node scripts/testMasterUnlock.mjs"
+    "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && node scripts/run-all-tests.mjs"
   },
   "engines": {
     "node": "22.x"

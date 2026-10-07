@@ -30,4 +30,6 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Secret scan
+        run: node scripts/scanCommittedSecrets.mjs
       - run: npm run test:regression

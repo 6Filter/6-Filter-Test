@@ -169,8 +169,12 @@ async function deletePropositionById(id) {
   return true;
 }
 
-async function deleteAllPropositions() {
-  const res = await apiFetch("/api/propositions/bulk-delete", { method: "DELETE" });
+async function deleteAllPropositions(confirmPhrase) {
+  const res = await apiFetch("/api/propositions/bulk-delete", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm: confirmPhrase }),
+  });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not delete all propositions.");
   return data.deleted;
@@ -891,18 +895,16 @@ export default function App() {
     }
   }
 
-  async function confirmAndDeleteAll() {
+  async function confirmAndDeleteAll(confirmPhrase) {
     if (deletingAll || deletingId || deletingUntouched) return;
     const count = propositionList.length;
     if (!count) return;
-    const ok = window.confirm(
-      `Delete ALL propositions in the log (every department)? This cannot be undone.`
-    );
-    if (!ok) return;
+    const expected = `DELETE ALL ${count}`;
+    if (confirmPhrase !== expected) return;
     setDeletingAll(true);
     setLogError("");
     try {
-      await deleteAllPropositions();
+      await deleteAllPropositions(expected);
       setPropositionList([]);
       setProposition(null);
     } catch (e) {

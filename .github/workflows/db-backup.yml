@@ -1,4 +1,4 @@
-name: Daily Propositions Backup
+name: Daily database backup
 
 on:
   schedule:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Dump propositions table
+      - name: Dump the database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           PGSSLMODE: require
@@ -20,11 +20,23 @@ jobs:
             echo "DATABASE_URL secret is not set — add it in repo Settings → Secrets → Actions"
             exit 1
           fi
-          pg_dump "$DATABASE_URL" --table=propositions --data-only --format=custom \
-            -f "propositions-backup-$(date +%F).dump"
+          pg_dump "$DATABASE_URL" --format=custom --exclude-table=research_cache \
+            -f "primus-backup-$(date +%F).dump"
       - name: Upload to durable storage
         uses: actions/upload-artifact@v4
         with:
-          name: propositions-backup-${{ github.run_id }}
+          name: primus-backup-${{ github.run_id }}
           path: "*.dump"
           retention-days: 90
+      - name: Tell Slack the backup failed
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not set — the failed backup was not posted to Slack"
+            exit 0
+          fi
+          curl -sS -X POST -H "Content-type: application/json" \
+            --data "{\"text\":\"Primus.AI database backup failed. Check GitHub Actions run ${{ github.run_id }}.\"}" \
+            "$SLACK_WEBHOOK_URL"

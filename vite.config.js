@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { handleApiRequest } from "./lib/apiRouter.js";
 import { redactSecrets, sendJson } from "./lib/http.js";
+import { applySecurityHeaders } from "./lib/securityHeaders.js";
 
 const ENV_KEYS = [
   "ANTHROPIC_API_KEY",
@@ -33,6 +34,7 @@ function apiPlugin(env) {
       applyEnv(env);
 
       server.middlewares.use(async (req, res, next) => {
+        applySecurityHeaders(res);
         try {
           const handled = await handleApiRequest(req, res);
           if (handled) return;
@@ -41,6 +43,12 @@ function apiPlugin(env) {
           sendJson(res, status, { error: redactSecrets(e.message) });
           return;
         }
+        next();
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        applySecurityHeaders(res);
         next();
       });
     },

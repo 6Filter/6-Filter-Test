@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { verifyPassword } from "../lib/auth.js";
-import { rewriteRenderDatabaseUrl, departmentPasswordHashFallbacks } from "../lib/db.js";
+import { randomBytes } from "node:crypto";
+import { hashPassword, verifyPassword } from "../lib/auth.js";
+import { rewriteRenderDatabaseUrl } from "../lib/db.js";
 import { verifyDepartmentPassword } from "../lib/departmentAuth.js";
 
 const rewritten = rewriteRenderDatabaseUrl(
@@ -13,18 +14,27 @@ assert.equal(
   "postgresql://u:p@example.com/db"
 );
 
-const known = {
-  "R&D": "ck-rd-297327",
-  CIA: "ck-cia-e0bc1f",
-  Marketing: "ck-marketing-d58aa1",
-  NPD: "ck-npd-04ef33",
+const issued = {
+  "R&D": `throwaway-${randomBytes(9).toString("hex")}`,
+  CIA: `throwaway-${randomBytes(9).toString("hex")}`,
+  Marketing: `throwaway-${randomBytes(9).toString("hex")}`,
+  NPD: `throwaway-${randomBytes(9).toString("hex")}`,
 };
-const hashes = departmentPasswordHashFallbacks();
-for (const [dept, password] of Object.entries(known)) {
-  assert.ok(hashes[dept], `${dept} must have a fallback hash`);
-  assert.equal(verifyPassword(password, hashes[dept]), true, `${dept} builtin hash must match the issued password`);
-  assert.equal(verifyPassword("wrong-password", hashes[dept]), false);
-  assert.equal(await verifyDepartmentPassword(dept, password), true, `${dept} unlock must accept the issued password`);
+process.env.DEPT_PASSWORD_HASH_RD = hashPassword(issued["R&D"]);
+process.env.DEPT_PASSWORD_HASH_CIA = hashPassword(issued.CIA);
+process.env.DEPT_PASSWORD_HASH_MARKETING = hashPassword(issued.Marketing);
+process.env.DEPT_PASSWORD_HASH_NPD = hashPassword(issued.NPD);
+
+for (const [dept, password] of Object.entries(issued)) {
+  const envName =
+    dept === "R&D"
+      ? "DEPT_PASSWORD_HASH_RD"
+      : dept === "Marketing"
+        ? "DEPT_PASSWORD_HASH_MARKETING"
+        : `DEPT_PASSWORD_HASH_${dept}`;
+  assert.equal(verifyPassword(password, process.env[envName]), true, `${dept} hash must match the throwaway password`);
+  assert.equal(verifyPassword("wrong-password", process.env[envName]), false);
+  assert.equal(await verifyDepartmentPassword(dept, password), true, `${dept} unlock must accept the throwaway password`);
   assert.equal(await verifyDepartmentPassword(dept, "wrong-password"), false);
 }
 

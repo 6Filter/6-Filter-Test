@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { handleApiRequest } from "./lib/apiRouter.js";
 import { redactSecrets, sendJson } from "./lib/http.js";
 import { listProvidersForClient } from "./lib/llmContext.js";
+import { applySecurityHeaders } from "./lib/securityHeaders.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "dist");
@@ -63,6 +64,7 @@ async function serveStatic(req, res) {
 }
 
 const server = createServer(async (req, res) => {
+  applySecurityHeaders(res);
   try {
     const handled = await handleApiRequest(req, res);
     if (handled) return;
