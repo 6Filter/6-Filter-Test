@@ -52,6 +52,7 @@ import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { mrpDiffersFromFormula } from "../lib/f2Derived.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
 import {
@@ -1406,7 +1407,8 @@ export default function PropositionForm({
     setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);
-    mrpTouchedByHuman.current = false;
+    mrpSeedRef.current = "";
+    mrpTouchedByHuman.current = mrpDiffersFromFormula(initial?.f2);
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
@@ -1417,6 +1419,7 @@ export default function PropositionForm({
   const f2Margin = doc.f2?.netMarginAtScale;
   const f2Gst = doc.f2?.gstRatePct;
 
+  const mrpSeedRef = useRef("");
   useEffect(() => {
     const result = computeMrp({
       cogsAtScale: f2Cogs,
@@ -1425,37 +1428,37 @@ export default function PropositionForm({
     });
     setMrpBaseInr(result?.baseMrp ?? null);
     setMrpFinalInr(result?.finalMrp ?? null);
+    const nextVal =
+      result?.finalMrp != null
+        ? result.finalMrp.toFixed(2)
+        : result?.baseMrp != null
+          ? result.baseMrp.toFixed(2)
+          : "";
+    const currentDoc = docRef.current;
+    const current = String(currentDoc?.f2?.mrpInr ?? "");
     if (mrpTouchedByHuman.current) return;
-    if (result?.finalMrp != null) {
-      const nextVal = result.finalMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-      });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else if (result?.baseMrp != null) {
-      const nextVal = result.baseMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-      });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else {
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === "") return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: "" } };
-      });
-      setAiSourced((prev) => {
-        if (prev[sourcedPath("f2", "mrpInr")] === false || prev[sourcedPath("f2", "mrpInr")] == null) {
-          return prev;
-        }
-        return { ...prev, [sourcedPath("f2", "mrpInr")]: false };
-      });
+    const handTyped =
+      current !== "" && current !== mrpSeedRef.current && mrpDiffersFromFormula(currentDoc?.f2);
+    if (handTyped) {
+      mrpTouchedByHuman.current = true;
+      return;
     }
+    mrpSeedRef.current = nextVal;
+    if (current === nextVal) return;
+    setAiSourced((flags) =>
+      nextVal
+        ? flags[sourcedPath("f2", "mrpInr")] === true
+          ? flags
+          : { ...flags, [sourcedPath("f2", "mrpInr")]: true }
+        : flags[sourcedPath("f2", "mrpInr")]
+          ? { ...flags, [sourcedPath("f2", "mrpInr")]: false }
+          : flags
+    );
+    setDoc((prev) => {
+      if (mrpTouchedByHuman.current && String(prev.f2?.mrpInr ?? "") !== mrpSeedRef.current) return prev;
+      if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
+      return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+    });
   }, [f2Cogs, f2Margin, f2Gst]);
 
   const f3SuggestedRange = aiSuggestions?.f3?.marginElasticity;
