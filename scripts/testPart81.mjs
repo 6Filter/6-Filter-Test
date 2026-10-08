@@ -27,7 +27,7 @@ assert.match(
   dbSrc,
   /DELETE FROM propositions\s+WHERE research_run_at IS NULL/
 );
-assert.match(apiSrc, /deleteAllPropositions\(null\)/);
+assert.match(apiSrc, /deleteAllPropositions\(null, "Master"\)/);
 assert.match(apiSrc, /canDeleteLogProposition/);
 assert.doesNotMatch(
   dbSrc,

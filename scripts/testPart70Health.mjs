@@ -10,11 +10,12 @@ assert.match(workflow, /Ping Render App \(web \+ db\)/);
 
 const router = readFileSync(new URL("../lib/apiRouter.js", import.meta.url), "utf8");
 assert.match(router, /url === "\/api\/health"/);
-assert.match(router, /auth: false/);
+assert.match(router, /optionalSession: true/);
+assert.match(router, /url === "\/api\/billing\/usage"/);
 
 const vercel = readFileSync(new URL("../api/health.js", import.meta.url), "utf8");
 assert.match(vercel, /handleHealth/);
-assert.match(vercel, /auth: false/);
+assert.match(vercel, /optionalSession: true/);
 
 const ping = await pingDatabase();
 assert.equal(ping.ok, true);
