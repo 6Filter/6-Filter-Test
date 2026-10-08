@@ -19,6 +19,7 @@ import {
   submittedParts,
   uniqueLogValues,
 } from "../lib/logStatus.js";
+import { uiResearchState } from "../lib/researchProgress.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
 import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
@@ -32,6 +33,7 @@ const PILLS = [
   { id: "STOPPED", label: "Stopped" },
   { id: "REVIEW", label: "Review" },
   { id: "ai-used", label: "AI used" },
+  { id: "incomplete", label: "Research incomplete" },
 ];
 
 const CHIP = {
@@ -122,8 +124,9 @@ export default function LogPage({
       STOPPED: scopedStats.stopped,
       REVIEW: scopedStats.review,
       "ai-used": aiUsedCount,
+      incomplete: scopedRows.filter((row) => uiResearchState(row) === "incomplete").length,
     }),
-    [scopedStats, aiUsedCount]
+    [scopedStats, aiUsedCount, scopedRows]
   );
 
   function exportHint() {
@@ -474,8 +477,10 @@ export default function LogPage({
                 className={`log-pill${status === p.id ? " is-active" : ""}`}
                 onClick={() => setStatus(p.id)}
               >
-                {p.label}
-                <span className="mono">{pillCounts[p.id] ?? 0}</span>
+                {p.id === "incomplete"
+                  ? `Research incomplete (${pillCounts.incomplete ?? 0})`
+                  : p.label}
+                {p.id === "incomplete" ? null : <span className="mono">{pillCounts[p.id] ?? 0}</span>}
               </button>
             ))}
           </div>
@@ -568,6 +573,9 @@ export default function LogPage({
                             <span className={`research-badge ${usedAi ? "used" : "unused"}`}>
                               {usedAi ? "AI used" : "No API calls"}
                             </span>
+                            {uiResearchState(h) === "incomplete" ? (
+                              <span className="research-badge incomplete">research incomplete</span>
+                            ) : null}
                           </div>
                         </button>
                       </td>
@@ -762,6 +770,7 @@ export const LOG_PAGE_CSS = `
 .research-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:650;letter-spacing:.02em;padding:3px 8px;border-radius:999px;white-space:nowrap;}
 .research-badge.used{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .research-badge.unused{background:var(--none);color:var(--ink-muted);}
+.research-badge.incomplete{background:var(--chip-watch-bg, #f3e7c3);color:var(--chip-watch-fg, #6b4e00);}
 .log-prop-cell{display:flex;flex-direction:column;gap:2px;}
 .log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .log-wipe-chip{display:inline-block;margin:0 8px 2px 0;padding:2px 8px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:10px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;}

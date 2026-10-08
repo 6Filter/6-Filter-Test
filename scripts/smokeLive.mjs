@@ -17,8 +17,10 @@ const healthRes = await fetch(`${base}/api/health`);
 const health = await healthRes.json().catch(() => ({}));
 if (!healthRes.ok || health.db !== "postgres" || !Number.isFinite(Number(health.propositions))) {
   fail(`/api/health db=${health.db || "?"} propositions=${health.propositions ?? "?"}`);
+} else if (!Number.isFinite(Number(health.researchIncomplete))) {
+  fail("/api/health is missing researchIncomplete");
 } else {
-  console.log(`health db=postgres propositions=${health.propositions}`);
+  console.log(`health db=postgres propositions=${health.propositions} researchIncomplete=${health.researchIncomplete}`);
 }
 
 const wrong = await fetch(`${base}/api/department-auth/unlock`, {

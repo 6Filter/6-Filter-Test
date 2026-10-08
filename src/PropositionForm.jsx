@@ -37,6 +37,7 @@ import {
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
+import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
   closestPathToGo,
@@ -1817,6 +1818,36 @@ export default function PropositionForm({
     }
   }
 
+  async function handleRunMissingSteps() {
+    const plan = planResearch(docRef.current || {});
+    if (plan.researchState !== "incomplete" || !plan.steps.length || !propositionId || refreshingField || saving) return;
+    if (!window.confirm(`${missingStepsCostPreview(plan.steps)}\n\nContinue?`)) return;
+    setRefreshingField("missing");
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/retry-step`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missing: true, provider: llmProvider }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLocalError(data.error || "Could not run the missing steps.");
+        return;
+      }
+      if (data.proposition) setDoc((prev) => ({ ...prev, ...data.proposition }));
+      if (data.advisoryChecks) {
+        setAdvisoryChecks(data.advisoryChecks);
+        setSummaryChecks(data.advisoryChecks);
+      }
+    } catch (e) {
+      setLocalError(e.message || "Could not run the missing steps.");
+    } finally {
+      setRefreshingField("");
+    }
+  }
+
   async function handleConceptCardFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -2190,6 +2221,10 @@ export default function PropositionForm({
     );
     const asNew = shouldForkLogResubmit(sourceDocRef.current, doc);
     const hadResearchRunAt = Boolean(doc.researchRunAt);
+    const repairPlan = planResearch(doc);
+    const repairing =
+      repairPlan.researchState === "incomplete" && !ideaChanged && !asNew && !submitOpts.forceResearch;
+    if (repairing && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
     if (!goNoGo?.classification) {
       const preview = applyLocalGate(doc);
       setAdvisoryChecks(preview.checks);
@@ -2222,6 +2257,7 @@ export default function PropositionForm({
     result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
       asNew,
+      confirmMissingSteps: repairing,
     });
     if (!result?.proposition) return;
     savedOk = true;
@@ -2447,6 +2483,8 @@ export default function PropositionForm({
       </section>
 
       {SIX_FILTERS_FORM.map((spec) => {
+        const researchPlan = planResearch(doc);
+        const missingStep = researchPlan.researchState === "incomplete" && researchPlan.steps.includes(spec.key.toUpperCase());
         const unlocked = unlockedFilterKeys.has(spec.key);
         if (!unlocked && (spec.key === "f5" || spec.key === "f6")) {
           return (
@@ -2464,7 +2502,7 @@ export default function PropositionForm({
             />
           );
         }
-        if (!unlocked && (spec.key === "f3" || spec.key === "f4")) {
+        if (!unlocked && (spec.key === "f3" || spec.key === "f4") && !missingStep) {
           return (
             <FilterTeaserCard
               key={spec.key}
@@ -2514,6 +2552,21 @@ export default function PropositionForm({
                   </span>
                 ) : null}
                 <span className="check-pill" data-tone={toneFor(checkLabel)}>Check: {checkLabel}</span>
+                {missingStep ? (
+                  <>
+                    <span className="check-pill" data-tone="watch">
+                      Research incomplete: {researchPlan.steps.length} steps did not run
+                    </span>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={handleRunMissingSteps}
+                      disabled={Boolean(refreshingField) || saving}
+                    >
+                      {refreshingField === "missing" ? "Running…" : "Run missing steps"}
+                    </button>
+                  </>
+                ) : null}
                 {checkNeedsResearchRetry(check) ? (
                   <button
                     type="button"

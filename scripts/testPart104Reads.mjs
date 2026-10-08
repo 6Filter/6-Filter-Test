@@ -51,7 +51,7 @@ await handlePropositionsCollection({ method: "GET", user, url: "/api/proposition
   redactSecrets,
 });
 assert.equal(list.captured[0].status, 503);
-assert.match(JSON.parse(list.captured[0].body).error, /Database unavailable/);
+assert.equal(JSON.parse(list.captured[0].body).error, "Database unavailable. Try again shortly.");
 assert.equal(JSON.parse(list.captured[0].body).propositions, undefined);
 
 const one = capture();
@@ -60,7 +60,7 @@ await handlePropositionById({ method: "GET", user }, one.res, "00000000-0000-400
   redactSecrets,
 });
 assert.equal(one.captured[0].status, 503);
-assert.match(JSON.parse(one.captured[0].body).error, /Database unavailable/);
+assert.equal(JSON.parse(one.captured[0].body).error, "Database unavailable. Try again shortly.");
 
 const locked = capture();
 await handlePropositionsCollection({ method: "GET", user: {}, url: "/api/propositions" }, locked.res, {

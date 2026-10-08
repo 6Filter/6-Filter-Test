@@ -109,7 +109,7 @@ async function fetchPropositionById(id) {
   return attachAdvisory(data);
 }
 
-async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false } = {}) {
+async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false, confirmMissingSteps = false } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 180000);
   try {
@@ -121,6 +121,7 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
         provider,
         forceResearch: Boolean(forceResearch),
         asNew: Boolean(asNew),
+        confirmMissingSteps: Boolean(confirmMissingSteps),
       }),
       signal: ctrl.signal,
     });
@@ -799,6 +800,7 @@ export default function App() {
       const result = await putProposition(doc.id, doc, provider, {
         forceResearch: Boolean(saveOpts?.forceResearch),
         asNew: Boolean(saveOpts?.asNew),
+        confirmMissingSteps: Boolean(saveOpts?.confirmMissingSteps),
       });
       const saved = result.proposition;
       setProposition(saved);
