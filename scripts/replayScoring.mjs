@@ -78,4 +78,16 @@ records.sort((a, b) => String(a.id).localeCompare(String(b.id)));
 const out = path.resolve(argOut());
 await mkdir(path.dirname(out), { recursive: true });
 await writeFile(out, JSON.stringify(records, null, 2));
+const docsOut = argValue("--docs");
+if (docsOut) {
+  const docs = [];
+  for (const row of rows) {
+    const proposition = await getPropositionById(row.id);
+    if (proposition) docs.push(proposition);
+  }
+  docs.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const docsPath = path.resolve(docsOut);
+  await mkdir(path.dirname(docsPath), { recursive: true });
+  await writeFile(docsPath, JSON.stringify(docs));
+}
 console.log(`[primus/replay] propositions=${records.length} out=${out}`);

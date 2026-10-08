@@ -10,7 +10,7 @@
     "start": "node server.js",
     "seed-user": "node scripts/seedUser.js",
     "check:locks": "node scripts/checkNoDuplicateThresholds.mjs",
-    "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && node scripts/run-all-tests.mjs"
+    "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && npm run build && node scripts/checkClientBundle.mjs && node scripts/run-all-tests.mjs"
   },
   "engines": {
     "node": "22.x"

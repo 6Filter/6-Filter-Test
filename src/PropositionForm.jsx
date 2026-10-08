@@ -36,6 +36,7 @@ import {
 } from "../lib/goNoGo.js";
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
+import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
   closestPathToGo,
@@ -1786,6 +1787,36 @@ export default function PropositionForm({
     }
   }
 
+  async function handleRetryFilter(filterKey) {
+    const preview = retryStepCostPreview(filterKey);
+    if (!preview || !propositionId || refreshingField || saving) return;
+    if (!window.confirm(`${preview}\n\nContinue?`)) return;
+    setRefreshingField(filterKey);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/retry-step`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filter: filterKey, provider: llmProvider }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLocalError(data.error || "Could not retry that filter.");
+        return;
+      }
+      if (data.proposition) setDoc((prev) => ({ ...prev, ...data.proposition }));
+      if (data.advisoryChecks) {
+        setAdvisoryChecks(data.advisoryChecks);
+        setSummaryChecks(data.advisoryChecks);
+      }
+    } catch (e) {
+      setLocalError(e.message || "Could not retry that filter.");
+    } finally {
+      setRefreshingField("");
+    }
+  }
+
   async function handleConceptCardFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -2483,6 +2514,16 @@ export default function PropositionForm({
                   </span>
                 ) : null}
                 <span className="check-pill" data-tone={toneFor(checkLabel)}>Check: {checkLabel}</span>
+                {checkNeedsResearchRetry(check) ? (
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => handleRetryFilter(spec.key)}
+                    disabled={Boolean(refreshingField) || saving}
+                  >
+                    {refreshingField === spec.key ? "Retrying…" : "Retry this step"}
+                  </button>
+                ) : null}
               </div>
             </div>
             <InlineFloorFail check={check} />

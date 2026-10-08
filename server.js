@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleApiRequest } from "./lib/apiRouter.js";
+import { initDb } from "./lib/db.js";
 import { redactSecrets, sendJson } from "./lib/http.js";
 import { listProvidersForClient } from "./lib/llmContext.js";
 import { applySecurityHeaders } from "./lib/securityHeaders.js";
@@ -75,14 +76,21 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`[primus] listening on ${PORT}`);
-  try {
-    const rows = listProvidersForClient().map(
-      (p) => `${p.id}:${p.configured ? `yes(${p.keySource})` : "no"}`
-    );
-    console.log(`[primus] llm providers ${rows.join(" ")}`);
-  } catch (e) {
-    console.warn(`[primus] provider status log failed: ${e.message}`);
-  }
-});
+initDb()
+  .then(() => {
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`[primus] listening on ${PORT}`);
+      try {
+        const rows = listProvidersForClient().map(
+          (p) => `${p.id}:${p.configured ? `yes(${p.keySource})` : "no"}`
+        );
+        console.log(`[primus] llm providers ${rows.join(" ")}`);
+      } catch (e) {
+        console.warn(`[primus] provider status log failed: ${e.message}`);
+      }
+    });
+  })
+  .catch((err) => {
+    console.error(`[primus/db] startup failed: ${err?.message || err}`);
+    process.exit(1);
+  });

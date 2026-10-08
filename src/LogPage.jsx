@@ -12,6 +12,7 @@ import {
   isUntouchedDraft,
   logStats,
   propositionStatus,
+  databaseUnavailableMessage,
   researchWasUsed,
   rowPerson,
   rowTeam,
@@ -19,7 +20,8 @@ import {
   uniqueLogValues,
 } from "../lib/logStatus.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
-import { formatIdeaWipeLabel, ideaWipeAt } from "../lib/lockedConstants.js";
+import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
+import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 
@@ -94,6 +96,7 @@ export default function LogPage({
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
   const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
   const stats = useMemo(() => logStats(rows), [rows]);
+  const unavailable = databaseUnavailableMessage(error);
   const scopedRows = useMemo(
     () => applyScopedFilters(rows, { personFilter, categoryGroupFilter, searchText: query }),
     [rows, personFilter, categoryGroupFilter, query]
@@ -282,6 +285,12 @@ export default function LogPage({
         Kindly export your ideas to make sure you always have a copy of the same as the ideas will be wiped out because of no storage
       </p>
       <div className="log-stats">
+        {unavailable ? (
+          <div className="log-err" role="alert">
+            <AlertTriangle size={14} /> Database unavailable
+          </div>
+        ) : (
+          <>
         <article className="log-stat-card">
           <div className="mono log-stat-kicker">Ideas in the log</div>
           <div className="log-stat-value">{stats.total}</div>
@@ -297,6 +306,8 @@ export default function LogPage({
           <div className="log-stat-value">{stats.open}</div>
           <p>{stats.staleOpen} not touched in 7+ days</p>
         </article>
+          </>
+        )}
       </div>
 
       <section className="log-card">
@@ -479,7 +490,11 @@ export default function LogPage({
           </div>
         </div>
 
-        {error ? (
+        {unavailable ? (
+          <div className="log-err" role="alert">
+            <AlertTriangle size={14} /> Database unavailable
+          </div>
+        ) : error ? (
           <div className="log-err" role="alert">
             <AlertTriangle size={14} /> {error}
           </div>
@@ -490,7 +505,9 @@ export default function LogPage({
           </div>
         ) : null}
 
-        {loading && rows.length === 0 ? (
+        {unavailable ? (
+          <div className="log-empty">Database unavailable</div>
+        ) : loading && rows.length === 0 ? (
           <div className="log-empty">
             <Loader2 size={18} className="spin" /> Loading propositions…
           </div>
