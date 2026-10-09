@@ -14,6 +14,7 @@ assert.match(locked, /WATCH_MAX: 80/);
 const names = ["propositions", "research_cache", "department_passwords", "users", "department_api_keys"];
 assert.deepEqual(selectExportTables(names), ["department_api_keys", "department_passwords", "propositions", "users"]);
 assert.deepEqual(selectExportTables(names, { excludeSecrets: true }), ["propositions", "users"]);
+assert.ok(selectExportTables(names, { includeResearchCache: true }).includes("research_cache"));
 
 assert.throws(() => assertEmptyPropositions(2), /already has rows/);
 assert.doesNotThrow(() => assertEmptyPropositions(0));

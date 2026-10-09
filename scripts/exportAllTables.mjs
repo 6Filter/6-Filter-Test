@@ -1,6 +1,6 @@
 /**
  * Read-only export of every application table except research_cache.
- * node scripts/exportAllTables.mjs [--exclude-secrets] [--out data/backups/<stamp>]
+ * node scripts/exportAllTables.mjs [--exclude-secrets] [--include-research-cache] [--out data/backups/<stamp>]
  *
  * Never prints idea text. With secrets included, prints one storage warning.
  */
@@ -73,6 +73,7 @@ function jsonValue(value) {
 loadEnv(".env.local");
 
 const excludeSecrets = process.argv.includes("--exclude-secrets");
+const includeResearchCache = process.argv.includes("--include-research-cache");
 const outDir = path.resolve(argValue("--out") || path.join("data", "backups", stamp()));
 if (!gitIgnored(outDir)) {
   console.error("Refusing to export: the output folder is not gitignored.");
@@ -107,7 +108,7 @@ try {
   );
   const names = selectExportTables(
     found.rows.map((row) => row.table_name),
-    { excludeSecrets }
+    { excludeSecrets, includeResearchCache }
   );
   await mkdir(outDir, { recursive: true });
   const tables = [];
