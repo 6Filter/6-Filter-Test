@@ -146,7 +146,7 @@ try {
     commit: git.commit,
     dirty: git.dirty,
     exportedAt: new Date().toISOString(),
-    excluded: excludedTables({ excludeSecrets }),
+    excluded: excludedTables({ excludeSecrets, includeResearchCache }),
     tables,
   };
   await writeFile(path.join(outDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);

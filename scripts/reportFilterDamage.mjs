@@ -11,6 +11,8 @@ import { backupDir } from "./planResubmit.mjs";
 
 const AFTER_8202332 = "2026-10-06T09:27:55.000Z";
 const AFTER_FIX = "2026-10-08T12:01:43.000Z";
+const WINDOW_START = "2026-09-25T00:00:00.000Z";
+const WINDOW_END = "2026-10-06T02:48:06.020Z";
 const FILTERS = ["f1", "f2", "f3", "f4"];
 
 function weekOf(iso) {
@@ -68,6 +70,11 @@ const buckets = new Map();
 const affected = [];
 let afterCommit = 0;
 let afterFix = 0;
+let afterCommitResearched = 0;
+let afterCommitIntact = 0;
+let afterFixResearched = 0;
+let afterFixIntact = 0;
+const windowByTeam = new Map();
 const other = {
   allEmpty: { n: 0, proof: 0, attachment: 0, finalVerdict: 0, manager: 0, finalSummary: 0, goNoGo: 0 },
   intact: { n: 0, proof: 0, attachment: 0, finalVerdict: 0, manager: 0, finalSummary: 0, goNoGo: 0 },
@@ -91,8 +98,23 @@ for (const doc of rows) {
   buckets.set(key, bag);
 
   if (!doc.researchRunAt) continue;
-  if (doc.researchRunAt >= AFTER_8202332 && kind !== "intact") afterCommit += 1;
-  if (doc.researchRunAt >= AFTER_FIX && kind !== "intact") afterFix += 1;
+  if (doc.researchRunAt >= WINDOW_START && doc.researchRunAt <= WINDOW_END) {
+    const team = doc.team || "(none)";
+    const bag = windowByTeam.get(team) || { team, researched: 0, affected: 0 };
+    bag.researched += 1;
+    if (kind !== "intact") bag.affected += 1;
+    windowByTeam.set(team, bag);
+  }
+  if (doc.researchRunAt >= AFTER_8202332) {
+    afterCommitResearched += 1;
+    if (kind === "intact") afterCommitIntact += 1;
+    else afterCommit += 1;
+  }
+  if (doc.researchRunAt >= AFTER_FIX) {
+    afterFixResearched += 1;
+    if (kind === "intact") afterFixIntact += 1;
+    else afterFix += 1;
+  }
   if (kind === "intact") {
     other.intact.n += 1;
     if (doc.proof) other.intact.proof += 1;
@@ -124,7 +146,24 @@ for (const bag of [...buckets.values()].sort((a, b) => `${a.week}${a.team}`.loca
   );
 }
 lines.push(`affected=${affected.length} allEmpty=${other.allEmpty.n} first=${first || "-"} last=${last || "-"}`);
-lines.push(`after8202332=${afterCommit} afterFix=${afterFix}`);
+const windowResearched = [...windowByTeam.values()].reduce((sum, bag) => sum + bag.researched, 0);
+const windowAffected = [...windowByTeam.values()].reduce((sum, bag) => sum + bag.affected, 0);
+lines.push(
+  `window 2026-09-25 to 2026-10-06T02:48:06Z researched=${windowResearched} affected=${windowAffected}`
+);
+for (const bag of [...windowByTeam.values()].sort((a, b) => a.team.localeCompare(b.team))) {
+  lines.push(`window team ${bag.team} researched=${bag.researched} affected=${bag.affected}`);
+}
+lines.push(
+  `after8202332 researched=${afterCommitResearched} intact=${afterCommitIntact} affected=${afterCommit}`
+);
+lines.push(`afterFix researched=${afterFixResearched} intact=${afterFixIntact} affected=${afterFix}`);
+lines.push(
+  "unknown attachment: the old verdict statement could clear attachment_json, and an empty column cannot separate never-uploaded from cleared."
+);
+lines.push(
+  "unknown forum: forum verdicts lived inside the wiped filter columns, so a missing verdict cannot be told from one that was cleared."
+);
 lines.push(
   `allEmpty extras proof=${other.allEmpty.proof} attachment=${other.allEmpty.attachment} finalVerdict=${other.allEmpty.finalVerdict} manager=${other.allEmpty.manager} finalSummary=${other.allEmpty.finalSummary} goNoGo=${other.allEmpty.goNoGo}`
 );
@@ -136,12 +175,13 @@ console.log(lines.join("\n"));
 const outDir = path.join(path.dirname(backupDir()), "..", "reports");
 mkdirSync(outDir, { recursive: true });
 const csv = [
-  "id,name,team,submitter,researchRunAt,emptyFilters",
+  "id,name,team,submitter,researchRunAt,emptyFilters,note",
   ...affected
     .sort((a, b) => String(a.researchRunAt).localeCompare(String(b.researchRunAt)))
     .map((doc) => {
       const empty = FILTERS.filter((key) => !filterHasContent(doc[key])).join(" ");
-      return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty]
+      const note = `${empty || "none"} empty. If you uploaded a file or recorded a Forum verdict before 6 Oct, please check it.`;
+      return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty, note]
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");
     }),

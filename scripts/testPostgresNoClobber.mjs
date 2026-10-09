@@ -10,7 +10,7 @@ const SKIP = "POSTGRES SUITE SKIPPED — TEST_DATABASE_URL is not set. Postgres 
 const testUrl = String(process.env.TEST_DATABASE_URL || "").trim();
 if (!testUrl) {
   console.error(SKIP);
-  process.exit(0);
+  process.exit(process.env.REQUIRE_POSTGRES_TESTS === "1" ? 1 : 0);
 }
 
 function hostAllowed(raw) {
@@ -274,5 +274,130 @@ assert.equal(JSON.stringify(restored.f1_json), JSON.stringify(filters.f1));
 assert.equal(JSON.stringify(restored.f2_json), JSON.stringify(filters.f2));
 assert.equal(JSON.stringify(restored.f3_json), JSON.stringify(filters.f3));
 assert.equal(JSON.stringify(restored.f4_json), JSON.stringify(filters.f4));
+
+const e2e = await createProposition({ submitterDepartment: "R&D" });
+const e2eDoc = emptyPropositionDoc(e2e.id);
+e2eDoc.submitterName = "Postgres Tester";
+e2eDoc.submitterDepartment = "R&D";
+e2eDoc.name = "Scratch submit";
+e2eDoc.category = "Hair oils";
+e2eDoc.ideaDescription = `Scratch row ${process.pid}-${Date.now()}`;
+for (const spec of SIX_FILTERS_FORM) {
+  for (const field of spec.fields) e2eDoc[spec.key][field.key] = sample(field);
+}
+delete e2eDoc.f4.techShiftRisk;
+await updateProposition(e2e.id, e2eDoc, { handler: "e2e-seed", allowFilterReset: true });
+for (const key of Object.keys(process.env)) {
+  if (key === "ANTHROPIC_API_KEY" || key.startsWith("DEPT_API_KEY")) delete process.env[key];
+}
+process.env.ANTHROPIC_API_KEY = `sk-${"ant"}-stub-local-only`;
+const realFetch = globalThis.fetch;
+let stubCalls = 0;
+globalThis.fetch = async (url, options) => {
+  if (String(url).includes("api.anthropic.com")) {
+    stubCalls += 1;
+    return new Response(
+      JSON.stringify({
+        content: [{ type: "text", text: "{\"status\":\"stub\"}" }],
+        stop_reason: "end_turn",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  }
+  return realFetch(url, options);
+};
+const beforeE2e = await snapshot(e2e.id);
+const e2eRes = { statusCode: 0, end() {} };
+try {
+  await handlePropositionById(
+    { method: "PUT", user },
+    e2eRes,
+    e2e.id,
+    {
+      readBody: async () => ({ proposition: await getPropositionById(e2e.id) }),
+      sendJson,
+      redactSecrets,
+    }
+  );
+} finally {
+  globalThis.fetch = realFetch;
+}
+const afterE2e = await snapshot(e2e.id);
+const e2eChanged = changedColumns(beforeE2e, afterE2e);
+const e2eKeys = Object.keys(beforeE2e);
+console.log(
+  `e2e-submit status=${e2eRes.statusCode} stubCalls=${stubCalls} columns=${e2eKeys.length} changed=${e2eChanged.join(",") || "-"}`
+);
+assert.ok(stubCalls > 0, "stubbed model was not called");
+assert.deepEqual(e2eChanged, [
+  "division",
+  "f4_json",
+  "go_nogo_json",
+  "research_findings_json",
+  "research_run_at",
+  "updated_at",
+  "version",
+]);
+
+const partial = await createProposition({ submitterDepartment: "R&D" });
+await updateProposition(partial.id, {
+  f1: { declaredAttribute: "strength", benchmark: "Brand", declaredGap: 3 },
+  f2: { cogsAtScale: 40, netMarginAtScale: 20, grammage: "100g" },
+  f3: { marginElasticity: { minMrpInr: 40, maxMrpInr: 90 } },
+}, { handler: "seed", writer: "server" });
+const partialSaved = await updateProposition(partial.id, {
+  f1: { declaredAttribute: "strength" },
+  f3: { marginElasticity: { minMrpInr: 1, maxMrpInr: 2 }, forumVerdict: "pass" },
+}, { handler: "client-partial" });
+assert.equal(partialSaved.f1.benchmark, "Brand");
+assert.equal(partialSaved.f1.declaredAttribute, "strength");
+assert.equal(Number(partialSaved.f2.cogsAtScale), 40);
+assert.equal(Number(partialSaved.f3.marginElasticity.minMrpInr), 40);
+assert.equal(partialSaved.f3.forumVerdict, "pass");
+const cleared = await updateProposition(partial.id, {
+  f3: { forumVerdict: "pass" },
+  clearKeys: ["f3.marginElasticity"],
+}, { handler: "client-clear" });
+assert.equal(cleared.f3.marginElasticity, undefined);
+const audits = await query(
+  `SELECT action, actor, ids_json FROM proposition_audit WHERE action = 'blocked-key-removal' AND actor = 'client-partial'`
+);
+assert.ok(audits.length >= 1);
+const auditIds = JSON.stringify(audits.map((row) => row.ids_json));
+assert.match(auditIds, /f1\.benchmark/);
+assert.doesNotMatch(auditIds, /Brand/);
+
+for (const team of ["R&D", "NPD", "Marketing"]) {
+  const row = await createProposition({ submitterDepartment: team });
+  const doc = emptyPropositionDoc(row.id);
+  doc.submitterName = "Tester";
+  doc.submitterDepartment = team;
+  doc.name = "Scratch";
+  doc.category = "Hair oils";
+  doc.ideaDescription = `Scratch ${team} ${process.pid}`;
+  doc.f1 = { declaredAttribute: "strength", benchmark: "Brand", declaredGap: 3 };
+  doc.f2 = { cogsAtScale: 40, netMarginAtScale: 20 };
+  const seeded = await updateProposition(row.id, doc, { handler: "seed", writer: "server" });
+  const stale = JSON.parse(JSON.stringify(seeded));
+  await updateProposition(row.id, {
+    f3: { marginElasticity: { minMrpInr: 40, maxMrpInr: 90 } },
+    f4: { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } },
+  }, { handler: "research-fill", writer: "server" });
+  stale.f1 = { ...stale.f1, declaredAttribute: "strength-edited" };
+  stale.f2 = { ...stale.f2, cogsAtScale: 41 };
+  await handlePropositionDraft(
+    { method: "POST", user: { department: team, role: team } },
+    { statusCode: 0, end() {} },
+    row.id,
+    { readBody: async () => ({ proposition: stale }), sendJson, redactSecrets }
+  );
+  const after = await getPropositionById(row.id);
+  assert.equal(Number(after.f3?.marginElasticity?.minMrpInr), 40, `${team} lost F3`);
+  assert.equal(after.f4?.techShiftRisk?.dimensions?.functionalCoreStability?.risk, "Low", `${team} lost F4`);
+  assert.equal(after.f1.declaredAttribute, "strength-edited");
+  assert.equal(Number(after.f2.cogsAtScale), 41);
+  console.log(`team-save ${team} f3=kept f4=kept`);
+}
 
 console.log(`PASS postgres no-clobber roundTrip=${roundTrip}`);

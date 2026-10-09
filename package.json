@@ -11,7 +11,8 @@
     "seed-user": "node scripts/seedUser.js",
     "check:locks": "node scripts/checkNoDuplicateThresholds.mjs",
     "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && npm run build && node scripts/checkClientBundle.mjs && node scripts/run-all-tests.mjs && node scripts/testPostgresNoClobber.mjs",
-    "test:postgres": "node scripts/testPostgresNoClobber.mjs"
+    "test:postgres": "node scripts/testPostgresNoClobber.mjs",
+    "scratch-postgres": "node scripts/startScratchPostgres.mjs"
   },
   "engines": {
     "node": "22.x"
