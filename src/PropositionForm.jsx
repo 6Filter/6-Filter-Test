@@ -366,6 +366,10 @@ function FieldControl({
   inactiveHint = "",
   onReassess,
   reassessing = false,
+  mitigationResponses = null,
+  onMitigationChange,
+  rangeOverride = null,
+  onRangeOverride,
   fileValue = null,
   onPickFile,
   onClearFile,
@@ -375,6 +379,7 @@ function FieldControl({
   refreshing = false,
 }) {
   const fileRef = useRef(null);
+  if (field.type === "mitigation-map" || field.type === "range-override") return null;
   const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
   const owners = Array.isArray(field.owners) ? field.owners : [];
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range" || field.type === "computed-risk";
@@ -407,15 +412,11 @@ function FieldControl({
     const respondable = Object.entries(dimensions).filter(
       ([, d]) => d && (d.risk === "Medium" || d.risk === "High")
     );
-    const hasResponseText = respondable.some(([, d]) => String(d?.userResponse || "").trim());
+    const hasResponseText = respondable.some(([key, d]) =>
+      String((mitigationResponses && mitigationResponses[key]) || d?.userResponse || "").trim()
+    );
     const patchDimensionResponse = (key, userResponse) => {
-      const cell = { ...(dimensions[key] || {}), userResponse };
-      delete cell.reassessedRisk;
-      delete cell.reassessedReason;
-      onChange({
-        ...risk,
-        dimensions: { ...dimensions, [key]: cell },
-      });
+      if (typeof onMitigationChange === "function") onMitigationChange(key, userResponse);
     };
     return (
       <div
@@ -469,7 +470,7 @@ function FieldControl({
                     <textarea
                       rows={3}
                       placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
-                      value={d.userResponse || ""}
+                      value={(mitigationResponses && mitigationResponses[key]) || d.userResponse || ""}
                       disabled={locked || reassessing}
                       title={lockTitle}
                       onChange={(e) => patchDimensionResponse(key, e.target.value)}
@@ -500,21 +501,19 @@ function FieldControl({
 
   if (field.type === "computed-range") {
     const range = hydrateMarginElasticityMrp(value && typeof value === "object" ? value : {}, cogsAtScale) || {};
-    const minMrp = range.minMrpInr;
-    const maxMrp = range.maxMrpInr;
+    const shown = { ...range, ...(rangeOverride && typeof rangeOverride === "object" ? rangeOverride : {}) };
+    const minMrp = shown.minMrpInr;
+    const maxMrp = shown.maxMrpInr;
     const minInput = minMrp != null && Number.isFinite(Number(minMrp)) ? Number(Number(minMrp).toFixed(2)) : "";
     const maxInput = maxMrp != null && Number.isFinite(Number(maxMrp)) ? Number(Number(maxMrp).toFixed(2)) : "";
     const patchMrp = (end, raw) => {
       const nextVal = raw === "" ? null : Number(raw);
       const mrp = Number.isFinite(nextVal) ? nextVal : null;
-      const marginKey = end === "minMrpInr" ? "minMarginPct" : "maxMarginPct";
-      const margin = mrp != null ? marginPctFromMrp(cogsAtScale, mrp) : null;
-      onChange({
-        ...range,
+      const nextOverride = {
+        ...(rangeOverride && typeof rangeOverride === "object" ? rangeOverride : {}),
         [end]: mrp,
-        [marginKey]: margin,
-        aiSourced: false,
-      });
+      };
+      if (typeof onRangeOverride === "function") onRangeOverride(nextOverride);
     };
     const basisNote = withoutPercentSign(range.basis);
     return (
@@ -1628,6 +1627,11 @@ export default function PropositionForm({
             return;
           }
           draftDirtyRef.current = false;
+          if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
+            setDoc(mergeProposition(saved));
+            setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
+            return;
+          }
           setDraftSaveState("Draft saved");
         })
         .catch(() => {
@@ -2633,6 +2637,24 @@ export default function PropositionForm({
                     }
                     onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
                     reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
+                    mitigationResponses={spec.key === "f4" ? values.f4MitigationResponses : null}
+                    onMitigationChange={
+                      spec.key === "f4" && field.key === "techShiftRisk"
+                        ? (key, text) => {
+                            const prevMap =
+                              values.f4MitigationResponses && typeof values.f4MitigationResponses === "object"
+                                ? values.f4MitigationResponses
+                                : {};
+                            setFilter("f4", "f4MitigationResponses", { ...prevMap, [key]: text });
+                          }
+                        : undefined
+                    }
+                    rangeOverride={spec.key === "f3" ? values.f3RangeOverride : null}
+                    onRangeOverride={
+                      spec.key === "f3" && field.key === "marginElasticity"
+                        ? (next) => setFilter("f3", "f3RangeOverride", next)
+                        : undefined
+                    }
                     onRefresh={
                       (spec.key === "f2" && ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
                       (spec.key === "f3" && field.key === "marginElasticity") ||

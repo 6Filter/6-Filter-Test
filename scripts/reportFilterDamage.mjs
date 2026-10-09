@@ -46,6 +46,8 @@ async function loadRows() {
     rows.push({
       id: row.id,
       name: row.name || "",
+      category: row.category || "",
+      description: row.idea_description || "",
       team: row.submitter_department || "",
       submitter: row.submitter_name || "",
       researchRunAt: row.research_run_at || null,
@@ -170,6 +172,17 @@ lines.push(
 lines.push(
   `intact extras proof=${other.intact.proof} attachment=${other.intact.attachment} finalVerdict=${other.intact.finalVerdict} manager=${other.intact.manager} finalSummary=${other.intact.finalSummary} goNoGo=${other.intact.goNoGo}`
 );
+const allEmptyDocs = affected.filter((doc) => FILTERS.every((key) => !filterHasContent(doc[key])));
+const partialDocs = affected.filter((doc) => !allEmptyDocs.includes(doc));
+function filled(list, key) {
+  return list.filter((doc) => String(doc[key] || "").trim()).length;
+}
+lines.push(
+  `allEmpty columns name=${filled(allEmptyDocs, "name")} category=${filled(allEmptyDocs, "category")} description=${filled(allEmptyDocs, "description")} submitter=${filled(allEmptyDocs, "submitter")} of ${allEmptyDocs.length}`
+);
+lines.push(
+  `partial columns name=${filled(partialDocs, "name")} category=${filled(partialDocs, "category")} description=${filled(partialDocs, "description")} submitter=${filled(partialDocs, "submitter")} of ${partialDocs.length}`
+);
 console.log(lines.join("\n"));
 
 const outDir = path.join(path.dirname(backupDir()), "..", "reports");
@@ -180,7 +193,11 @@ const csv = [
     .sort((a, b) => String(a.researchRunAt).localeCompare(String(b.researchRunAt)))
     .map((doc) => {
       const empty = FILTERS.filter((key) => !filterHasContent(doc[key])).join(" ");
-      const note = `${empty || "none"} empty. If you uploaded a file or recorded a Forum verdict before 6 Oct, please check it.`;
+      const identityKept = [doc.name, doc.category, doc.description].every((value) => String(value || "").trim());
+      const identity = identityKept
+        ? "Name, category, description and submitter are still in their own columns."
+        : "Submitter is still stored. Name, category and description are empty on this row.";
+      const note = `${empty || "none"} empty. ${identity} What was lost is the filter inputs: F1 attributes, benchmark, gap and growth fields, F2 typed values, and forum notes.`;
       return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty, note]
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");

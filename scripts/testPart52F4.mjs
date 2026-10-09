@@ -99,9 +99,10 @@ assert.equal(
 );
 
 const f4Spec = SIX_FILTERS_FORM.find((s) => s.key === "f4");
-assert.equal(f4Spec.fields.length, 1);
+assert.equal(f4Spec.fields.length, 2);
 assert.equal(f4Spec.fields[0].key, "techShiftRisk");
 assert.equal(f4Spec.fields[0].type, "computed-risk");
+assert.equal(f4Spec.fields[1].key, "f4MitigationResponses");
 for (const banned of ["formatTrajectory", "threatRegister", "threatsAnswered", "channelShiftExposure"]) {
   assert.equal(f4Spec.fields.some((f) => f.key === banned), false, `${banned} must leave the schema`);
 }

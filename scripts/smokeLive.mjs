@@ -1,6 +1,7 @@
 /**
  * Read-only check of the live site. Creates nothing and reads no secrets.
  */
+import { execSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +22,14 @@ if (!healthRes.ok || health.db !== "postgres" || !Number.isFinite(Number(health.
   fail("/api/health is missing researchIncomplete");
 } else {
   console.log(`health db=postgres propositions=${health.propositions} researchIncomplete=${health.researchIncomplete}`);
+}
+
+const head = execSync("git rev-parse HEAD", { cwd: root, encoding: "utf8" }).trim();
+const liveCommit = String(health.commit || "").trim();
+if (!liveCommit || liveCommit !== head) {
+  fail(`live commit ${liveCommit || "(missing)"} != HEAD ${head}`);
+} else {
+  console.log(`commit ${liveCommit}`);
 }
 
 const wrong = await fetch(`${base}/api/department-auth/unlock`, {

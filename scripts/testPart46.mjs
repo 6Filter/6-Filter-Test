@@ -9,7 +9,8 @@ function assert(cond, msg) {
 }
 
 const f3Fields = SIX_FILTERS_FORM.find((f) => f.key === "f3")?.fields || [];
-assert(f3Fields.length === 1 && f3Fields[0].key === "marginElasticity", "F3 must be exactly one marginElasticity field");
+assert(f3Fields[0]?.key === "marginElasticity", "F3 research field must stay marginElasticity");
+assert(f3Fields.some((f) => f.key === "f3RangeOverride"), "F3 override must be its own field");
 assert(
   !f3Fields.some((f) =>
     ["priceIndexVsBenchmark", "fixedPricePointExposure", "elasticityEstimate", "elasticitySource", "modelledVolumeLoss"].includes(f.key)

@@ -5,8 +5,9 @@ import { mergeProposition, SIX_FILTERS_FORM } from "../lib/propositionFields.js"
 import { checkF3 } from "../lib/filterChecks.js";
 
 const f3 = SIX_FILTERS_FORM.find((f) => f.key === "f3");
-assert.equal(f3.fields.length, 1);
+assert.equal(f3.fields.length, 2);
 assert.equal(f3.fields[0].key, "marginElasticity");
+assert.equal(f3.fields[1].key, "f3RangeOverride");
 assert.equal(f3.fields[0].label, "Safe MRP range");
 assert.doesNotMatch(f3.subtitle, /%/);
 assert.doesNotMatch(f3.fields[0].helper, /%/);

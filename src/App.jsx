@@ -117,7 +117,7 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        proposition: payload,
+        proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
         provider,
         forceResearch: Boolean(forceResearch),
         asNew: Boolean(asNew),
@@ -156,10 +156,15 @@ async function saveDraftSilently(id, payload) {
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ proposition: payload }),
+    body: JSON.stringify({
+      proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
+    }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not save draft.");
+  if (data.proposition && Array.isArray(data.ignoredKeys) && data.ignoredKeys.length) {
+    data.proposition.ignoredKeys = data.ignoredKeys;
+  }
   return data.proposition;
 }
 

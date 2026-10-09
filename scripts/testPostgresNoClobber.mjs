@@ -133,6 +133,7 @@ await markResearchRun(created.id, {
 const user = { department: "R&D", role: "ADMIN" };
 function sendJson(res, status, body) {
   res.statusCode = status;
+  res.body = body;
   res.end(JSON.stringify(body));
 }
 const redactSecrets = (message) => String(message || "");
@@ -399,5 +400,111 @@ for (const team of ["R&D", "NPD", "Marketing"]) {
   assert.equal(Number(after.f2.cogsAtScale), 41);
   console.log(`team-save ${team} f3=kept f4=kept`);
 }
+
+const { isServerOwnedFilterKey } = await import("../lib/filterWriteGuard.js");
+const clearRow = await createProposition({ submitterDepartment: "NPD" });
+const humanFields = [];
+for (const spec of SIX_FILTERS_FORM) {
+  humanFields.push({ column: spec.key, key: "forumVerdict", type: "select" });
+  humanFields.push({ column: spec.key, key: "verdictNote", type: "text" });
+  for (const field of spec.fields) {
+    if (!isServerOwnedFilterKey(field.key)) humanFields.push({ column: spec.key, key: field.key, type: field.type });
+  }
+}
+function filled(type) {
+  if (type === "checkbox") return true;
+  if (type === "number") return 21;
+  if (type === "range-override") return { minMrpInr: 55, maxMrpInr: 80 };
+  if (type === "mitigation-map") return { functionalCoreStability: "Signed lab report Q1 2026" };
+  if (type === "select") return "pass";
+  return "typed";
+}
+function isCleared(got, blank) {
+  if (blank === "") return got == null || got === "";
+  return got == null;
+}
+for (const field of humanFields) {
+  for (const blank of ["", null, undefined]) {
+    if (field.type === "checkbox") continue;
+    const seed = filled(field.type);
+    await updateProposition(clearRow.id, { [field.column]: { [field.key]: seed } }, { handler: "clear-seed", writer: "server", allowFilterReset: true });
+    const current = await getPropositionById(clearRow.id);
+    const filter = { ...(current[field.column] || {}), [field.key]: blank };
+    const res = { statusCode: 0, body: null, end() {} };
+    await handlePropositionDraft(
+      { method: "POST", user: { department: "NPD", role: "NPD" } },
+      res,
+      clearRow.id,
+      { readBody: async () => ({ proposition: { ...current, [field.column]: filter, version: current.version } }), sendJson, redactSecrets }
+    );
+    assert.equal(res.statusCode, 200, `clear ${field.column}.${field.key}`);
+    const after = await getPropositionById(clearRow.id);
+    const got = after?.[field.column]?.[field.key];
+    assert.ok(isCleared(got, blank), `${field.column}.${field.key} blank ${String(blank)} stayed ${JSON.stringify(got)}`);
+  }
+  if (field.type === "checkbox") {
+    await updateProposition(clearRow.id, { [field.column]: { [field.key]: true } }, { handler: "clear-seed", writer: "server", allowFilterReset: true });
+    const current = await getPropositionById(clearRow.id);
+    const res = { statusCode: 0, body: null, end() {} };
+    await handlePropositionDraft(
+      { method: "POST", user: { department: "NPD", role: "NPD" } },
+      res,
+      clearRow.id,
+      {
+        readBody: async () => ({
+          proposition: { ...current, [field.column]: { ...current[field.column], [field.key]: false }, version: current.version },
+        }),
+        sendJson,
+        redactSecrets,
+      }
+    );
+    const after = await getPropositionById(clearRow.id);
+    const unchecked = after?.[field.column]?.[field.key];
+    assert.ok(unchecked == null || unchecked === false, `${field.column}.${field.key} checkbox`);
+  }
+}
+console.log(`human-clears fields=${humanFields.length}`);
+
+const staleKeep = await createProposition({ submitterDepartment: "R&D" });
+await updateProposition(staleKeep.id, {
+  f2: { cogsAtScale: 40, netMarginAtScale: 22, gstRatePct: 18, grammage: "100g", mrpInr: 80 },
+  f3: { marginElasticity: { minMrpInr: 40, maxMrpInr: 90 }, f3RangeOverride: { minMrpInr: 55 } },
+  f4: {
+    techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", reason: "shift", userResponse: "Signed contract Q1" } } },
+  },
+  f1: { forumVerdict: "pass", verdictNote: "forum note" },
+}, { handler: "prefill", writer: "server", allowFilterReset: true });
+const loaded = await getPropositionById(staleKeep.id);
+assert.equal(loaded.f4.f4MitigationResponses.functionalCoreStability, "Signed contract Q1");
+await updateProposition(staleKeep.id, { name: "bumped" }, { handler: "bump", bumpVersion: true });
+const staleDoc = JSON.parse(JSON.stringify(loaded));
+delete staleDoc.f2.cogsAtScale;
+staleDoc.f2.netMarginAtScale = "";
+staleDoc.f2.gstRatePct = null;
+staleDoc.f2.grammage = undefined;
+staleDoc.f2.mrpInr = undefined;
+const staleRes = { statusCode: 0, body: null, end() {} };
+await handlePropositionDraft(
+  { method: "POST", user: { department: "R&D", role: "R&D" } },
+  staleRes,
+  staleKeep.id,
+  { readBody: async () => ({ proposition: staleDoc }), sendJson, redactSecrets }
+);
+const keptPrefill = await getPropositionById(staleKeep.id);
+assert.equal(Number(keptPrefill.f2.cogsAtScale), 40);
+assert.equal(Number(keptPrefill.f2.netMarginAtScale), 22);
+assert.equal(Number(keptPrefill.f2.gstRatePct), 18);
+assert.equal(keptPrefill.f2.grammage, "100g");
+assert.equal(Number(keptPrefill.f2.mrpInr), 80);
+assert.equal(Number(keptPrefill.f3.f3RangeOverride.minMrpInr), 55);
+assert.equal(Number(keptPrefill.f3.marginElasticity.minMrpInr), 40);
+assert.equal(keptPrefill.f4.f4MitigationResponses.functionalCoreStability, "Signed contract Q1");
+assert.equal(keptPrefill.f1.forumVerdict, "pass");
+assert.ok(Array.isArray(staleRes.body?.ignoredKeys) && staleRes.body.ignoredKeys.includes("f2.cogsAtScale"));
+const teamAudit = await query(
+  `SELECT actor FROM proposition_audit WHERE action = 'blocked-key-removal' AND actor LIKE '%|R&D' ORDER BY audit_id DESC LIMIT 5`
+);
+assert.ok(teamAudit.length >= 1, "audit row missing session team");
+console.log("stale-prefill kept ignoredKeys=yes team=R&D");
 
 console.log(`PASS postgres no-clobber roundTrip=${roundTrip}`);

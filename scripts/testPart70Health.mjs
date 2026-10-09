@@ -41,5 +41,6 @@ assert.equal(typeof healthBody.usePostgres, "boolean");
 assert.equal(healthBody.db, ping.db);
 assert.equal(typeof healthBody.propositions, "number");
 assert.equal(typeof healthBody.sessionSecretConfigured, "boolean");
+assert.ok(healthBody.commit === null || typeof healthBody.commit === "string");
 
 console.log("PASS Part 70 health route warms the database");
