@@ -1870,12 +1870,20 @@ export default function PropositionForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setConceptCardName("");
+        const kept = String(data.conceptCardName || data.proposition?.f1?.conceptCardName || "").trim();
+        if (kept) {
+          setConceptCardName(kept);
+          if (data.proposition) setDoc(mergeProposition(data.proposition));
+        } else {
+          setConceptCardName("");
+        }
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
       if (data.conceptCardName) setConceptCardName(data.conceptCardName);
       if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.extractError) setConceptCardError(data.extractError);
+      else setConceptCardError("");
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
