@@ -92,16 +92,21 @@ export default function LogPage({
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState("");
+  const [showProbes, setShowProbes] = useState(false);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const unlockedDepartment =
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
-  const uniqueSubmitters = useMemo(() => uniqueLogValues(rows, rowPerson), [rows]);
-  const stats = useMemo(() => logStats(rows), [rows]);
+  const logRows = useMemo(
+    () => (showProbes ? rows : rows.filter((row) => !row.probe)),
+    [rows, showProbes]
+  );
+  const uniqueSubmitters = useMemo(() => uniqueLogValues(logRows, rowPerson), [logRows]);
+  const stats = useMemo(() => logStats(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
   const scopedRows = useMemo(
-    () => applyScopedFilters(rows, { personFilter, categoryGroupFilter, searchText: query }),
-    [rows, personFilter, categoryGroupFilter, query]
+    () => applyScopedFilters(logRows, { personFilter, categoryGroupFilter, searchText: query }),
+    [logRows, personFilter, categoryGroupFilter, query]
   );
   const filteredRows = useMemo(
     () => applyLogStatusFilter(scopedRows, status),
@@ -111,7 +116,7 @@ export default function LogPage({
     () => scopedRows.filter((r) => researchWasUsed(r)).length,
     [scopedRows]
   );
-  const untouchedCount = useMemo(() => rows.filter((r) => isUntouchedDraft(r)).length, [rows]);
+  const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
   const busy = loading || deletingAll || deletingUntouched || exporting;
   const masterView = isMasterUnlock(unlockedDepartment);
   const allowDelete = masterView;
@@ -389,7 +394,7 @@ export default function LogPage({
             <button
               type="button"
               className="log-btn"
-              onClick={() => handleExport(rows)}
+              onClick={() => handleExport(showProbes ? rows : logRows)}
               disabled={exporting || rows.length === 0}
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
@@ -483,6 +488,14 @@ export default function LogPage({
                 {p.id === "incomplete" ? null : <span className="mono">{pillCounts[p.id] ?? 0}</span>}
               </button>
             ))}
+            <button
+              type="button"
+              className={`log-pill${showProbes ? " is-active" : ""}`}
+              onClick={() => setShowProbes((on) => !on)}
+            >
+              {showProbes ? "Hide probes" : "Show probes"}
+              <span className="mono">{rows.filter((row) => row.probe).length}</span>
+            </button>
           </div>
           <div className="log-toolbar-meta">
             <span className="mono log-sort">Sorted by last updated</span>

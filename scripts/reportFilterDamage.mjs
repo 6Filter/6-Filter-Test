@@ -188,16 +188,20 @@ console.log(lines.join("\n"));
 const outDir = path.join(path.dirname(backupDir()), "..", "reports");
 mkdirSync(outDir, { recursive: true });
 const csv = [
-  "id,name,team,submitter,researchRunAt,emptyFilters,note",
+  "id,name,team,submitter,researchRunAt,emptyFilters,likelyProbe,note",
   ...affected
     .sort((a, b) => String(a.researchRunAt).localeCompare(String(b.researchRunAt)))
     .map((doc) => {
       const empty = FILTERS.filter((key) => !filterHasContent(doc[key])).join(" ");
       const fullyEmpty = empty.split(" ").filter(Boolean).length >= 4;
-      const note = fullyEmpty
-        ? "Name, category, description and all filters are blank. Still stored: submitter, team, research date, and the findings (benchmark evidence text, F2 cost estimate, F5 sizing factors, F4 overall risk). Try an old Excel export, Slack messages or screenshots, and use the findings text to recognise the idea."
-        : "Name, category and description are intact. Lost F3 and F4 results.";
-      return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty, note]
+      const note = [
+        fullyEmpty
+          ? "Name, category, description and all filters are blank. Still stored: submitter, team, research date, and the findings (benchmark evidence text, F2 cost estimate, F5 sizing factors, F4 overall risk). Try an old Excel export, Slack messages or screenshots, and use the findings text to recognise the idea."
+          : "Name, category and description are intact. Lost F3 and F4 results.",
+        doc.submitter === "Gyana" ? "please confirm whether this was a real idea" : "",
+      ].filter(Boolean).join(" ");
+      const likelyProbe = doc.submitter === "Live Check" || doc.submitter === "Primus QA Probe" || doc.submitter === "Nishanth" ? "yes" : "";
+      return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty, likelyProbe, note]
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");
     }),
