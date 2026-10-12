@@ -10,6 +10,7 @@ import {
   mergeProposition,
 } from "../lib/propositionFields.js";
 import { canWriteField, ownerLabel, ownershipBanner } from "../lib/fieldOwnership.js";
+import { patchIgnoredKeys } from "../lib/ignoredKeyRefresh.js";
 import {
   canProceedToProofUpload,
   hasManagerApproval,
@@ -370,6 +371,7 @@ function FieldControl({
   onMitigationChange,
   rangeOverride = null,
   onRangeOverride,
+  fieldPath = "",
   fileValue = null,
   onPickFile,
   onClearFile,
@@ -468,6 +470,7 @@ function FieldControl({
                       </div>
                     ) : null}
                     <textarea
+                      data-field={fieldPath || undefined}
                       rows={3}
                       placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
                       value={(mitigationResponses && mitigationResponses[key]) || d.userResponse || ""}
@@ -556,6 +559,7 @@ function FieldControl({
           <label>
             Min MRP (₹)
             <input
+              data-field={fieldPath || undefined}
               type="number"
               step="any"
               value={minInput}
@@ -567,6 +571,7 @@ function FieldControl({
           <label>
             Max MRP (₹)
             <input
+              data-field={fieldPath || undefined}
               type="number"
               step="any"
               value={maxInput}
@@ -599,6 +604,7 @@ function FieldControl({
     return (
       <label className={`prop-check span-2${locked ? " is-locked" : ""}`} title={lockTitle}>
         <input
+          data-field={fieldPath || undefined}
           type="checkbox"
           checked={Boolean(value)}
           disabled={locked}
@@ -615,7 +621,7 @@ function FieldControl({
   const listId = Array.isArray(field.datalist) && field.datalist.length ? `${field.key}-presets` : "";
   const input =
     field.type === "select" ? (
-      <select value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
+      <select data-field={fieldPath || undefined} value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
         {(field.options || []).map((opt) => (
           <option key={`${opt.v}::${opt.l}`} value={opt.v}>
             {opt.l}
@@ -624,6 +630,7 @@ function FieldControl({
       </select>
     ) : field.type === "textarea" ? (
       <textarea
+        data-field={fieldPath || undefined}
         rows={3}
         value={value ?? ""}
         placeholder={field.placeholder || ""}
@@ -634,6 +641,7 @@ function FieldControl({
     ) : (
       <>
         <input
+          data-field={fieldPath || undefined}
           type={field.type === "number" ? "number" : "text"}
           step={field.type === "number" ? "any" : undefined}
           list={listId || undefined}
@@ -1628,7 +1636,8 @@ export default function PropositionForm({
           }
           draftDirtyRef.current = false;
           if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
-            setDoc(mergeProposition(saved));
+            const active = document.activeElement?.getAttribute?.("data-field") || "";
+            setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
             setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
             return;
           }
@@ -2605,6 +2614,7 @@ export default function PropositionForm({
                   <FieldControl
                     key={field.key}
                     field={field}
+                    fieldPath={`${spec.key}.${field.key}`}
                     value={values[field.key]}
                     onChange={(v) => setFilter(spec.key, field.key, v)}
                     currentUser={currentUser}

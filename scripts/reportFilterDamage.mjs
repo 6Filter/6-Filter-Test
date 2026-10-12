@@ -193,11 +193,10 @@ const csv = [
     .sort((a, b) => String(a.researchRunAt).localeCompare(String(b.researchRunAt)))
     .map((doc) => {
       const empty = FILTERS.filter((key) => !filterHasContent(doc[key])).join(" ");
-      const identityKept = [doc.name, doc.category, doc.description].every((value) => String(value || "").trim());
-      const identity = identityKept
-        ? "Name, category, description and submitter are still in their own columns."
-        : "Submitter is still stored. Name, category and description are empty on this row.";
-      const note = `${empty || "none"} empty. ${identity} What was lost is the filter inputs: F1 attributes, benchmark, gap and growth fields, F2 typed values, and forum notes.`;
+      const fullyEmpty = empty.split(" ").filter(Boolean).length >= 4;
+      const note = fullyEmpty
+        ? "Name, category, description and all filters are blank. Still stored: submitter, team, research date, and the findings (benchmark evidence text, F2 cost estimate, F5 sizing factors, F4 overall risk). Try an old Excel export, Slack messages or screenshots, and use the findings text to recognise the idea."
+        : "Name, category and description are intact. Lost F3 and F4 results.";
       return [doc.id, doc.name, doc.team, doc.submitter, doc.researchRunAt, empty, note]
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");
