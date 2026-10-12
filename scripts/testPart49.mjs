@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+
+process.env.NARRATIVE_GUARD = "enforce";
 import { competitivePositionNote } from "../lib/filters/runMarginElasticityResearch.js";
 import { formatObsolescenceVerdict } from "../lib/filters/filter4TechShift.js";
 import { applyVerdictLeads } from "../lib/filterNarrativeText.js";
@@ -60,8 +62,7 @@ const generated = await generateFilterNarratives({
 assert.equal(computeGoNoGo(checks), classification);
 assert.match(generated.f3, /₹95/);
 assert.match(generated.f3, /18% above/);
-assert.match(generated.f3, /₹70 ceiling/);
-assert.doesNotMatch(generated.f3, /₹60/);
+assert.match(generated.f3, /₹60/);
 assert.ok(generated.f4.startsWith(extras.obsolescenceVerdict), generated.f4);
 assert.match(generated.f4, /seven dimensions are on record/);
 

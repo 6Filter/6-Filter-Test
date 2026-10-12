@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+
+process.env.NARRATIVE_GUARD = "enforce";
 import { checkF4 } from "../lib/filterChecks.js";
 import {
   computeGoNoGo,

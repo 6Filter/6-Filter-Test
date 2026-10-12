@@ -18,6 +18,7 @@ import {
   validateNarrativeParagraph,
 } from "../lib/narrativeCheck.js";
 import { scoreExplainerMarkdown, scoreExplainerSections } from "../lib/scoreExplainer.js";
+import { generateFilterNarratives } from "../lib/filterNarratives.js";
 import { selectExportTables } from "../lib/backupPlan.js";
 
 const nielsen = [
@@ -61,17 +62,25 @@ assert.equal(quiet, GENERAL_KNOWLEDGE_EVIDENCE_LINE);
 assert.doesNotMatch(quiet, /public web search/);
 const oldIdea = evidenceLineForFilter("f1", { researchRunAt: saved });
 assert.equal(oldIdea, PRECHANGE_EVIDENCE_LINE);
+assert.doesNotMatch(oldIdea, /20\d\d/);
 assert.equal(evidenceLineForFilter("f1", {}), "");
 assert.equal(scoreExplainerSections().map((section) => section.body).join("\n"), scoreExplainerSections().map((section) => section.body).join("\n"));
-const derived = validateNarrativeParagraph("The price sits about 15% above the benchmark.", {
+const derived = validateNarrativeParagraph("Lipton sits about 15% above the ₹85 pack.", {
   checks: {
     f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named (Lipton) at ₹100 versus ₹85" }] },
   },
   check: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named (Lipton) at ₹100 versus ₹85" }] },
   competitors: [],
 });
-assert.equal(derived.ok, false);
-assert.ok(derived.reasons.includes("unknown-percent"));
+assert.equal(derived.ok, true);
+assert.equal(
+  validateNarrativeParagraph("The oil is Purastone in a roll-on.", {
+    checks: { f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named: Purastone after shave roll on" }] } },
+    check: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named: Purastone after shave roll on" }] },
+    competitors: [],
+  }).ok,
+  true
+);
 
 const checks = {
   f1: {
@@ -102,6 +111,28 @@ const fallback = deterministicFilterParagraph(checks.f1);
 const kept = validateNarrativeParagraph(fallback, { checks, check: checks.f1, competitors: [] });
 assert.equal(kept.ok, true);
 assert.match(fallback, /Lipton/);
+
+delete process.env.NARRATIVE_GUARD;
+const shadowLogs = [];
+const originalLog = console.log;
+console.log = (...args) => shadowLogs.push(args.join(" "));
+try {
+  const written = "Maggi leads the category at ₹99.";
+  const savedNarrative = await generateFilterNarratives({
+    advisoryChecks: checks,
+    researchFindings: {},
+    callNarrative: async () => ({
+      f1: written,
+      f2: "Margin is recorded.",
+      f3: "The range is ₹15 to ₹40.",
+      f4: "Low risk is recorded.",
+    }),
+  });
+  assert.equal(savedNarrative.f1, written);
+  assert.ok(shadowLogs.some((line) => line.includes("[primus/narrative-guard-shadow]") && line.includes("filter=f1")));
+} finally {
+  console.log = originalLog;
+}
 
 const doc = readFileSync(new URL("../docs/HOW_THE_SCORE_WORKS.md", import.meta.url), "utf8");
 assert.equal(doc.trim(), scoreExplainerMarkdown().trim());

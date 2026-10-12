@@ -13,6 +13,7 @@ import {
   RESTORED_DATABASE,
   RESTORED_ROW_COUNT,
   checksumRows,
+  checksumSchemaTables,
   readBackupRows,
 } from "./restoredCopy.mjs";
 
@@ -115,11 +116,18 @@ await probe.query("SET default_transaction_read_only = off");
 await probe.end();
 if (checked !== RESTORED_ROW_COUNT) throw new Error(`Read-only copy has ${checked} rows.`);
 
+const manifestClient = new pg.Client({ connectionString: adminText });
+await manifestClient.connect();
+await manifestClient.query(`SET search_path TO ${RESTORED_DATABASE}`);
+const tables = await checksumSchemaTables(manifestClient);
+await manifestClient.end();
+
 const manifest = {
   backup: "20261008T093325Z",
   database: RESTORED_DATABASE,
   rows: stored.length,
   checksum: storedChecksum,
+  tables,
 };
 const manifestDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "data", "restored");
 mkdirSync(manifestDir, { recursive: true });

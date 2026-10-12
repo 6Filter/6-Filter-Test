@@ -37,6 +37,7 @@ import {
 } from "../lib/goNoGo.js";
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
 import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
+import { storedVerdictWithoutInputs } from "../lib/storedVerdict.js";
 import { scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
@@ -966,6 +967,7 @@ function GoNoGoResultPage({
   category,
   ideaName,
   doc,
+  savedDoc,
   onBack,
   onSubmit,
   saving,
@@ -1054,6 +1056,9 @@ function GoNoGoResultPage({
             </div>
             {sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
             <p className="gonogo-rationale">{rationale}</p>
+            {storedVerdictWithoutInputs(savedDoc || doc) ? (
+              <p className="gonogo-blocked-note">Stored verdict; inputs for this idea are missing</p>
+            ) : null}
           </div>
           <div
             className="score-ring"
@@ -2369,6 +2374,7 @@ export default function PropositionForm({
           category={formCategoryLabel(doc) || goNoGo.category}
           ideaName={formIdeaLabel(doc) || goNoGo.ideaName}
           doc={doc}
+          savedDoc={initial}
           saving={saving || readingGoNoGo}
           onBack={() => setCurrentView("propositionForm")}
           onSubmit={() => handleSubmit()}

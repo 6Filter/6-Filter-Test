@@ -77,6 +77,43 @@ const CHECKSUM_FIELDS = [
   "go_nogo_json",
 ];
 
+function plainValue(value) {
+  if (value instanceof Date) return value.toISOString();
+  if (Buffer.isBuffer(value)) return value.toString("hex");
+  if (Array.isArray(value)) return value.map(plainValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, plainValue(value[key])]));
+  }
+  return value;
+}
+
+export function checksumTableRows(rows) {
+  const hash = createHash("sha256");
+  const lines = rows.map((row) => JSON.stringify(plainValue(row))).sort();
+  for (const line of lines) {
+    hash.update(line);
+    hash.update("\n");
+  }
+  return hash.digest("hex");
+}
+
+export async function checksumSchemaTables(client) {
+  const tables = (
+    await client.query(
+      `SELECT table_name FROM information_schema.tables
+       WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'
+       ORDER BY table_name`
+    )
+  ).rows;
+  const out = {};
+  for (const { table_name: name } of tables) {
+    if (!/^[a-z0-9_]+$/.test(name)) continue;
+    const rows = (await client.query(`SELECT * FROM ${name}`)).rows;
+    out[name] = { rows: rows.length, checksum: checksumTableRows(rows) };
+  }
+  return out;
+}
+
 export function checksumRows(rows) {
   const hash = createHash("sha256");
   const sorted = [...rows].sort((a, b) => String(a.id).localeCompare(String(b.id)));
