@@ -17,7 +17,10 @@ if (!testUrl) {
 
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
-process.env.DATABASE_URL = testUrl;
+const { openSuiteDatabase } = await import("./pgSuiteDb.mjs");
+const suite = await openSuiteDatabase(testUrl);
+process.env.DATABASE_URL = suite.url;
+process.env.PRIMUS_SCHEMA = suite.name;
 process.env.PRIMUS_DATA_DIR = path.join(os.tmpdir(), `primus-f4-${process.pid}`);
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -118,3 +121,7 @@ try {
 }
 
 console.log(`PASS Part 111 mitigation retry rows=${saved.length}`);
+const { closeDatabase } = await import("../lib/db.js");
+await closeDatabase();
+await suite.drop();
+process.exit(0);

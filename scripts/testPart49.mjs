@@ -60,7 +60,8 @@ const generated = await generateFilterNarratives({
 assert.equal(computeGoNoGo(checks), classification);
 assert.match(generated.f3, /₹95/);
 assert.match(generated.f3, /18% above/);
-assert.match(generated.f3, /₹60–₹70/);
+assert.match(generated.f3, /₹70 ceiling/);
+assert.doesNotMatch(generated.f3, /₹60/);
 assert.ok(generated.f4.startsWith(extras.obsolescenceVerdict), generated.f4);
 assert.match(generated.f4, /seven dimensions are on record/);
 

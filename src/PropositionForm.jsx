@@ -36,6 +36,8 @@ import {
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
+import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
+import { scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
@@ -811,7 +813,7 @@ function FilterComparePair({ label, actual, target, unit }) {
   );
 }
 
-function FilterStatusCard({ spec, check, narrative, compare }) {
+function FilterStatusCard({ spec, check, narrative, compare, evidenceLine }) {
   const tone = filterCardTone(check, spec.key);
   const items = analysisCheckItems(check?.items);
   const done = items.filter((i) => i.status === "done").length;
@@ -826,6 +828,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
       </div>
       <h3>{spec.title}</h3>
       <p>{narrative}</p>
+      {evidenceLine ? <p className="evidence-line">{evidenceLine}</p> : null}
       {spec.key === "f4" && items.length ? (
         <ul className="f4-analysis-dims">
           {items.map((it, i) => (
@@ -1112,6 +1115,16 @@ function GoNoGoResultPage({
           <p className="gonogo-blocked-note">This section hit an error. The verdict above is still valid.</p>
         }
       >
+      <section className="score-explainer" id="how-this-was-scored">
+        <h2>How was this scored?</h2>
+        {scoreExplainerSections().map((section) => (
+          <div key={section.heading}>
+            <h3>{section.heading}</h3>
+            <p>{section.body}</p>
+          </div>
+        ))}
+      </section>
+
       <div className="filter-grid">
         {SIX_FILTERS_FORM.map((spec) => {
           const f5f6Locked =
@@ -1154,6 +1167,7 @@ function GoNoGoResultPage({
               check={check}
               narrative={narrative}
               compare={compare}
+              evidenceLine={evidenceLineForFilter(spec.key, doc)}
             />
           );
         })}
@@ -3219,6 +3233,11 @@ const PROP_CSS = `
 .prop-filter-sub{margin:4px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
 .filter-score{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.7);}
+.evidence-line{margin:8px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.62);}
+.score-explainer{margin:18px 0 8px;padding:14px 16px;border:1px solid rgba(243,234,248,.12);border-radius:12px;}
+.score-explainer h2{margin:0 0 8px;font-size:16px;}
+.score-explainer h3{margin:10px 0 4px;font-size:13px;}
+.score-explainer p{margin:0;font-size:13px;line-height:1.45;color:rgba(243,234,248,.78);}
 .filter-check-list{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;}
 .filter-check-list li{font-size:12.5px;line-height:1.4;color:rgba(243,234,248,.78);padding-left:16px;position:relative;}
 .filter-check-list li::before{content:"";position:absolute;left:0;top:6px;width:7px;height:7px;border-radius:50%;background:rgba(232,181,99,.75);}

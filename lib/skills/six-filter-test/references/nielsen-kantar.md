@@ -1,16 +1,16 @@
 # Nielsen and Kantar
 
-Local files are optional. When they exist they are the first source. When they do not, skip to playbook engines and web search — do not emit a gap message.
+There is no live Nielsen or Kantar feed. Loaded rows are a Master import into the `syndicated_rows` table. On a local file-mode server only, `data/nielsen.json` and `data/kantar.json` are a fallback when that table is empty. Those files are not on the live service. When no row matches, research uses public web search and must not invent a Nielsen figure.
 
-## Files
+## Where rows live
 
-| File | Role |
+| Place | Role |
 |---|---|
-| `data/nielsen.json` | Retail audit: category value/volume, SKUs, MRP, price per gram, format shares |
-| `data/kantar.json` | Household panel: buying households, penetration, trial, repeat, frequency, pack value |
-| `data/category-intel.json` `calibration` | Measured free-data × Nielsen multipliers |
+| `syndicated_rows` | Live and local Postgres: retail audit and household panel rows, with `source` and `as_of` |
+| `data/nielsen.json` | Local development fallback only |
+| `data/kantar.json` | Local development fallback only |
 
-`lib/syndicatedLookup.js` reads these. Empty or missing file = treat as "no syndicated row for this idea", then waterfall.
+`lookupSyndicatedData` matches exact category, then family. An empty match is "no local row", then the public-source waterfall.
 
 ## Nielsen row shape (one object per category or SKU)
 
@@ -63,4 +63,4 @@ If `calibration_factors` has a multiplier for this archetype (staple / premium /
 
 ## Never invent a Nielsen number
 
-If the file has no matching category, do not fabricate a "Nielsen" figure. Switch to web search / playbook and label the backend source as `web` or `playbook`. The UI still only shows the overall check.
+If no loaded row matches the category, do not fabricate a Nielsen figure. Switch to public web search and label the source as public. The filter card states that there is no local Nielsen or Kantar row.
