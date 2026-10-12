@@ -97,6 +97,7 @@ export default function LogPage({
   refreshRef.current = onRefresh;
   const unlockedDepartment =
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
+  const hiddenProbes = useMemo(() => rows.filter((row) => row.probe).length, [rows]);
   const logRows = useMemo(
     () => (showProbes ? rows : rows.filter((row) => !row.probe)),
     [rows, showProbes]
@@ -303,6 +304,7 @@ export default function LogPage({
           <div className="mono log-stat-kicker">Ideas in the log</div>
           <div className="log-stat-value">{stats.total}</div>
           <p>Every idea entered so far{stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month` : ""}</p>
+          <p className="log-hidden-probes" role="status">{hiddenProbes} hidden probes</p>
         </article>
         <article className="log-stat-card">
           <div className="mono log-stat-kicker">Cleared all six</div>

@@ -1,6 +1,6 @@
 /**
  * Replay stored propositions through the production scorers.
- * Read-only. No model calls. Output stays under data/replay/.
+ * Reads the restored copy read-only. No model calls. Output stays under data/replay/.
  *
  * node scripts/replayScoring.mjs --out data/replay/new.json
  */
@@ -41,23 +41,28 @@ function argOut() {
 }
 
 const storeLocal = argValue("--store") === "local";
-if (storeLocal) delete process.env.DATABASE_URL;
+delete process.env.DATABASE_URL;
+delete process.env.POSTGRES_URL;
 
-const { initDb, query, listPropositions, getPropositionById, isUsingPostgres } = await import("../lib/db.js");
+const { publicProposition } = await import("../lib/db.js");
 const { scoreReplayRecord } = await import("../lib/replayScore.js");
 const { callLlm } = await import("../lib/callLlm.js");
 
-await initDb();
+let sourceRows;
 if (storeLocal) {
+  const { initDb, listPropositions, getPropositionById, isUsingPostgres } = await import("../lib/db.js");
+  await initDb();
   if (isUsingPostgres()) throw new Error("Local replay connected to Postgres.");
-} else {
-  try {
-    await query("CREATE TEMP TABLE primus_replay_probe (id int)");
-    throw new Error("Replay connection accepted a write.");
-  } catch (e) {
-    if (e.message === "Replay connection accepted a write.") throw e;
-    if (!/read-only|read only/i.test(String(e.message || ""))) throw e;
+  const listed = await listPropositions(5000);
+  sourceRows = [];
+  for (const row of listed) {
+    const proposition = await getPropositionById(row.id);
+    if (proposition) sourceRows.push(proposition);
   }
+} else {
+  const { readRestoredTable } = await import("./restoredCopy.mjs");
+  const table = await readRestoredTable();
+  sourceRows = table.map((row) => publicProposition(row));
 }
 try {
   await callLlm({ userText: "replay", system: "replay" });
@@ -66,10 +71,8 @@ try {
   if (!/REPLAY_MAY_NOT_CALL_LLM/.test(String(e.message || ""))) throw e;
 }
 
-const rows = await listPropositions(5000);
 const records = [];
-for (const row of rows) {
-  const proposition = await getPropositionById(row.id);
+for (const proposition of sourceRows) {
   if (!proposition) continue;
   records.push(await scoreReplayRecord(proposition));
 }
@@ -80,11 +83,7 @@ await mkdir(path.dirname(out), { recursive: true });
 await writeFile(out, JSON.stringify(records, null, 2));
 const docsOut = argValue("--docs");
 if (docsOut) {
-  const docs = [];
-  for (const row of rows) {
-    const proposition = await getPropositionById(row.id);
-    if (proposition) docs.push(proposition);
-  }
+  const docs = sourceRows.filter(Boolean);
   docs.sort((a, b) => String(a.id).localeCompare(String(b.id)));
   const docsPath = path.resolve(docsOut);
   await mkdir(path.dirname(docsPath), { recursive: true });

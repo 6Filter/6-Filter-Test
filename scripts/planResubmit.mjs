@@ -84,6 +84,18 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (typeof refuseModelCall !== "function") {
     throw new Error("model stub missing");
   }
-  const { rows } = await loadRestoredRows();
+  const { readRestoredTable } = await import("./restoredCopy.mjs");
+  const table = await readRestoredTable();
+  const rows = table.map((row) => ({
+    id: row.id,
+    researchRunAt: row.research_run_at || null,
+    f1: parse(row.f1_json),
+    f2: parse(row.f2_json),
+    f3: parse(row.f3_json),
+    f4: parse(row.f4_json),
+    f5: parse(row.f5_json),
+    researchFindings: parse(row.research_findings_json),
+  }));
+  rows.sort((a, b) => String(a.id).localeCompare(String(b.id)));
   console.log(formatPlan(rows, readCallLedger()));
 }

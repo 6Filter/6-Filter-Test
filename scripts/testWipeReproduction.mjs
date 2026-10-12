@@ -35,7 +35,10 @@ if (!hostAllowed(testUrl) || /render\.com|neon\.tech|supabase\.co/i.test(testUrl
 
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
-process.env.DATABASE_URL = testUrl;
+const { openSuiteDatabase } = await import("./pgSuiteDb.mjs");
+const suite = await openSuiteDatabase(testUrl);
+process.env.DATABASE_URL = suite.url;
+process.env.PRIMUS_SCHEMA = suite.name;
 process.env.PRIMUS_DATA_DIR = path.join(os.tmpdir(), `primus-wipe-${process.pid}`);
 for (const key of Object.keys(process.env)) {
   if (key === "ANTHROPIC_API_KEY" || key.startsWith("DEPT_API_KEY")) delete process.env[key];
@@ -45,7 +48,7 @@ process.env.ANTHROPIC_API_KEY = `sk-${"ant"}-stub-local-only`;
 const commit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 const oldWipe = commit.startsWith("c15bdf7");
 
-const { initDb, createProposition, getPropositionById, updateProposition, saveResearchCache } = await import("../lib/db.js");
+const { initDb, createProposition, getPropositionById, updateProposition, saveResearchCache, closeDatabase } = await import("../lib/db.js");
 const { handlePropositionById, handlePropositionDraft } = await import("../lib/propositionsApi.js");
 const { emptyPropositionDoc } = await import("../lib/propositionFields.js");
 const { researchHashFor } = await import("../lib/researchCache.js");
@@ -202,4 +205,6 @@ if (oldWipe) {
   }
 }
 console.log(oldWipe ? "PASS wipe reproduction on c15bdf7" : "PASS wipe reproduction kept on current tree");
+await closeDatabase();
+await suite.drop();
 process.exit(0);

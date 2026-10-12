@@ -37,9 +37,13 @@ if (/render\.com|neon\.tech|supabase\.co/i.test(testUrl)) {
 }
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
-process.env.DATABASE_URL = testUrl;
+const { openSuiteDatabase } = await import("./pgSuiteDb.mjs");
+const suite = await openSuiteDatabase(testUrl);
+process.env.DATABASE_URL = suite.url;
+process.env.PRIMUS_SCHEMA = suite.name;
 process.env.PRIMUS_DATA_DIR = path.join(os.tmpdir(), `primus-pg-${process.pid}`);
 
+try {
 const { query, initDb, createProposition, getPropositionById, updateProposition, setPropositionDivision, setPropositionManagerReview, setPropositionFinalSummary, deleteProposition, restoreDeletedProposition, markResearchRun } = await import("../lib/db.js");
 const { handlePropositionDraft, handlePropositionById, handlePropositionRefreshField, handlePropositionRetryStep, handlePropositionConceptCard } = await import("../lib/propositionsApi.js");
 const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
@@ -508,3 +512,8 @@ assert.ok(teamAudit.length >= 1, "audit row missing session team");
 console.log("stale-prefill kept ignoredKeys=yes team=R&D");
 
 console.log(`PASS postgres no-clobber roundTrip=${roundTrip}`);
+} finally {
+  const { closeDatabase } = await import("../lib/db.js");
+  await closeDatabase();
+  await suite.drop();
+}

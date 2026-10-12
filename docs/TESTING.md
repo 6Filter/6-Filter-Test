@@ -37,6 +37,16 @@ $env:TEST_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5433/postgres
 npm run test:postgres
 ```
 
+That URL is the maintenance connection. Each run creates a schema named `primus_suite_<id>`, points the test at it, and drops the schema afterwards. The scratch server on port 5433 keeps every connection on one database, so the schema is the boundary that holds. The run refuses when the URL names `primus_restored` or when `public.propositions` already contains the restored proposition ids.
+
+The 8 Oct copy is rebuilt into the schema `primus_restored`. Readers set that schema and a read-only session:
+
+```
+node scripts/loadRestoredCopy.mjs
+```
+
+The planner, the replay, and the damage table read that schema. They do not use the suite schema.
+
 `npm run test:postgres` is the same script on its own.
 
 ## CI

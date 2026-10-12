@@ -2,9 +2,7 @@
  * Read-only damage report for the empty-filter wipe. Writes the owner CSV only.
  * Stdout is counts. It does not print idea text or names.
  */
-import { createReadStream } from "node:fs";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { createInterface } from "node:readline";
 import path from "node:path";
 import { filterHasContent, parseFilterValue } from "../lib/filterWriteGuard.js";
 import { backupDir } from "./planResubmit.mjs";
@@ -36,14 +34,11 @@ function parse(raw) {
 }
 
 async function loadRows() {
-  const file = path.join(backupDir(), "propositions.jsonl");
-  const rows = [];
-  const rl = createInterface({ input: createReadStream(file), crlfDelay: Infinity });
-  for await (const line of rl) {
-    if (!line.trim()) continue;
-    const row = JSON.parse(line);
+  const { readRestoredTable } = await import("./restoredCopy.mjs");
+  const table = await readRestoredTable();
+  return table.map((row) => {
     const findings = row.research_findings_json;
-    rows.push({
+    return {
       id: row.id,
       name: row.name || "",
       category: row.category || "",
@@ -62,9 +57,8 @@ async function loadRows() {
       manager: Boolean(row.manager_review_json && String(row.manager_review_json).length > 4),
       finalSummary: Boolean(row.final_summary_json && String(row.final_summary_json).length > 4),
       goNoGo: Boolean(row.go_nogo_json && String(row.go_nogo_json).length > 4),
-    });
-  }
-  return rows;
+    };
+  });
 }
 
 const rows = await loadRows();

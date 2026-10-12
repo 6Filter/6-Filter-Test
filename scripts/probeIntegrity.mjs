@@ -3,14 +3,16 @@
  * Identical inputs are a research-cache hit after the first day.
  * Reuse PRIMUS_PROBE_ID so the job does not create a new Log row each morning.
  *
- * Header X-Primus-Probe: 1 marks the row. The Log hides it until "Show probes".
+ * Header X-Primus-Probe-Token must match PRIMUS_PROBE_TOKEN. The script reads that
+ * variable and never prints it or the team password.
+ * A plain X-Primus-Probe header does not mark the row.
  *
  * Scratch proof (no live call):
  *   TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/postgres node scripts/probeIntegrity.mjs
  *
  * Daily automation line:
  *   node scripts/probeIntegrity.mjs
- * with PRIMUS_BASE_URL, PRIMUS_PROBE_DEPARTMENT, PRIMUS_PROBE_PASSWORD, and PRIMUS_PROBE_ID set.
+ * with PRIMUS_BASE_URL, PRIMUS_PROBE_DEPARTMENT, PRIMUS_PROBE_PASSWORD, PRIMUS_PROBE_TOKEN, and PRIMUS_PROBE_ID set.
  * The process prints `PROBE INTEGRITY OK` or exits 1.
  */
 import assert from "node:assert/strict";
@@ -53,11 +55,16 @@ if (baseUrl) {
   }
   const department = process.env.PRIMUS_PROBE_DEPARTMENT || "NPD";
   const password = process.env.PRIMUS_PROBE_PASSWORD || "";
+  const token = process.env.PRIMUS_PROBE_TOKEN || "";
   if (!password) {
     console.error("PRIMUS_PROBE_PASSWORD is not set.");
     process.exit(1);
   }
-  const headers = { "Content-Type": "application/json", "X-Primus-Probe": "1" };
+  if (!token) {
+    console.error("PRIMUS_PROBE_TOKEN is not set.");
+    process.exit(1);
+  }
+  const headers = { "Content-Type": "application/json", "X-Primus-Probe-Token": token };
   const unlock = await fetch(`${baseUrl}/api/department-auth/unlock`, {
     method: "POST",
     headers,
@@ -107,14 +114,18 @@ if (!testUrl) {
   process.exit(0);
 }
 
-const { initDb, createProposition, getPropositionById, saveResearchCache } = await import("../lib/db.js");
-const { handlePropositionById } = await import("../lib/propositionsApi.js");
+const { initDb, getPropositionById, saveResearchCache, closeDatabase } = await import("../lib/db.js");
+const { handlePropositionById, handlePropositionsCollection } = await import("../lib/propositionsApi.js");
 const { researchHashFor } = await import("../lib/researchCache.js");
 const { emptyPropositionDoc } = await import("../lib/propositionFields.js");
 
+const { openSuiteDatabase } = await import("./pgSuiteDb.mjs");
+const suite = await openSuiteDatabase(testUrl);
 delete process.env.DATABASE_URL;
-process.env.DATABASE_URL = testUrl;
+process.env.DATABASE_URL = suite.url;
+process.env.PRIMUS_SCHEMA = suite.name;
 process.env.ANTHROPIC_API_KEY = `sk-${"ant"}-stub-local-only`;
+process.env.PRIMUS_PROBE_TOKEN = "scratch-probe-token";
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, options) => {
   if (String(url).includes("api.anthropic.com")) {
@@ -131,7 +142,19 @@ globalThis.fetch = async (url, options) => {
 
 await initDb();
 const user = { department: "NPD", role: "NPD" };
-const created = await createProposition({ submitterDepartment: "NPD", probe: true });
+const token = process.env.PRIMUS_PROBE_TOKEN;
+const sendJson = (target, status, body) => {
+  target.statusCode = status;
+  target.body = body;
+};
+const createdRes = { statusCode: 0, body: null, end() {} };
+await handlePropositionsCollection(
+  { method: "POST", user, headers: { "x-primus-probe-token": token } },
+  createdRes,
+  { sendJson, redactSecrets: (message) => message }
+);
+assert.equal(createdRes.statusCode, 201, createdRes.body?.error || "create failed");
+const created = createdRes.body?.proposition || createdRes.body;
 const doc = { ...emptyPropositionDoc(created.id), ...PROBE_IDEA, id: created.id, f1: { ...emptyPropositionDoc(created.id).f1, ...PROBE_IDEA.f1 }, f2: { ...emptyPropositionDoc(created.id).f2, ...PROBE_IDEA.f2 } };
 await saveResearchCache(researchHashFor(doc), {
   division: "Personal Care",
@@ -149,7 +172,7 @@ await saveResearchCache(researchHashFor(doc), {
 });
 const res = { statusCode: 0, body: null, end() {} };
 await handlePropositionById(
-  { method: "PUT", user, headers: { "x-primus-probe": "1" } },
+  { method: "PUT", user, headers: { "x-primus-probe-token": token } },
   res,
   created.id,
   {
@@ -167,4 +190,6 @@ const missing = populatedFilters(stored);
 assert.equal(stored.probe, true);
 assert.deepEqual(missing, [], `missing ${missing.join(",")}`);
 console.log("PROBE INTEGRITY OK");
+await closeDatabase();
+await suite.drop();
 process.exit(0);
