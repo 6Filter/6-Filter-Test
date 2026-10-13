@@ -1897,12 +1897,22 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const keptName = String(data.conceptCardName || data.proposition?.f1?.conceptCardName || "").trim();
+      if (keptName) {
+        setConceptCardName(keptName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+          ...(data.proposition?.version != null ? { version: data.proposition.version } : {}),
+          ...(data.proposition?.updatedAt ? { updatedAt: data.proposition.updatedAt } : {}),
+        }));
+      } else if (!res.ok) {
         setConceptCardName("");
-        setConceptCardError(data.error || "Could not read that concept card.");
+      }
+      if (!res.ok || data.extractError) {
+        setConceptCardError(data.extractError || data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
       if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
