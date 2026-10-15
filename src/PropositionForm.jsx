@@ -1897,14 +1897,29 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      if (data.proposition) {
+        setDoc((prev) => {
+          const saved = data.proposition;
+          const savedF1 = saved.f1 && typeof saved.f1 === "object" ? saved.f1 : {};
+          return {
+            ...prev,
+            version: saved.version || prev.version,
+            updatedAt: saved.updatedAt || prev.updatedAt,
+            f1: {
+              ...(prev.f1 || {}),
+              conceptCardName:
+                savedF1.conceptCardName || data.conceptCardName || prev.f1?.conceptCardName || "",
+            },
+          };
+        });
+      }
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
-      if (data.suggestions) {
+      if (data.extractError) setConceptCardError(data.extractError);
+      if (data.suggestions && !data.extractError) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
           top: { ...(prev?.top || {}), ...(data.suggestions.top || {}) },
@@ -1912,7 +1927,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
