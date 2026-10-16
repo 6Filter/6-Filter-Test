@@ -1913,7 +1913,6 @@ export default function PropositionForm({
         setConceptCardError(data.extractError || data.error || "Could not read that concept card.");
         return;
       }
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),

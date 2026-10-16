@@ -4,7 +4,7 @@
  * file name when reading fails, and does not clear typed fields.
  */
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -155,5 +155,13 @@ assert.equal(afterCard.f1.declaredAttribute, "cooling sensation");
 assert.equal(afterCard.f1.benchmark, "Parachute");
 assert.equal(afterCard.ideaDescription, "Typed idea that must stay.");
 assert.equal(afterCard.name, "Concept card row");
+
+const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
+const handler = formSrc.slice(
+  formSrc.indexOf("async function handleConceptCardFile"),
+  formSrc.indexOf("function setTop")
+);
+assert.match(handler, /conceptCardName: keptName/);
+assert.doesNotMatch(handler, /setDoc\(mergeProposition\(data\.proposition\)\)/);
 
 console.log("PASS score stays stable when division is blank, and a concept card keeps its file name");
