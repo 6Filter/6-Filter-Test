@@ -1889,7 +1889,8 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const uploadedName = uploaded.name || file.name;
+      setConceptCardName(uploadedName);
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -1897,13 +1898,19 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      const keptName = data.conceptCardName || uploadedName;
+      if (keptName) {
+        setConceptCardName(keptName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+        }));
+      }
       if (!res.ok) {
-        setConceptCardName("");
-        setConceptCardError(data.error || "Could not read that concept card.");
+        setConceptCardError(data.error || data.extractError || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.extractError) setConceptCardError(data.extractError);
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1912,7 +1919,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
