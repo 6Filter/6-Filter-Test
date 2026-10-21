@@ -17,6 +17,7 @@ const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNo
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
 const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+const { divisionForScore } = await import("../lib/divisionForScore.js");
 
 const idea = {
   name: "Score stability fixture",
@@ -103,13 +104,19 @@ await handlePropositionGoNogo(
 );
 assert.equal(res.statusCode, 200);
 const body = JSON.parse(res.body);
-assert.equal(body.goNoGo.score.pct, full.pct);
-assert.equal(body.goNoGo.score.done, full.done);
-assert.equal(body.goNoGo.score.total, full.total);
+const scoredDivision = divisionForScore(saved, { division: "" });
+const stable = scoreAdvisoryChecks(
+  await computeAllAdvisoryChecks({ ...saved, division: scoredDivision })
+);
+assert.equal(scoredDivision, "Beverages");
+assert.equal(body.goNoGo.score.pct, stable.pct);
+assert.equal(body.goNoGo.score.done, stable.done);
+assert.equal(body.goNoGo.score.total, stable.total);
 
 const stored = await getPropositionById(created.id);
 assert.equal(stored.f3.marginElasticity.minMrpInr, 15);
-assert.equal(stored.goNoGo.score.pct, full.pct);
+assert.equal(stored.goNoGo.score.pct, stable.pct);
 assert.equal(stored.category, "Iced tea");
+assert.equal(stored.division, "");
 
 console.log(`PASS score stays ${full.pct} when the follow-up read omits the safe MRP range`);
