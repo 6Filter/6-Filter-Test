@@ -16,7 +16,7 @@ delete process.env.REQUIRE_AUTH;
 const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
-const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+const { handlePropositionGoNogo, propositionForScore } = await import("../lib/propositionGateApi.js");
 
 const idea = {
   name: "Score stability fixture",
@@ -72,9 +72,10 @@ const saved = await updateProposition(
 );
 assert.equal(saved.f3.marginElasticity.minMrpInr, 15);
 
-const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(saved));
+const canonical = propositionForScore(saved, saved);
+const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(canonical));
 const withoutRange = scoreAdvisoryChecks(
-  await computeAllAdvisoryChecks({ ...saved, f3: { forumVerdict: "", verdictNote: "" } })
+  await computeAllAdvisoryChecks({ ...canonical, f3: { forumVerdict: "", verdictNote: "" } })
 );
 assert.notEqual(full.pct, withoutRange.pct, "dropping the safe MRP range must be able to move the percent");
 
@@ -111,5 +112,6 @@ const stored = await getPropositionById(created.id);
 assert.equal(stored.f3.marginElasticity.minMrpInr, 15);
 assert.equal(stored.goNoGo.score.pct, full.pct);
 assert.equal(stored.category, "Iced tea");
+assert.equal(stored.division, "");
 
 console.log(`PASS score stays ${full.pct} when the follow-up read omits the safe MRP range`);

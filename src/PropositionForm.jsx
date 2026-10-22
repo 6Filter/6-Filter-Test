@@ -1692,7 +1692,10 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
             division: doc.division,
+            ideaDescription: doc.ideaDescription,
             f1: doc.f1,
             f2: doc.f2,
             f3: doc.f3,
@@ -1897,13 +1900,18 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      if (data.conceptCardName) {
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: data.conceptCardName },
+        }));
+      }
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.extractError) setConceptCardError(data.extractError);
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1912,7 +1920,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2259,8 +2266,10 @@ export default function PropositionForm({
     if (repairing && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
     if (!goNoGo?.classification) {
       const preview = applyLocalGate(doc);
-      setAdvisoryChecks(preview.checks);
-      setSummaryChecks(preview.checks);
+      if (!advisoryChecks) {
+        setAdvisoryChecks(preview.checks);
+        setSummaryChecks(preview.checks);
+      }
       setGoNoGo({
         classification: preview.classification,
         rationale: preview.rationale,
@@ -2525,7 +2534,7 @@ export default function PropositionForm({
               key={spec.key}
               spec={spec}
               checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+                (advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || {}).checkLabel || "Not yet run"
               }
               sub={
                 spec.key === "f5"
@@ -2541,17 +2550,18 @@ export default function PropositionForm({
               key={spec.key}
               spec={spec}
               checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+                (advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || {}).checkLabel || "Not yet run"
               }
               sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
             />
           );
         }
         const values = doc[spec.key] || {};
+        const serverCheck = advisoryChecks?.[spec.key];
         const check =
-          spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
-            ? livePreviewChecks[spec.key]
-            : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
+          serverCheck?.checkLabel
+            ? serverCheck
+            : livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
