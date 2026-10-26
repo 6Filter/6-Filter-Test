@@ -36,6 +36,7 @@ import {
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
+import { divisionForScore } from "../lib/divisionForScore.js";
 import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
 import { storedVerdictWithoutInputs } from "../lib/storedVerdict.js";
 import { scoreExplainerSections } from "../lib/scoreExplainer.js";
@@ -1582,6 +1583,7 @@ export default function PropositionForm({
   const progress = submitProgress(doc);
   const canSubmit = progress.requiredLeft === 0;
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
+  const scoringDivision = divisionForScore(liveDoc);
   const livePreviewChecks = previewAdvisoryChecks(liveDoc);
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
@@ -1692,6 +1694,9 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
+            ideaDescription: doc.ideaDescription,
             division: doc.division,
             f1: doc.f1,
             f2: doc.f2,
@@ -1889,7 +1894,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const localName = uploaded.name || file.name;
+      setConceptCardName(localName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: localName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -1897,13 +1907,19 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      const keptName = String(data.conceptCardName || localName || "").trim();
+      if (keptName) {
+        setConceptCardName(keptName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+        }));
+      }
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.extractError) setConceptCardError(data.extractError);
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1912,7 +1928,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2574,7 +2589,7 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec, scoringDivision)}</p>
               </div>
               <div className="prop-status-wrap">
                 {filterScore.total ? (
