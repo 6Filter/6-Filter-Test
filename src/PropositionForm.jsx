@@ -60,6 +60,7 @@ import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
+import { divisionForScore } from "../lib/divisionForScore.js";
 import {
   DIMENSION_LABELS,
   TECH_SHIFT_DIMENSIONS,
@@ -68,6 +69,13 @@ import {
   normalizeTechShiftRisk,
 } from "../lib/techShiftRisk.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
+
+function shownCheck(specKey, serverChecks, localChecks) {
+  const server = serverChecks?.[specKey];
+  const local = localChecks?.[specKey];
+  if (server?.checkLabel && server.checkLabel !== "Not yet run") return server;
+  return local || server || { checkLabel: "Not yet run", items: [] };
+}
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -1582,6 +1590,7 @@ export default function PropositionForm({
   const progress = submitProgress(doc);
   const canSubmit = progress.requiredLeft === 0;
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
+  const scoreDivision = divisionForScore(liveDoc, liveDoc);
   const livePreviewChecks = previewAdvisoryChecks(liveDoc);
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
@@ -1692,6 +1701,9 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
+            ideaDescription: doc.ideaDescription,
             division: doc.division,
             f1: doc.f1,
             f2: doc.f2,
@@ -1889,7 +1901,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const keptName = uploaded.name || file.name;
+      setConceptCardName(keptName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -1898,12 +1915,17 @@ export default function PropositionForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.conceptCardName) {
+        setConceptCardName(data.conceptCardName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: data.conceptCardName },
+        }));
+      }
+      if (data.extractError) setConceptCardError(data.extractError);
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1912,7 +1934,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2524,9 +2545,7 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
-              checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
-              }
+              checkLabel={shownCheck(spec.key, advisoryChecks, livePreviewChecks).checkLabel || "Not yet run"}
               sub={
                 spec.key === "f5"
                   ? "Opens once the idea reads GO and proof is uploaded."
@@ -2540,18 +2559,13 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
-              checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
-              }
+              checkLabel={shownCheck(spec.key, advisoryChecks, livePreviewChecks).checkLabel || "Not yet run"}
               sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
             />
           );
         }
         const values = doc[spec.key] || {};
-        const check =
-          spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
-            ? livePreviewChecks[spec.key]
-            : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
+        const check = shownCheck(spec.key, advisoryChecks, livePreviewChecks);
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
@@ -2574,7 +2588,7 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec, scoreDivision)}</p>
               </div>
               <div className="prop-status-wrap">
                 {filterScore.total ? (

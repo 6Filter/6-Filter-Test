@@ -15,6 +15,7 @@ delete process.env.REQUIRE_AUTH;
 
 const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
+const { divisionForScore } = await import("../lib/divisionForScore.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
 const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
 
@@ -72,9 +73,10 @@ const saved = await updateProposition(
 );
 assert.equal(saved.f3.marginElasticity.minMrpInr, 15);
 
-const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(saved));
+const scoredSaved = { ...saved, division: divisionForScore(saved, saved) };
+const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(scoredSaved));
 const withoutRange = scoreAdvisoryChecks(
-  await computeAllAdvisoryChecks({ ...saved, f3: { forumVerdict: "", verdictNote: "" } })
+  await computeAllAdvisoryChecks({ ...scoredSaved, f3: { forumVerdict: "", verdictNote: "" } })
 );
 assert.notEqual(full.pct, withoutRange.pct, "dropping the safe MRP range must be able to move the percent");
 
