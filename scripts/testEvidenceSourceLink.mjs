@@ -7,7 +7,7 @@ import { canWriteField, fieldOwners } from "../lib/fieldOwnership.js";
 const f1 = SIX_FILTERS_FORM.find((s) => s.key === "f1");
 const field = f1.fields.find((f) => f.key === "evidenceSourceDate");
 assert.equal(field.label, "Evidence Source link");
-assert.equal(field.placeholder, "https://…");
+assert.equal(field.placeholder, "Paste a source URL — e.g. https://…");
 assert.equal(field.fileKey, "evidenceSourceFile");
 assert.match(field.fileAccept, /xlsx/);
 assert.match(field.helper, /no market-research study required/i);

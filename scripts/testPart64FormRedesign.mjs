@@ -19,7 +19,7 @@ assert.match(formSrc, /Start with the idea/);
 assert.match(formSrc, /Three fields\. Research fills the rest, you edit it\./);
 assert.match(formSrc, /e\.g\. Herbal cooling hair oil/);
 assert.match(formSrc, /e\.g\. Hair oils/);
-assert.match(formSrc, /Describe the product idea\./);
+assert.match(formSrc, /Describe the product idea/);
 assert.match(formSrc, /submit-bar/);
 assert.match(formSrc, /Submit for verdict/);
 assert.match(formSrc, /inline-floor-fail/);
