@@ -45,6 +45,7 @@ import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.j
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
   closestPathToGo,
+  emptyImprovementReason,
   computeImprovementPointValues,
   countFiltersWithEvidence,
   f2ActualVsFloor,
@@ -1008,9 +1009,14 @@ function GoNoGoResultPage({
   const path = safeCall(
     "closest path to GO",
     () => closestPathToGo(checks, improvementItems),
-    { items: [], projectedPct: scorePct, reachesGo: isGoScore(scorePct) }
+    { items: [], projectedPct: scorePct, reachesGo: isGoScore(scorePct), emptyReason: "" }
   );
   const pathItems = Array.isArray(path?.items) ? path.items : [];
+  const emptyReason = safeCall(
+    "empty improvement reason",
+    () => path?.emptyReason || emptyImprovementReason(checks, improvementItems),
+    ""
+  );
   const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {
     have: 0,
     total: 6,
@@ -1094,7 +1100,7 @@ function GoNoGoResultPage({
               </span>
             ) : (
               <span className="path-if">
-                {path.reachesGo ? "already above 80" : "nothing outstanding on the scored checklist"}
+                {path.reachesGo ? "already above 80" : emptyReason || "no open analytical gaps for this idea"}
               </span>
             )}
           </p>
@@ -1108,7 +1114,11 @@ function GoNoGoResultPage({
               ))}
             </ul>
           ) : (
-            <p className="path-empty">No scored gaps left on Filters 1–4.</p>
+            <p className="path-empty">
+              {path.reachesGo
+                ? "No scored gaps left on Filters 1–4 for the values entered."
+                : emptyReason || "No scored gaps left on Filters 1–4 for the values entered."}
+            </p>
           )}
           {improvementItems.length ? (
             <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
@@ -1201,7 +1211,11 @@ function GoNoGoResultPage({
             </div>
           ))
         ) : (
-          <p className="path-empty">Nothing outstanding on the scored Filter 1–4 checklist.</p>
+          <p className="path-empty">
+            {path.reachesGo
+              ? "Nothing outstanding on the scored Filter 1–4 checklist for this idea."
+              : emptyReason || "Nothing outstanding on the scored Filter 1–4 checklist for this idea."}
+          </p>
         )}
       </section>
 
