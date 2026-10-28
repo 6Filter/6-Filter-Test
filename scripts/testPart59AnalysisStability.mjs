@@ -170,7 +170,8 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 assert.doesNotMatch(formSrc, /shouldReuseAnalysis/);
 assert.match(formSrc, /result\.researchRan/);
 assert.match(formSrc, /!initial\?\.researchRunAt/);
-assert.match(formSrc, /if \(!goNoGo\?\.classification\) \{\s*const preview = applyLocalGate/);
+assert.match(formSrc, /if \(!goNoGo\?\.classification && advisoryChecks\)/);
+assert.doesNotMatch(formSrc, /applyLocalGate\(doc\)/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /skipDerivedAutoFill/);
