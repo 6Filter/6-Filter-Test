@@ -17,6 +17,7 @@ delete process.env.RENDER;
 process.env.NODE_ENV = "test";
 
 const { databaseUnavailableMessage } = await import("../lib/logStatus.js");
+const { PLATFORM_TEAM_LOCK_ENABLED } = await import("../lib/departmentAuthConstants.js");
 const { handlePropositionsCollection, handlePropositionById } = await import("../lib/propositionsApi.js");
 const { handleInvalidateResearchCache } = await import("../lib/adminApi.js");
 
@@ -67,7 +68,9 @@ await handlePropositionsCollection({ method: "GET", user: {}, url: "/api/proposi
   sendJson,
   redactSecrets,
 });
-assert.equal(locked.captured[0].status, 401);
+// Open platform: empty user is treated as unlocked Open team, then DB 503.
+// Locked platform: empty user is rejected with 401 before the DB read.
+assert.equal(locked.captured[0].status, PLATFORM_TEAM_LOCK_ENABLED ? 401 : 503);
 
 const stranger = capture();
 await handleInvalidateResearchCache({ method: "POST", user: { department: "NPD" } }, stranger.res);

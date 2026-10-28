@@ -104,7 +104,7 @@ function picture(doc) {
 function typedDoc(id, label) {
   const doc = emptyPropositionDoc(id);
   doc.submitterName = "Wipe Tester";
-  doc.submitterDepartment = "NPD";
+  doc.submitterDepartment = "R&D";
   doc.name = `Wipe ${label}`;
   doc.category = "Hair oils";
   doc.division = "Personal Care";
@@ -176,7 +176,7 @@ console.log(`wipe reproduction commit=${commit} expect=${oldWipe ? "c15bdf7 wipe
 
 const results = [];
 for (const kind of ["api-only", "later-save", "browser"]) {
-  const row = await createProposition({ submitterDepartment: "NPD" });
+  const row = await createProposition({ submitterDepartment: "R&D" });
   const doc = typedDoc(row.id, kind);
   await updateProposition(row.id, doc, { handler: "wipe-seed", allowFilterReset: true });
   await saveResearchCache(researchHashFor(doc), cacheBundle);

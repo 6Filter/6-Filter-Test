@@ -4,6 +4,7 @@ import { checkF1 } from "../lib/filterChecks.js";
 import { previewAdvisoryChecks } from "../lib/goNoGo.js";
 import { ideaSizeTier, ideaSizeFromF5 } from "../lib/ideaScale.js";
 import { canViewProposition } from "../lib/propositionAccess.js";
+import { PLATFORM_TEAM_LOCK_ENABLED } from "../lib/departmentAuthConstants.js";
 import { FMCG_CATEGORIES } from "../lib/fmcgCategories.js";
 
 const prevAuth = process.env.REQUIRE_AUTH;
@@ -60,10 +61,10 @@ const propB = { id: "p2", division: "Foods", createdByUserId: "u9" };
 const propMine = { id: "p3", division: "Foods", createdByUserId: "u1" };
 assert.equal(canViewProposition(manager, propA), true);
 assert.equal(canViewProposition(bmA, propA), true);
-assert.equal(canViewProposition(bmA, propB), false);
+assert.equal(canViewProposition(bmA, propB), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
 assert.equal(canViewProposition(bmA, propMine), true);
-assert.equal(canViewProposition(bmB, propA), false);
-assert.equal(canViewProposition(null, propA), false);
+assert.equal(canViewProposition(bmB, propA), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
+assert.equal(canViewProposition(null, propA), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
 
 process.env.REQUIRE_AUTH = prevAuth;
 
