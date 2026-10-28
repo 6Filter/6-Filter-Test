@@ -2432,14 +2432,14 @@ export default function PropositionForm({
         <h1>Start with the idea</h1>
         <p>Three fields. Research fills the rest, you edit it.</p>
         <input
-          placeholder="e.g. Herbal cooling hair oil"
+          placeholder="Enter the proposition name — e.g. Herbal cooling hair oil"
           value={doc.name || ""}
           disabled={Boolean(currentUser && !canWriteField(currentUser.role, "name"))}
           onChange={(e) => setTop("name", e.target.value)}
           aria-label="Proposition name"
         />
         <input
-          placeholder="e.g. Hair oils"
+          placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
           disabled={Boolean(currentUser && !canWriteField(currentUser.role, "category"))}
@@ -2464,7 +2464,7 @@ export default function PropositionForm({
           ) : null;
         })()}
         <textarea
-          placeholder="Describe the product idea."
+          placeholder="Describe the product idea, or attach a PDF, Word file, or image with the insight."
           value={doc.ideaDescription || ""}
           disabled={Boolean(currentUser && !canWriteField(currentUser.role, "ideaDescription"))}
           onChange={(e) => setTop("ideaDescription", e.target.value)}
