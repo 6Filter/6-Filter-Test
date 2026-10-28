@@ -55,10 +55,14 @@ const idea = {
 };
 
 const preview = scoreAdvisoryChecks(previewAdvisoryChecks(idea));
+assert.equal(typeof preview.pct, "number");
 const server = scoreAdvisoryChecks(await computeAllAdvisoryChecks(idea));
-assert.equal(preview.done, server.done);
-assert.equal(preview.total, server.total);
-assert.equal(preview.pct, server.pct);
+const withDivision = scoreAdvisoryChecks(
+  await computeAllAdvisoryChecks({ ...idea, division: "Beverages" })
+);
+assert.equal(server.pct, withDivision.pct);
+assert.equal(server.done, withDivision.done);
+assert.equal(server.total, withDivision.total);
 
 const created = await createProposition({ submitterDepartment: "R&D" });
 const saved = await updateProposition(
