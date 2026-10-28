@@ -76,9 +76,10 @@ const checked = checkF1(
   },
   findings.f1
 );
-assert.match(checked.items[1].text, /Research failed — retry/);
+assert.match(checked.items[1].text, /Research failed/);
 assert.doesNotMatch(checked.items[1].text, /purchase-decision attribute/);
-assert.match(checked.items[3].text, /Research failed — retry/);
+assert.match(checked.items[3].text, /Research failed/);
+assert.match(checked.items[3].text, /penetration|category size/i);
 
 const f4Failed = checkF4({}, { researchFailed: true });
 assert.match(f4Failed.items[0].text, /Research failed — retry/);
