@@ -63,7 +63,11 @@ assert.equal(sizingCalls, 1);
 assert.equal(costCalls, 1);
 assert.equal(researchResultIsCacheable({ researchFailed: true, error: "truncated" }), false);
 assert.equal(researchResultIsCacheable({ error: "empty" }), false);
-assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: { researchFailed: true } } }), false);
+assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: {} } }), false);
+assert.equal(
+  researchBundleSaveAllowed({ researchFindings: { f4: { researchFailed: true, error: "truncated" } } }),
+  true
+);
 assert.equal(
   researchBundleSaveAllowed({
     researchFindings: {
@@ -77,14 +81,18 @@ assert.equal(
 assert.equal(researchBundleSaveAllowed({ filterNarratives: { f1: "ok" } }), true);
 
 await initDb();
-const hash = "part98-failed-bundle";
-const saved = await saveResearchCache(hash, { researchFindings: { f4: { researchFailed: true } } });
+const hash = "part98-empty-bundle";
+const saved = await saveResearchCache(hash, { researchFindings: { f4: {} } });
 assert.equal(saved, null);
 assert.equal(await getResearchCache(hash), null);
 const mixed = await saveResearchCache("part98-mixed-bundle", {
   researchFindings: { f3: { researchFailed: true }, f5: { sizingFactorsFound: true, trialRatePct: 10 } },
 });
 assert.ok(mixed);
+const failedOnly = await saveResearchCache("part98-failed-documented", {
+  researchFindings: { f4: { researchFailed: true, error: "truncated" } },
+});
+assert.ok(failedOnly);
 
 assert.throws(() => readGoldBudgetCap({}), /GOLD_SET_MAX_USD is required/);
 assert.equal(readGoldBudgetCap({ GOLD_SET_MAX_USD: "2.5" }), 2.5);

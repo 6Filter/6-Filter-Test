@@ -13,6 +13,10 @@ A Submit calls a step only when `expectedResearchSteps` in `lib/researchProgress
 
 `researchRunAt` is written only when every step in `stepsExpected` is in `stepsDone` or `stepsFailed`. A timestamp by itself does not mean the pass finished. A missing failure flag does not mean a step succeeded.
 
-## Bundle cache and identical scores
+## Bundle cache and identical scores (permanent rule)
 
-The research bundle cache stores a finished pass when **at least one** filter finding succeeded, even if another filter failed (for example F3 “no usable range”). A later Submit with the same research inputs is a cache HIT and keeps the same scores. An all-failed bundle is still refused so the next Submit can retry. `forceResearch` and per-step retry still re-run a failed step. Failed step results are never written to the per-step cache.
+The research fingerprint (`researchHashFor`) covers the idea text, category, attributes, benchmark, division, and attachment — not the Log name or team. Once that hash has a **finished** filter outcome in `research_cache`, every later Submit with the same fingerprint is a cache HIT and keeps the **same scores**.
+
+Documented filter failures are stored on purpose (for example F3 “no usable range”). Twin ideas cannot re-roll the model. The **first writer wins**: a second concurrent pass cannot overwrite findings for that hash. Empty or truncated parts are still refused.
+
+After a HIT the server persists suggestion numbers onto the form and does **not** call LLM auto-fill again for F3/F4. `forceResearch`, per-step retry, and Master cache invalidation are the only ways to replace a stored bundle. Failed step results are never written to the per-step cache, so an explicit retry can still re-run one step.

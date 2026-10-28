@@ -1,7 +1,8 @@
 /**
  * A failed step is not written to the step cache or the category-fact cache.
- * An all-failed bundle is refused. A mixed bundle (some filters ok) is stored so
- * identical inputs replay the same scores. Run 1 fails Filter 4; run 2 retries it.
+ * Finished filter outcomes (including documented failures) are stored on the
+ * bundle cache so identical inputs replay the same scores. Empty parts stay out.
+ * Run 1 fails Filter 4; run 2 retries it via the step cache.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -69,16 +70,7 @@ assert.equal(f1Calls, 1);
 assert.equal(sizingCalls, 1);
 assert.equal(costCalls, 1);
 
-for (const bad of [
-  { researchFailed: true },
-  { error: "down" },
-  { parseFailed: true, text: "x" },
-  { stopReason: "max_tokens", text: "cut" },
-  {},
-]) {
-  assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: bad } }), false);
-}
-
+assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: {} } }), false);
 assert.equal(
   researchBundleSaveAllowed({
     researchFindings: {
@@ -94,8 +86,13 @@ assert.equal(
   true,
   "mixed success + failed filter must be cacheable for score replay"
 );
+assert.equal(
+  researchBundleSaveAllowed({ researchFindings: { f4: { researchFailed: true, error: "injected" } } }),
+  true,
+  "documented filter failures must cache so twin submits cannot re-roll"
+);
 
-assert.equal(await saveResearchCache("a".repeat(64), { researchFindings: { f4: { researchFailed: true } } }), null);
+assert.equal(await saveResearchCache("a".repeat(64), { researchFindings: { f4: {} } }), null);
 
 const mixedHash = "b".repeat(64);
 const mixedSaved = await saveResearchCache(mixedHash, {
@@ -129,4 +126,4 @@ assert.equal(await getResearchCache(hash), null);
 const audit = await fileListAudit();
 assert.ok(audit.some((row) => row.action === "invalidate-research-cache" && JSON.stringify(row.ids_json).includes(hash)));
 
-console.log("PASS never cache a failed research step — mixed bundles still save for score replay");
+console.log("PASS never cache a failed research step — finished bundles (incl. failures) save for score replay");
