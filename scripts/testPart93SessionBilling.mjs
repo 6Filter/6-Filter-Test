@@ -11,6 +11,7 @@ import {
 import { researchHashFor } from "../lib/researchCache.js";
 import { requireUnlockedDepartment, canViewProposition } from "../lib/propositionAccess.js";
 import { currentBillingDepartment, runWithLlm } from "../lib/llmContext.js";
+import { OPEN_ACCESS_TEAM, PLATFORM_TEAM_LOCK_ENABLED } from "../lib/departmentAuthConstants.js";
 
 // Encrypt round-trip
 const plain = "sk-ant-test-key-not-real";
@@ -58,10 +59,15 @@ assert.match(creditErr.message, /CIA/);
 assert.doesNotMatch(creditErr.message, /fallback|another department's key was used/i);
 assert.equal(creditErr.code, "BILLING_CREDIT_EXHAUSTED");
 
-// Session required
-assert.throws(() => requireUnlockedDepartment(null), /Unlock with your department password/);
+// Session / open platform
+if (PLATFORM_TEAM_LOCK_ENABLED) {
+  assert.throws(() => requireUnlockedDepartment(null), /Unlock with your department password/);
+  assert.equal(canViewProposition(null, { submitterDepartment: "CIA" }), false);
+} else {
+  assert.equal(requireUnlockedDepartment(null), OPEN_ACCESS_TEAM);
+  assert.equal(canViewProposition(null, { submitterDepartment: "CIA" }), true);
+}
 assert.equal(requireUnlockedDepartment({ department: "CIA" }), "CIA");
-assert.equal(canViewProposition(null, { submitterDepartment: "CIA" }), false);
 
 // ALS billing department
 await runWithLlm("claude", async () => {
@@ -85,6 +91,7 @@ assert.equal(
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 assert.match(appSrc, /TeamUnlockScreen/);
 assert.match(appSrc, /teamSession/);
+assert.match(appSrc, /PLATFORM_TEAM_LOCK_ENABLED/);
 
 const callSrc = readFileSync(new URL("../lib/callAnthropic.js", import.meta.url), "utf8");
 assert.match(callSrc, /resolveBillingApiKey/);
@@ -92,7 +99,7 @@ assert.match(callSrc, /billingCreditExhaustedError/);
 assert.doesNotMatch(callSrc, /submitterDepartment/);
 
 const fieldsSrc = readFileSync(new URL("../lib/propositionFields.js", import.meta.url), "utf8");
-assert.match(fieldsSrc, /unlocked team session/);
+assert.match(fieldsSrc, /platform session|unlocked team session/);
 
 const policySrc = readFileSync(new URL("../docs/PART93_BILLING.md", import.meta.url), "utf8");
 assert.match(policySrc, /REUSE/);

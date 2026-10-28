@@ -12,12 +12,30 @@ assert.equal(PROPOSITION_TOP_FIELDS[0].key, "submitterName");
 assert.equal(PROPOSITION_TOP_FIELDS[1].key, "submitterDepartment");
 assert.deepEqual(
   PROPOSITION_TOP_FIELDS[1].options.filter((o) => o.v).map((o) => o.v),
-  ["R&D", "NPD", "CIA", "Marketing"]
+  [
+    "Ambient and Beverages",
+    "CC",
+    "FD",
+    "IB",
+    "PC",
+    "Commodities purchase",
+    "CIA",
+    "E-Com and Digital Marketing",
+    "MED",
+    "Manufacturing",
+    "Marketing - SN",
+    "Media",
+    "Packaging Development",
+    "R&D",
+    "Sales & Distribution - FMCG",
+    "Sales and Distribution - PPD",
+    "Strategic Purchase",
+  ]
 );
 
-assert.equal(normalizeSubmitterDepartment("Marketing"), "Marketing");
+assert.equal(normalizeSubmitterDepartment("Marketing - SN"), "Marketing - SN");
 assert.equal(normalizeSubmitterDepartment("finance"), "");
-assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "NPD" }), true);
+assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "R&D" }), true);
 assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "Sales" }), false);
 assert.equal(hasSubmitterIdentity({ submitterName: "", submitterDepartment: "CIA" }), false);
 

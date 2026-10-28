@@ -22,7 +22,11 @@ import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
 import { LIST_PROPOSITIONS_CAP } from "../lib/lockedConstants.js";
-import { isMasterUnlock } from "../lib/departmentAuthConstants.js";
+import {
+  isMasterUnlock,
+  OPEN_ACCESS_TEAM,
+  PLATFORM_TEAM_LOCK_ENABLED,
+} from "../lib/departmentAuthConstants.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -661,6 +665,11 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    if (!PLATFORM_TEAM_LOCK_ENABLED) {
+      setTeamSession({ department: OPEN_ACCESS_TEAM, unlockedAt: Date.now() });
+      setTeamGateReady(true);
+      return undefined;
+    }
     apiFetch("/api/department-auth/me")
       .then((r) => r.json())
       .then((data) => {
@@ -681,6 +690,7 @@ export default function App() {
   }, []);
 
   async function lockTeamSession() {
+    if (!PLATFORM_TEAM_LOCK_ENABLED) return;
     try {
       await apiFetch("/api/department-auth/lock", { method: "POST" });
     } catch {
@@ -1195,7 +1205,7 @@ export default function App() {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
-  if (!teamSession?.department) {
+  if (PLATFORM_TEAM_LOCK_ENABLED && !teamSession?.department) {
     return (
       <div className={`primus screen-log`}>
         <style>{CSS}</style>
@@ -1252,6 +1262,7 @@ export default function App() {
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
         ) : null}
+        {PLATFORM_TEAM_LOCK_ENABLED ? (
         <div className="session-chip">
           <span>
             {teamSession.department}
@@ -1261,6 +1272,7 @@ export default function App() {
             Switch
           </button>
         </div>
+        ) : null}
         {sessionUser ? (
         <div className="session-chip">
           <span>

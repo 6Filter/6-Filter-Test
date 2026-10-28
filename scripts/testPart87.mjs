@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { hashPassword } from "../lib/auth.js";
 import { canViewProposition } from "../lib/propositionAccess.js";
 import { matchesUnlockedDepartment, verifyDepartmentPassword } from "../lib/departmentAuth.js";
+import { PLATFORM_TEAM_LOCK_ENABLED } from "../lib/departmentAuthConstants.js";
 import { initDb, upsertDepartmentPasswordHash } from "../lib/db.js";
 
 const rdFoods = {
@@ -41,7 +42,13 @@ assert.equal(matchesUnlockedDepartment({ submitterDepartment: "" }, "NPD"), true
 assert.equal(canViewProposition({ role: "ADMIN" }, npdSnacks), true);
 assert.equal(canViewProposition({ department: "Master" }, rdFoods), true);
 assert.equal(canViewProposition({ department: "Master" }, npdSnacks), true);
-assert.equal(canViewProposition(null, rdFoods), false, "Part 93: platform requires team unlock");
+assert.equal(
+  canViewProposition(null, rdFoods),
+  !PLATFORM_TEAM_LOCK_ENABLED,
+  PLATFORM_TEAM_LOCK_ENABLED
+    ? "Part 93: platform requires team unlock"
+    : "open platform: no team unlock required"
+);
 
 await initDb();
 await upsertDepartmentPasswordHash("R&D", hashPassword("correct-horse"));
