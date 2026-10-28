@@ -1,6 +1,7 @@
 /**
- * A failed step is not written to the bundle cache, the step cache, or the category-fact cache.
- * Run 1 fails Filter 4. Run 2 retries Filter 4 only.
+ * A failed step is not written to the step cache or the category-fact cache.
+ * An all-failed bundle is refused. A mixed bundle (some filters ok) is stored so
+ * identical inputs replay the same scores. Run 1 fails Filter 4; run 2 retries it.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -78,7 +79,34 @@ for (const bad of [
   assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: bad } }), false);
 }
 
+assert.equal(
+  researchBundleSaveAllowed({
+    researchFindings: {
+      f3: { researchFailed: true, failureReason: "no usable range" },
+      f4: { techShiftFound: true, overallRisk: "High" },
+      f5: { sizingFactorsFound: true, householdsReachedY3Mn: 2 },
+      stepsExpected: ["F3", "F4", "F5"],
+      stepsDone: ["F4", "F5"],
+      stepsFailed: ["F3"],
+      sources: [],
+    },
+  }),
+  true,
+  "mixed success + failed filter must be cacheable for score replay"
+);
+
 assert.equal(await saveResearchCache("a".repeat(64), { researchFindings: { f4: { researchFailed: true } } }), null);
+
+const mixedHash = "b".repeat(64);
+const mixedSaved = await saveResearchCache(mixedHash, {
+  researchFindings: {
+    f3: { researchFailed: true, failureReason: "no usable range" },
+    f4: { techShiftFound: true },
+    stepsFailed: [],
+  },
+});
+assert.ok(mixedSaved, "mixed bundle must save even when stepsFailed is an empty array");
+assert.equal((await getResearchCache(mixedHash))?.researchFindings?.f4?.techShiftFound, true);
 
 const fact = await withCategoryFact({
   category: "cache-probe",
@@ -101,4 +129,4 @@ assert.equal(await getResearchCache(hash), null);
 const audit = await fileListAudit();
 assert.ok(audit.some((row) => row.action === "invalidate-research-cache" && JSON.stringify(row.ids_json).includes(hash)));
 
-console.log("PASS never cache a failed research step");
+console.log("PASS never cache a failed research step — mixed bundles still save for score replay");

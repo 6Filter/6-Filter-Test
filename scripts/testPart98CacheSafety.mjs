@@ -64,6 +64,16 @@ assert.equal(costCalls, 1);
 assert.equal(researchResultIsCacheable({ researchFailed: true, error: "truncated" }), false);
 assert.equal(researchResultIsCacheable({ error: "empty" }), false);
 assert.equal(researchBundleSaveAllowed({ researchFindings: { f4: { researchFailed: true } } }), false);
+assert.equal(
+  researchBundleSaveAllowed({
+    researchFindings: {
+      f3: { researchFailed: true },
+      f4: { techShiftFound: true },
+      stepsFailed: [],
+    },
+  }),
+  true
+);
 assert.equal(researchBundleSaveAllowed({ filterNarratives: { f1: "ok" } }), true);
 
 await initDb();
@@ -71,6 +81,10 @@ const hash = "part98-failed-bundle";
 const saved = await saveResearchCache(hash, { researchFindings: { f4: { researchFailed: true } } });
 assert.equal(saved, null);
 assert.equal(await getResearchCache(hash), null);
+const mixed = await saveResearchCache("part98-mixed-bundle", {
+  researchFindings: { f3: { researchFailed: true }, f5: { sizingFactorsFound: true, trialRatePct: 10 } },
+});
+assert.ok(mixed);
 
 assert.throws(() => readGoldBudgetCap({}), /GOLD_SET_MAX_USD is required/);
 assert.equal(readGoldBudgetCap({ GOLD_SET_MAX_USD: "2.5" }), 2.5);

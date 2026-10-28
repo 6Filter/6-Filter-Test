@@ -12,3 +12,7 @@ A Submit calls a step only when `expectedResearchSteps` in `lib/researchProgress
 | F5 sizing | One or more of the five sizing factors (households, trial, repeat, frequency, pack value) is blank. Filter 5 is still not scored. |
 
 `researchRunAt` is written only when every step in `stepsExpected` is in `stepsDone` or `stepsFailed`. A timestamp by itself does not mean the pass finished. A missing failure flag does not mean a step succeeded.
+
+## Bundle cache and identical scores
+
+The research bundle cache stores a finished pass when **at least one** filter finding succeeded, even if another filter failed (for example F3 “no usable range”). A later Submit with the same research inputs is a cache HIT and keeps the same scores. An all-failed bundle is still refused so the next Submit can retry. `forceResearch` and per-step retry still re-run a failed step. Failed step results are never written to the per-step cache.
