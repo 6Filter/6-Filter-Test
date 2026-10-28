@@ -57,9 +57,9 @@ import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult }
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
-import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isHumanMrpOverride, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
-import { resolveGstRate } from "../lib/gstRate.js";
+import { isHumanGstOverride, resolveGstRate } from "../lib/gstRate.js";
 import {
   DIMENSION_LABELS,
   TECH_SHIFT_DIMENSIONS,
@@ -1371,6 +1371,7 @@ export default function PropositionForm({
   const sourceDocRef = useRef(initial || null);
   const proofRef = useRef(null);
   const mrpTouchedByHuman = useRef(false);
+  const mrpHydratedFor = useRef("");
   const f3RangeTouchedByHuman = useRef(false);
   const gstTouchedByHuman = useRef(false);
   const f3AutoFillRequested = useRef(false);
@@ -1435,6 +1436,7 @@ export default function PropositionForm({
     setMrpBaseInr(null);
     setMrpFinalInr(null);
     mrpTouchedByHuman.current = false;
+    mrpHydratedFor.current = "";
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
@@ -1453,38 +1455,41 @@ export default function PropositionForm({
     });
     setMrpBaseInr(result?.baseMrp ?? null);
     setMrpFinalInr(result?.finalMrp ?? null);
+    const computed = result?.finalMrp ?? result?.baseMrp ?? null;
+    const nextVal = computed != null && Number.isFinite(Number(computed)) ? Number(computed).toFixed(2) : "";
+    const mrpPath = sourcedPath("f2", "mrpInr");
     if (mrpTouchedByHuman.current) return;
-    if (result?.finalMrp != null) {
-      const nextVal = result.finalMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-      });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else if (result?.baseMrp != null) {
-      const nextVal = result.baseMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-      });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else {
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === "") return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: "" } };
-      });
-      setAiSourced((prev) => {
-        if (prev[sourcedPath("f2", "mrpInr")] === false || prev[sourcedPath("f2", "mrpInr")] == null) {
+    setDoc((prev) => {
+      if (mrpTouchedByHuman.current) return prev;
+      const proposalId = String(initial?.id || prev.id || "");
+      if (mrpHydratedFor.current !== proposalId) {
+        mrpHydratedFor.current = proposalId;
+        if (isHumanMrpOverride(prev.f2?.mrpInr, computed)) {
+          mrpTouchedByHuman.current = true;
           return prev;
         }
-        return { ...prev, [sourcedPath("f2", "mrpInr")]: false };
-      });
-    }
-  }, [f2Cogs, f2Margin, f2Gst]);
+      }
+      if (!nextVal) {
+        if (String(prev.f2?.mrpInr ?? "") === "") return prev;
+        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: "" } };
+      }
+      if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
+      return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+    });
+    setAiSourced((prev) => {
+      if (mrpTouchedByHuman.current) {
+        if (!prev[mrpPath]) return prev;
+        const next = { ...prev };
+        delete next[mrpPath];
+        return next;
+      }
+      if (!nextVal) {
+        if (prev[mrpPath] === false || prev[mrpPath] == null) return prev;
+        return { ...prev, [mrpPath]: false };
+      }
+      return prev[mrpPath] === true ? prev : { ...prev, [mrpPath]: true };
+    });
+  }, [f2Cogs, f2Margin, f2Gst, initial?.id]);
 
   const f3SuggestedRange = aiSuggestions?.f3?.marginElasticity;
   useEffect(() => {
@@ -1557,8 +1562,14 @@ export default function PropositionForm({
       category: ideaCategory,
       ideaDescription: ideaText,
     });
+    const gstPath = sourcedPath("f2", "gstRatePct");
+    const basisPath = sourcedPath("f2", "gstBasis");
     setDoc((prev) => {
       if (gstTouchedByHuman.current) return prev;
+      if (isHumanGstOverride(prev.f2?.gstRatePct, prev.f2?.gstBasis)) {
+        gstTouchedByHuman.current = true;
+        return prev;
+      }
       if (
         Number(prev.f2?.gstRatePct) === Number(resolved.gstRatePct) &&
         String(prev.f2?.gstBasis || "") === resolved.gstBasis
@@ -1570,12 +1581,21 @@ export default function PropositionForm({
         f2: { ...(prev.f2 || {}), gstRatePct: resolved.gstRatePct, gstBasis: resolved.gstBasis },
       };
     });
-    setAiSourced((prev) => ({
-      ...prev,
-      [sourcedPath("f2", "gstRatePct")]: true,
-      [sourcedPath("f2", "gstBasis")]: true,
-    }));
-  }, [ideaName, ideaCategory, ideaText]);
+    setAiSourced((prev) => {
+      if (gstTouchedByHuman.current) {
+        if (!prev[gstPath] && !prev[basisPath]) return prev;
+        const next = { ...prev };
+        delete next[gstPath];
+        delete next[basisPath];
+        return next;
+      }
+      return {
+        ...prev,
+        [gstPath]: true,
+        [basisPath]: true,
+      };
+    });
+  }, [ideaName, ideaCategory, ideaText, initial?.id]);
 
   const propositionId = doc.id || initial?.id;
   const hasIdentity = hasSubmitterIdentity(doc);
