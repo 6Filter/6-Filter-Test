@@ -27,7 +27,7 @@ const incomplete = {
 };
 const plan = planResearch(incomplete);
 assert.equal(plan.researchState, "incomplete");
-assert.deepEqual(plan.steps, ["F3", "F4"]);
+assert.deepEqual(plan.steps, ["F1", "F3", "F4"], "typed F1 fields still need web verify");
 
 const calls = { F3: 0, F4: 0, F1: 0, F2: 0 };
 const declined = await submitWithRunners(incomplete, {
@@ -43,14 +43,15 @@ const first = await submitWithRunners(incomplete, {
   F1: async () => { calls.F1 += 1; },
   F2: async () => { calls.F2 += 1; },
 });
-assert.deepEqual(first.calls, ["F3", "F4"]);
+assert.deepEqual(first.calls, ["F1", "F3", "F4"]);
 assert.equal(planResearch(first.doc).researchState, "complete");
 const second = await submitWithRunners(first.doc, {
   F3: async () => { calls.F3 += 1; },
   F4: async () => { calls.F4 += 1; },
+  F1: async () => { calls.F1 += 1; },
 });
 assert.deepEqual(second.calls, []);
-assert.equal(calls.F1, 0);
+assert.equal(calls.F1, 1);
 assert.equal(calls.F2, 0);
 assert.equal(calls.F3, 1);
 assert.equal(calls.F4, 1);
