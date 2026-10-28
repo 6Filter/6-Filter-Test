@@ -136,6 +136,10 @@ assert.match(hairSearch.primary, /Hair Care category India/);
 assert.match(hairSearch.fallback, /Personal Care category India/);
 assert.match(scopedSearchInstruction("Nielsen size", "Snacks"), /PRIMARY:/);
 assert.match(scopedSearchInstruction("Nielsen size", "Snacks"), /FALLBACK/);
+assert.match(
+  scopedSearchInstruction("Nielsen size", "Hair oils", { brand: "Parachute Advansed" }),
+  /BENCHMARK VERIFY.*Parachute Advansed product listing India Hair oils/
+);
 
 assert.equal(isClaimingNoCompetitor({ declaredGap: 0 }), true);
 assert.equal(isClaimingNoCompetitor({ declaredGap: "", benchmark: "" }), true);

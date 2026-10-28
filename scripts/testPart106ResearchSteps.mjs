@@ -33,6 +33,9 @@ const hand = {
   f2: { cogsAtScale: 40, netMarginAtScale: 20 },
   f5: sized,
 };
+assert.equal(handEntered(hand, "F1"), false, "typed F1 fields are inputs — research must still verify the benchmark");
+assert.equal(expectedResearchSteps(hand).includes("F1"), true);
+assert.equal(shouldRunStep(hand, "f1"), true);
 assert.equal(handEntered(hand, "F2"), true);
 assert.equal(expectedResearchSteps(hand).includes("F2"), false);
 const priced = planResearch({ ...hand, researchRunAt: "2026-10-01T00:00:00.000Z", f3: {}, f4: {} });

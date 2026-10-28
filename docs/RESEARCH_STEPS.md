@@ -4,7 +4,7 @@ A Submit calls a step only when `expectedResearchSteps` in `lib/researchProgress
 
 | Step | Expected when |
 | --- | --- |
-| F1 research | Filter 1 has no typed input (attribute, benchmark, gap, growth route, or the other Filter 1 fields). |
+| F1 research | Always expected until Filter 1 findings exist. Typed attribute / benchmark / gap are inputs to verify online — they do not skip the F1 web search. |
 | No-competitor check | The declared gap is 0 or blank, and Filter 1 has no verified benchmark. A gap of 2.0 or more does not run this check. |
 | F2 cost estimate | COGS and net margin are not both already typed. Typing both means the cost estimate is not expected and is not priced. |
 | F3 margin elasticity | The min/max MRP band is empty, inverted, or not a real rupee range. |
