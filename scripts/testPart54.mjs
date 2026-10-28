@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { classifyProductGstKind, gstRateUnfilled, resolveGstRate } from "../lib/gstRate.js";
+import { classifyProductGstKind, gstRateUnfilled, isHumanGstOverride, resolveGstRate } from "../lib/gstRate.js";
 import { isMarginElasticityUnfilled } from "../lib/mrpFormula.js";
 
 const hairOil = resolveGstRate({
@@ -32,6 +32,8 @@ assert.equal(gstRateUnfilled(null), true);
 assert.equal(gstRateUnfilled(""), true);
 assert.equal(gstRateUnfilled(18), false);
 assert.equal(gstRateUnfilled("5"), false);
+assert.equal(isHumanGstOverride(5, ""), true);
+assert.equal(isHumanGstOverride(18, hairOil.gstBasis), false);
 
 assert.equal(
   isMarginElasticityUnfilled({ minMarginPct: 5, maxMarginPct: 10, minMrpInr: 5, maxMrpInr: 10 }),
