@@ -84,10 +84,12 @@ function filterSubtitle(spec, division) {
 }
 
 function fieldHelper(field) {
+  const parts = [];
+  if (field.helper) parts.push(field.helper);
   if (typeof field.helperFromDivision === "function") {
-    return "Division floor: matched automatically on first Submit (v4, non-negotiable)";
+    parts.push("Division floor: matched automatically on first Submit (v4, non-negotiable)");
   }
-  return field.helper || "";
+  return parts.join(" ");
 }
 
 const SUGGEST_BLOCKLIST = new Set([
