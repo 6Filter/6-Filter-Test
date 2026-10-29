@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Copy, Check, FileText, FileUp, Info, Loader2, RefreshCw, Send, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Send, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
+import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
 import {
   FORUM_VERDICT_FIELD,
   PROPOSITION_TOP_FIELDS,
@@ -964,7 +965,7 @@ function ManagerReviewPanel({
   );
 }
 
-function GoNoGoResultPage({
+export function GoNoGoResultPage({
   result,
   advisoryChecks,
   category,
@@ -980,7 +981,28 @@ function GoNoGoResultPage({
   managerBusy,
   managerComment,
   onManagerComment,
+  pdfMode = false,
 }) {
+  const pageRef = useRef(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  async function handleDownloadPdf() {
+    if (pdfBusy || !pageRef.current) return;
+    setPdfError("");
+    setPdfBusy(true);
+    try {
+      await exportElementToPdf(pageRef.current, {
+        filename: outputPdfFilename(doc || savedDoc || {}, result),
+        backgroundColor: "#0d0715",
+      });
+    } catch (e) {
+      setPdfError(e?.message || "Could not export PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
   const scoreRaw = result.score?.total ? result.score : scoreAdvisoryChecks(checks);
@@ -1028,7 +1050,7 @@ function GoNoGoResultPage({
   const sizeTier = safeCall("gram badge", () => ideaSizeForResult(doc || {}), null);
 
   return (
-    <div className="gonogo-result-page">
+    <div className="gonogo-result-page" ref={pageRef}>
       <header className="output-meta">
         <span className="mono">
           IDEA · v4 RULESET{dated ? ` · ${dated}` : ""}
@@ -1233,34 +1255,53 @@ function GoNoGoResultPage({
         </p>
       )}
 
-      {isWatch ? (
-        <ManagerReviewPanel
-          classification={result.classification}
-          scorePct={score.pct}
-          review={doc?.managerReview}
-          currentUser={currentUser}
-          onRequest={onRequestReview}
-          onApprove={onApproveReview}
-          busy={managerBusy}
-          comment={managerComment}
-          onComment={onManagerComment}
-        />
+      {isWatch && !pdfMode ? (
+        <div className="pdf-hide">
+          <ManagerReviewPanel
+            classification={result.classification}
+            scorePct={score.pct}
+            review={doc?.managerReview}
+            currentUser={currentUser}
+            onRequest={onRequestReview}
+            onApprove={onApproveReview}
+            busy={managerBusy}
+            comment={managerComment}
+            onComment={onManagerComment}
+          />
+        </div>
       ) : null}
 
-      <div className="output-actions">
-        <button
-          type="button"
-          className="output-btn-primary"
-          disabled={saving}
-          onClick={onSubmit}
-        >
-          {saving ? <Loader2 size={15} className="spin" /> : null}
-          Submit
-        </button>
-        <button type="button" className="output-btn-secondary" onClick={onBack}>
-          <ArrowLeft size={15} /> Back to filters
-        </button>
-      </div>
+      {!pdfMode ? (
+        <div className="output-actions pdf-hide">
+          <button
+            type="button"
+            className="output-btn-primary"
+            disabled={saving}
+            onClick={onSubmit}
+          >
+            {saving ? <Loader2 size={15} className="spin" /> : null}
+            Submit
+          </button>
+          <button
+            type="button"
+            className="output-btn-secondary"
+            disabled={pdfBusy}
+            onClick={handleDownloadPdf}
+            title="Download this output page as PDF"
+          >
+            {pdfBusy ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+            {pdfBusy ? "Preparing PDF…" : "Download PDF"}
+          </button>
+          <button type="button" className="output-btn-secondary" onClick={onBack}>
+            <ArrowLeft size={15} /> Back to filters
+          </button>
+          {pdfError ? (
+            <p className="gonogo-blocked-note" role="alert" style={{ width: "100%", margin: "4px 0 0" }}>
+              {pdfError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       </ErrorBoundary>
     </div>
   );
@@ -2894,7 +2935,7 @@ export default function PropositionForm({
   );
 }
 
-const PROP_CSS = `
+export const PROP_CSS = `
 .prop-form-page{
   --bg:#120818; --header-bg:#0d0512; --header-border:#2a1836;
   --sidebar-hover:#1d1029; --sidebar-active:#241333;

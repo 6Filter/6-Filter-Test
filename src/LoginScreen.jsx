@@ -49,7 +49,7 @@ export default function LoginScreen({ onLogin }) {
     <div className="primus screen-spec login-screen">
       <main className="login-card">
         <p className="login-kicker">NPD screening · CavinKare</p>
-        <h1>{registering ? "Create your Primus account" : "Sign in to Primus"}</h1>
+        <h1>{registering ? "Create your Primus account" : "Sign in to 6 Filter Test"}</h1>
         <p className="login-lede">
           {registering
             ? "Register with your work email. After sign-in you pick your team on the idea form — CIA, Sales and Distribution - PPD, and the other departments."

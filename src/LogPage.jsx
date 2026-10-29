@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Download, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, FileDown, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   exportPropositionsToExcel,
   resolveFullPropositions,
 } from "../lib/logExport.js";
+import { exportPropositionOutputPdf } from "./exportGoNoGoPdf.jsx";
 import {
   applyLogStatusFilter,
   applyScopedFilters,
@@ -85,6 +86,7 @@ export default function LogPage({
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteAllTyped, setDeleteAllTyped] = useState("");
   const [exportingId, setExportingId] = useState("");
+  const [exportingPdfId, setExportingPdfId] = useState("");
   const [exportError, setExportError] = useState("");
   const [gateReady, setGateReady] = useState(unlockedDepartmentProp !== undefined);
   const [unlockedDepartmentLocal, setUnlockedDepartmentLocal] = useState(null);
@@ -118,7 +120,7 @@ export default function LogPage({
     [scopedRows]
   );
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
-  const busy = loading || deletingAll || deletingUntouched || exporting;
+  const busy = loading || deletingAll || deletingUntouched || exporting || Boolean(exportingPdfId);
   const masterView = isMasterUnlock(unlockedDepartment);
   const allowDelete = masterView;
   const scopedStats = useMemo(() => logStats(scopedRows), [scopedRows]);
@@ -158,10 +160,42 @@ export default function LogPage({
   }
 
   async function handleExportRow(row) {
-    if (!row?.id || exporting) return;
+    if (!row?.id || exporting || exportingPdfId) return;
     setExportingId(row.id);
     const hint = String(row.name || "idea").trim() || "idea";
     await handleExport([row], hint);
+  }
+
+  function rowIsScreened(row) {
+    return Boolean(row?.goNoGo?.classification || row?.classification);
+  }
+
+  async function handleExportPdfRow(row) {
+    if (!row?.id || exporting || exportingPdfId) return;
+    if (!rowIsScreened(row)) {
+      setExportError("Run the Go/No-Go screen first — PDF exports the output page.");
+      return;
+    }
+    if (!onFetchFull) {
+      setExportError("Could not load the full idea for PDF export.");
+      return;
+    }
+    setExportError("");
+    setExportingPdfId(row.id);
+    try {
+      const full = await onFetchFull(row.id);
+      if (!full?.goNoGo?.classification && !full?.classification) {
+        throw new Error("This idea has no Go/No-Go output yet. Run the screen first.");
+      }
+      const doc = full.goNoGo?.classification
+        ? full
+        : { ...full, goNoGo: full.goNoGo || { classification: full.classification } };
+      await exportPropositionOutputPdf(doc);
+    } catch (e) {
+      setExportError(e.message || "Could not export PDF.");
+    } finally {
+      setExportingPdfId("");
+    }
   }
 
   useEffect(() => {
@@ -345,11 +379,12 @@ export default function LogPage({
               className="log-btn"
               onClick={() => handleExport(filteredRows)}
               disabled={busy || filteredRows.length === 0}
+              title="Export matching ideas to Excel"
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
               {personFilter || categoryGroupFilter || query.trim() || status !== "ALL"
-                ? `Export (${filteredRows.length} matching)`
-                : "Export all"}
+                ? `Export Excel (${filteredRows.length})`
+                : "Export Excel"}
             </button>
             <button
               type="button"
@@ -567,7 +602,14 @@ export default function LogPage({
                   const division = String(h.division || "").trim();
                   const usedAi = researchWasUsed(h);
                   const isExportingRow = exportingId === h.id;
-                  const rowBusy = openingDisabled || Boolean(deletingId) || deletingAll || deletingUntouched || exporting;
+                  const isExportingPdf = exportingPdfId === h.id;
+                  const rowBusy =
+                    openingDisabled ||
+                    Boolean(deletingId) ||
+                    Boolean(exportingPdfId) ||
+                    deletingAll ||
+                    deletingUntouched ||
+                    exporting;
                   const screened = Boolean(h.goNoGo?.classification || h.classification);
                   const sizeTier = screened ? ideaSizeForResult(h) : null;
                   const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
@@ -655,12 +697,26 @@ export default function LogPage({
                           <button
                             type="button"
                             className="log-del log-export-row"
-                            aria-label="Export this idea"
-                            title="Export this idea"
+                            aria-label="Export this idea to Excel"
+                            title="Export Excel"
                             disabled={rowBusy}
                             onClick={() => handleExportRow(h)}
                           >
                             {isExportingRow ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="log-del log-export-row"
+                            aria-label="Export Go/No-Go output as PDF"
+                            title={
+                              screened
+                                ? "Export output page as PDF"
+                                : "Run the Go/No-Go screen first to export PDF"
+                            }
+                            disabled={rowBusy || !screened}
+                            onClick={() => handleExportPdfRow(h)}
+                          >
+                            {isExportingPdf ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />}
                           </button>
                           {allowDelete && canDeleteRow ? (
                           <button
