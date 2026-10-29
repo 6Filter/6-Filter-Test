@@ -2,7 +2,7 @@
  * Part 106: expected steps, confirm-before-spend, legacy state, and the empty-filter save.
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { nextFilterJson } from "../lib/db.js";
@@ -20,6 +20,15 @@ import {
 import { loadRestoredRows } from "./planResubmit.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+function hasBackupExport() {
+  const dir = path.join(root, "data", "backups");
+  if (!existsSync(dir)) return false;
+  try {
+    return readdirSync(dir).some((name) => /^\d{8}T\d{6}Z$/.test(name));
+  } catch {
+    return false;
+  }
+}
 const sized = {
   householdsReachedY3Mn: 1,
   trialRatePct: 1,
@@ -83,6 +92,21 @@ const declined = await submitWithRunners(half, {
 assert.deepEqual(declined.calls, []);
 assert.equal(declined.doc, half);
 
+const form = readFileSync(path.join(root, "src", "PropositionForm.jsx"), "utf8");
+assert.match(form, /confirmMissingSteps/);
+assert.match(form, /window\.confirm\(missingStepsCostPreview/);
+const api = readFileSync(path.join(root, "lib", "propositionsApi.js"), "utf8");
+assert.match(api, /needsConfirm/);
+assert.doesNotMatch(api, /run all|runAll|bulkResearch/i);
+const health = readFileSync(path.join(root, "lib", "healthApi.js"), "utf8");
+assert.match(health, /researchIncomplete/);
+
+if (!hasBackupExport()) {
+  console.log("SKIP Part 106 backup-backed checks — data/backups is not present");
+  console.log("PASS part 106 research steps (unit only)");
+  process.exit(0);
+}
+
 const { rows } = await loadRestoredRows();
 assert.equal(rows.length, 96);
 for (const doc of rows) {
@@ -105,14 +129,5 @@ const incompleteRows = rows.filter((doc) => uiResearchState(doc) === "incomplete
 assert.equal(applyLogStatusFilter(rows, "incomplete").length, incompleteRows.length);
 const flat = flattenProposition(incompleteRows[0]);
 assert.equal(flat.researchState, "incomplete");
-
-const form = readFileSync(path.join(root, "src", "PropositionForm.jsx"), "utf8");
-assert.match(form, /confirmMissingSteps/);
-assert.match(form, /window\.confirm\(missingStepsCostPreview/);
-const api = readFileSync(path.join(root, "lib", "propositionsApi.js"), "utf8");
-assert.match(api, /needsConfirm/);
-assert.doesNotMatch(api, /run all|runAll|bulkResearch/i);
-const health = readFileSync(path.join(root, "lib", "healthApi.js"), "utf8");
-assert.match(health, /researchIncomplete/);
 
 console.log("PASS part 106 research steps");

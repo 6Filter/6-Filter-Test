@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, access, readFile } from "node:fs/promises";
+import { mkdtemp, access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
@@ -8,8 +8,19 @@ import { redactSecrets, sendJson } from "../lib/http.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dbHref = pathToFileURL(path.join(root, "lib", "db.js")).href;
-const propFile = path.join(root, "data", "propositions.json");
-const userFile = path.join(root, "data", "users.json");
+const dataDir = path.join(root, "data");
+const propFile = path.join(dataDir, "propositions.json");
+const userFile = path.join(dataDir, "users.json");
+
+/** Fresh clones have no data/ (gitignored). Seed empty stores before fail-closed checks. */
+async function ensureEmptyJsonStore(file) {
+  await mkdir(path.dirname(file), { recursive: true });
+  try {
+    await access(file);
+  } catch {
+    await writeFile(file, "[]\n", "utf8");
+  }
+}
 
 function runNode(code, { cwd, env }) {
   return new Promise((resolve) => {
@@ -102,6 +113,8 @@ process.env.NODE_ENV = "test";
 process.env.DATABASE_URL = "postgres://127.0.0.1:1/primus";
 delete process.env.POSTGRES_URL;
 
+await ensureEmptyJsonStore(propFile);
+await ensureEmptyJsonStore(userFile);
 const beforeProps = await readFile(propFile);
 const beforeUsers = await readFile(userFile);
 const { createProposition, createUser } = await import("../lib/db.js");

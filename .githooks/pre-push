@@ -1,6 +1,9 @@
 #!/bin/sh
-# Refuse a push when the Postgres no-clobber suite is skipped.
+# Catch CI-only failures (fresh clone, no gitignored data/, no Postgres) before push.
+# Then refuse a push when the Postgres no-clobber suite is skipped.
 cd "$(dirname "$0")/.." || exit 1
+echo "pre-push: node scripts/ciDryRun.mjs"
+node scripts/ciDryRun.mjs || exit $?
 export REQUIRE_POSTGRES_TESTS=1
 echo "pre-push: npm run test:regression with REQUIRE_POSTGRES_TESTS=1"
 npm run test:regression
