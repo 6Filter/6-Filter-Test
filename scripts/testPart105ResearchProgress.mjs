@@ -95,6 +95,11 @@ assert.match(text, /planned 870271a6-d242-4f20-8b20-47302da8cf5f steps=\S*F3,F4\
 assert.equal(hash(), before);
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+if (!String(process.env.TEST_DATABASE_URL || "").trim()) {
+  console.log("SKIP Part 105 planResubmit spawn — TEST_DATABASE_URL is not set");
+  console.log("PASS research progress planner");
+  process.exit(0);
+}
 const run = () => new Promise((resolve) => {
   const child = spawn(process.execPath, [path.join(root, "scripts", "planResubmit.mjs")], {
     cwd: root,
