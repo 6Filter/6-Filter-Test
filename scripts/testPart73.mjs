@@ -4,7 +4,6 @@ import { checkF1 } from "../lib/filterChecks.js";
 import { previewAdvisoryChecks } from "../lib/goNoGo.js";
 import { ideaSizeTier, ideaSizeFromF5 } from "../lib/ideaScale.js";
 import { canViewProposition } from "../lib/propositionAccess.js";
-import { PLATFORM_TEAM_LOCK_ENABLED } from "../lib/departmentAuthConstants.js";
 import { FMCG_CATEGORIES } from "../lib/fmcgCategories.js";
 
 const prevAuth = process.env.REQUIRE_AUTH;
@@ -53,18 +52,33 @@ assert.match(sized.derivation, /households/);
 assert.match(sized.derivation, /trial/);
 assert.match(sized.derivation, /repeat/);
 
-const manager = { id: "m1", role: "ADMIN", division: "Foods" };
-const bmA = { id: "u1", role: "BM", division: "Personal Care" };
-const bmB = { id: "u2", role: "BM", division: "Foods" };
-const propA = { id: "p1", division: "Personal Care", createdByUserId: "u1" };
-const propB = { id: "p2", division: "Foods", createdByUserId: "u9" };
-const propMine = { id: "p3", division: "Foods", createdByUserId: "u1" };
+const manager = { id: "m1", role: "ADMIN", email: "admin@cavinkare.com", division: "Foods" };
+const bmA = { id: "u1", role: "BM", email: "a@cavinkare.com", division: "Personal Care" };
+const bmB = { id: "u2", role: "BM", email: "b@cavinkare.com", division: "Foods" };
+const propA = {
+  id: "p1",
+  division: "Personal Care",
+  createdByUserId: "u1",
+  createdByEmail: "a@cavinkare.com",
+};
+const propB = {
+  id: "p2",
+  division: "Foods",
+  createdByUserId: "u9",
+  createdByEmail: "other@cavinkare.com",
+};
+const propMine = {
+  id: "p3",
+  division: "Foods",
+  createdByUserId: "u1",
+  createdByEmail: "a@cavinkare.com",
+};
 assert.equal(canViewProposition(manager, propA), true);
 assert.equal(canViewProposition(bmA, propA), true);
-assert.equal(canViewProposition(bmA, propB), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
+assert.equal(canViewProposition(bmA, propB), false);
 assert.equal(canViewProposition(bmA, propMine), true);
-assert.equal(canViewProposition(bmB, propA), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
-assert.equal(canViewProposition(null, propA), PLATFORM_TEAM_LOCK_ENABLED ? false : true);
+assert.equal(canViewProposition(bmB, propA), false);
+assert.equal(canViewProposition(null, propA), false);
 
 process.env.REQUIRE_AUTH = prevAuth;
 
@@ -93,7 +107,7 @@ assert.match(api, /handlePropositionDraft/);
 assert.match(api, /handlePropositionConceptCard/);
 assert.match(api, /handlePropositionRefreshField/);
 assert.match(api, /bumpVersion: false/);
-assert.match(api, /canViewProposition/);
+assert.match(api, /canAccessIdea/);
 assert.match(api, /404, \{ error: "Proposition not found\." \}/);
 
 assert.match(router, /\/draft\$/);

@@ -68,7 +68,7 @@ assert.doesNotMatch(
 );
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
-assert.match(apiSrc, /submitterDepartment: department/);
+assert.match(apiSrc, /submitterDepartment: req\.user\?\.team/);
 assert.match(apiSrc, /deleteAllPropositions\(null, "Master"\)/);
 assert.match(apiSrc, /deleteUntouchedDrafts\(null, actor\)/);
 assert.match(apiSrc, /canDeleteLogProposition/);
