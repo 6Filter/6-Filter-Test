@@ -1393,6 +1393,14 @@ export default function PropositionForm({
       return { ...prev, submitterName: accountName };
     });
   }, [currentUser?.name, initial?.id]);
+  useEffect(() => {
+    const accountTeam = String(currentUser?.team || "").trim();
+    if (!accountTeam) return;
+    setDoc((prev) => {
+      if (prev?.submitterDepartment === accountTeam) return prev;
+      return { ...prev, submitterDepartment: accountTeam, teamIsLegacy: false };
+    });
+  }, [currentUser?.team, initial?.id]);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
@@ -2299,7 +2307,7 @@ export default function PropositionForm({
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
     if (!hasSubmitterIdentity(doc)) {
-      setLocalError("Enter your name and select your department before Submit.");
+      setLocalError("Enter your name before Submit. Your team comes from your account.");
       return;
     }
     if (!canSubmit) {
@@ -2479,18 +2487,32 @@ export default function PropositionForm({
 
       <div className="prop-form-main">
       <section className="prop-identity-strip" aria-label="Submitter">
-        {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName" || f.key === "submitterDepartment").map(
-          (field) => (
-            <FieldControl
-              key={field.key}
-              field={field}
-              value={doc[field.key]}
-              onChange={(v) => setTop(field.key, v)}
-              currentUser={currentUser}
-              aiSourced={false}
-            />
-          )
-        )}
+        {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName").map((field) => (
+          <FieldControl
+            key={field.key}
+            field={field}
+            value={doc[field.key]}
+            onChange={(v) => setTop(field.key, v)}
+            currentUser={currentUser}
+            aiSourced={false}
+          />
+        ))}
+        <label className="field">
+          <span className="field-label">Your team</span>
+          <input
+            value={
+              currentUser?.team ||
+              doc.submitterDepartment ||
+              (doc.teamIsLegacy ? `Legacy: ${doc.submitterDepartment}` : "")
+            }
+            disabled
+            readOnly
+            aria-label="Your team"
+          />
+          <span className="field-helper">
+            From your account. Only an ADMIN can change it.
+          </span>
+        </label>
       </section>
 
       <section id="the-proposition" className="prop-form-hero">

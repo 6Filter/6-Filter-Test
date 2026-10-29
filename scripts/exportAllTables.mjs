@@ -15,7 +15,7 @@ import { rewriteRenderDatabaseUrl } from "../lib/db.js";
 
 const SCHEMA_VERSION = "1";
 const SECRET_WARNING =
-  "This export contains password hashes and encrypted keys. Store it encrypted. Never commit it or paste it anywhere.";
+  "This export contains personal data (users, emails, audit rows) and may include password hashes or encrypted keys. Store it encrypted. Never commit it or paste it anywhere.";
 
 function loadEnv(file) {
   try {

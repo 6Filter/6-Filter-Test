@@ -1,164 +1,279 @@
-import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
 
-export default function LoginScreen({ onLogin }) {
-  const [mode, setMode] = useState("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const SAME_HINT = "We sent a code to your Slack.";
+
+export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, startAtTeam = false }) {
+  const finish = onSignedIn || onLogin;
+  const [email, setEmail] = useState(initialUser?.email || "");
+  const [step, setStep] = useState(startAtTeam || initialUser?.needsTeam ? "team" : "email");
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [resendIn, setResendIn] = useState(0);
+  const [sessionUser, setSessionUser] = useState(initialUser);
+  const [team, setTeam] = useState("");
+  const inputs = useRef([]);
 
-  const registering = mode === "register";
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = window.setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [resendIn]);
 
-  async function submit(e) {
-    e.preventDefault();
-    if (registering && !name.trim()) {
-      setError("Enter your name.");
-      return;
-    }
-    if (!email.trim() || !password) {
-      setError("Email and password are required.");
-      return;
-    }
-    setBusy(true);
+  async function requestCode(nextEmail = email) {
     setError("");
+    setInfo("");
+    setBusy(true);
     try {
-      const res = await fetch(registering ? "/api/auth/register" : "/api/auth/login", {
+      const res = await fetch("/api/auth/request-code", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          registering
-            ? { name: name.trim(), email: email.trim(), password }
-            : { email: email.trim(), password }
-        ),
+        body: JSON.stringify({ email: nextEmail }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || (registering ? "Could not create account." : "Could not sign in."));
-      if (!data.user) throw new Error(registering ? "Could not create account." : "Could not sign in.");
-      onLogin(data.user);
-    } catch (err) {
-      setError(err.message || (registering ? "Could not create account." : "Could not sign in."));
+      if (res.status === 503) {
+        setError(data.error || "Unable to send a sign-in code right now. Try again later.");
+        return;
+      }
+      if (!res.ok) {
+        setError(data.error || "Could not request a code.");
+        return;
+      }
+      setInfo(SAME_HINT);
+      setStep("code");
+      setResendIn(60);
+      setDigits(["", "", "", "", "", ""]);
+      window.setTimeout(() => inputs.current[0]?.focus(), 50);
+    } catch {
+      setError("Could not reach the server.");
     } finally {
       setBusy(false);
     }
   }
 
+  async function verify() {
+    const code = digits.join("");
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from Slack.");
+      return;
+    }
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Invalid email or code.");
+        setDigits(["", "", "", "", "", ""]);
+        inputs.current[0]?.focus();
+        return;
+      }
+      const user = data.user;
+      if (user?.needsTeam) {
+        setSessionUser(user);
+        setStep("team");
+        return;
+      }
+      finish?.(user);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveTeam() {
+    if (!SUBMITTER_DEPARTMENTS.includes(team)) {
+      setError("Choose your team.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/set-team", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not save team.");
+        return;
+      }
+      finish?.(data.user || sessionUser);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onDigit(i, value) {
+    const v = value.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = v;
+    setDigits(next);
+    if (v && i < 5) inputs.current[i + 1]?.focus();
+  }
+
+  function onDigitKey(i, e) {
+    if (e.key === "Backspace" && !digits[i] && i > 0) {
+      inputs.current[i - 1]?.focus();
+    }
+    if (e.key === "Enter") verify();
+  }
+
   return (
-    <div className="primus screen-spec login-screen">
-      <main className="login-card">
-        <p className="login-kicker">NPD screening · CavinKare</p>
-        <h1>{registering ? "Create your Primus account" : "Sign in to 6 Filter Test"}</h1>
+    <main className="login-screen">
+      <style>{LOGIN_CSS}</style>
+      <form
+        className="login-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step === "email") requestCode();
+          else if (step === "code") verify();
+          else saveTeam();
+        }}
+      >
+        <p className="login-kicker">NPD SCREENING · CAVINKARE</p>
+        <h1>Sign in to 6 Filter Test</h1>
         <p className="login-lede">
-          {registering
-            ? "Register with your work email. After sign-in you pick your team on the idea form — CIA, Sales and Distribution - PPD, and the other departments."
-            : "Use the email and password you registered with. Your team on each idea is chosen on the form after you sign in."}
+          {step === "team"
+            ? "Choose your team once. Only an admin can change it later."
+            : "We will send a one-time code to your CavinKare Slack."}
         </p>
-        <form onSubmit={submit}>
-          {registering ? (
-            <label className="login-label">
-              Your name
-              <input
-                type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={busy}
-                placeholder="As it should appear on the Log"
-              />
-            </label>
-          ) : null}
-          <label className="login-label">
-            Email (username)
+
+        {step === "email" ? (
+          <label className="login-field">
+            Email
             <input
               type="email"
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={busy}
               placeholder="you@cavinkare.com"
-            />
-          </label>
-          <label className="login-label">
-            Password
-            <input
-              type="password"
-              autoComplete={registering ? "new-password" : "current-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              required
               disabled={busy}
-              placeholder={registering ? "At least 8 characters" : ""}
             />
           </label>
-          {error ? (
-            <div className="login-err">
-              <AlertTriangle size={14} /> {error}
+        ) : null}
+
+        {step === "code" ? (
+          <>
+            <p className="login-info" role="status">
+              {info || SAME_HINT}
+            </p>
+            <p className="login-email-line mono">{email}</p>
+            <div className="login-code-row" role="group" aria-label="Six-digit code">
+              {digits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => {
+                    inputs.current[i] = el;
+                  }}
+                  className="login-digit"
+                  inputMode="numeric"
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
+                  maxLength={1}
+                  value={d}
+                  onChange={(e) => onDigit(i, e.target.value)}
+                  onKeyDown={(e) => onDigitKey(i, e)}
+                  disabled={busy}
+                  aria-label={`Digit ${i + 1}`}
+                />
+              ))}
             </div>
-          ) : null}
-          <button type="submit" className="login-submit" disabled={busy}>
-            {busy ? <Loader2 size={15} className="spin" /> : null}
-            {busy
-              ? registering
-                ? "Creating account…"
-                : "Signing in…"
-              : registering
-                ? "Create account"
-                : "Sign in"}
+          </>
+        ) : null}
+
+        {step === "team" ? (
+          <label className="login-field">
+            Your team
+            <select value={team} onChange={(e) => setTeam(e.target.value)} disabled={busy} required>
+              <option value="">— select team —</option>
+              {SUBMITTER_DEPARTMENTS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {error ? (
+          <p className="login-err" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button type="submit" className="login-submit" disabled={busy}>
+          {busy ? <Loader2 size={16} className="spin" /> : null}
+          {step === "email" ? "Send code" : step === "code" ? "Sign in" : "Continue"}
+        </button>
+
+        {step === "code" ? (
+          <button
+            type="button"
+            className="login-link"
+            disabled={busy || resendIn > 0}
+            onClick={() => requestCode()}
+          >
+            {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend"}
           </button>
-        </form>
-        <p className="login-switch">
-          {registering ? (
-            <>
-              Already registered?{" "}
-              <button
-                type="button"
-                className="login-link"
-                disabled={busy}
-                onClick={() => {
-                  setMode("login");
-                  setError("");
-                }}
-              >
-                Sign in
-              </button>
-            </>
-          ) : (
-            <>
-              New here?{" "}
-              <button
-                type="button"
-                className="login-link"
-                disabled={busy}
-                onClick={() => {
-                  setMode("register");
-                  setError("");
-                }}
-              >
-                Create an account
-              </button>
-            </>
-          )}
-        </p>
-      </main>
-      <style>{LOGIN_CSS}</style>
-    </div>
+        ) : null}
+      </form>
+    </main>
   );
 }
 
 const LOGIN_CSS = `
-.login-screen{min-height:100vh;display:grid;place-items:center;padding:32px 16px;background:#170C25;color:#F3EAF8;}
-.login-card{width:100%;max-width:420px;background:#191919;border:1px solid rgba(243,234,248,.12);border-radius:18px;padding:28px 26px 24px;}
-.login-kicker{margin:0 0 8px;font-family:var(--fm);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#C9A0E8;}
-.login-card h1{margin:0 0 10px;font-size:28px;letter-spacing:-.4px;}
-.login-lede{margin:0 0 22px;font-size:14px;line-height:1.5;color:rgba(243,234,248,.62);}
-.login-label{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;font-size:12px;letter-spacing:.04em;color:rgba(243,234,248,.82);font-family:var(--fm);}
-.login-label input{background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;color:#F3EAF8;font-size:15px;padding:11px 13px;outline:none;font-family:var(--fd);}
-.login-label input:focus{border-color:#C9AEEF;box-shadow:0 0 0 3px rgba(201,174,239,.18);}
-.login-err{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:#E2716B;font-size:13px;}
-.login-submit{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#C9AEEF;color:#170C25;border:none;border-radius:999px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--fd);}
-.login-submit:disabled{opacity:.7;cursor:wait;}
-.login-switch{margin:16px 0 0;font-size:13px;color:rgba(243,234,248,.55);text-align:center;}
-.login-link{background:none;border:none;padding:0;color:#C9AEEF;font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
-.login-link:disabled{opacity:.6;cursor:wait;}
+.login-screen{
+  min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(900px 500px at 20% -10%,#2a1840 0%,#120818 55%);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#f3eaf8;
+}
+.login-card{
+  width:min(420px,100%);background:#1a1024;border:1px solid rgba(243,234,248,.12);
+  border-radius:18px;padding:28px 26px 24px;display:flex;flex-direction:column;gap:12px;
+}
+.login-kicker{margin:0;font-size:11px;letter-spacing:.12em;color:#b9a6c9;text-transform:uppercase;}
+.login-card h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#fff;}
+.login-lede{margin:0;font-size:13.5px;line-height:1.45;color:#a89bb8;}
+.login-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#c6b8d4;}
+.login-field input,.login-field select{
+  background:#120818;border:1px solid rgba(243,234,248,.18);border-radius:10px;
+  color:#f3eaf8;padding:11px 12px;font:inherit;
+}
+.login-info{margin:0;font-size:13px;color:#d7c6ea;}
+.login-email-line{margin:0;font-size:12px;color:#9a8aad;}
+.login-code-row{display:flex;gap:8px;justify-content:space-between;}
+.login-digit{
+  width:44px;height:48px;text-align:center;font-size:20px;font-family:'IBM Plex Mono',monospace;
+  background:#120818;border:1px solid rgba(243,234,248,.22);border-radius:10px;color:#fff;
+}
+.login-err{margin:0;color:#f0a090;font-size:13px;}
+.login-submit{
+  margin-top:4px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:#d4c0ef;color:#1a1024;border:0;border-radius:12px;padding:12px 14px;
+  font-weight:700;cursor:pointer;font:inherit;
+}
+.login-submit:disabled{opacity:.65;cursor:default;}
+.login-link{
+  background:none;border:0;color:#c9b6e0;text-decoration:underline;cursor:pointer;
+  font:inherit;font-size:13px;padding:4px;
+}
+.login-link:disabled{opacity:.5;cursor:default;text-decoration:none;}
+.spin{animation:login-spin 0.8s linear infinite;}
+@keyframes login-spin{to{transform:rotate(360deg);}}
+.mono{font-family:'IBM Plex Mono',monospace;}
 `;

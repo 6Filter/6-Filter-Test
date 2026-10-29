@@ -1,15 +1,5 @@
-import { protectApi } from "../../lib/auth.js";
-import { handleRegister } from "../../lib/authApi.js";
+import { sendJson } from "../../lib/http.js";
 
-export default async function handler(req, res) {
-  if (
-    !(await protectApi(req, res, {
-      methods: "POST, OPTIONS",
-      optionalSession: true,
-      rateLimit: { max: 10, bucket: "auth-register" },
-    }))
-  ) {
-    return;
-  }
-  await handleRegister(req, res);
+export default async function handler(_req, res) {
+  sendJson(res, 410, { error: "Registration is closed. Sign in with your Slack code." });
 }

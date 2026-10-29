@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   PROPOSITION_TOP_FIELDS,
+  SUBMITTER_DEPARTMENTS,
   hasSubmitterIdentity,
   mergeProposition,
+  normalizeNewTeamSelection,
   normalizeSubmitterDepartment,
+  coalesceSubmitterDepartment,
+  teamIsLegacy,
 } from "../lib/propositionFields.js";
 import { researchHashFor } from "../lib/researchCache.js";
 
@@ -12,32 +16,20 @@ assert.equal(PROPOSITION_TOP_FIELDS[0].key, "submitterName");
 assert.equal(PROPOSITION_TOP_FIELDS[1].key, "submitterDepartment");
 assert.deepEqual(
   PROPOSITION_TOP_FIELDS[1].options.filter((o) => o.v).map((o) => o.v),
-  [
-    "Ambient and Beverages",
-    "CC",
-    "FD",
-    "IB",
-    "PC",
-    "Commodities purchase",
-    "CIA",
-    "E-Com and Digital Marketing",
-    "MED",
-    "Manufacturing",
-    "Marketing - SN",
-    "Media",
-    "Packaging Development",
-    "R&D",
-    "Sales & Distribution - FMCG",
-    "Sales and Distribution - PPD",
-    "Strategic Purchase",
-  ]
+  [...SUBMITTER_DEPARTMENTS]
 );
+assert.equal(SUBMITTER_DEPARTMENTS.length, 18);
 
-assert.equal(normalizeSubmitterDepartment("Marketing - SN"), "Marketing - SN");
-assert.equal(normalizeSubmitterDepartment("finance"), "");
+assert.equal(normalizeSubmitterDepartment("NPD"), "NPD");
+assert.equal(teamIsLegacy("NPD"), true);
+assert.equal(normalizeNewTeamSelection("NPD"), "");
+assert.equal(normalizeNewTeamSelection("CIA"), "CIA");
 assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "R&D" }), true);
-assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "Sales" }), false);
+assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "NPD" }), true);
+assert.equal(hasSubmitterIdentity({ submitterName: "Asha", submitterDepartment: "" }), false);
 assert.equal(hasSubmitterIdentity({ submitterName: "", submitterDepartment: "CIA" }), false);
+assert.equal(coalesceSubmitterDepartment("", "NPD"), "NPD");
+assert.equal(coalesceSubmitterDepartment("CIA", "NPD"), "CIA");
 
 const base = {
   name: "Herbal cooling hair oil",
@@ -58,25 +50,39 @@ const merged = mergeProposition({
 });
 assert.equal(merged.submitterName, "Asha");
 assert.equal(merged.submitterDepartment, "CIA");
+assert.equal(merged.teamIsLegacy, false);
+
+const legacyMerged = mergeProposition({ submitterName: "Asha", submitterDepartment: "NPD" });
+assert.equal(legacyMerged.submitterDepartment, "NPD");
+assert.equal(legacyMerged.teamIsLegacy, true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /hasSubmitterIdentity/);
-assert.match(formSrc, /Enter your name and select your department before Submit/);
+assert.match(formSrc, /From your account/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /hasSubmitterIdentity\(payload\)/);
+assert.match(apiSrc, /canAccessIdea/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /rowPerson/);
 assert.match(logSrc, /rowTeam/);
-assert.match(logSrc, /createdAt \|\| h\.updatedAt/);
+assert.match(logSrc, /SUBMITTER_DEPARTMENTS/);
+assert.match(logSrc, /Legacy team/);
 assert.match(appSrc, /LogPage/);
-assert.match(appSrc, /TeamUnlockScreen/);
+assert.match(appSrc, /AdminUsersPage/);
+
+const loginSrc = readFileSync(new URL("../src/LoginScreen.jsx", import.meta.url), "utf8");
+assert.doesNotMatch(loginSrc, /password/i);
+assert.doesNotMatch(loginSrc, /Create an account/);
+assert.match(loginSrc, /Send code/);
 
 const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 assert.match(dbSrc, /submitter_name/);
 assert.match(dbSrc, /submitter_department/);
+assert.match(dbSrc, /created_by_email/);
+assert.match(dbSrc, /coalesceSubmitterDepartment/);
 assert.doesNotMatch(dbSrc, /fingerprintResearchInput/);
 
-console.log("PASS submitter name and department are required, logged, and off the research path");
+console.log("PASS submitter teams (18), legacy preserve, Slack login UI, canAccessIdea wired");

@@ -26,6 +26,7 @@ import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
+import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -77,10 +78,12 @@ export default function LogPage({
   onFetchFull,
   unlockedDepartment: unlockedDepartmentProp = undefined,
   onSwitchDepartment = null,
+  currentUser = null,
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [personFilter, setPersonFilter] = useState("");
+  const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
   const [exporting, setExporting] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
@@ -108,8 +111,14 @@ export default function LogPage({
   const stats = useMemo(() => logStats(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
   const scopedRows = useMemo(
-    () => applyScopedFilters(logRows, { personFilter, categoryGroupFilter, searchText: query }),
-    [logRows, personFilter, categoryGroupFilter, query]
+    () =>
+      applyScopedFilters(logRows, {
+        teamFilter,
+        personFilter,
+        categoryGroupFilter,
+        searchText: query,
+      }),
+    [logRows, teamFilter, personFilter, categoryGroupFilter, query]
   );
   const filteredRows = useMemo(
     () => applyLogStatusFilter(scopedRows, status),
@@ -483,6 +492,20 @@ export default function LogPage({
           </label>
           <div className="log-scoped-filters">
             <label>
+              <span className="sr-only">Team</span>
+              <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} aria-label="Filter by team">
+                <option value="">All teams</option>
+                {SUBMITTER_DEPARTMENTS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+                {currentUser?.role === "ADMIN" || isMasterUnlock(unlockedDepartment) ? (
+                  <option value="__legacy__">Legacy team</option>
+                ) : null}
+              </select>
+            </label>
+            <label>
               <span className="sr-only">Submitter</span>
               <select value={personFilter} onChange={(e) => setPersonFilter(e.target.value)}>
                 <option value="">All submitters</option>
@@ -669,7 +692,9 @@ export default function LogPage({
                         )}
                       </td>
                       <td className="mono log-dept-cell">
-                        <span className="log-dept-team">{team}</span>
+                        <span className="log-dept-team">
+                          {teamIsLegacy(team) ? `Legacy: ${team}` : team}
+                        </span>
                         {division && division !== team ? (
                           <span className="log-dept-division">{division}</span>
                         ) : null}

@@ -5,6 +5,8 @@ dist
 .env*.local
 .department-passwords.local
 data/
+*BusinessHeads*.csv
+Primus-AI_BusinessHeads_TeamMapping.csv
 john text
 john text.txt
 docs/API_KEY_BEST_PRACTICES.md

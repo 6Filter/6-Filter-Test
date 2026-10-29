@@ -18,6 +18,7 @@ import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
+import AdminUsersPage from "./AdminUsersPage.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
@@ -1206,6 +1207,16 @@ export default function App() {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
+  if (authRequired && sessionUser?.needsTeam) {
+    return (
+      <LoginScreen
+        initialUser={sessionUser}
+        startAtTeam
+        onLogin={(user) => setSessionUser(user)}
+      />
+    );
+  }
+
   if (PLATFORM_TEAM_LOCK_ENABLED && !teamSession?.department) {
     return (
       <div className={`primus screen-log`}>
@@ -1259,6 +1270,15 @@ export default function App() {
           >
             <Settings size={14} /> Settings
           </button>
+          {sessionUser?.role === "ADMIN" ? (
+            <button
+              type="button"
+              className={`nav-tab${view === "admin" ? " active" : ""}`}
+              onClick={() => setView("admin")}
+            >
+              Admin
+            </button>
+          ) : null}
         </nav>
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
@@ -1335,15 +1355,20 @@ export default function App() {
           deletingUntouched={deletingUntouched}
           deletingId={deletingId}
           openingId={openingId}
-          canDeleteAll={isMasterUnlock(teamSession.department)}
-          canDeleteRow={isMasterUnlock(teamSession.department)}
-          canCleanup={isMasterUnlock(teamSession.department)}
+          canDeleteAll={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
+          canDeleteRow={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
+          canCleanup={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
           openingDisabled={loading}
           onFetchFull={async (id) => fetchPropositionById(id)}
+          currentUser={sessionUser}
         />
       )}
 
       {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
+
+      {view === "admin" && sessionUser?.role === "ADMIN" && (
+        <AdminUsersPage apiFetch={apiFetch} />
+      )}
 
       {msgOpen && (
         <div className="modal-bg" onClick={() => setMsgOpen(false)}>
