@@ -130,7 +130,16 @@ function capture() {
   };
 }
 
-const user = { department: "R&D" };
+// Signed-in user with a team so handlers reach the DB check (not a 403 unlock wall).
+const user = {
+  id: "part102-user",
+  email: "part102@cavinkare.com",
+  role: "BM",
+  team: "R&D",
+  department: "R&D",
+  status: "active",
+};
+process.env.REQUIRE_AUTH = "true";
 const createHit = capture();
 await handlePropositionsCollection(
   { method: "POST", user },

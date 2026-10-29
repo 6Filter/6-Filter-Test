@@ -16,10 +16,13 @@ Environment (never commit secrets):
 | `ADMIN_BOOTSTRAP_EMAILS` | Comma-separated; while **no** ADMIN exists, first successful Slack sign-in of a listed email becomes ADMIN. Then ignored. |
 | `SESSION_SECRET` | Session cookie signing |
 | `DATABASE_URL` | Required for auth (no disk fallback) |
+| `TRUST_CLOUDFLARE` | Set to `1` only behind Cloudflare so `CF-Connecting-IP` is trusted; otherwise the right-most `X-Forwarded-For` entry is used |
 
-Session cookie: HttpOnly, Secure on Render/HTTPS, SameSite=Lax, payload `{ userId, tokenVersion }`. Disabling an account or “sign out everywhere” bumps `token_version` and ends older sessions.
+Session cookie: HttpOnly, Secure on Render/HTTPS, SameSite=Lax, payload `{ userId, tokenVersion, iat, exp }` (`exp = iat + SESSION_HOURS`). Tokens without `exp` or `tokenVersion`, or past `exp`, are refused on the server (not only by the browser cookie). Disabling an account or “sign out everywhere” bumps `token_version` and ends older sessions.
 
-First sign-in creates `users` row: Slack name, email, `status=active`, `role=BM` (or ADMIN via bootstrap). The person must pick one of the 18 teams before the form opens; only an ADMIN can change it later.
+First sign-in creates `users` row: Slack name, email, `status=active`, `role=BM` (or ADMIN via bootstrap). If the email is in `business_head_teams`, role becomes **BH FORUM** at sign-in and at `/api/auth/me` (audited). Leaving that table removes BH access immediately. The person must pick one of the 18 teams before the form opens; only an ADMIN can change it later.
+
+**Verify when Slack is down:** if Slack is unreachable at verify time, a still-valid code is accepted (it was issued minutes earlier). If Slack is reachable, deactivated / guest / bot accounts are refused.
 
 Break-glass: `node scripts/issueLoginCode.mjs <email>` (ADMIN only, audited). Role changes: Admin screen or `node scripts/setRole.mjs <email> <ROLE>`.
 
@@ -32,7 +35,7 @@ Keyed on `propositions.created_by_email` (normalised).
 | Actor | Sees |
 |-------|------|
 | Individual | Ideas where `created_by_email` equals their email |
-| BH FORUM | Own ideas + ideas whose team is in `business_head_teams` for their email (legacy names via `legacy_team_map`) |
+| BH FORUM (email in `business_head_teams`) | Own ideas + ideas whose team is in that mapping (legacy names via `legacy_team_map`). Decided from the table, not only the stored role. |
 | ADMIN | Every idea (including legacy NPD / Marketing until reassigned) |
 
 Unassigned ideas (no creator email): ADMIN, and the business head of the idea’s team after `legacy_team_map`.

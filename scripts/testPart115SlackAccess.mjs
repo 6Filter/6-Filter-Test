@@ -76,35 +76,42 @@ function mockRes() {
   const out = { statusCode: 0, body: null, headers: {} };
   return {
     out,
+    statusCode: 200,
     setHeader(k, v) {
       out.headers[k] = v;
     },
-    end() {},
+    end(chunk) {
+      out.statusCode = this.statusCode;
+      if (chunk != null) {
+        try {
+          out.body = JSON.parse(String(chunk));
+        } catch {
+          out.body = chunk;
+        }
+      }
+    },
   };
-}
-
-function sendJson(res, status, body) {
-  res.out.statusCode = status;
-  res.out.body = body;
 }
 
 const calls = [];
 const slackFetch = async (url, opts = {}) => {
   calls.push({ url: String(url), body: opts.body || null });
+  const headers = { get: () => null };
   if (String(url).includes("lookupByEmail")) {
     const u = new URL(url);
     const email = u.searchParams.get("email");
     if (email === "guest@cavinkare.com") {
-      return { ok: true, json: async () => ({ ok: true, user: { id: "U_GUEST", is_restricted: true, profile: { email } } }) };
+      return { ok: true, headers, json: async () => ({ ok: true, user: { id: "U_GUEST", is_restricted: true, profile: { email } } }) };
     }
     if (email === "gone@cavinkare.com") {
-      return { ok: true, json: async () => ({ ok: true, user: { id: "U_GONE", deleted: true, profile: { email } } }) };
+      return { ok: true, headers, json: async () => ({ ok: true, user: { id: "U_GONE", deleted: true, profile: { email } } }) };
     }
     if (email === "unknown@cavinkare.com") {
-      return { ok: true, json: async () => ({ ok: false, error: "users_not_found" }) };
+      return { ok: true, headers, json: async () => ({ ok: false, error: "users_not_found" }) };
     }
     return {
       ok: true,
+      headers,
       json: async () => ({
         ok: true,
         user: {
@@ -115,68 +122,73 @@ const slackFetch = async (url, opts = {}) => {
     };
   }
   if (String(url).includes("conversations.open")) {
-    return { ok: true, json: async () => ({ ok: true, channel: { id: "D1" } }) };
+    return { ok: true, headers, json: async () => ({ ok: true, channel: { id: "D1" } }) };
   }
   if (String(url).includes("chat.postMessage")) {
-    return { ok: true, json: async () => ({ ok: true }) };
+    return { ok: true, headers, json: async () => ({ ok: true }) };
   }
-  return { ok: true, json: async () => ({ ok: false }) };
+  return { ok: true, headers, json: async () => ({ ok: false }) };
 };
 
-async function requestCode(email) {
-  const res = mockRes();
+const slack = { fetchImpl: slackFetch, token: "xoxb-test" };
+
+function jsonReq(body, headers = {}) {
+  const raw = Buffer.from(JSON.stringify(body));
+  const listeners = { data: [], end: [], error: [] };
   const req = {
     method: "POST",
-    headers: { "x-forwarded-for": "127.0.0.1" },
-    body: undefined,
+    headers: { "content-type": "application/json", "x-forwarded-for": "127.0.0.1", ...headers },
+    on(ev, fn) {
+      if (listeners[ev]) listeners[ev].push(fn);
+      return req;
+    },
+    destroy() {},
   };
-  // monkey: handleRequestCode uses readJsonBody — pass via stub by calling internals instead
-  const started = Date.now();
-  void started;
-  await handleRequestCode(
-    {
-      method: "POST",
-      headers: { "cf-connecting-ip": "203.0.113.10", "content-type": "application/json" },
-      async *[Symbol.asyncIterator]() {
-        yield Buffer.from(JSON.stringify({ email }));
-      },
-    },
-    {
-      statusCode: 200,
-      setHeader() {},
-      end() {},
-      ...{
-        // use sendJson injection — handleRequestCode imports sendJson; call through wrapper
-      },
-    },
-    { slack: { fetchImpl: slackFetch, token: "xoxb-test" } }
-  );
-  return { calls };
+  setImmediate(() => {
+    for (const fn of listeners.data) fn(raw);
+    for (const fn of listeners.end) fn();
+  });
+  return req;
 }
 
-// Direct path tests (avoid streaming body quirks): domain / guest / unknown → no DM
+async function requestCode(email, headers = {}) {
+  const res = mockRes();
+  await handleRequestCode(jsonReq({ email }, headers), res, { slack });
+  return res;
+}
+
+async function verifyCode(email, code) {
+  const res = mockRes();
+  await handleVerifyCode(jsonReq({ email, code }), res, { slack });
+  return res;
+}
+
+// End-to-end request-code: outsider / unknown / guest / gone → same message, no DM
 calls.length = 0;
-{
-  const { lookupSlackMemberByEmail, sendSlackLoginCodeDm } = await import("../lib/slackAuth.js");
-  for (const email of ["outsider@gmail.com", "unknown@cavinkare.com", "guest@cavinkare.com", "gone@cavinkare.com"]) {
-    const before = calls.length;
-    if (email.endsWith("@cavinkare.com")) {
-      const looked = await lookupSlackMemberByEmail(email, { fetchImpl: slackFetch, token: "xoxb-test" });
-      assert.equal(looked.ok, false);
-    }
-    assert.equal(calls.filter((c) => String(c.url).includes("chat.postMessage")).length, 0);
-    assert.ok(calls.length >= before || !email.endsWith("@cavinkare.com"));
-  }
+for (const email of ["outsider@gmail.com", "unknown@cavinkare.com", "guest@cavinkare.com", "gone@cavinkare.com"]) {
+  const before = calls.filter((c) => String(c.url).includes("chat.postMessage")).length;
+  const res = await requestCode(email);
+  assert.equal(res.out.statusCode, 200);
+  assert.equal(res.out.body?.message, REQUEST_CODE_SAME_MESSAGE);
+  assert.equal(calls.filter((c) => String(c.url).includes("chat.postMessage")).length, before);
 }
 
-// Issue + verify code once
+// Issue + verify code once via handlers
 const aliceEmail = "alice@cavinkare.com";
-const { code } = await replaceLoginCode(aliceEmail);
+await clearDurableRateLimits();
+calls.length = 0;
+const reqRes = await requestCode(aliceEmail);
+assert.equal(reqRes.out.statusCode, 200);
+assert.equal(reqRes.out.body?.message, REQUEST_CODE_SAME_MESSAGE);
+assert.ok(calls.some((c) => String(c.url).includes("chat.postMessage")));
 const row = await getLoginCodeRow(aliceEmail);
 assert.ok(row);
-assert.equal(codesMatch(code, row.code_hmac), true);
-assert.equal(codesMatch("000000", row.code_hmac), false);
-await consumeLoginCode(aliceEmail);
+const { code } = await replaceLoginCode(aliceEmail);
+assert.equal(codesMatch(code, (await getLoginCodeRow(aliceEmail)).code_hmac), true);
+assert.equal(codesMatch("000000", (await getLoginCodeRow(aliceEmail)).code_hmac), false);
+const verifyOk = await verifyCode(aliceEmail, code);
+assert.equal(verifyOk.out.statusCode, 200);
+assert.equal(verifyOk.out.body?.user?.email, aliceEmail);
 assert.equal(await getLoginCodeRow(aliceEmail), null);
 
 // New request cancels previous

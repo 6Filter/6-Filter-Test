@@ -24,7 +24,11 @@ const edgeA = {
 const edgeB = {
   headers: { "cf-connecting-ip": realIp, "x-forwarded-for": "7.7.7.7" },
 };
+// Spoofable CF headers are ignored unless TRUST_CLOUDFLARE=1 — use right-most XFF.
+assert.notEqual(rateLimitKey(edgeA, "dept-unlock"), rateLimitKey(edgeB, "dept-unlock"));
+process.env.TRUST_CLOUDFLARE = "1";
 assert.equal(rateLimitKey(edgeA, "dept-unlock"), rateLimitKey(edgeB, "dept-unlock"));
+delete process.env.TRUST_CLOUDFLARE;
 
 const key = rateLimitKey(spoofedA, "dept-unlock");
 for (let i = 0; i < 20; i += 1) {
