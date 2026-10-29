@@ -8,11 +8,13 @@ import { redactSecrets, sendJson } from "../lib/http.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dbHref = pathToFileURL(path.join(root, "lib", "db.js")).href;
-const dataDir = path.join(root, "data");
-const propFile = path.join(dataDir, "propositions.json");
-const userFile = path.join(dataDir, "users.json");
+// Prefer suite PRIMUS_DATA_DIR so we never write into the repo's gitignored data/.
+const { dataDir } = await import("../lib/dataDir.js");
+const storeDir = dataDir();
+const propFile = path.join(storeDir, "propositions.json");
+const userFile = path.join(storeDir, "users.json");
 
-/** Fresh clones have no data/ (gitignored). Seed empty stores before fail-closed checks. */
+/** Fresh clones have no store files. Seed empty JSON before fail-closed checks. */
 async function ensureEmptyJsonStore(file) {
   await mkdir(path.dirname(file), { recursive: true });
   try {
