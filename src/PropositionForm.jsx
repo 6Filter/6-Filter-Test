@@ -1708,6 +1708,9 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
+            ideaDescription: doc.ideaDescription,
             division: doc.division,
             f1: doc.f1,
             f2: doc.f2,
@@ -1905,7 +1908,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const keptName = uploaded.name || file.name;
+      setConceptCardName(keptName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -1913,13 +1921,16 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      const storedName = data.conceptCardName || keptName;
+      setConceptCardName(storedName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: storedName },
+      }));
       if (!res.ok) {
-        setConceptCardName("");
-        setConceptCardError(data.error || "Could not read that concept card.");
+        setConceptCardError(data.extractError || data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -1928,7 +1939,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2541,7 +2551,7 @@ export default function PropositionForm({
               key={spec.key}
               spec={spec}
               checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+                (advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || {}).checkLabel || "Not yet run"
               }
               sub={
                 spec.key === "f5"
@@ -2557,17 +2567,17 @@ export default function PropositionForm({
               key={spec.key}
               spec={spec}
               checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
+                (advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || {}).checkLabel || "Not yet run"
               }
               sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
             />
           );
         }
         const values = doc[spec.key] || {};
-        const check =
-          spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
-            ? livePreviewChecks[spec.key]
-            : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
+        const serverCheck = advisoryChecks?.[spec.key];
+        const check = serverCheck?.checkLabel
+          ? serverCheck
+          : livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
