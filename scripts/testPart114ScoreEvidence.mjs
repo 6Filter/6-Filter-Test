@@ -135,7 +135,8 @@ try {
 }
 
 const doc = readFileSync(new URL("../docs/HOW_THE_SCORE_WORKS.md", import.meta.url), "utf8");
-assert.equal(doc.trim(), scoreExplainerMarkdown().trim());
+// Normalize CRLF so Windows checkouts match the LF string from scoreExplainerMarkdown().
+assert.equal(doc.replace(/\r\n/g, "\n").trim(), scoreExplainerMarkdown().trim());
 assert.match(doc, /no live Nielsen or Kantar feed/i);
 assert.ok(selectExportTables(["propositions", "syndicated_rows"]).includes("syndicated_rows"));
 
