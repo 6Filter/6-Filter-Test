@@ -12,7 +12,7 @@ import { filterHasContent, FILTER_COLUMNS, omitEmptyFilterColumns } from "../lib
 process.env.PRIMUS_DATA_DIR = mkdtempSync(path.join(tmpdir(), "primus-guard-"));
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
-delete process.env.REQUIRE_AUTH;
+process.env.REQUIRE_AUTH = "false";
 
 const empty = { forumVerdict: "", verdictNote: "" };
 const kept = omitEmptyFilterColumns({ name: "Kept", f1: empty, f2: { cogsAtScale: 40, netMarginAtScale: 20 } });

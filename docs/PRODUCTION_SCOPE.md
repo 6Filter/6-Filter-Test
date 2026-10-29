@@ -19,7 +19,7 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 ### User-facing
 - Spec landing page (the v4 filter text)
 - Proposition Form — F1–F6 evidence, Forum verdicts, overall BH Forum verdict
-- Owner tags on fields (who *should* fill them); login/role lock is parked until `REQUIRE_AUTH=true`
+- Owner tags on fields (who *should* fill them); individual email/password login is on by default (`REQUIRE_AUTH=false` parks it)
 - Log of propositions (open / delete)
 - Optional research on first Submit of a proposition (F1/F3/F4/F5 suggestions; F6 explicitly not covered)
 - Automated-check coverage panel on the form
@@ -40,7 +40,7 @@ Advisory labels (Part 15) check only the v4 numeric floors that can be checked f
 
 ### Auth (parked)
 - Code for named accounts and field-ownership enforcement is in the repo
-- It is **off** unless `REQUIRE_AUTH=true` (then also set `SESSION_SECRET` and seed users)
+- Individual login is **on** by default (register + sign-in with email). Set `REQUIRE_AUTH=false` to park it. Production still needs `SESSION_SECRET`.
 - Roles when turned on: `BM`, `CMI`, `FINANCE`, `R&D`, `SALES`, `PACKAGING`, `BH FORUM`, `ADMIN`
 
 ### Security notes
@@ -81,8 +81,8 @@ The retired Novelty / Market / Evidence scorecard and client-side API key flow a
 |------|--------|
 | Render web `ck-6-filter-test` | Production (`https://ck-6-filter-test.onrender.com`) |
 | Render Postgres `primus-ai-db` | `DATABASE_URL` (shared DB; service name unchanged) |
-| `REQUIRE_AUTH` | Off unless set to `true` |
-| `SESSION_SECRET` | Needed only when login is on; rotate if leaked |
+| `REQUIRE_AUTH` | On by default; set `false` to park named accounts |
+| `SESSION_SECRET` | Required in production; rotate if leaked |
 | `ANTHROPIC_API_KEY` | Server only |
 | `ALLOWED_ORIGIN` | Defaults to the Render URL |
 | User seeding | Only when turning login on; `scripts/seedUser.js` |

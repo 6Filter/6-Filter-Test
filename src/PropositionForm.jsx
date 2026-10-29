@@ -1344,6 +1344,14 @@ export default function PropositionForm({
   onProcessingChange,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
+  useEffect(() => {
+    const accountName = String(currentUser?.name || "").trim();
+    if (!accountName) return;
+    setDoc((prev) => {
+      if (String(prev?.submitterName || "").trim()) return prev;
+      return { ...prev, submitterName: accountName };
+    });
+  }, [currentUser?.name, initial?.id]);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);

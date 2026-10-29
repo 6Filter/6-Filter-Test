@@ -19,7 +19,7 @@ This is a governance tool. Only BH Forum clears a filter. The AI never writes `f
 2. `npm install`
 3. `npm run dev` and open the URL Vite prints (typically http://127.0.0.1:5173).
 
-Named-account login is in the repo but off. To turn it on later: set `REQUIRE_AUTH=true` and `SESSION_SECRET`, then seed a user with `node scripts/seedUser.js "Name" email@ck.com password ROLE`.
+Individual login is on by default: register with email + password, then sign in. On the idea form, pick your team (CIA, Sales and Distribution - PPD, …). Set `REQUIRE_AUTH=false` only to park named accounts. Admins can still seed users with `node scripts/seedUser.js "Name" email@ck.com password ROLE`.
 
 ## Production (Render)
 
@@ -29,8 +29,8 @@ Render is the live host: [https://ck-6-filter-test.onrender.com](https://ck-6-fi
 |----------|----------|
 | `DATABASE_URL` | Yes — Render Postgres |
 | `ANTHROPIC_API_KEY` | Yes for AI first pass / LLM routes |
-| `REQUIRE_AUTH` | Optional; set `true` only when turning login back on |
-| `SESSION_SECRET` | Required only when `REQUIRE_AUTH=true` |
+| `SESSION_SECRET` | Yes — signs login cookies |
+| `REQUIRE_AUTH` | Optional; defaults on. Set `false` only to park login |
 | `ALLOWED_ORIGIN` | Optional; defaults to `https://ck-6-filter-test.onrender.com` |
 
 Vercel-style `api/*.js` handlers still exist as a fallback. They import the **same** CORS, session, and ownership modules as `server.js` — do not copy those rules into a second place.

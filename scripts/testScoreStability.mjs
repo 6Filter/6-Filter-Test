@@ -11,7 +11,7 @@ import path from "node:path";
 process.env.PRIMUS_DATA_DIR = mkdtempSync(path.join(tmpdir(), "primus-score-"));
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
-delete process.env.REQUIRE_AUTH;
+process.env.REQUIRE_AUTH = "false";
 
 const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");

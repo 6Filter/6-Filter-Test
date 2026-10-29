@@ -39,6 +39,8 @@ function hashTree(dir) {
 
 const dataBefore = hashTree(dataRoot);
 process.env.PRIMUS_DATA_DIR = path.join(tmpdir(), `primus-suite-${process.pid}`);
+// Suite keeps auth parked unless a script opts in — production still defaults login on.
+if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
 const files = readdirSync(scriptsDir)

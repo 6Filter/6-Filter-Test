@@ -652,7 +652,8 @@ export default function App() {
       })
       .catch(() => {
         if (cancelled) return;
-        setAuthRequired(false);
+        // Fail closed: keep the sign-in gate if /me cannot be reached.
+        setAuthRequired(true);
         setSessionUser(null);
       })
       .finally(() => {
