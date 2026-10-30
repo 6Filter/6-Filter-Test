@@ -36,7 +36,11 @@ import {
   analysisCheckItems,
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
+import {
+  isScoredProposition,
+  scoreInputsMatch,
+  shouldForkLogResubmit,
+} from "../lib/analysisStability.js";
 import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
 import { storedVerdictWithoutInputs } from "../lib/storedVerdict.js";
 import { scoreExplainerSections } from "../lib/scoreExplainer.js";
@@ -1064,12 +1068,18 @@ export function GoNoGoResultPage({
 
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  const scoreRaw = resolveOutputScore(checks, result.score);
+  const scoreRaw = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreRaw?.pct)) ? Number(scoreRaw.pct) : 0;
   const score = { ...(scoreRaw && typeof scoreRaw === "object" ? scoreRaw : {}), pct: scorePct };
+  const hasLockKey = Boolean(String(result.scoreInputKey || "").trim());
+  const inputsLocked =
+    Boolean(result.classification) &&
+    (!hasLockKey || scoreInputsMatch(doc || {}, result));
   const liveClassification =
-    score.total > 0 ? computeGoNoGo(checks) : result.classification;
-  const classification = liveClassification || result.classification;
+    !inputsLocked && score.total > 0 ? computeGoNoGo(checks) : result.classification;
+  const classification = inputsLocked
+    ? result.classification
+    : liveClassification || result.classification;
   const tone = goNoGoTone(classification);
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
@@ -1092,7 +1102,11 @@ export function GoNoGoResultPage({
     "hero rationale",
     () =>
       rewriteUnmatchedDivisionCopy(
-        score.total > 0 && liveRationale ? liveRationale : result.rationale || "No rationale returned.",
+        inputsLocked && result.rationale
+          ? result.rationale
+          : score.total > 0 && liveRationale
+            ? liveRationale
+            : result.rationale || "No rationale returned.",
         categoryName
       ),
     String(result.rationale || "No rationale returned.")
@@ -2522,15 +2536,12 @@ export default function PropositionForm({
     const savedGo = result.proposition.goNoGo && typeof result.proposition.goNoGo === "object"
       ? result.proposition.goNoGo
       : null;
-    const liveScore = checks ? scoreAdvisoryChecks(checks) : null;
-    const classification =
-      (liveScore?.total > 0 ? computeGoNoGo(checks) : null) ||
-      savedGo?.classification ||
-      computeGoNoGo(checks || {});
-    const nextScore =
-      liveScore?.total > 0 ? liveScore : savedGo?.score || scoreAdvisoryChecks(checks || {});
+    // Server goNoGo is authoritative when present — never let a client recompute override it.
     const ideaName = formIdeaLabel(nextDoc);
     const category = formCategoryLabel(nextDoc);
+    const nextScore = savedGo?.score || (checks ? scoreAdvisoryChecks(checks) : { pct: 0, done: 0, total: 0 });
+    const classification =
+      savedGo?.classification || (checks ? computeGoNoGo(checks) : "");
     const nextGo = {
       classification,
       rationale:
@@ -2543,11 +2554,13 @@ export default function PropositionForm({
           category,
         }),
       score: nextScore,
+      scoreInputKey: savedGo?.scoreInputKey,
       ideaScale: savedGo?.ideaScale || ideaScaleFromDoc(nextDoc),
       ideaName,
       category,
       at: savedGo?.at || new Date().toISOString(),
       ...(savedGo?.filterNarratives ? { filterNarratives: savedGo.filterNarratives } : {}),
+      ...(savedGo?.checkLabels ? { checkLabels: savedGo.checkLabels } : {}),
     };
     setGoNoGo(nextGo);
     setJustSubmitted(true);
