@@ -66,7 +66,8 @@ const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "ut
 assert.match(pageSrc, /const scopedRows = useMemo/);
 assert.match(pageSrc, /applyLogStatusFilter\(scopedRows, status\)/);
 assert.match(pageSrc, /filteredRows\.map\(/);
-assert.match(pageSrc, /logStats\(scopedRows\)/);
+assert.match(pageSrc, /pillCounts/);
+assert.match(pageSrc, /classificationOf\(row\)/);
 assert.doesNotMatch(pageSrc, /h\.division \|\| h\.submitterDepartment/);
 assert.match(pageSrc, /rowTeam\(h\)/);
 assert.doesNotMatch(
@@ -74,5 +75,7 @@ assert.doesNotMatch(
   /applyScopedFilters\(rows, \{ teamFilter, personFilter \}\)/,
   "pills must not re-filter rows independently of search"
 );
+assert.equal(filterLogRows(rows, { teamFilter: "R&D", status: "WATCH" }).length, 1);
+assert.equal(filterLogRows(rows, { teamFilter: "R&D", status: "NO-GO" }).length, 1);
 
 console.log("PASS Part 86: one scoped array feeds counts and rows; team filter is submitter department, not division");
