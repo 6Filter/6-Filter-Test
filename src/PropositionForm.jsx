@@ -36,11 +36,7 @@ import {
   analysisCheckItems,
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
-import {
-  isScoredProposition,
-  scoreInputsMatch,
-  shouldForkLogResubmit,
-} from "../lib/analysisStability.js";
+import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
 import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
 import { storedVerdictWithoutInputs } from "../lib/storedVerdict.js";
 import { scoreExplainerSections } from "../lib/scoreExplainer.js";
@@ -1068,18 +1064,22 @@ export function GoNoGoResultPage({
 
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
+  // Sealed gate from the server/Log is authoritative on the output page.
   const scoreRaw = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
-  const scorePct = Number.isFinite(Number(scoreRaw?.pct)) ? Number(scoreRaw.pct) : 0;
-  const score = { ...(scoreRaw && typeof scoreRaw === "object" ? scoreRaw : {}), pct: scorePct };
-  const hasLockKey = Boolean(String(result.scoreInputKey || "").trim());
-  const inputsLocked =
-    Boolean(result.classification) &&
-    (!hasLockKey || scoreInputsMatch(doc || {}, result));
-  const liveClassification =
-    !inputsLocked && score.total > 0 ? computeGoNoGo(checks) : result.classification;
-  const classification = inputsLocked
-    ? result.classification
-    : liveClassification || result.classification;
+  const sealedScore =
+    result.score && Number(result.score.total) > 0
+      ? {
+          done: Number(result.score.done) || 0,
+          total: Number(result.score.total) || 0,
+          pct: Number.isFinite(Number(result.score.pct)) ? Number(result.score.pct) : 0,
+          byFilter: result.score.byFilter || {},
+          scoreInputKey: result.scoreInputKey || result.score.scoreInputKey,
+        }
+      : null;
+  const scoreBase = sealedScore || scoreRaw;
+  const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
+  const score = { ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}), pct: scorePct };
+  const classification = result.classification;
   const tone = goNoGoTone(classification);
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
@@ -1102,11 +1102,8 @@ export function GoNoGoResultPage({
     "hero rationale",
     () =>
       rewriteUnmatchedDivisionCopy(
-        inputsLocked && result.rationale
-          ? result.rationale
-          : score.total > 0 && liveRationale
-            ? liveRationale
-            : result.rationale || "No rationale returned.",
+        result.rationale ||
+          (score.total > 0 && liveRationale ? liveRationale : "No rationale returned."),
         categoryName
       ),
     String(result.rationale || "No rationale returned.")

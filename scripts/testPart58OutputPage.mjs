@@ -197,9 +197,16 @@ const milkshakeChecks = {
   f3: { checkLabel: "Cleared", items: [{ status: "done", text: "MRP inside safe band" }] },
   f4: mediumF4,
 };
-const liveScore = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
-assert.ok(liveScore.pct < 100, "live pending F4 items must beat a stale 100% store");
-assert.ok(liveScore.total > liveScore.done);
+const sealedScore = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
+assert.equal(sealedScore.pct, 100, "sealed store wins when no lock key is present");
+const unlockedScore = resolveOutputScore(
+  milkshakeChecks,
+  { pct: 100, done: 14, total: 14, scoreInputKey: "deadbeef" },
+  { name: "Protein milkshake", f1: {}, f2: {}, f3: {}, f4: {} },
+  "deadbeef"
+);
+assert.ok(unlockedScore.pct < 100, "live checks win only when the lock key no longer matches");
+assert.ok(unlockedScore.total > unlockedScore.done);
 const milkPath = closestPathToGo(milkshakeChecks, computeImprovementPointValues(milkshakeChecks));
 assert.ok(milkPath.projectedPct >= milkPath.currentPct, "path must never suggest a lower score");
 assert.notEqual(milkPath.projectedPct, 100);
