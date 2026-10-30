@@ -12,6 +12,8 @@ if (!testUrl) {
   console.error(SKIP);
   process.exit(process.env.REQUIRE_POSTGRES_TESTS === "1" ? 1 : 0);
 }
+// Draft/ownership paths assume parked auth unless a case opts in.
+if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
 
 function hostAllowed(raw) {
   let host = "";
