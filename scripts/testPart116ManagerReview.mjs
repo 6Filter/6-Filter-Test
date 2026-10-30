@@ -238,18 +238,10 @@ try {
     name: "Head Own Idea",
     goNoGo: { classification: "WATCH", score: { pct: 71, total: 71, max: 100 } },
   });
-  const headReq = await requestManagerReview({ ideaId: headOwned.id, user: head });
-  assert.equal(headReq.adminFallback, true);
-  assert.ok(headReq.recipients.some((r) => r.email === String(admin.email).toLowerCase()));
+  // Sole team head cannot route a WATCH request to ADMIN — must map another head.
   await assert.rejects(
-    () =>
-      decideManagerReview({
-        ideaId: headOwned.id,
-        user: head,
-        decision: "approve",
-        comment: "Self approve attempt xx",
-      }),
-    /own idea|Not allowed/i
+    () => requestManagerReview({ ideaId: headOwned.id, user: head }),
+    /only business head|another head/i
   );
 
   await replaceBusinessHeadTeams([{ email: otherHead.email, team: "FD and Dairy" }], {
@@ -264,8 +256,44 @@ try {
     name: "Orphan Team Idea",
     goNoGo: { classification: "WATCH", score: { pct: 68, total: 68, max: 100 } },
   });
-  const orphanReq = await requestManagerReview({ ideaId: orphan.id, user: owner });
-  assert.equal(orphanReq.adminFallback, true);
+  await assert.rejects(
+    () => requestManagerReview({ ideaId: orphan.id, user: owner }),
+    /No business head is mapped|assign the team head/i
+  );
+
+  // Team head mapping (not ADMIN) receives the Ambient & Beverages WATCH request.
+  const bevHead = await findOrCreateSlackUser({
+    email: "bevhead.116@cavinkare.com",
+    name: "Bev Head",
+    role: "BH FORUM",
+    externalId: "U_BEV",
+  });
+  await adminUpdateUser(bevHead.id, { role: "BH FORUM", team: "Ambient & Beverages" });
+  await replaceBusinessHeadTeams(
+    [
+      { email: head.email, team: "PC" },
+      { email: bevHead.email, team: "Ambient & Beverages" },
+      { email: admin.email, team: "Ambient & Beverages" },
+    ],
+    { actorUserId: admin.id }
+  );
+  const bevIdea = await createProposition({
+    submitterDepartment: "Ambient & Beverages",
+    createdByUserId: owner.id,
+    createdByEmail: owner.email,
+  });
+  await updateProposition(bevIdea.id, {
+    name: "Protein milkshake",
+    division: "Ambient Dairy",
+    goNoGo: { classification: "WATCH", score: { pct: 72, total: 72, max: 100 } },
+  });
+  dmLog.length = 0;
+  const bevReq = await requestManagerReview({ ideaId: bevIdea.id, user: owner });
+  assert.equal(bevReq.adminFallback, false);
+  assert.ok(bevReq.recipients.some((r) => r.email === String(bevHead.email).toLowerCase()));
+  assert.ok(!bevReq.recipients.some((r) => r.email === String(admin.email).toLowerCase()));
+  assert.match(bevReq.announce, /Business head: Bev Head/);
+  assert.ok(dmLog.some((m) => String(m.text || "").includes("Protein milkshake")));
 
   await replaceBusinessHeadTeams([{ email: "noslack.116@cavinkare.com", team: "PC" }], {
     actorUserId: admin.id,
