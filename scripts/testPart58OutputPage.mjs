@@ -10,9 +10,11 @@ import {
   formatScreenedDuration,
   ownersForCheckItem,
   projectedScoreIfTopResolved,
+  resolveOutputScore,
   scoreArcColor,
 } from "../lib/improvementPoints.js";
-import { financeSignatureCopy, scoreAdvisoryChecks } from "../lib/goNoGo.js";
+import { buildGateRationale, financeSignatureCopy, scoreAdvisoryChecks } from "../lib/goNoGo.js";
+import { checkF4 } from "../lib/filterChecks.js";
 
 const checks = {
   f1: {
@@ -159,5 +161,56 @@ const goNoGo = readFileSync(new URL("../lib/goNoGo.js", import.meta.url), "utf8"
 assert.doesNotMatch(goNoGo, /computeImprovementPointValues/);
 assert.match(goNoGo, /lockedConstants/);
 assert.match(goNoGo, /classifyGoNoGoFromBands/);
+
+// Stale 100% ring must not win over live F4 Medium pending checks (Protein milkshake case).
+const mediumF4 = checkF4({
+  techShiftRisk: {
+    overallRisk: "Medium",
+    dimensions: {
+      functionalCoreStability: { risk: "Medium", reason: "heat-stable protein" },
+      consumptionContextStability: { risk: "Medium", reason: "RTD occasions" },
+      manufacturingDisruptionRisk: { risk: "Medium", reason: "UHT capacity" },
+      userHabitShiftPotential: { risk: "Medium", reason: "powder mix switch" },
+      adjacentSubstitutionThreat: { risk: "Medium", reason: "whey RTDs" },
+      purchaseFrequencyShift: { risk: "Medium", reason: "basket pressure" },
+      regulatoryDisruptionRisk: { risk: "Low", reason: "FSSAI path" },
+    },
+  },
+});
+const milkshakeChecks = {
+  f1: {
+    checkLabel: "Cleared",
+    items: [
+      { status: "done", text: "Attribute ok" },
+      { status: "done", text: "Benchmark verified" },
+      { status: "done", text: "Gap clears floor" },
+      { status: "done", text: "Growth argument recorded" },
+    ],
+  },
+  f2: {
+    checkLabel: "Cleared",
+    items: [
+      { status: "done", text: "Net margin 40% clears the 18% floor" },
+      { status: "done", text: "Quick-commerce terms assumption recorded" },
+    ],
+  },
+  f3: { checkLabel: "Cleared", items: [{ status: "done", text: "MRP inside safe band" }] },
+  f4: mediumF4,
+};
+const liveScore = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
+assert.ok(liveScore.pct < 100, "live pending F4 items must beat a stale 100% store");
+assert.ok(liveScore.total > liveScore.done);
+const milkPath = closestPathToGo(milkshakeChecks, computeImprovementPointValues(milkshakeChecks));
+assert.ok(milkPath.projectedPct >= milkPath.currentPct, "path must never suggest a lower score");
+assert.notEqual(milkPath.projectedPct, 100);
+assert.match(src, /resolveOutputScore/);
+const watchRationale = buildGateRationale({
+  classification: "WATCH",
+  score: { pct: 100 },
+  checks: milkshakeChecks,
+  ideaName: "Protein milkshake",
+});
+assert.doesNotMatch(watchRationale, /60–80 band|60-80 band/);
+assert.match(watchRationale, /Outstanding on the form|Medium risk/i);
 
 console.log("PASS Part 58 output-page point values, owners, and reference tokens");

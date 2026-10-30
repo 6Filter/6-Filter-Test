@@ -46,6 +46,7 @@ import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.j
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
   closestPathToGo,
+  resolveOutputScore,
   emptyImprovementReason,
   computeImprovementPointValues,
   countFiltersWithEvidence,
@@ -1063,18 +1064,37 @@ export function GoNoGoResultPage({
 
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  const scoreRaw = result.score?.total ? result.score : scoreAdvisoryChecks(checks);
+  const scoreRaw = resolveOutputScore(checks, result.score);
   const scorePct = Number.isFinite(Number(scoreRaw?.pct)) ? Number(scoreRaw.pct) : 0;
   const score = { ...(scoreRaw && typeof scoreRaw === "object" ? scoreRaw : {}), pct: scorePct };
-  const tone = goNoGoTone(result.classification);
-  const isGo = result.classification === "GO";
-  const isWatch = result.classification === "WATCH";
+  const liveClassification =
+    score.total > 0 ? computeGoNoGo(checks) : result.classification;
+  const classification = liveClassification || result.classification;
+  const tone = goNoGoTone(classification);
+  const isGo = classification === "GO";
+  const isWatch = classification === "WATCH";
   const categoryName = String(category || result.category || "").trim();
   const divisionName = String(doc?.division || "").trim();
   const idea = String(ideaName || result.ideaName || "").trim();
+  const liveRationale = safeCall(
+    "live rationale",
+    () =>
+      buildGateRationale({
+        classification,
+        score,
+        checks,
+        ideaName: idea,
+        category: categoryName,
+      }),
+    ""
+  );
   const rationale = safeCall(
     "hero rationale",
-    () => rewriteUnmatchedDivisionCopy(result.rationale || "No rationale returned.", categoryName),
+    () =>
+      rewriteUnmatchedDivisionCopy(
+        score.total > 0 && liveRationale ? liveRationale : result.rationale || "No rationale returned.",
+        categoryName
+      ),
     String(result.rationale || "No rationale returned.")
   );
   const improvementItems = safeCall(
@@ -1128,7 +1148,7 @@ export function GoNoGoResultPage({
               {divisionName ? <span className="mono badge-chip">{divisionName}</span> : null}
             </div>
             <div className="gonogo-badge-row">
-              <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{result.classification}</div>
+              <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{classification}</div>
               {sizeTier ? (
                 <span
                   className="gonogo-scale-chip idea-size-badge"
@@ -1169,9 +1189,11 @@ export function GoNoGoResultPage({
         <aside className="path-panel">
           <div className="panel-kicker mono">Closest path to GO</div>
           <p className="path-score-line">
-            <span className="mono">{score.pct}%</span>
+            <span className="mono">{path.currentPct ?? score.pct}%</span>
             <span className="path-arrow" aria-hidden="true">→</span>
-            <span className="mono path-projected">{path.projectedPct}%</span>
+            <span className="mono path-projected">
+              {Math.max(Number(path.projectedPct) || 0, Number(path.currentPct ?? score.pct) || 0)}%
+            </span>
             {pathItems.length ? (
               <span className="path-if">
                 {path.reachesGo
@@ -1316,7 +1338,7 @@ export function GoNoGoResultPage({
       {isWatch && !pdfMode ? (
         <div className="pdf-hide">
           <ManagerReviewPanel
-            classification={result.classification}
+            classification={classification}
             scorePct={score.pct}
             review={doc?.managerReview}
             doc={doc}
@@ -2490,14 +2512,23 @@ export default function PropositionForm({
       : filled;
     setDoc(nextDoc);
     if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
-    const checks = result.proposition.advisoryChecks || nextDoc.advisoryChecks || null;
+    const checks =
+      result.advisoryChecks ||
+      result.proposition.advisoryChecks ||
+      nextDoc.advisoryChecks ||
+      null;
     if (checks) setAdvisoryChecks(checks);
     setSummaryChecks(checks);
     const savedGo = result.proposition.goNoGo && typeof result.proposition.goNoGo === "object"
       ? result.proposition.goNoGo
       : null;
-    const classification = savedGo?.classification || computeGoNoGo(checks || {});
-    const nextScore = savedGo?.score || scoreAdvisoryChecks(checks || {});
+    const liveScore = checks ? scoreAdvisoryChecks(checks) : null;
+    const classification =
+      (liveScore?.total > 0 ? computeGoNoGo(checks) : null) ||
+      savedGo?.classification ||
+      computeGoNoGo(checks || {});
+    const nextScore =
+      liveScore?.total > 0 ? liveScore : savedGo?.score || scoreAdvisoryChecks(checks || {});
     const ideaName = formIdeaLabel(nextDoc);
     const category = formCategoryLabel(nextDoc);
     const nextGo = {
