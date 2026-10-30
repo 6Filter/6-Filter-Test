@@ -118,12 +118,39 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
     }
   }
 
+  function applyCodeDigits(raw, startIndex = 0) {
+    const chars = String(raw || "").replace(/\D/g, "").slice(0, 6 - startIndex);
+    if (!chars) return;
+    setDigits((prev) => {
+      const next = [...prev];
+      for (let j = 0; j < chars.length; j += 1) next[startIndex + j] = chars[j];
+      return next;
+    });
+    const focusAt = Math.min(5, startIndex + chars.length - (chars.length < 6 - startIndex ? 0 : 1));
+    window.setTimeout(() => inputs.current[focusAt]?.focus(), 0);
+  }
+
   function onDigit(i, value) {
-    const v = value.replace(/\D/g, "").slice(-1);
-    const next = [...digits];
-    next[i] = v;
-    setDigits(next);
+    const digitsOnly = String(value || "").replace(/\D/g, "");
+    if (digitsOnly.length > 1) {
+      applyCodeDigits(digitsOnly, i);
+      return;
+    }
+    const v = digitsOnly.slice(-1);
+    setDigits((prev) => {
+      const next = [...prev];
+      next[i] = v;
+      return next;
+    });
     if (v && i < 5) inputs.current[i + 1]?.focus();
+  }
+
+  function onDigitPaste(i, e) {
+    const text = e.clipboardData?.getData("text") || "";
+    const digitsOnly = text.replace(/\D/g, "");
+    if (!digitsOnly) return;
+    e.preventDefault();
+    applyCodeDigits(digitsOnly.length >= 6 ? digitsOnly.slice(0, 6) : digitsOnly, digitsOnly.length >= 6 ? 0 : i);
   }
 
   function onDigitKey(i, e) {
@@ -184,9 +211,10 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
                   className="login-digit"
                   inputMode="numeric"
                   autoComplete={i === 0 ? "one-time-code" : "off"}
-                  maxLength={1}
+                  maxLength={i === 0 ? 6 : 1}
                   value={d}
                   onChange={(e) => onDigit(i, e.target.value)}
+                  onPaste={(e) => onDigitPaste(i, e)}
                   onKeyDown={(e) => onDigitKey(i, e)}
                   disabled={busy}
                   aria-label={`Digit ${i + 1}`}

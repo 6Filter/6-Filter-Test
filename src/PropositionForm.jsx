@@ -891,48 +891,87 @@ function ManagerReviewPanel({
   classification,
   scorePct,
   review,
+  doc,
   currentUser,
   onRequest,
   onApprove,
+  onReject,
   busy,
   comment,
   onComment,
+  rejectReason,
+  onRejectReason,
   slackNotice = "",
   onDismissSlack,
+  announcePreview = "",
 }) {
   if (classification === "NO-GO") return null;
   if (classification !== "WATCH") return null;
-  const approved = hasManagerApproval({ managerReview: review, managerApproval: review });
-  const requestedAt = review?.requestedAt;
-  const canApprove = viewerCanApproveManagerReview(currentUser);
+  const live = doc || { managerReview: review, managerApproval: review };
+  const approved = hasManagerApproval(live);
+  const state = live.managerReviewState;
+  const requestedAt = state?.openRequest?.created_at || review?.requestedAt;
+  const rejected = state?.isRejected || review?.status === "rejected";
+  const canDecide = viewerCanApproveManagerReview(currentUser, live) && Boolean(requestedAt) && !approved && !rejected;
+  const isOwner =
+    String(currentUser?.email || "").toLowerCase() ===
+      String(live.createdByEmail || live.created_by_email || "").toLowerCase() ||
+    String(currentUser?.id || "") === String(live.createdByUserId || live.created_by_user_id || "");
+  const canRequest =
+    canRequestManagerReview(live) &&
+    (isOwner || String(currentUser?.role || "").trim() === "ADMIN");
+  const requesterName =
+    review?.requestedBy?.name || state?.openRequest?.actor_name || "someone";
+  const requestedDate = requestedAt
+    ? new Date(requestedAt).toISOString().slice(0, 10)
+    : "";
 
   if (approved) {
     return (
       <div className="manager-review-panel is-approved">
         <p>
-          Manager approved {review.approvedAt ? timeAgo(review.approvedAt) : ""}. Upload proof to unlock
+          Manager approved {review?.approvedAt || state?.decision?.created_at ? timeAgo(review?.approvedAt || state?.decision?.created_at) : ""}. Upload proof to unlock
           Filters 5–6, the same as a GO read.
         </p>
-        {review.comment ? <blockquote className="manager-comment">{review.comment}</blockquote> : null}
+        {(review?.comment || state?.decision?.comment) ? (
+          <blockquote className="manager-comment">{review?.comment || state?.decision?.comment}</blockquote>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (rejected && !canRequest) {
+    return (
+      <div className="manager-review-panel">
+        <p>Manager review was rejected{review?.rejectedAt ? ` ${timeAgo(review.rejectedAt)}` : ""}.</p>
+        {review?.rejectReason ? <blockquote className="manager-comment">{review.rejectReason}</blockquote> : null}
       </div>
     );
   }
 
   return (
     <div className="manager-review-panel">
-      <p>This idea isn&apos;t cleared yet, but a manager can approve it forward with a comment.</p>
-      {requestedAt ? (
-        <p className="manager-requested">Requested {timeAgo(requestedAt)}. Current read: WATCH at {scorePct}%</p>
-      ) : (
-        <button type="button" className="prop-save run" disabled={busy} onClick={onRequest}>
-          {busy ? <Loader2 size={15} className="spin" /> : null}
-          Request manager review
-        </button>
-      )}
-      {requestedAt && canApprove ? (
+      <p>This idea is WATCH. A manager review can unlock proof upload the same way a GO would.</p>
+      {requestedAt && !rejected ? (
+        <div className="manager-review-banner" role="status">
+          <p>
+            Manager review requested by {requesterName}
+            {requestedDate ? ` on ${requestedDate}` : ""} (WATCH at {scorePct}%).
+          </p>
+        </div>
+      ) : null}
+      {!requestedAt || rejected ? (
+        canRequest ? (
+          <button type="button" className="prop-save run" disabled={busy} onClick={onRequest}>
+            {busy ? <Loader2 size={15} className="spin" /> : null}
+            Manager Review
+          </button>
+        ) : null
+      ) : null}
+      {requestedAt && canDecide ? (
         <div className="manager-review-form">
           <textarea
-            placeholder="Comment — required to approve"
+            placeholder="Approve comment (min 10 characters)"
             value={comment}
             onChange={(e) => onComment(e.target.value)}
             rows={3}
@@ -940,15 +979,30 @@ function ManagerReviewPanel({
           <button
             type="button"
             className="prop-save run"
-            disabled={busy || !String(comment || "").trim()}
+            disabled={busy || String(comment || "").trim().length < 10}
             onClick={onApprove}
           >
             {busy ? <Loader2 size={15} className="spin" /> : null}
-            Approve and unlock
+            Approve
+          </button>
+          <textarea
+            placeholder="Reject reason (min 10 characters)"
+            value={rejectReason}
+            onChange={(e) => onRejectReason(e.target.value)}
+            rows={3}
+          />
+          <button
+            type="button"
+            className="prop-save"
+            disabled={busy || String(rejectReason || "").trim().length < 10}
+            onClick={onReject}
+          >
+            {busy ? <Loader2 size={15} className="spin" /> : null}
+            Reject
           </button>
         </div>
-      ) : requestedAt && !canApprove ? (
-        <p className="manager-wait">Waiting for a manager (Admin or BH Forum) to approve with a comment.</p>
+      ) : requestedAt && !canDecide && !rejected ? (
+        <p className="manager-wait">Waiting for the business head or an admin to decide.</p>
       ) : null}
       {slackNotice ? (
         <div className="prop-notice" role="status">
@@ -978,9 +1032,13 @@ export function GoNoGoResultPage({
   currentUser,
   onRequestReview,
   onApproveReview,
+  onRejectReview,
   managerBusy,
   managerComment,
   onManagerComment,
+  managerRejectReason,
+  onManagerRejectReason,
+  reviewAnnounce = "",
   pdfMode = false,
 }) {
   const pageRef = useRef(null);
@@ -1261,12 +1319,17 @@ export function GoNoGoResultPage({
             classification={result.classification}
             scorePct={score.pct}
             review={doc?.managerReview}
+            doc={doc}
             currentUser={currentUser}
             onRequest={onRequestReview}
             onApprove={onApproveReview}
+            onReject={onRejectReview}
             busy={managerBusy}
             comment={managerComment}
             onComment={onManagerComment}
+            rejectReason={managerRejectReason}
+            onRejectReason={onManagerRejectReason}
+            announcePreview={reviewAnnounce || doc?.managerReview?.announce || ""}
           />
         </div>
       ) : null}
@@ -1435,6 +1498,8 @@ export default function PropositionForm({
   const [managerCopied, setManagerCopied] = useState(false);
   const [managerBusy, setManagerBusy] = useState(false);
   const [managerComment, setManagerComment] = useState("");
+  const [managerRejectReason, setManagerRejectReason] = useState("");
+  const [reviewAnnounce, setReviewAnnounce] = useState("");
   const [aiSourced, setAiSourced] = useState({});
   const [mrpBaseInr, setMrpBaseInr] = useState(null);
   const [mrpFinalInr, setMrpFinalInr] = useState(null);
@@ -2189,14 +2254,32 @@ export default function PropositionForm({
     setLocalError("");
     setSlackNotice("");
     try {
+      const previewRes = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/request-manager-review`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preview: true }),
+      });
+      const preview = await previewRes.json().catch(() => ({}));
+      if (!previewRes.ok) throw new Error(preview.error || "Could not prepare manager review.");
+      const announce = preview.announce || "Business head: (ADMIN)";
+      setReviewAnnounce(announce);
+      const ok = window.confirm(
+        `Request manager review?\n\n${announce}\n\nThey will get a Slack direct message with a link to this idea.`
+      );
+      if (!ok) return;
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/request-manager-review`, {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not request manager review.");
       if (data.proposition) setDoc(mergeProposition({ ...doc, ...data.proposition }));
+      if (data.announce) setReviewAnnounce(data.announce);
       if (data.slackWarning) setSlackNotice(data.slackWarning);
+      else if (data.announce) setSlackNotice(data.announce);
     } catch (e) {
       setLocalError(e.message || "Could not request manager review.");
     } finally {
@@ -2205,7 +2288,7 @@ export default function PropositionForm({
   }
 
   async function handleApproveManagerReview() {
-    if (!propositionId || managerBusy || !String(managerComment || "").trim()) return;
+    if (!propositionId || managerBusy || String(managerComment || "").trim().length < 10) return;
     setManagerBusy(true);
     setLocalError("");
     try {
@@ -2221,6 +2304,28 @@ export default function PropositionForm({
       setManagerComment("");
     } catch (e) {
       setLocalError(e.message || "Could not approve.");
+    } finally {
+      setManagerBusy(false);
+    }
+  }
+
+  async function handleRejectManagerReview() {
+    if (!propositionId || managerBusy || String(managerRejectReason || "").trim().length < 10) return;
+    setManagerBusy(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/manager-reject`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: managerRejectReason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not reject.");
+      if (data.proposition) setDoc(mergeProposition({ ...doc, ...data.proposition }));
+      setManagerRejectReason("");
+    } catch (e) {
+      setLocalError(e.message || "Could not reject.");
     } finally {
       setManagerBusy(false);
     }
@@ -2454,9 +2559,13 @@ export default function PropositionForm({
           currentUser={currentUser}
           onRequestReview={handleRequestManagerReview}
           onApproveReview={handleApproveManagerReview}
+          onRejectReview={handleRejectManagerReview}
           managerBusy={managerBusy}
           managerComment={managerComment}
           onManagerComment={setManagerComment}
+          managerRejectReason={managerRejectReason}
+          onManagerRejectReason={setManagerRejectReason}
+          reviewAnnounce={reviewAnnounce}
         />
       </main>
     );
@@ -2830,19 +2939,24 @@ export default function PropositionForm({
 
       {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
-      {canRequestManagerReview(liveDoc) || hasManagerApproval(liveDoc) ? (
+      {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
         <ManagerReviewPanel
           classification={liveDoc.goNoGo?.classification}
           scorePct={liveDoc.goNoGo?.score?.pct}
           review={doc.managerReview}
+          doc={liveDoc}
           currentUser={currentUser}
           onRequest={handleRequestManagerReview}
           onApprove={handleApproveManagerReview}
+          onReject={handleRejectManagerReview}
           busy={managerBusy}
           comment={managerComment}
           onComment={setManagerComment}
+          rejectReason={managerRejectReason}
+          onRejectReason={setManagerRejectReason}
           slackNotice={slackNotice}
           onDismissSlack={() => setSlackNotice("")}
+          announcePreview={reviewAnnounce || doc.managerReview?.announce || ""}
         />
       ) : null}
 

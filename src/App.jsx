@@ -612,6 +612,51 @@ export default function App() {
   const [outcomeRevenue, setOutcomeRevenue] = useState("");
   const [outcomeBusy, setOutcomeBusy] = useState(false);
   const [outcomeMsg, setOutcomeMsg] = useState("");
+  const [deepLinkMissing, setDeepLinkMissing] = useState(false);
+  const deepLinkHandled = useRef(false);
+
+  function readDeepLinkIdeaId() {
+    try {
+      const path = String(window.location.pathname || "");
+      const m = path.match(/^\/propositions\/([^/]+)\/?$/i);
+      if (m?.[1]) return decodeURIComponent(m[1]);
+      const q = new URLSearchParams(window.location.search || "").get("idea");
+      return q ? String(q).trim() : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function stashDeepLinkIdeaId(id) {
+    const cleaned = String(id || "").trim();
+    if (!cleaned) return;
+    try {
+      sessionStorage.setItem("primus_return_idea", cleaned);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function takeStashedDeepLinkIdeaId() {
+    try {
+      const fromUrl = readDeepLinkIdeaId();
+      if (fromUrl) {
+        stashDeepLinkIdeaId(fromUrl);
+        return fromUrl;
+      }
+      return String(sessionStorage.getItem("primus_return_idea") || "").trim();
+    } catch {
+      return readDeepLinkIdeaId();
+    }
+  }
+
+  function clearStashedDeepLinkIdeaId() {
+    try {
+      sessionStorage.removeItem("primus_return_idea");
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function refreshHistories() {
     const propositions = await fetchPropositionList(LIST_PROPOSITIONS_CAP);
@@ -643,6 +688,11 @@ export default function App() {
   }
 
   useEffect(() => {
+    const fromUrl = readDeepLinkIdeaId();
+    if (fromUrl) stashDeepLinkIdeaId(fromUrl);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     apiFetch("/api/auth/me")
       .then((r) => r.json())
@@ -664,6 +714,54 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (sessionLoading || !teamGateReady) return;
+    if (authRequired && (!sessionUser || sessionUser.needsTeam)) return;
+    if (PLATFORM_TEAM_LOCK_ENABLED && !teamSession?.department) return;
+    if (deepLinkHandled.current) return;
+    const ideaId = takeStashedDeepLinkIdeaId();
+    if (!ideaId) {
+      deepLinkHandled.current = true;
+      return;
+    }
+    deepLinkHandled.current = true;
+    let cancelled = false;
+    (async () => {
+      setOpeningId(ideaId);
+      setError("");
+      setDeepLinkMissing(false);
+      try {
+        const full = await fetchPropositionById(ideaId);
+        if (cancelled) return;
+        setProposition(full);
+        setSavedFlash(false);
+        setReturnView("spec");
+        setView("form");
+        clearStashedDeepLinkIdeaId();
+        try {
+          window.history.replaceState({}, "", `/propositions/${encodeURIComponent(ideaId)}`);
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        if (cancelled) return;
+        setDeepLinkMissing(true);
+        setView("missing-idea");
+        clearStashedDeepLinkIdeaId();
+        try {
+          window.history.replaceState({}, "", "/");
+        } catch {
+          /* ignore */
+        }
+      } finally {
+        if (!cancelled) setOpeningId(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionLoading, teamGateReady, authRequired, sessionUser, teamSession]);
 
   useEffect(() => {
     let cancelled = false;
@@ -795,14 +893,26 @@ export default function App() {
     setOpeningId(row.id);
     setLogError("");
     setError("");
+    setDeepLinkMissing(false);
     try {
       const full = await fetchPropositionById(row.id);
       setProposition(full);
       setSavedFlash(false);
       setReturnView(from);
       setView("form");
+      try {
+        window.history.replaceState({}, "", `/propositions/${encodeURIComponent(row.id)}`);
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
-      setLogError(e.message || "Could not open that proposition.");
+      const msg = e.message || "Could not open that proposition.";
+      if (/not found/i.test(msg)) {
+        setDeepLinkMissing(true);
+        setView("missing-idea");
+      } else {
+        setLogError(msg);
+      }
     } finally {
       setOpeningId(null);
     }
@@ -1204,16 +1314,44 @@ export default function App() {
   }
 
   if (authRequired && !sessionUser) {
+    const pendingIdea = takeStashedDeepLinkIdeaId();
+    if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
   if (authRequired && sessionUser?.needsTeam) {
+    const pendingIdea = takeStashedDeepLinkIdeaId();
+    if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return (
       <LoginScreen
         initialUser={sessionUser}
         startAtTeam
         onLogin={(user) => setSessionUser(user)}
       />
+    );
+  }
+
+  if (view === "missing-idea" || deepLinkMissing) {
+    return (
+      <div className="primus screen-spec" style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#F3EAF8", padding: 24 }}>
+        <style>{CSS}</style>
+        <div style={{ maxWidth: 420, textAlign: "center" }}>
+          <h1 style={{ fontSize: "1.4rem", marginBottom: 8 }}>Idea not found</h1>
+          <p style={{ opacity: 0.85, marginBottom: 20 }}>
+            This link does not match an idea you can open, or the idea no longer exists.
+          </p>
+          <button
+            type="button"
+            className="nav-tab active"
+            onClick={() => {
+              setDeepLinkMissing(false);
+              setView("spec");
+            }}
+          >
+            Back to home
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -2191,6 +2329,7 @@ const CSS = `
   --bg-soft: #FBF8EF; --line: #E6E1D1; --line-soft: #F1ECDD;
   --gold: #16202B; --gold-ink: #FFFDF8; --teal: #2F7A54; --coral: #A3402F; --sky: #3A4A5C;
   --accent-rgb: 22,32,43; --pass-rgb: 47,122,84; --fail-rgb: 163,64,47; --ink-rgb: 22,32,43;
+  overflow-x: hidden; max-width: 100vw;
 }
 .screen-verdict {
   --bg: #0B1B2A; --card: #12283C; --panel: #12283C; --panel-2: #163044;
@@ -2225,7 +2364,9 @@ html:has(.output-page), body:has(.output-page) { background:#0d0715; }
 .screen-log .page-back-bar{max-width:none;width:100%;margin:0;padding:8px 28px 0;}
 .screen-log .masthead{
   max-width:none;width:100%;margin:0;padding:12px 28px;
+  flex-wrap:wrap;box-sizing:border-box;
 }
+.screen-log .top-nav{flex-wrap:wrap;margin-left:0;}
 .page-back{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--fd);transition:background .15s,border-color .15s;}
 .page-back:hover{background:var(--card);border-color:rgba(var(--accent-rgb, 0,108,180),.35);color:var(--ink-deep);}
 .hist-row:disabled{opacity:.65;cursor:wait;}

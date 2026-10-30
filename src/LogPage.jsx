@@ -27,6 +27,7 @@ import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
+import { reviewDisplayState } from "../lib/managerReview.js";
 
 const PILLS = [
   { id: "ALL", label: "All" },
@@ -36,6 +37,13 @@ const PILLS = [
   { id: "REVIEW", label: "Review" },
   { id: "ai-used", label: "AI used" },
   { id: "incomplete", label: "Research incomplete" },
+];
+
+const REVIEW_PILLS = [
+  { id: "all", label: "All reviews" },
+  { id: "waiting", label: "Waiting" },
+  { id: "approved", label: "Approved" },
+  { id: "rejected", label: "Rejected" },
 ];
 
 const CHIP = {
@@ -82,6 +90,7 @@ export default function LogPage({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [reviewFilter, setReviewFilter] = useState("all");
   const [personFilter, setPersonFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
@@ -98,8 +107,26 @@ export default function LogPage({
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const [showProbes, setShowProbes] = useState(false);
+  const [ideasWipeLabel, setIdeasWipeLabel] = useState("");
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/health", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const label = formatIdeaWipeLabel(data?.ideasWipeAt, { long: true });
+        setIdeasWipeLabel(label || "");
+      })
+      .catch(() => {
+        if (!cancelled) setIdeasWipeLabel("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const unlockedDepartment =
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
   const hiddenProbes = useMemo(() => rows.filter((row) => row.probe).length, [rows]);
@@ -120,10 +147,44 @@ export default function LogPage({
       }),
     [logRows, teamFilter, personFilter, categoryGroupFilter, query]
   );
-  const filteredRows = useMemo(
-    () => applyLogStatusFilter(scopedRows, status),
-    [scopedRows, status]
-  );
+  const waitingForMeCount = useMemo(() => {
+    const email = String(currentUser?.email || "").toLowerCase();
+    if (!email && String(currentUser?.role || "").trim() !== "ADMIN") return 0;
+    return scopedRows.filter((row) => {
+      const ui = reviewDisplayState(row);
+      if (ui.statusKey !== "waiting") return false;
+      if (String(currentUser?.role || "").trim() === "ADMIN") return true;
+      const recipients = row.managerReviewState?.openRequest?.detail_json;
+      try {
+        const d = typeof recipients === "string" ? JSON.parse(recipients) : recipients;
+        return (d?.recipientEmails || []).map((e) => String(e).toLowerCase()).includes(email);
+      } catch {
+        return false;
+      }
+    }).length;
+  }, [scopedRows, currentUser]);
+
+  const filteredRows = useMemo(() => {
+    let rows = applyLogStatusFilter(scopedRows, status);
+    if (reviewFilter === "mine") {
+      const email = String(currentUser?.email || "").toLowerCase();
+      rows = rows.filter((row) => {
+        const ui = reviewDisplayState(row);
+        if (ui.statusKey !== "waiting") return false;
+        if (String(currentUser?.role || "").trim() === "ADMIN") return true;
+        try {
+          const raw = row.managerReviewState?.openRequest?.detail_json;
+          const d = typeof raw === "string" ? JSON.parse(raw) : raw;
+          return (d?.recipientEmails || []).map((e) => String(e).toLowerCase()).includes(email);
+        } catch {
+          return false;
+        }
+      });
+    } else if (reviewFilter !== "all") {
+      rows = rows.filter((row) => reviewDisplayState(row).statusKey === reviewFilter);
+    }
+    return rows;
+  }, [scopedRows, status, reviewFilter, currentUser]);
   const aiUsedCount = useMemo(
     () => scopedRows.filter((r) => researchWasUsed(r)).length,
     [scopedRows]
@@ -334,7 +395,16 @@ export default function LogPage({
   return (
     <main className="log-page">
       <p className="log-export-notice" role="status">
-        Kindly export your ideas to make sure you always have a copy of the same as the ideas will be wiped out because of no storage
+        Kindly export your ideas to make sure you always have a copy — ideas will be wiped out
+        {ideasWipeLabel ? (
+          <>
+            {" "}
+            on <strong>{ideasWipeLabel}</strong>
+          </>
+        ) : (
+          " because of no storage"
+        )}
+        .
       </p>
       <div className="log-stats">
         {unavailable ? (
@@ -557,6 +627,32 @@ export default function LogPage({
               <span className="mono">{rows.filter((row) => row.probe).length}</span>
             </button>
           </div>
+          <div className="log-pills" role="tablist" aria-label="Manager review filter">
+            {REVIEW_PILLS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-selected={reviewFilter === p.id}
+                className={`log-pill${reviewFilter === p.id ? " is-active" : ""}`}
+                onClick={() => setReviewFilter(p.id)}
+              >
+                {p.label}
+              </button>
+            ))}
+            {String(currentUser?.role || "").trim() === "BH FORUM" ||
+            String(currentUser?.role || "").trim() === "ADMIN" ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={reviewFilter === "mine"}
+                className={`log-pill${reviewFilter === "mine" ? " is-active" : ""}`}
+                onClick={() => setReviewFilter("mine")}
+              >
+                Waiting for my review ({waitingForMeCount})
+              </button>
+            ) : null}
+          </div>
           <div className="log-toolbar-meta">
             <span className="mono log-sort">Sorted by last updated</span>
             <div className="log-legend" aria-label="Filter bar colour key">
@@ -605,6 +701,7 @@ export default function LogPage({
                   <th>Scale</th>
                   <th>Team</th>
                   <th>Idea</th>
+                  <th title="Manager review">Mgr review</th>
                   <th>Filters</th>
                   <th>Submitted</th>
                   <th className="log-th-del"><span className="sr-only">Actions</span></th>
@@ -711,6 +808,22 @@ export default function LogPage({
                         </button>
                       </td>
                       <td>
+                        {(() => {
+                          const ui = reviewDisplayState(h);
+                          return (
+                            <span className="log-mgr-review" title={ui.comment || undefined}>
+                              {ui.label}
+                              {ui.comment ? (
+                                <details className="log-mgr-comment">
+                                  <summary>Comment</summary>
+                                  <p>{ui.comment}</p>
+                                </details>
+                              ) : null}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td>
                         <FilterBar segments={segs} stage={stage} />
                       </td>
                       <td className="mono log-submitted">
@@ -784,8 +897,9 @@ export const LOG_PAGE_CSS = `
   --danger-text:#A3402F; --danger-border:#EBD3CC; --danger-hover-bg:#FBF1EE;
   font-family:'Plus Jakarta Sans',system-ui,sans-serif;
   color:var(--ink); background:var(--bg);
-  max-width:1180px;margin:0 auto;padding:16px 28px 40px;
+  width:100%;max-width:min(1180px,100%);margin:0 auto;padding:16px 28px 40px;
   display:flex;flex-direction:column;gap:18px;
+  box-sizing:border-box;overflow-x:hidden;
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
@@ -799,7 +913,7 @@ export const LOG_PAGE_CSS = `
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
 .log-stat-value{font-size:32px;font-weight:700;letter-spacing:-.8px;line-height:1.1;}
 .log-stat-card p{margin:6px 0 0;font-size:13px;color:var(--ink-secondary);}
-.log-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 8px;}
+.log-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 8px;max-width:100%;overflow:hidden;}
 .log-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:0 0 16px;}
 .log-page .log-title{margin:0 0 6px;font-size:22px;color:var(--ink);}
 .log-page .log-sub{margin:0;font-size:13px;color:var(--ink-secondary);max-width:560px;line-height:1.45;}
@@ -843,51 +957,70 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
-.log-table-wrap{overflow:auto;margin:0;}
-.log-table{width:100%;border-collapse:collapse;border-spacing:0;min-width:880px;}
-.log-table th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:10px 12px;border-bottom:1px solid var(--table-border);font-weight:700;}
-.log-table td{padding:12px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);}
+.log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:hidden;}
+.log-table{width:100%;max-width:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed;}
+.log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 8px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
+.log-table td{padding:10px 8px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
+.log-table th:nth-child(1),.log-table td:nth-child(1){width:11%;}
+.log-table th:nth-child(2),.log-table td:nth-child(2){width:16%;}
+.log-table th:nth-child(3),.log-table td:nth-child(3){width:7%;}
+.log-table th:nth-child(4),.log-table td:nth-child(4){width:10%;}
+.log-table th:nth-child(5),.log-table td:nth-child(5){width:14%;}
+.log-table th:nth-child(6),.log-table td:nth-child(6){width:16%;}
+.log-table th:nth-child(7),.log-table td:nth-child(7){width:12%;}
+.log-table th:nth-child(8),.log-table td:nth-child(8){width:8%;}
+.log-table th:nth-child(9),.log-table td:nth-child(9){width:6%;}
 .log-tr:hover td{background:var(--table-row-hover);}
-.log-open{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;}
+.log-open{display:block;width:100%;max-width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;}
 .log-open:disabled{opacity:.6;cursor:wait;}
-.log-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;}
+.log-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;max-width:100%;}
 .log-chip.chip-open{background:var(--chip-open-bg);color:var(--chip-open-fg);}
 .log-chip.chip-cleared{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .log-chip.chip-stopped{background:var(--chip-stopped-bg);color:var(--chip-stopped-fg);}
 .log-chip.chip-review{background:var(--chip-review-bg);color:var(--chip-review-fg);}
-.log-scale-cell{white-space:nowrap;vertical-align:middle;}
+.log-scale-cell{vertical-align:middle;}
 .log-scale-chip{
-  display:inline-flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;
-  padding:5px 10px;border-radius:999px;background:#E8E4D6;color:#3A3428;
+  display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.04em;
+  padding:4px 8px;border-radius:999px;background:#E8E4D6;color:#3A3428;
 }
 .log-scale-chip[data-provisional="true"]{opacity:.9;}
 .log-scale-empty{color:var(--ink-muted);font-size:12px;}
-.log-status-cell{display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
-.research-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:650;letter-spacing:.02em;padding:3px 8px;border-radius:999px;white-space:nowrap;}
+.log-status-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;}
+.research-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:650;letter-spacing:.02em;padding:2px 6px;border-radius:999px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .research-badge.used{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .research-badge.unused{background:var(--none);color:var(--ink-muted);}
 .research-badge.incomplete{background:var(--chip-watch-bg, #f3e7c3);color:var(--chip-watch-fg, #6b4e00);}
-.log-prop-cell{display:flex;flex-direction:column;gap:2px;}
-.log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-.log-wipe-chip{display:inline-block;margin:0 8px 2px 0;padding:2px 8px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:10px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap;}
-.log-prop-owner{font-size:12px;color:var(--ink-secondary);}
-.log-prop-group{font-size:11px;color:var(--ink-muted);font-weight:600;}
-.log-dept-cell{font-size:12px;color:var(--ink-secondary-2);white-space:nowrap;}
-.log-dept-team{display:block;font-weight:650;color:var(--ink);}
-.log-dept-division{display:block;font-size:11px;color:var(--ink-muted);margin-top:2px;}
-.log-idea-cell{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-secondary);font-size:13px;}
-.log-filters-cell{min-width:140px;}
-.log-seg{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;height:8px;margin:0 0 6px;}
-.log-seg-bit{display:block;height:100%;border-radius:999px;background:var(--none);}
-.log-stage{font-size:11px;color:var(--ink-muted-2);line-height:1.35;}
-.log-submitted{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-secondary);white-space:nowrap;}
-.log-th-del,.log-table td:last-child{width:84px;text-align:right;}
-.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:2px;}
-.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;}
+.log-prop-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.log-prop-name{font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}
+.log-wipe-chip{display:inline-block;margin:0 6px 2px 0;padding:2px 6px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:9px;font-weight:700;letter-spacing:.02em;vertical-align:middle;}
+.log-prop-owner{font-size:11px;color:var(--ink-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-prop-group{font-size:10px;color:var(--ink-muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-dept-cell{font-size:11px;color:var(--ink-secondary-2);min-width:0;}
+.log-dept-team{display:block;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-dept-division{display:block;font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-idea-cell{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-secondary);font-size:12px;}
+.log-mgr-review{min-width:0;font-size:12px;line-height:1.35;color:var(--ink-secondary-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;}
+.log-mgr-comment{margin-top:4px;font-size:11px;color:var(--ink-muted);}
+.log-mgr-comment summary{cursor:pointer;font-weight:600;}
+.log-mgr-comment p{margin:4px 0 0;line-height:1.35;word-break:break-word;}
+.log-filters-cell{min-width:0;}
+.log-seg{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;height:7px;margin:0 0 4px;max-width:100%;}
+.log-seg-bit{display:block;height:100%;border-radius:999px;background:var(--none);min-width:0;}
+.log-stage{font-size:10px;color:var(--ink-muted-2);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.log-submitted{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink-secondary);min-width:0;}
+.log-submitted span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-th-del,.log-table td:last-child{text-align:right;}
+.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:0;flex-wrap:wrap;}
+.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;}
 .log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);color:var(--danger-text);}
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
+@media (max-width:1100px){
+  .log-page{padding:16px 16px 32px;}
+  .log-table th,.log-table td{padding:8px 6px;}
+}
 @media (max-width:860px){
   .log-stats{grid-template-columns:1fr;}
-  .log-page{padding:16px 16px 32px;}
+  .log-page{padding:16px 12px 32px;}
+  .log-card{padding:14px 12px 6px;}
 }
 `;

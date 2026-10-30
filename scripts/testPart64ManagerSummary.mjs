@@ -123,14 +123,15 @@ assert.equal(
 );
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /Request manager review/);
-assert.match(formSrc, /Approve and unlock/);
+assert.match(formSrc, /Manager Review/);
+assert.match(formSrc, /Approve/);
+assert.match(formSrc, /Reject/);
 assert.match(formSrc, /NO-GO has no manager override/);
-assert.doesNotMatch(formSrc, /Request manager review[\s\S]*NO-GO" && \(/);
+assert.doesNotMatch(formSrc, /Manager Review[\s\S]*NO-GO" && \(/);
 
 const apiSrc = readFileSync(new URL("../lib/managerReviewApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /NO-GO has no manager-review path/);
-assert.match(apiSrc, /NO-GO has no manager override/);
-assert.match(apiSrc, /SLACK_WEBHOOK_URL|postSlackWebhook/);
+assert.match(apiSrc, /manager-reject|handleManagerReject|decision.*reject/);
+assert.match(readFileSync(new URL("../lib/managerReviewServer.js", import.meta.url), "utf8"), /sendSlackLoginCodeDm|conversations\.open|chat\.postMessage/);
 
 console.log("PASS Part 64 WATCH manager path + F6 final summary helpers");
