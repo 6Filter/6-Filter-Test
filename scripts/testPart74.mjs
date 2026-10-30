@@ -65,10 +65,10 @@ assert.match(form, /ideaSizeForResult/);
 assert.match(form, /min-height:11\.25rem/);
 assert.match(form, /<ErrorBoundary/);
 assert.match(form, /The verdict above is still valid/);
-assert.match(form, /className="manager-requested"/);
-const requestedHits = form.match(/Requested \{timeAgo\(requestedAt\)\}\. Current read: WATCH at \{scorePct\}%/g) || [];
+assert.match(form, /className="manager-review-banner"/);
+const requestedHits = form.match(/Manager review requested by \{requesterName\}/g) || [];
 assert.equal(requestedHits.length, 1, "manager review confirmation line must render once");
-assert.doesNotMatch(form, /<p>Requested \{timeAgo\(requestedAt\)\}\. Current read: WATCH at \{scorePct\}%\.<\/p>/);
+assert.match(form, /WATCH at \{scorePct\}%/);
 
 const boundary = readFileSync(new URL("../src/ErrorBoundary.jsx", import.meta.url), "utf8");
 assert.match(boundary, /this\.props\.fallback/);

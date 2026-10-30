@@ -149,10 +149,9 @@ assert.match(logSrc, /--bg:#F2EFE5/);
 assert.match(logSrc, /Plus Jakarta Sans/);
 assert.match(logSrc, /IBM Plex Mono/);
 assert.match(logSrc, /Export all/);
-assert.match(
-  logSrc,
-  /Kindly export your ideas to make sure you always have a copy of the same as the ideas will be wiped out because of no storage/
-);
+assert.match(logSrc, /Kindly export your ideas to make sure you always have a copy/);
+assert.match(logSrc, /ideas will be wiped out/);
+assert.match(logSrc, /ideasWipeAt|ideasWipeLabel/);
 assert.match(logSrc, /log-scoped-filters/);
 assert.match(logSrc, /Export this idea/);
 assert.match(logSrc, /Delete all/);

@@ -114,8 +114,10 @@ assert.match(router, /\/draft\$/);
 assert.match(router, /\/concept-card\$/);
 assert.match(router, /\/refresh-field\$/);
 
-assert.match(log, /\.log-table-wrap\{overflow:auto;margin:0;\}/);
+assert.match(log, /\.log-table-wrap\{[^}]*overflow-x:hidden/);
+assert.match(log, /table-layout:fixed/);
 assert.doesNotMatch(log, /min-height:calc\(100vh - 180px\)/);
+assert.doesNotMatch(log, /min-width:880px/);
 
 assert.ok(FMCG_CATEGORIES.includes("Hair oils"));
 assert.ok(FMCG_CATEGORIES.length >= 20);
