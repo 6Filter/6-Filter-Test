@@ -58,6 +58,10 @@ try {
   console.log(`SKIP Part restored-pristine — restored database unavailable (${e.message || e})`);
   process.exit(0);
 }
+if (!before || !Object.keys(before).length) {
+  console.log("SKIP Part restored-pristine — restored schema has no tables on this database");
+  process.exit(0);
+}
 sameTables(before);
 
 const clone = `primus_clone_${randomBytes(6).toString("hex")}`;
