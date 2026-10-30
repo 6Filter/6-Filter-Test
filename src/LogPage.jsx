@@ -765,6 +765,8 @@ export default function LogPage({
                     deletingUntouched ||
                     exporting;
                   const screened = Boolean(h.goNoGo?.classification || h.classification);
+                  const lockedVerdict = classificationOf(h);
+                  const lockedPct = Number(h.goNoGo?.score?.pct);
                   const sizeTier = screened ? ideaSizeForResult(h) : null;
                   const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
                   const categoryGroup = rowCategoryGroup(h);
@@ -781,6 +783,12 @@ export default function LogPage({
                             <span className={`log-chip ${chip.cls}`}>
                               {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
                             </span>
+                            {lockedVerdict ? (
+                              <span className="research-badge used" title="Stored gate verdict">
+                                {lockedVerdict}
+                                {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
+                              </span>
+                            ) : null}
                             <span className={`research-badge ${usedAi ? "used" : "unused"}`}>
                               {usedAi ? "AI used" : "No API calls"}
                             </span>
