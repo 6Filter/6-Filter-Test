@@ -952,7 +952,7 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
-.log-table-wrap{margin:0;width:100%;max-width:100%;overflow:visible;}
+.log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:auto;}
 .log-table{width:100%;max-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
 .log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 6px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
 .log-table td{padding:8px 6px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
@@ -960,12 +960,12 @@ export const LOG_PAGE_CSS = `
 .log-table th:nth-child(2),.log-table td:nth-child(2){width:22%;}
 .log-table th:nth-child(3),.log-table td:nth-child(3){width:6%;}
 .log-table th:nth-child(4),.log-table td:nth-child(4){width:9%;}
-.log-table th:nth-child(5),.log-table td:nth-child(5){width:14%;}
-.log-table th:nth-child(6),.log-table td:nth-child(6){width:14%;}
-.log-table th:nth-child(7),.log-table td:nth-child(7){width:9%;}
+.log-table th:nth-child(5),.log-table td:nth-child(5){width:12%;}
+.log-table th:nth-child(6),.log-table td:nth-child(6){width:13%;}
+.log-table th:nth-child(7),.log-table td:nth-child(7){width:10%;}
 .log-table th:nth-child(8),.log-table td:nth-child(8),
 .log-th-actions,.log-actions-cell{
-  width:148px;min-width:148px;max-width:148px;text-align:right;
+  width:18%;text-align:right;
   position:sticky;right:0;z-index:2;
   box-shadow:-8px 0 12px -10px rgba(22,32,43,.28);
 }
@@ -1025,8 +1025,10 @@ export const LOG_PAGE_CSS = `
 @media (max-width:1100px){
   .log-page{padding:16px 12px 32px;}
   .log-table th,.log-table td{padding:8px 4px;}
+  .log-table th:nth-child(2),.log-table td:nth-child(2){width:18%;}
+  .log-table th:nth-child(5),.log-table td:nth-child(5){width:10%;}
   .log-table th:nth-child(8),.log-table td:nth-child(8),
-  .log-th-actions,.log-actions-cell{width:132px;min-width:132px;max-width:132px;}
+  .log-th-actions,.log-actions-cell{width:22%;}
   .log-export-btn{padding:0 6px;font-size:10px;}
 }
 @media (max-width:860px){
