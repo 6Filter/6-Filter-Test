@@ -4,12 +4,15 @@ import {
   exportPropositionsToExcel,
   resolveFullPropositions,
 } from "../lib/logExport.js";
-import { exportPropositionOutputPdf } from "./exportGoNoGoPdf.jsx";
+import { exportMonthPropositionsPdf, exportPropositionOutputPdf } from "./exportGoNoGoPdf.jsx";
 import {
   applyLogStatusFilter,
+  applyMonthFilter,
   applyScopedFilters,
+  classificationOf,
   filterSegments,
   filterStageLabel,
+  formatMonthLabel,
   isUntouchedDraft,
   logStats,
   propositionStatus,
@@ -19,8 +22,8 @@ import {
   rowTeam,
   submittedParts,
   uniqueLogValues,
+  uniqueMonthKeys,
 } from "../lib/logStatus.js";
-import { uiResearchState } from "../lib/researchProgress.js";
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
 import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
@@ -29,21 +32,11 @@ import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
 
-const PILLS = [
+const VERDICT_PILLS = [
   { id: "ALL", label: "All" },
-  { id: "OPEN", label: "Open" },
-  { id: "CLEARED", label: "Cleared" },
-  { id: "STOPPED", label: "Stopped" },
-  { id: "REVIEW", label: "Review" },
-  { id: "ai-used", label: "AI used" },
-  { id: "incomplete", label: "Research incomplete" },
-];
-
-const REVIEW_PILLS = [
-  { id: "all", label: "All reviews" },
-  { id: "waiting", label: "Waiting" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
+  { id: "GO", label: "GO" },
+  { id: "NO-GO", label: "NO-GO" },
+  { id: "WATCH", label: "WATCH" },
 ];
 
 const CHIP = {
@@ -94,7 +87,9 @@ export default function LogPage({
   const [personFilter, setPersonFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportingMonthPdf, setExportingMonthPdf] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteAllTyped, setDeleteAllTyped] = useState("");
   const [exportingId, setExportingId] = useState("");
@@ -139,14 +134,20 @@ export default function LogPage({
   const unavailable = databaseUnavailableMessage(error);
   const scopedRows = useMemo(
     () =>
-      applyScopedFilters(logRows, {
-        teamFilter,
-        personFilter,
-        categoryGroupFilter,
-        searchText: query,
-      }),
-    [logRows, teamFilter, personFilter, categoryGroupFilter, query]
+      applyMonthFilter(
+        applyScopedFilters(logRows, {
+          teamFilter,
+          personFilter,
+          categoryGroupFilter,
+          searchText: query,
+        }),
+        monthFilter
+      ),
+    [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter]
   );
+  const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
+  const isAdminUser =
+    String(currentUser?.role || "").trim() === "ADMIN" || isMasterUnlock(unlockedDepartment);
   const waitingForMeCount = useMemo(() => {
     const email = String(currentUser?.email || "").toLowerCase();
     if (!email && String(currentUser?.role || "").trim() !== "ADMIN") return 0;
@@ -180,36 +181,37 @@ export default function LogPage({
           return false;
         }
       });
-    } else if (reviewFilter !== "all") {
-      rows = rows.filter((row) => reviewDisplayState(row).statusKey === reviewFilter);
     }
     return rows;
   }, [scopedRows, status, reviewFilter, currentUser]);
-  const aiUsedCount = useMemo(
-    () => scopedRows.filter((r) => researchWasUsed(r)).length,
-    [scopedRows]
-  );
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
-  const busy = loading || deletingAll || deletingUntouched || exporting || Boolean(exportingPdfId);
+  const busy =
+    loading ||
+    deletingAll ||
+    deletingUntouched ||
+    exporting ||
+    exportingMonthPdf ||
+    Boolean(exportingPdfId);
   const masterView = isMasterUnlock(unlockedDepartment);
   const allowDelete = masterView;
-  const scopedStats = useMemo(() => logStats(scopedRows), [scopedRows]);
-  const pillCounts = useMemo(
-    () => ({
-      ALL: scopedStats.total,
-      OPEN: scopedStats.open,
-      CLEARED: scopedStats.cleared,
-      STOPPED: scopedStats.stopped,
-      REVIEW: scopedStats.review,
-      "ai-used": aiUsedCount,
-      incomplete: scopedRows.filter((row) => uiResearchState(row) === "incomplete").length,
-    }),
-    [scopedStats, aiUsedCount, scopedRows]
-  );
+  const pillCounts = useMemo(() => {
+    const base = { ALL: scopedRows.length, GO: 0, "NO-GO": 0, WATCH: 0 };
+    for (const row of scopedRows) {
+      const cls = classificationOf(row);
+      if (cls === "GO" || cls === "NO-GO" || cls === "WATCH") base[cls] += 1;
+    }
+    return base;
+  }, [scopedRows]);
+  const monthRows = useMemo(() => {
+    if (!monthFilter) return [];
+    return applyMonthFilter(logRows, monthFilter);
+  }, [logRows, monthFilter]);
 
   function exportHint() {
+    if (monthFilter) return `propositions-${monthFilter}`;
     if (personFilter) return `propositions-${personFilter}`;
     if (categoryGroupFilter) return `propositions-${categoryGroupFilter}`;
+    if (teamFilter) return `propositions-${teamFilter}`;
     if (unlockedDepartment) return `propositions-${unlockedDepartment}`;
     return "propositions";
   }
@@ -241,7 +243,7 @@ export default function LogPage({
   }
 
   async function handleExportPdfRow(row) {
-    if (!row?.id || exporting || exportingPdfId) return;
+    if (!row?.id || exporting || exportingPdfId || exportingMonthPdf) return;
     if (!rowIsScreened(row)) {
       setExportError("Run the Go/No-Go screen first — PDF exports the output page.");
       return;
@@ -260,11 +262,43 @@ export default function LogPage({
       const doc = full.goNoGo?.classification
         ? full
         : { ...full, goNoGo: full.goNoGo || { classification: full.classification } };
-      await exportPropositionOutputPdf(doc);
+      await exportPropositionOutputPdf(doc, { currentUser });
     } catch (e) {
       setExportError(e.message || "Could not export PDF.");
     } finally {
       setExportingPdfId("");
+    }
+  }
+
+  async function handleExportMonthExcel() {
+    if (!isAdminUser || !monthFilter || !monthRows.length || exporting || exportingMonthPdf) return;
+    await handleExport(monthRows, `propositions-${monthFilter}`);
+  }
+
+  async function handleExportMonthPdf() {
+    if (!isAdminUser || !monthFilter || exporting || exportingMonthPdf || exportingPdfId) return;
+    if (!onFetchFull) {
+      setExportError("Could not load ideas for month PDF export.");
+      return;
+    }
+    const screened = monthRows.filter((row) => rowIsScreened(row));
+    if (!screened.length) {
+      setExportError("No screened ideas in this month to export as PDF.");
+      return;
+    }
+    setExportError("");
+    setExportingMonthPdf(true);
+    try {
+      const fullDocs = [];
+      for (const row of screened) {
+        const full = await onFetchFull(row.id);
+        if (full?.goNoGo?.classification || full?.classification) fullDocs.push(full);
+      }
+      await exportMonthPropositionsPdf(fullDocs, { monthKey: monthFilter, currentUser });
+    } catch (e) {
+      setExportError(e.message || "Could not export month PDF.");
+    } finally {
+      setExportingMonthPdf(false);
     }
   }
 
@@ -460,11 +494,48 @@ export default function LogPage({
               disabled={busy || filteredRows.length === 0}
               title="Export matching ideas to Excel"
             >
-              {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
-              {personFilter || categoryGroupFilter || query.trim() || status !== "ALL"
+              {exporting && !exportingId && !exportingMonthPdf ? (
+                <Loader2 size={15} className="spin" />
+              ) : (
+                <Download size={15} />
+              )}
+              {filteredRows.length &&
+              (personFilter || categoryGroupFilter || query.trim() || status !== "ALL" || monthFilter || teamFilter)
                 ? `Export Excel (${filteredRows.length})`
                 : "Export Excel"}
             </button>
+            {isAdminUser ? (
+              <>
+                <button
+                  type="button"
+                  className="log-btn"
+                  onClick={handleExportMonthExcel}
+                  disabled={busy || !monthFilter || monthRows.length === 0}
+                  title={
+                    monthFilter
+                      ? `Export all ${formatMonthLabel(monthFilter)} ideas to Excel`
+                      : "Choose a month first"
+                  }
+                >
+                  {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+                  Month Excel{monthFilter ? ` (${monthRows.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  className="log-btn"
+                  onClick={handleExportMonthPdf}
+                  disabled={busy || !monthFilter || !monthRows.some((r) => rowIsScreened(r))}
+                  title={
+                    monthFilter
+                      ? `Export screened ${formatMonthLabel(monthFilter)} ideas to one PDF`
+                      : "Choose a month first"
+                  }
+                >
+                  {exportingMonthPdf ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />}
+                  Month PDF
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               className="log-btn"
@@ -562,22 +633,43 @@ export default function LogPage({
           </label>
           <div className="log-scoped-filters">
             <label>
-              <span className="sr-only">Team</span>
-              <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} aria-label="Filter by team">
-                <option value="">All teams</option>
+              <span className="sr-only">Team-wise ideas</span>
+              <select
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+                aria-label="Team-wise ideas submitted"
+              >
+                <option value="">Team-wise ideas — all teams</option>
                 {SUBMITTER_DEPARTMENTS.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
                 ))}
-                {currentUser?.role === "ADMIN" || isMasterUnlock(unlockedDepartment) ? (
-                  <option value="__legacy__">Legacy team</option>
-                ) : null}
+                {isAdminUser ? <option value="__legacy__">Legacy team</option> : null}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Month-wise ideas</span>
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                aria-label="Month-wise ideas submitted"
+              >
+                <option value="">Month-wise ideas — all months</option>
+                {monthKeys.map((key) => (
+                  <option key={key} value={key}>
+                    {formatMonthLabel(key)}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
               <span className="sr-only">Submitter</span>
-              <select value={personFilter} onChange={(e) => setPersonFilter(e.target.value)}>
+              <select
+                value={personFilter}
+                onChange={(e) => setPersonFilter(e.target.value)}
+                aria-label="Filter by submitter"
+              >
                 <option value="">All submitters</option>
                 {uniqueSubmitters.map((p) => (
                   <option key={p} value={p}>
@@ -602,46 +694,24 @@ export default function LogPage({
               </select>
             </label>
           </div>
-          <div className="log-pills" role="tablist" aria-label="Status filter">
-            {PILLS.map((p) => (
+          <div className="log-pills" role="tablist" aria-label="Verdict filter">
+            {VERDICT_PILLS.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 role="tab"
-                aria-selected={status === p.id}
-                className={`log-pill${status === p.id ? " is-active" : ""}`}
-                onClick={() => setStatus(p.id)}
-              >
-                {p.id === "incomplete"
-                  ? `Research incomplete (${pillCounts.incomplete ?? 0})`
-                  : p.label}
-                {p.id === "incomplete" ? null : <span className="mono">{pillCounts[p.id] ?? 0}</span>}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={`log-pill${showProbes ? " is-active" : ""}`}
-              onClick={() => setShowProbes((on) => !on)}
-            >
-              {showProbes ? "Hide probes" : "Show probes"}
-              <span className="mono">{rows.filter((row) => row.probe).length}</span>
-            </button>
-          </div>
-          <div className="log-pills" role="tablist" aria-label="Manager review filter">
-            {REVIEW_PILLS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                role="tab"
-                aria-selected={reviewFilter === p.id}
-                className={`log-pill${reviewFilter === p.id ? " is-active" : ""}`}
-                onClick={() => setReviewFilter(p.id)}
+                aria-selected={status === p.id && reviewFilter !== "mine"}
+                className={`log-pill${status === p.id && reviewFilter !== "mine" ? " is-active" : ""}`}
+                onClick={() => {
+                  setReviewFilter("all");
+                  setStatus(p.id);
+                }}
               >
                 {p.label}
+                <span className="mono">{pillCounts[p.id] ?? 0}</span>
               </button>
             ))}
-            {String(currentUser?.role || "").trim() === "BH FORUM" ||
-            String(currentUser?.role || "").trim() === "ADMIN" ? (
+            {String(currentUser?.role || "").trim() === "BH FORUM" || isAdminUser ? (
               <button
                 type="button"
                 role="tab"
@@ -649,7 +719,18 @@ export default function LogPage({
                 className={`log-pill${reviewFilter === "mine" ? " is-active" : ""}`}
                 onClick={() => setReviewFilter("mine")}
               >
-                Waiting for my review ({waitingForMeCount})
+                Waiting for my review
+                <span className="mono">{waitingForMeCount}</span>
+              </button>
+            ) : null}
+            {masterView ? (
+              <button
+                type="button"
+                className={`log-pill${showProbes ? " is-active" : ""}`}
+                onClick={() => setShowProbes((on) => !on)}
+              >
+                {showProbes ? "Hide probes" : "Show probes"}
+                <span className="mono">{rows.filter((row) => row.probe).length}</span>
               </button>
             ) : null}
           </div>

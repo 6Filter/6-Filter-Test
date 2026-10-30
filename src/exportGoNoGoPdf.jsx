@@ -4,7 +4,12 @@
  */
 import { createRoot } from "react-dom/client";
 import { GoNoGoResultPage, PROP_CSS } from "./PropositionForm.jsx";
-import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
+import {
+  createOutputPdfDocument,
+  exportElementToPdf,
+  outputPdfFilename,
+  sanitizePdfFilenamePart,
+} from "../lib/exportOutputPdf.js";
 
 function waitFrames(n = 2) {
   return new Promise((resolve) => {
@@ -21,7 +26,7 @@ function waitFrames(n = 2) {
 
 /**
  * @param {object} full Full proposition (must include goNoGo.classification)
- * @param {{ currentUser?: object|null }} [opts]
+ * @param {{ currentUser?: object|null, pdf?: object, startNewIdea?: boolean, save?: boolean, filename?: string }} [opts]
  */
 export async function exportPropositionOutputPdf(full, opts = {}) {
   const result = full?.goNoGo;
@@ -78,8 +83,11 @@ export async function exportPropositionOutputPdf(full, opts = {}) {
     if (!el) throw new Error("Could not render the output page for PDF.");
 
     return await exportElementToPdf(el, {
-      filename: outputPdfFilename(full, result),
+      filename: opts.filename || outputPdfFilename(full, result),
       backgroundColor: "#0d0715",
+      pdf: opts.pdf,
+      startNewIdea: Boolean(opts.startNewIdea),
+      save: opts.save !== false && !opts.pdf,
     });
   } finally {
     try {
@@ -89,4 +97,36 @@ export async function exportPropositionOutputPdf(full, opts = {}) {
     }
     host.remove();
   }
+}
+
+/**
+ * One combined PDF for every screened idea in the month list.
+ * @param {object[]} fullDocs
+ * @param {{ monthKey?: string, currentUser?: object|null }} [opts]
+ */
+export async function exportMonthPropositionsPdf(fullDocs, opts = {}) {
+  const docs = (Array.isArray(fullDocs) ? fullDocs : []).filter(
+    (d) => d?.goNoGo?.classification || d?.classification
+  );
+  if (!docs.length) {
+    throw new Error("No screened ideas in this month to export as PDF.");
+  }
+  const pdf = createOutputPdfDocument();
+  let index = 0;
+  for (const raw of docs) {
+    const full = raw.goNoGo?.classification
+      ? raw
+      : { ...raw, goNoGo: raw.goNoGo || { classification: raw.classification } };
+    await exportPropositionOutputPdf(full, {
+      currentUser: opts.currentUser || null,
+      pdf,
+      startNewIdea: index > 0,
+      save: false,
+    });
+    index += 1;
+  }
+  const monthBit = sanitizePdfFilenamePart(opts.monthKey || "month", "month");
+  const filename = `6-filter-month-${monthBit}.pdf`;
+  pdf.save(filename);
+  return { filename, ideas: docs.length, pages: pdf.getNumberOfPages() };
 }

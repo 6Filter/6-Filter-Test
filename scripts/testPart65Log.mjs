@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   advisoryChecksFromLabels,
+  applyMonthFilter,
   compactAdvisoryForLog,
   filterLogRows,
   filterSegments,
   filterStageLabel,
+  formatMonthLabel,
   hasAnyFloorFailure,
   logRowForCsv,
   logStats,
   matchesLogQuery,
   propositionStatus,
   propositionsToCsv,
+  rowSubmittedMonthKey,
+  uniqueMonthKeys,
 } from "../lib/logStatus.js";
 
 const openDraft = { name: "Cooling mist", ideaDescription: "menthol", submitterDepartment: "NPD" };
@@ -116,6 +120,8 @@ const mixed = [
 assert.equal(filterLogRows(mixed, { status: "STOPPED" }).length, 1);
 assert.equal(filterLogRows(mixed, { query: "cooling", status: "ALL" }).length, 2);
 assert.equal(filterLogRows(mixed, { query: "cooling", status: "CLEARED" })[0].name, "Beta");
+assert.equal(filterLogRows([{ classification: "GO" }, { classification: "WATCH" }], { status: "GO" }).length, 1);
+assert.equal(filterLogRows([{ classification: "NO-GO" }], { status: "NO-GO" }).length, 1);
 
 const csv = propositionsToCsv([
   {
@@ -144,6 +150,24 @@ const csvRow = logRowForCsv({
 assert.equal(csvRow.status, "OPEN");
 assert.equal(csvRow.stage, "F3 in review");
 
+assert.equal(rowSubmittedMonthKey({ createdAt: "2026-10-15T08:00:00.000Z" }), "2026-10");
+assert.equal(formatMonthLabel("2026-10"), "Oct 2026");
+assert.deepEqual(
+  uniqueMonthKeys([
+    { createdAt: "2026-10-01T00:00:00.000Z" },
+    { createdAt: "2026-09-01T00:00:00.000Z" },
+    { createdAt: "2026-10-20T00:00:00.000Z" },
+  ]),
+  ["2026-10", "2026-09"]
+);
+assert.equal(
+  applyMonthFilter(
+    [{ createdAt: "2026-10-01T00:00:00.000Z", name: "A" }, { createdAt: "2026-09-01T00:00:00.000Z", name: "B" }],
+    "2026-10"
+  ).length,
+  1
+);
+
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /--bg:#F2EFE5/);
 assert.match(logSrc, /Plus Jakarta Sans/);
@@ -155,6 +179,14 @@ assert.match(logSrc, /ideasWipeAt|ideasWipeLabel/);
 assert.match(logSrc, /log-scoped-filters/);
 assert.match(logSrc, /Export this idea/);
 assert.match(logSrc, /Delete all/);
+assert.match(logSrc, /VERDICT_PILLS|id: "GO"/);
+assert.match(logSrc, /Month-wise ideas/);
+assert.match(logSrc, /Team-wise ideas/);
+assert.match(logSrc, /Month Excel/);
+assert.match(logSrc, /Month PDF/);
+assert.match(logSrc, /exportMonthPropositionsPdf/);
+assert.doesNotMatch(logSrc, /Research incomplete/);
+assert.doesNotMatch(logSrc, /All reviews/);
 assert.doesNotMatch(logSrc, /#120818/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
