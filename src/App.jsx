@@ -895,7 +895,20 @@ export default function App() {
     setDeepLinkMissing(false);
     try {
       const full = await fetchPropositionById(row.id);
-      setProposition(full);
+      // Prefer full server goNoGo; fall back to the log-row seal so output still opens.
+      const sealed =
+        full?.goNoGo?.classification
+          ? full.goNoGo
+          : row.goNoGo?.classification
+            ? row.goNoGo
+            : full?.goNoGo || null;
+      setProposition({
+        ...full,
+        goNoGo: sealed,
+        classification: sealed?.classification || full?.classification || row.classification || "",
+        _openFromLog: from === "log",
+        _preferOutput: Boolean(sealed?.classification),
+      });
       setSavedFlash(false);
       setReturnView(from);
       setView("form");

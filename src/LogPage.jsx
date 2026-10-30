@@ -444,7 +444,8 @@ export default function LogPage({
               {isMasterUnlock(unlockedDepartment)
                 ? "Viewing every idea entered so far, across all teams. Search, filter, or export."
                 : `Viewing every idea entered so far. Search, filter, or export.`}{" "}
-              Click a row to open the form.
+              Click a row to open its GO/NO-GO output (or the input form if it is not screened yet). From
+              output you can open the entered inputs without typing them again.
             </p>
           </div>
           <div className="log-head-actions">

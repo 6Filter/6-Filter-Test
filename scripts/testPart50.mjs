@@ -22,7 +22,9 @@ assert.doesNotMatch(tokenBlock, /--hero-go/);
 assert.doesNotMatch(tokenBlock, /Plus Jakarta Sans/);
 
 assert.doesNotMatch(src, /<main className="prop-page output-page" data-view="propositionForm">/);
-assert.match(src, /Back to filters/);
+assert.match(src, /View entered inputs/);
+assert.match(src, /View GO\/NO-GO output/);
+assert.match(src, /preferOutputView|_preferOutput/);
 assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);
 assert.match(src, /\{classification\}/);

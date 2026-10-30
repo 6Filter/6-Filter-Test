@@ -1391,8 +1391,13 @@ export function GoNoGoResultPage({
             {pdfBusy ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
             {pdfBusy ? "Preparing PDF…" : "Download PDF"}
           </button>
-          <button type="button" className="output-btn-secondary" onClick={onBack}>
-            <ArrowLeft size={15} /> Back to filters
+          <button
+            type="button"
+            className="output-btn-secondary"
+            onClick={onBack}
+            title="Open the input form with every value already filled for this idea"
+          >
+            <ArrowLeft size={15} /> View entered inputs
           </button>
           {pdfError ? (
             <p className="gonogo-blocked-note" role="alert" style={{ width: "100%", margin: "4px 0 0" }}>
@@ -1472,6 +1477,10 @@ function researchInputKey(doc) {
   return `${String(doc?.name || "").trim().toLowerCase()}|${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attrs}|${attachSig}`;
 }
 
+function preferOutputView(doc = null) {
+  return Boolean(doc?._preferOutput || doc?.goNoGo?.classification);
+}
+
 export default function PropositionForm({
   initial,
   onSave,
@@ -1522,8 +1531,9 @@ export default function PropositionForm({
   }
   const [goNoGo, setGoNoGo] = useState(() => initial?.goNoGo || null);
   const [currentView, setCurrentView] = useState(() =>
-    initial?.goNoGo?.classification ? "goNoGoResult" : "propositionForm"
+    preferOutputView(initial) ? "goNoGoResult" : "propositionForm"
   );
+  const openedFromLog = Boolean(initial?._openFromLog);
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
   const [evidenceFileError, setEvidenceFileError] = useState("");
@@ -1604,7 +1614,7 @@ export default function PropositionForm({
     setSummaryStale(false);
     setSummaryChecks(null);
     setGoNoGo(initial?.goNoGo || null);
-    setCurrentView(initial?.goNoGo?.classification ? "goNoGoResult" : "propositionForm");
+    setCurrentView(preferOutputView(initial) ? "goNoGoResult" : "propositionForm");
     setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);
@@ -2619,6 +2629,23 @@ export default function PropositionForm({
     <main className="prop-page prop-form-page" data-view="propositionForm">
       <style>{PROP_CSS}</style>
 
+      {goNoGo?.classification ? (
+        <div className="prop-output-return" role="region" aria-label="Saved output">
+          <p>
+            {openedFromLog
+              ? "Opened from the log with saved inputs. Switch to the output page anytime without re-entering values."
+              : "This idea already has a GO/NO-GO output. Open it without re-running research."}
+          </p>
+          <button
+            type="button"
+            className="prop-save run"
+            onClick={() => setCurrentView("goNoGoResult")}
+          >
+            View GO/NO-GO output
+          </button>
+        </div>
+      ) : null}
+
       <div className="prop-form-shell">
       <aside className="prop-sidebar">
         <nav className="prop-side-nav" aria-label="Form sections">
@@ -3134,6 +3161,13 @@ export const PROP_CSS = `
   max-width:none; margin:0; padding:20px 24px 80px;
 }
 .prop-form-page .mono{font-family:'IBM Plex Mono',monospace;}
+.prop-output-return{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;
+  margin:0 0 16px;padding:12px 16px;border-radius:14px;
+  background:rgba(90,46,166,.18);border:1px solid rgba(201,160,232,.35);color:var(--ink);
+}
+.prop-output-return p{margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-muted-85);max-width:52rem;}
+.prop-output-return .prop-save{margin:0;white-space:nowrap;}
 .prop-form-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;align-items:start;}
 .prop-sidebar{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:14px;padding:8px 0;}
 .prop-side-nav{display:flex;flex-direction:column;gap:2px;}

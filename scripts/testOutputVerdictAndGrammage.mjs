@@ -55,10 +55,9 @@ assert.equal(stored.tier, "100g");
 assert.equal(stored.provisional, true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(
-  formSrc,
-  /initial\?\.goNoGo\?\.classification \? "goNoGoResult" : "propositionForm"/
-);
+assert.match(formSrc, /preferOutputView\(initial\) \? "goNoGoResult" : "propositionForm"/);
+assert.match(formSrc, /View entered inputs/);
+assert.match(formSrc, /View GO\/NO-GO output/);
 assert.match(formSrc, /result\.classification/);
 assert.match(formSrc, /sizeTier\.tier} · \{sizeTier\.label/);
 assert.match(formSrc, /gonogo-classification/);
