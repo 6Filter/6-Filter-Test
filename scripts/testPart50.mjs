@@ -25,7 +25,8 @@ assert.doesNotMatch(src, /<main className="prop-page output-page" data-view="pro
 assert.match(src, /Back to filters/);
 assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);
-assert.match(src, /\{result\.classification\}/);
+assert.match(src, /\{classification\}/);
+assert.match(src, /resolveOutputScore/);
 assert.match(src, /className="gonogo-idea"/);
 assert.match(src, /\{idea\}/);
 assert.match(src, /className="gonogo-scale-chip idea-size-badge"/);
