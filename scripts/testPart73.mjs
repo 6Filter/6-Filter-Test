@@ -114,8 +114,9 @@ assert.match(router, /\/draft\$/);
 assert.match(router, /\/concept-card\$/);
 assert.match(router, /\/refresh-field\$/);
 
-assert.match(log, /\.log-table-wrap\{[^}]*overflow-x:hidden/);
 assert.match(log, /table-layout:fixed/);
+assert.match(log, /log-export-btn|log-actions-cell/);
+assert.match(log, /position:sticky;right:0/);
 assert.doesNotMatch(log, /min-height:calc\(100vh - 180px\)/);
 assert.doesNotMatch(log, /min-width:880px/);
 

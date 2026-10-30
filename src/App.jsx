@@ -2539,7 +2539,7 @@ html:has(.output-page), body:has(.output-page) { background:#0d0715; }
 .grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,.85fr);gap:24px;align-items:start;animation:rise .5s ease .05s both;}
 .result{max-width:720px;margin:0 auto;animation:rise .45s ease both;}
 .result.result-wide{max-width:1280px;}
-.log-page{max-width:1180px;margin:0 auto;}
+.log-page{max-width:100%;width:100%;margin:0 auto;box-sizing:border-box;}
 .log-panel{padding-top:28px;}
 .log-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
 .log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}

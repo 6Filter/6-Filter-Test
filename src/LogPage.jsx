@@ -700,11 +700,10 @@ export default function LogPage({
                   <th>Proposition</th>
                   <th>Scale</th>
                   <th>Team</th>
-                  <th>Idea</th>
                   <th title="Manager review">Mgr review</th>
                   <th>Filters</th>
                   <th>Submitted</th>
-                  <th className="log-th-del"><span className="sr-only">Actions</span></th>
+                  <th className="log-th-actions">Export</th>
                 </tr>
               </thead>
               <tbody>
@@ -773,6 +772,11 @@ export default function LogPage({
                               {h.category ? `${h.category} · ${categoryGroup}` : categoryGroup}
                             </span>
                           ) : null}
+                          {idea ? (
+                            <span className="log-prop-idea" title={idea}>
+                              {idea}
+                            </span>
+                          ) : null}
                         </button>
                       </td>
                       <td className="mono log-scale-cell">
@@ -797,17 +801,6 @@ export default function LogPage({
                         ) : null}
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="log-open log-idea-cell"
-                          title={idea || undefined}
-                          onClick={() => onOpen(h)}
-                          disabled={rowBusy}
-                        >
-                          {idea || "—"}
-                        </button>
-                      </td>
-                      <td>
                         {(() => {
                           const ui = reviewDisplayState(h);
                           return (
@@ -830,21 +823,22 @@ export default function LogPage({
                         <span>{when.date}</span>
                         <span>{when.time}</span>
                       </td>
-                      <td>
+                      <td className="log-actions-cell">
                         <div className="log-row-actions">
                           <button
                             type="button"
-                            className="log-del log-export-row"
+                            className="log-export-btn"
                             aria-label="Export this idea to Excel"
                             title="Export Excel"
                             disabled={rowBusy}
                             onClick={() => handleExportRow(h)}
                           >
-                            {isExportingRow ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
+                            {isExportingRow ? <Loader2 size={14} className="spin" /> : <Download size={14} />}
+                            <span>Excel</span>
                           </button>
                           <button
                             type="button"
-                            className="log-del log-export-row"
+                            className="log-export-btn"
                             aria-label="Export Go/No-Go output as PDF"
                             title={
                               screened
@@ -854,7 +848,8 @@ export default function LogPage({
                             disabled={rowBusy || !screened}
                             onClick={() => handleExportPdfRow(h)}
                           >
-                            {isExportingPdf ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />}
+                            {isExportingPdf ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />}
+                            <span>PDF</span>
                           </button>
                           {allowDelete && canDeleteRow ? (
                           <button
@@ -865,7 +860,7 @@ export default function LogPage({
                             disabled={rowBusy}
                             onClick={() => onDeleteRow(h)}
                           >
-                            {isDeleting ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                            {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
                           </button>
                           ) : null}
                         </div>
@@ -897,9 +892,9 @@ export const LOG_PAGE_CSS = `
   --danger-text:#A3402F; --danger-border:#EBD3CC; --danger-hover-bg:#FBF1EE;
   font-family:'Plus Jakarta Sans',system-ui,sans-serif;
   color:var(--ink); background:var(--bg);
-  width:100%;max-width:min(1180px,100%);margin:0 auto;padding:16px 28px 40px;
+  width:100%;max-width:100%;margin:0 auto;padding:16px 20px 40px;
   display:flex;flex-direction:column;gap:18px;
-  box-sizing:border-box;overflow-x:hidden;
+  box-sizing:border-box;overflow-x:clip;
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
@@ -957,20 +952,27 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
-.log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:hidden;}
-.log-table{width:100%;max-width:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed;}
-.log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 8px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
-.log-table td{padding:10px 8px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
-.log-table th:nth-child(1),.log-table td:nth-child(1){width:11%;}
-.log-table th:nth-child(2),.log-table td:nth-child(2){width:16%;}
-.log-table th:nth-child(3),.log-table td:nth-child(3){width:7%;}
-.log-table th:nth-child(4),.log-table td:nth-child(4){width:10%;}
+.log-table-wrap{margin:0;width:100%;max-width:100%;overflow:visible;}
+.log-table{width:100%;max-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+.log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 6px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
+.log-table td{padding:8px 6px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
+.log-table th:nth-child(1),.log-table td:nth-child(1){width:10%;}
+.log-table th:nth-child(2),.log-table td:nth-child(2){width:22%;}
+.log-table th:nth-child(3),.log-table td:nth-child(3){width:6%;}
+.log-table th:nth-child(4),.log-table td:nth-child(4){width:9%;}
 .log-table th:nth-child(5),.log-table td:nth-child(5){width:14%;}
-.log-table th:nth-child(6),.log-table td:nth-child(6){width:16%;}
-.log-table th:nth-child(7),.log-table td:nth-child(7){width:12%;}
-.log-table th:nth-child(8),.log-table td:nth-child(8){width:8%;}
-.log-table th:nth-child(9),.log-table td:nth-child(9){width:6%;}
+.log-table th:nth-child(6),.log-table td:nth-child(6){width:14%;}
+.log-table th:nth-child(7),.log-table td:nth-child(7){width:9%;}
+.log-table th:nth-child(8),.log-table td:nth-child(8),
+.log-th-actions,.log-actions-cell{
+  width:148px;min-width:148px;max-width:148px;text-align:right;
+  position:sticky;right:0;z-index:2;
+  box-shadow:-8px 0 12px -10px rgba(22,32,43,.28);
+}
+.log-table th.log-th-actions{background:var(--table-header-bg);z-index:3;}
+.log-actions-cell{background:var(--card-bg);}
 .log-tr:hover td{background:var(--table-row-hover);}
+.log-tr:hover .log-actions-cell{background:var(--table-row-hover);}
 .log-open{display:block;width:100%;max-width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;}
 .log-open:disabled{opacity:.6;cursor:wait;}
 .log-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;max-width:100%;}
@@ -995,11 +997,11 @@ export const LOG_PAGE_CSS = `
 .log-wipe-chip{display:inline-block;margin:0 6px 2px 0;padding:2px 6px;border-radius:999px;background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);font-size:9px;font-weight:700;letter-spacing:.02em;vertical-align:middle;}
 .log-prop-owner{font-size:11px;color:var(--ink-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .log-prop-group{font-size:10px;color:var(--ink-muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-prop-idea{font-size:11px;color:var(--ink-secondary);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;}
 .log-dept-cell{font-size:11px;color:var(--ink-secondary-2);min-width:0;}
 .log-dept-team{display:block;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .log-dept-division{display:block;font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.log-idea-cell{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-secondary);font-size:12px;}
-.log-mgr-review{min-width:0;font-size:12px;line-height:1.35;color:var(--ink-secondary-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;}
+.log-mgr-review{min-width:0;font-size:11px;line-height:1.35;color:var(--ink-secondary-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;}
 .log-mgr-comment{margin-top:4px;font-size:11px;color:var(--ink-muted);}
 .log-mgr-comment summary{cursor:pointer;font-weight:600;}
 .log-mgr-comment p{margin:4px 0 0;line-height:1.35;word-break:break-word;}
@@ -1009,18 +1011,27 @@ export const LOG_PAGE_CSS = `
 .log-stage{font-size:10px;color:var(--ink-muted-2);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .log-submitted{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink-secondary);min-width:0;}
 .log-submitted span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.log-th-del,.log-table td:last-child{text-align:right;}
-.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:0;flex-wrap:wrap;}
-.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;}
+.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:nowrap;}
+.log-export-btn{
+  display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 8px;
+  border:1px solid var(--card-border);border-radius:8px;background:#fff;
+  color:var(--ink);font:inherit;font-size:11px;font-weight:650;cursor:pointer;white-space:nowrap;
+}
+.log-export-btn:hover:not(:disabled){background:var(--table-row-hover);border-color:#d5cfb8;}
+.log-export-btn:disabled{opacity:.45;cursor:not-allowed;}
+.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;flex-shrink:0;}
 .log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);color:var(--danger-text);}
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
 @media (max-width:1100px){
-  .log-page{padding:16px 16px 32px;}
-  .log-table th,.log-table td{padding:8px 6px;}
+  .log-page{padding:16px 12px 32px;}
+  .log-table th,.log-table td{padding:8px 4px;}
+  .log-table th:nth-child(8),.log-table td:nth-child(8),
+  .log-th-actions,.log-actions-cell{width:132px;min-width:132px;max-width:132px;}
+  .log-export-btn{padding:0 6px;font-size:10px;}
 }
 @media (max-width:860px){
   .log-stats{grid-template-columns:1fr;}
-  .log-page{padding:16px 12px 32px;}
-  .log-card{padding:14px 12px 6px;}
+  .log-page{padding:12px 10px 28px;}
+  .log-card{padding:14px 10px 6px;}
 }
 `;
