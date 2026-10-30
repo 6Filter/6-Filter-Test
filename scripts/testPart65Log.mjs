@@ -192,6 +192,7 @@ assert.doesNotMatch(logSrc, /Research incomplete/);
 assert.doesNotMatch(logSrc, /All reviews/);
 assert.doesNotMatch(logSrc, /Waiting for my review/);
 assert.doesNotMatch(logSrc, /Show probes/);
+assert.doesNotMatch(logSrc, /\buiResearchState\b/, "Log page must not call uiResearchState without an import");
 assert.doesNotMatch(logSrc, /#120818/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
