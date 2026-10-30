@@ -18,7 +18,6 @@ import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
-import AdminUsersPage from "./AdminUsersPage.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
 import { listTechShiftDimensions } from "../lib/techShiftRisk.js";
 import { isUntouchedDraft } from "../lib/logStatus.js";
@@ -1408,15 +1407,6 @@ export default function App() {
           >
             <Settings size={14} /> Settings
           </button>
-          {sessionUser?.role === "ADMIN" ? (
-            <button
-              type="button"
-              className={`nav-tab${view === "admin" ? " active" : ""}`}
-              onClick={() => setView("admin")}
-            >
-              Admin
-            </button>
-          ) : null}
         </nav>
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
@@ -1503,10 +1493,6 @@ export default function App() {
       )}
 
       {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
-
-      {view === "admin" && sessionUser?.role === "ADMIN" && (
-        <AdminUsersPage apiFetch={apiFetch} />
-      )}
 
       {msgOpen && (
         <div className="modal-bg" onClick={() => setMsgOpen(false)}>

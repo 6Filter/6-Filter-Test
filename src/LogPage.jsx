@@ -32,8 +32,9 @@ import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
 
-const VERDICT_PILLS = [
-  { id: "ALL", label: "All" },
+const STATUS_PILLS = [
+  { id: "ALL", label: "Total ideas submitted" },
+  { id: "ai-used", label: "AI used" },
   { id: "GO", label: "GO" },
   { id: "NO-GO", label: "NO-GO" },
   { id: "WATCH", label: "WATCH" },
@@ -45,6 +46,10 @@ const CHIP = {
   STOPPED: { label: "Stopped", cls: "chip-stopped" },
   REVIEW: { label: "Review", cls: "chip-review" },
 };
+
+function isWaitingForBusinessHead(row) {
+  return reviewDisplayState(row).statusKey === "waiting";
+}
 
 function FilterBar({ segments, stage }) {
   return (
@@ -83,7 +88,6 @@ export default function LogPage({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [reviewFilter, setReviewFilter] = useState("all");
   const [personFilter, setPersonFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
@@ -101,7 +105,6 @@ export default function LogPage({
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState("");
-  const [showProbes, setShowProbes] = useState(false);
   const [ideasWipeLabel, setIdeasWipeLabel] = useState("");
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
@@ -124,11 +127,7 @@ export default function LogPage({
   }, []);
   const unlockedDepartment =
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
-  const hiddenProbes = useMemo(() => rows.filter((row) => row.probe).length, [rows]);
-  const logRows = useMemo(
-    () => (showProbes ? rows : rows.filter((row) => !row.probe)),
-    [rows, showProbes]
-  );
+  const logRows = useMemo(() => rows.filter((row) => !row.probe), [rows]);
   const uniqueSubmitters = useMemo(() => uniqueLogValues(logRows, rowPerson), [logRows]);
   const stats = useMemo(() => logStats(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
@@ -148,42 +147,13 @@ export default function LogPage({
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
   const isAdminUser =
     String(currentUser?.role || "").trim() === "ADMIN" || isMasterUnlock(unlockedDepartment);
-  const waitingForMeCount = useMemo(() => {
-    const email = String(currentUser?.email || "").toLowerCase();
-    if (!email && String(currentUser?.role || "").trim() !== "ADMIN") return 0;
-    return scopedRows.filter((row) => {
-      const ui = reviewDisplayState(row);
-      if (ui.statusKey !== "waiting") return false;
-      if (String(currentUser?.role || "").trim() === "ADMIN") return true;
-      const recipients = row.managerReviewState?.openRequest?.detail_json;
-      try {
-        const d = typeof recipients === "string" ? JSON.parse(recipients) : recipients;
-        return (d?.recipientEmails || []).map((e) => String(e).toLowerCase()).includes(email);
-      } catch {
-        return false;
-      }
-    }).length;
-  }, [scopedRows, currentUser]);
 
   const filteredRows = useMemo(() => {
-    let rows = applyLogStatusFilter(scopedRows, status);
-    if (reviewFilter === "mine") {
-      const email = String(currentUser?.email || "").toLowerCase();
-      rows = rows.filter((row) => {
-        const ui = reviewDisplayState(row);
-        if (ui.statusKey !== "waiting") return false;
-        if (String(currentUser?.role || "").trim() === "ADMIN") return true;
-        try {
-          const raw = row.managerReviewState?.openRequest?.detail_json;
-          const d = typeof raw === "string" ? JSON.parse(raw) : raw;
-          return (d?.recipientEmails || []).map((e) => String(e).toLowerCase()).includes(email);
-        } catch {
-          return false;
-        }
-      });
+    if (status === "bh-waiting") {
+      return scopedRows.filter((row) => isWaitingForBusinessHead(row));
     }
-    return rows;
-  }, [scopedRows, status, reviewFilter, currentUser]);
+    return applyLogStatusFilter(scopedRows, status);
+  }, [scopedRows, status]);
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
   const busy =
     loading ||
@@ -195,10 +165,19 @@ export default function LogPage({
   const masterView = isMasterUnlock(unlockedDepartment);
   const allowDelete = masterView;
   const pillCounts = useMemo(() => {
-    const base = { ALL: scopedRows.length, GO: 0, "NO-GO": 0, WATCH: 0 };
+    const base = {
+      ALL: scopedRows.length,
+      "ai-used": 0,
+      GO: 0,
+      "NO-GO": 0,
+      WATCH: 0,
+      "bh-waiting": 0,
+    };
     for (const row of scopedRows) {
+      if (researchWasUsed(row)) base["ai-used"] += 1;
       const cls = classificationOf(row);
       if (cls === "GO" || cls === "NO-GO" || cls === "WATCH") base[cls] += 1;
+      if (isWaitingForBusinessHead(row)) base["bh-waiting"] += 1;
     }
     return base;
   }, [scopedRows]);
@@ -446,24 +425,14 @@ export default function LogPage({
             <AlertTriangle size={14} /> Database unavailable
           </div>
         ) : (
-          <>
-        <article className="log-stat-card">
-          <div className="mono log-stat-kicker">Ideas in the log</div>
-          <div className="log-stat-value">{stats.total}</div>
-          <p>Every idea entered so far{stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month` : ""}</p>
-          <p className="log-hidden-probes" role="status">{hiddenProbes} hidden probes</p>
-        </article>
-        <article className="log-stat-card">
-          <div className="mono log-stat-kicker">Cleared all six</div>
-          <div className="log-stat-value">{stats.cleared}</div>
-          <p>{stats.clearedRate}% pass rate of {stats.total} on the log</p>
-        </article>
-        <article className="log-stat-card">
-          <div className="mono log-stat-kicker">Open drafts</div>
-          <div className="log-stat-value">{stats.open}</div>
-          <p>{stats.staleOpen} not touched in 7+ days</p>
-        </article>
-          </>
+          <article className="log-stat-card">
+            <div className="mono log-stat-kicker">Total ideas submitted</div>
+            <div className="log-stat-value">{stats.total}</div>
+            <p>
+              Every idea entered so far
+              {stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month` : ""}
+            </p>
+          </article>
         )}
       </div>
 
@@ -581,7 +550,7 @@ export default function LogPage({
             <button
               type="button"
               className="log-btn"
-              onClick={() => handleExport(showProbes ? rows : logRows)}
+              onClick={() => handleExport(logRows)}
               disabled={exporting || rows.length === 0}
             >
               {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
@@ -694,45 +663,30 @@ export default function LogPage({
               </select>
             </label>
           </div>
-          <div className="log-pills" role="tablist" aria-label="Verdict filter">
-            {VERDICT_PILLS.map((p) => (
+          <div className="log-pills" role="tablist" aria-label="Log status filter">
+            {STATUS_PILLS.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 role="tab"
-                aria-selected={status === p.id && reviewFilter !== "mine"}
-                className={`log-pill${status === p.id && reviewFilter !== "mine" ? " is-active" : ""}`}
-                onClick={() => {
-                  setReviewFilter("all");
-                  setStatus(p.id);
-                }}
+                aria-selected={status === p.id}
+                className={`log-pill${status === p.id ? " is-active" : ""}`}
+                onClick={() => setStatus(p.id)}
               >
                 {p.label}
                 <span className="mono">{pillCounts[p.id] ?? 0}</span>
               </button>
             ))}
-            {String(currentUser?.role || "").trim() === "BH FORUM" || isAdminUser ? (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={reviewFilter === "mine"}
-                className={`log-pill${reviewFilter === "mine" ? " is-active" : ""}`}
-                onClick={() => setReviewFilter("mine")}
-              >
-                Waiting for my review
-                <span className="mono">{waitingForMeCount}</span>
-              </button>
-            ) : null}
-            {masterView ? (
-              <button
-                type="button"
-                className={`log-pill${showProbes ? " is-active" : ""}`}
-                onClick={() => setShowProbes((on) => !on)}
-              >
-                {showProbes ? "Hide probes" : "Show probes"}
-                <span className="mono">{rows.filter((row) => row.probe).length}</span>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={status === "bh-waiting"}
+              className={`log-pill${status === "bh-waiting" ? " is-active" : ""}`}
+              onClick={() => setStatus("bh-waiting")}
+            >
+              Waiting for business head&apos;s approval
+              <span className="mono">{pillCounts["bh-waiting"] ?? 0}</span>
+            </button>
           </div>
           <div className="log-toolbar-meta">
             <span className="mono log-sort">Sorted by last updated</span>
@@ -830,9 +784,6 @@ export default function LogPage({
                             <span className={`research-badge ${usedAi ? "used" : "unused"}`}>
                               {usedAi ? "AI used" : "No API calls"}
                             </span>
-                            {uiResearchState(h) === "incomplete" ? (
-                              <span className="research-badge incomplete">research incomplete</span>
-                            ) : null}
                           </div>
                         </button>
                       </td>
