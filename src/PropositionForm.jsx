@@ -1119,8 +1119,8 @@ export function GoNoGoResultPage({
   );
   const path = safeCall(
     "closest path to GO",
-    () => closestPathToGo(checks, improvementItems),
-    { items: [], projectedPct: scorePct, reachesGo: isGoScore(scorePct), emptyReason: "" }
+    () => closestPathToGo(checks, improvementItems, score),
+    { items: [], currentPct: scorePct, projectedPct: scorePct, reachesGo: isGoScore(scorePct), emptyReason: "" }
   );
   const pathItems = Array.isArray(path?.items) ? path.items : [];
   const emptyReason = safeCall(
@@ -1200,10 +1200,10 @@ export function GoNoGoResultPage({
         <aside className="path-panel">
           <div className="panel-kicker mono">Closest path to GO</div>
           <p className="path-score-line">
-            <span className="mono">{path.currentPct ?? score.pct}%</span>
+            <span className="mono">{scorePct}%</span>
             <span className="path-arrow" aria-hidden="true">→</span>
             <span className="mono path-projected">
-              {Math.max(Number(path.projectedPct) || 0, Number(path.currentPct ?? score.pct) || 0)}%
+              {Math.max(Number(path.projectedPct) || 0, scorePct)}%
             </span>
             {pathItems.length ? (
               <span className="path-if">

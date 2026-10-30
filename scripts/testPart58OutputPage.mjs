@@ -210,6 +210,13 @@ assert.ok(unlockedScore.total > unlockedScore.done);
 const milkPath = closestPathToGo(milkshakeChecks, computeImprovementPointValues(milkshakeChecks));
 assert.ok(milkPath.projectedPct >= milkPath.currentPct, "path must never suggest a lower score");
 assert.notEqual(milkPath.projectedPct, 100);
+const sealedPath = closestPathToGo(
+  milkshakeChecks,
+  computeImprovementPointValues(milkshakeChecks),
+  { pct: 86, done: 12, total: 14 }
+);
+assert.equal(sealedPath.currentPct, 86, "path current % must follow the sealed ring score");
+assert.ok(sealedPath.projectedPct >= 86);
 assert.match(src, /resolveOutputScore/);
 const watchRationale = buildGateRationale({
   classification: "WATCH",
