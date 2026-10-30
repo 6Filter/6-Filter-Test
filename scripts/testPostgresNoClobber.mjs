@@ -14,6 +14,8 @@ if (!testUrl) {
 }
 // Draft/ownership paths assume parked auth unless a case opts in.
 if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
+// Draft/ownership paths assume parked auth unless a case opts in.
+if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
 
 function hostAllowed(raw) {
   let host = "";
