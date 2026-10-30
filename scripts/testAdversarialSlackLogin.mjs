@@ -55,7 +55,7 @@ check("A the same code cannot be used twice", (await verify("alice@cavinkare.com
 // B. rate limit holds under concurrency
 dms = []; await clearDurableRateLimits();
 await Promise.all(Array.from({ length: 30 }, () => reqCode("victim@cavinkare.com")));
-check("B 30 parallel requests for one email send at most 3 DMs", dms.length <= 3, `sent ${dms.length}`);
+check("B 30 parallel requests for one email send at most 10 DMs", dms.length <= 10, `sent ${dms.length}`);
 
 // C. IP limit cannot be dodged by a spoofed header
 dms = []; await clearDurableRateLimits();

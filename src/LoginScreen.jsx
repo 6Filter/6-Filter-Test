@@ -4,6 +4,16 @@ import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
 
 const SAME_HINT = "We sent a code to your Slack.";
 
+function digitsFromText(raw) {
+  return String(raw || "").replace(/\D/g, "").slice(0, 6);
+}
+
+function clipboardDigits(e) {
+  const cd = e?.clipboardData;
+  if (!cd) return "";
+  return digitsFromText(cd.getData("text/plain") || cd.getData("text") || "");
+}
+
 export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, startAtTeam = false }) {
   const finish = onSignedIn || onLogin;
   const [email, setEmail] = useState(initialUser?.email || "");
@@ -16,6 +26,8 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
   const [sessionUser, setSessionUser] = useState(initialUser);
   const [team, setTeam] = useState("");
   const inputs = useRef([]);
+  const digitsRef = useRef(digits);
+  digitsRef.current = digits;
 
   useEffect(() => {
     if (resendIn <= 0) return undefined;
@@ -55,8 +67,8 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
     }
   }
 
-  async function verify() {
-    const code = digits.join("");
+  async function verify(codeOverride) {
+    const code = String(codeOverride || digitsRef.current.join("")).replace(/\D/g, "").slice(0, 6);
     if (code.length !== 6) {
       setError("Enter the 6-digit code from Slack.");
       return;
@@ -118,22 +130,31 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
     }
   }
 
-  function applyCodeDigits(raw, startIndex = 0) {
-    const chars = String(raw || "").replace(/\D/g, "").slice(0, 6 - startIndex);
-    if (!chars) return;
+  function fillCode(raw, startIndex = 0) {
+    const normalized = digitsFromText(raw);
+    if (!normalized) return;
+    const from = normalized.length >= 6 ? 0 : startIndex;
+    const chars = normalized.length >= 6 ? normalized.slice(0, 6) : normalized;
     setDigits((prev) => {
-      const next = [...prev];
-      for (let j = 0; j < chars.length; j += 1) next[startIndex + j] = chars[j];
+      const next = from === 0 && chars.length >= 6 ? ["", "", "", "", "", ""] : [...prev];
+      for (let j = 0; j < chars.length; j += 1) {
+        if (from + j > 5) break;
+        next[from + j] = chars[j];
+      }
       return next;
     });
-    const focusAt = Math.min(5, startIndex + chars.length - (chars.length < 6 - startIndex ? 0 : 1));
-    window.setTimeout(() => inputs.current[focusAt]?.focus(), 0);
+    const filled = from === 0 && chars.length >= 6 ? chars : null;
+    const focusAt = Math.min(5, from + chars.length - 1);
+    window.setTimeout(() => {
+      inputs.current[focusAt]?.focus();
+      if (filled && filled.length === 6) verify(filled);
+    }, 0);
   }
 
   function onDigit(i, value) {
-    const digitsOnly = String(value || "").replace(/\D/g, "");
+    const digitsOnly = digitsFromText(value);
     if (digitsOnly.length > 1) {
-      applyCodeDigits(digitsOnly, i);
+      fillCode(digitsOnly, i);
       return;
     }
     const v = digitsOnly.slice(-1);
@@ -146,11 +167,27 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
   }
 
   function onDigitPaste(i, e) {
-    const text = e.clipboardData?.getData("text") || "";
-    const digitsOnly = text.replace(/\D/g, "");
-    if (!digitsOnly) return;
+    const text = clipboardDigits(e);
+    if (!text) return;
     e.preventDefault();
-    applyCodeDigits(digitsOnly.length >= 6 ? digitsOnly.slice(0, 6) : digitsOnly, digitsOnly.length >= 6 ? 0 : i);
+    e.stopPropagation();
+    fillCode(text, i);
+  }
+
+  function onCodeRowPaste(e) {
+    const text = clipboardDigits(e);
+    if (!text) return;
+    e.preventDefault();
+    e.stopPropagation();
+    fillCode(text, 0);
+  }
+
+  function onDigitBeforeInput(i, e) {
+    if (e.inputType !== "insertFromPaste") return;
+    const text = digitsFromText(e.data || "");
+    if (!text) return;
+    e.preventDefault();
+    fillCode(text, i);
   }
 
   function onDigitKey(i, e) {
@@ -201,7 +238,12 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
               {info || SAME_HINT}
             </p>
             <p className="login-email-line mono">{email}</p>
-            <div className="login-code-row" role="group" aria-label="Six-digit code">
+            <div
+              className="login-code-row"
+              role="group"
+              aria-label="Six-digit code"
+              onPaste={onCodeRowPaste}
+            >
               {digits.map((d, i) => (
                 <input
                   key={i}
@@ -211,16 +253,42 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
                   className="login-digit"
                   inputMode="numeric"
                   autoComplete={i === 0 ? "one-time-code" : "off"}
-                  maxLength={i === 0 ? 6 : 1}
+                  name={i === 0 ? "one-time-code" : undefined}
+                  maxLength={6}
                   value={d}
                   onChange={(e) => onDigit(i, e.target.value)}
                   onPaste={(e) => onDigitPaste(i, e)}
+                  onBeforeInput={(e) => onDigitBeforeInput(i, e)}
                   onKeyDown={(e) => onDigitKey(i, e)}
                   disabled={busy}
                   aria-label={`Digit ${i + 1}`}
                 />
               ))}
             </div>
+            <label className="login-field login-paste-field">
+              Or paste the full code
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                name="otp-paste"
+                className="login-paste-input mono"
+                placeholder="6-digit code"
+                maxLength={24}
+                disabled={busy}
+                onPaste={(e) => {
+                  const text = clipboardDigits(e);
+                  if (!text) return;
+                  e.preventDefault();
+                  fillCode(text, 0);
+                }}
+                onChange={(e) => {
+                  const text = digitsFromText(e.target.value);
+                  e.target.value = text;
+                  if (text.length >= 6) fillCode(text, 0);
+                }}
+              />
+            </label>
           </>
         ) : null}
 
@@ -289,6 +357,8 @@ const LOGIN_CSS = `
   width:44px;height:48px;text-align:center;font-size:20px;font-family:'IBM Plex Mono',monospace;
   background:#120818;border:1px solid rgba(243,234,248,.22);border-radius:10px;color:#fff;
 }
+.login-paste-field{margin-top:4px;}
+.login-paste-input{letter-spacing:.12em;}
 .login-err{margin:0;color:#f0a090;font-size:13px;}
 .login-submit{
   margin-top:4px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
