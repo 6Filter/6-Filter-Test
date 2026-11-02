@@ -44,7 +44,22 @@ assert.equal(findOrgPersonByEmail("Sridhar.R@cavinkare.com")?.role, "department_
 assert.equal(findOrgPersonByEmail("rasmita.r@cavinkare.com")?.role, "member");
 assert.equal(findOrgPersonByEmail("ingersal@cavinkare.com")?.id, "g-ingarsal");
 assert.equal(findOrgPersonByEmail("dillibabu.v@cavinkare.com")?.name, "Dillbabu Vishwanathan");
+assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.id, "navin-kumar");
+assert.equal(findOrgPersonByEmail("soumen.s@cavinkare.com")?.id, "soumen-bera");
 assert.equal(findOrgPersonByEmail("unknown@cavinkare.com"), null);
+assert.equal(
+  orgAccessForViewer({ email: "navin.d@cavinkare.com" }).kind,
+  "team_lead"
+);
+assert.equal(
+  orgAccessForViewer({ email: "soumen.s@cavinkare.com" }).kind,
+  "team_lead"
+);
+assert.ok(
+  orgChartAllowsAccess(orgAccessForViewer({ email: "soumen.s@cavinkare.com" }), {
+    ownerEmail: "anil.v@cavinkare.com",
+  })
+);
 
 const bhAccess = orgAccessForViewerName("Sridhar Rajam");
 assert.equal(bhAccess.kind, "department_head");

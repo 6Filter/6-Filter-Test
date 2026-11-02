@@ -41,7 +41,7 @@ Keyed on `propositions.created_by_email` (normalised), with an additional **R&D 
 | BH FORUM (email in `business_head_teams`) | Own ideas + ideas whose team is in that mapping (legacy names via `legacy_team_map`). Decided from the table, not only the stored role. |
 | ADMIN | Every idea (including legacy NPD / Marketing until reassigned) |
 
-Navin Kumar’s three CQM ABC reportees and Soumen Bera’s login email are not on the supplied roster yet — name matching still applies for those rows.
+Navin Kumar (`navin.d@cavinkare.com`) and Soumen Bera (`soumen.s@cavinkare.com`) are charted as team leads; Navin’s three CQM ABC reportees are still unnamed on the deck.
 
 Unassigned ideas (no creator email): ADMIN, and the business head of the idea’s team after `legacy_team_map`.
 
