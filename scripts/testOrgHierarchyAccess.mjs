@@ -45,7 +45,16 @@ assert.equal(findOrgPersonByEmail("rasmita.r@cavinkare.com")?.role, "member");
 assert.equal(findOrgPersonByEmail("ingersal@cavinkare.com")?.id, "g-ingarsal");
 assert.equal(findOrgPersonByEmail("dillibabu.v@cavinkare.com")?.name, "Dillbabu Vishwanathan");
 assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.id, "navin-kumar");
+assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.unit, "Corporate Quality Assurance - ABC");
+assert.equal(findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.id, "naveen-kumar-s");
+assert.equal(findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.unit, "Product Development - ABC");
 assert.equal(findOrgPersonByEmail("soumen.s@cavinkare.com")?.id, "soumen-bera");
+assert.equal(findOrgPersonByEmail("soumen.s@cavinkare.com")?.unit, "Product Development - ABC");
+assert.notEqual(
+  findOrgPersonByEmail("navin.d@cavinkare.com")?.id,
+  findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.id,
+  "Navin Kumar and Naveen Kumar S stay distinct"
+);
 assert.equal(findOrgPersonByEmail("unknown@cavinkare.com"), null);
 assert.equal(
   orgAccessForViewer({ email: "navin.d@cavinkare.com" }).kind,
