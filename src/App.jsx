@@ -895,10 +895,10 @@ export default function App() {
     setDeepLinkMissing(false);
     try {
       const full = await fetchPropositionById(row.id);
-      // Prefer the Log-row seal when both exist — open must never show a different percent.
-      const rowSeal = row.goNoGo?.classification ? row.goNoGo : null;
+      // Prefer GET (withAdvisory may correct a stale 100% against live gaps). Fall back to Log row.
       const fullSeal = full?.goNoGo?.classification ? full.goNoGo : null;
-      const sealed = rowSeal || fullSeal || full?.goNoGo || null;
+      const rowSeal = row.goNoGo?.classification ? row.goNoGo : null;
+      const sealed = fullSeal || rowSeal || full?.goNoGo || null;
       setProposition({
         ...full,
         goNoGo: sealed,

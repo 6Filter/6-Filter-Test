@@ -105,12 +105,18 @@ assert.notEqual(driftedPct, sealedPct, "fixture must be able to drift if unlocke
 
 const outputPct = resolveOutputScore(drifted, readGo.score, stored, readGo.scoreInputKey).pct;
 assert.equal(outputPct, sealedPct, "output page must keep Log percent against drifted checks");
+assert.notEqual(outputPct, driftedPct);
 
-// Prefer sealed score object the same way the output page does.
-const heroPct = Number(readGo.score.pct);
-assert.equal(heroPct, sealedPct);
-assert.notEqual(heroPct, driftedPct);
+// Stale sealed 100% with open analytical gaps must yield to live — never show every idea as 100%.
+const stalePerfect = {
+  ...readGo,
+  score: { pct: 100, done: 14, total: 14, byFilter: {}, scoreInputKey: key },
+  scoreInputKey: key,
+};
+const corrected = resolveOutputScore(checks, stalePerfect.score, stored, key);
+assert.ok(corrected.pct < 100, "stale 100% must not win over live open gaps");
+assert.ok(corrected.total > corrected.done);
 
 console.log(
-  `PASS open keeps Log score ${sealedPct}% (live would have been ${driftedPct}%, class=${classification})`
+  `PASS open keeps Log score ${sealedPct}% (live would have been ${driftedPct}%, class=${classification}; stale 100→${corrected.pct})`
 );

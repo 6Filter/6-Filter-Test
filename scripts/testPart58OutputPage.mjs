@@ -15,6 +15,7 @@ import {
 } from "../lib/improvementPoints.js";
 import { buildGateRationale, financeSignatureCopy, scoreAdvisoryChecks } from "../lib/goNoGo.js";
 import { checkF4 } from "../lib/filterChecks.js";
+import { scoreInputKey } from "../lib/analysisStability.js";
 
 const checks = {
   f1: {
@@ -197,26 +198,62 @@ const milkshakeChecks = {
   f3: { checkLabel: "Cleared", items: [{ status: "done", text: "MRP inside safe band" }] },
   f4: mediumF4,
 };
-const sealedScore = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
-assert.equal(sealedScore.pct, 100, "sealed store wins when no lock key is present");
-const unlockedScore = resolveOutputScore(
+const milkDoc = {
+  name: "Protein milkshake",
+  f1: { benchmark: "Electral", declaredGap: 3 },
+  f2: { netMarginAtScale: 40, mrpInr: 99, grammage: "200ml" },
+  f3: {},
+  f4: { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Medium" } } } },
+};
+const milkKey = scoreInputKey(milkDoc);
+const liveMilk = scoreAdvisoryChecks(milkshakeChecks);
+assert.ok(liveMilk.pct < 100 && liveMilk.total > liveMilk.done);
+
+const liveBeatsStale100 = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
+assert.ok(liveBeatsStale100.pct < 100, "live pending F4 items must beat a stale 100% store");
+assert.ok(liveBeatsStale100.total > liveBeatsStale100.done);
+
+const stale100Locked = resolveOutputScore(
   milkshakeChecks,
-  { pct: 100, done: 14, total: 14, scoreInputKey: "deadbeef" },
-  { name: "Protein milkshake", f1: {}, f2: {}, f3: {}, f4: {} },
-  "deadbeef"
+  { pct: 100, done: 14, total: 14, scoreInputKey: milkKey },
+  milkDoc,
+  milkKey
 );
-assert.ok(unlockedScore.pct < 100, "live checks win only when the lock key no longer matches");
-assert.ok(unlockedScore.total > unlockedScore.done);
+assert.ok(stale100Locked.pct < 100, "stale 100% loses even when a lock key still matches");
+assert.ok(stale100Locked.total > stale100Locked.done);
+
+const lockedHonest = resolveOutputScore(
+  milkshakeChecks,
+  { pct: 72, done: liveMilk.done, total: liveMilk.total, scoreInputKey: milkKey },
+  milkDoc,
+  milkKey
+);
+assert.equal(lockedHonest.pct, 72, "non-100% seal still hard-locks when the fingerprint matches");
+
 const milkPath = closestPathToGo(milkshakeChecks, computeImprovementPointValues(milkshakeChecks));
 assert.ok(milkPath.projectedPct >= milkPath.currentPct, "path must never suggest a lower score");
 assert.notEqual(milkPath.projectedPct, 100);
+
 const sealedPath = closestPathToGo(
   milkshakeChecks,
   computeImprovementPointValues(milkshakeChecks),
   { pct: 86, done: 12, total: 14 }
 );
 assert.equal(sealedPath.currentPct, 86, "path current % must follow the sealed ring score");
-assert.ok(sealedPath.projectedPct >= 86);
+assert.equal(sealedPath.projectedPct, 86, "already-GO sealed ring must not invent a higher path target");
+
+// Sealed tiny denominator must not project to 100% while live still has several gaps.
+const mismatchedSealPath = closestPathToGo(
+  milkshakeChecks,
+  computeImprovementPointValues(milkshakeChecks),
+  { pct: 60, done: 3, total: 5 }
+);
+assert.equal(mismatchedSealPath.currentPct, 60);
+assert.ok(mismatchedSealPath.projectedPct > 60);
+assert.ok(
+  mismatchedSealPath.projectedPct <= Math.round((100 * (liveMilk.done + mismatchedSealPath.items.length)) / liveMilk.total),
+  "path projection must follow live done/total, not the sealed denominator"
+);
 assert.match(src, /resolveOutputScore/);
 const watchRationale = buildGateRationale({
   classification: "WATCH",

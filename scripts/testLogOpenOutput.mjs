@@ -11,6 +11,7 @@ const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf
 
 assert.match(appSrc, /_preferOutput/);
 assert.match(appSrc, /_openFromLog/);
+assert.match(appSrc, /fullSeal \|\| rowSeal/);
 assert.match(appSrc, /row\.goNoGo\?\.classification/);
 
 assert.match(formSrc, /function preferOutputView/);

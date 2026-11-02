@@ -1064,19 +1064,8 @@ export function GoNoGoResultPage({
 
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  // Sealed gate from the server/Log is authoritative on the output page.
-  const scoreRaw = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
-  const sealedScore =
-    result.score && Number(result.score.total) > 0
-      ? {
-          done: Number(result.score.done) || 0,
-          total: Number(result.score.total) || 0,
-          pct: Number.isFinite(Number(result.score.pct)) ? Number(result.score.pct) : 0,
-          byFilter: result.score.byFilter || {},
-          scoreInputKey: result.scoreInputKey || result.score.scoreInputKey,
-        }
-      : null;
-  const scoreBase = sealedScore || scoreRaw;
+  // Single resolver: hard-lock when fingerprint matches; live beats a stale 100% with open gaps.
+  const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
   const score = { ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}), pct: scorePct };
   const classification = result.classification;
@@ -1203,7 +1192,7 @@ export function GoNoGoResultPage({
             <span className="mono">{scorePct}%</span>
             <span className="path-arrow" aria-hidden="true">→</span>
             <span className="mono path-projected">
-              {Math.max(Number(path.projectedPct) || 0, scorePct)}%
+              {Number.isFinite(Number(path.projectedPct)) ? Number(path.projectedPct) : scorePct}%
             </span>
             {pathItems.length ? (
               <span className="path-if">
