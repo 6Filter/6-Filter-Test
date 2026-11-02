@@ -30,11 +30,14 @@ Break-glass: `node scripts/issueLoginCode.mjs <email>` (ADMIN only, audited). Ro
 
 ## Visibility
 
-Keyed on `propositions.created_by_email` (normalised).
+Keyed on `propositions.created_by_email` (normalised), with an additional **R&D org chart** in `lib/orgHierarchy.js` (matched on `users.name` / `submitterName`).
 
 | Actor | Sees |
 |-------|------|
-| Individual | Ideas where `created_by_email` equals their email |
+| Individual / team member | Ideas where `created_by_email` equals their email |
+| Team lead (org chart) | Own ideas + ideas submitted by their charted reportees |
+| Unit head (e.g. CQM) | Own ideas + ideas from everyone under that unit on the chart |
+| Department business head (org chart) | Own ideas + every idea on team **R&D**, and everyone under them on the chart |
 | BH FORUM (email in `business_head_teams`) | Own ideas + ideas whose team is in that mapping (legacy names via `legacy_team_map`). Decided from the table, not only the stored role. |
 | ADMIN | Every idea (including legacy NPD / Marketing until reassigned) |
 
