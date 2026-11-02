@@ -13,6 +13,9 @@ import { requireUnlockedDepartment, canViewProposition } from "../lib/propositio
 import { currentBillingDepartment, runWithLlm } from "../lib/llmContext.js";
 import { OPEN_ACCESS_TEAM, PLATFORM_TEAM_LOCK_ENABLED } from "../lib/departmentAuthConstants.js";
 
+// Match the suite default — open-platform visibility checks park named login.
+if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
+
 // Encrypt round-trip
 const plain = "sk-ant-test-key-not-real";
 const blob = encryptApiKey(plain);
@@ -24,15 +27,22 @@ assert.notEqual(blob.ciphertext, plain);
 assert.equal(isTeamBillingDepartment("CIA"), true);
 assert.equal(isTeamBillingDepartment("Master"), false);
 
-const infra = await resolveBillingApiKey(null);
-assert.equal(infra.source, "ANTHROPIC_API_KEY");
-const master = await resolveBillingApiKey("Master");
-assert.equal(master.source, "ANTHROPIC_API_KEY");
-
 const prevNpd = process.env.DEPT_API_KEY_NPD;
 const prevAnt = process.env.ANTHROPIC_API_KEY;
 delete process.env.DEPT_API_KEY_NPD;
+delete process.env.ANTHROPIC_API_KEY;
+await assert.rejects(
+  () => resolveBillingApiKey(null),
+  /Claude API key missing/,
+  "open/infra billing must fail closed when ANTHROPIC_API_KEY is unset — otherwise COGS never auto-populates"
+);
 process.env.ANTHROPIC_API_KEY = "sk-ant-infra-for-autopopulate-test";
+const infra = await resolveBillingApiKey(null);
+assert.equal(infra.source, "ANTHROPIC_API_KEY");
+assert.equal(infra.apiKey, "sk-ant-infra-for-autopopulate-test");
+const master = await resolveBillingApiKey("Master");
+assert.equal(master.source, "ANTHROPIC_API_KEY");
+
 const npd = await resolveBillingApiKey("NPD");
 assert.ok(npd.apiKey, "NPD must resolve a key so F2/F3/F5 numbers can auto-populate");
 assert.ok(
