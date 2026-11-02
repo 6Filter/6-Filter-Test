@@ -15,6 +15,7 @@ process.env.REQUIRE_AUTH = "false";
 
 const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
+const { divisionForScore } = await import("../lib/divisionForScore.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
 const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
 
@@ -54,8 +55,15 @@ const idea = {
   },
 };
 
-const preview = scoreAdvisoryChecks(previewAdvisoryChecks(idea));
-const server = scoreAdvisoryChecks(await computeAllAdvisoryChecks(idea));
+const unmatched = {
+  ...idea,
+  name: "Plain widget",
+  category: "Uncategorised widget",
+  ideaDescription: "A plain widget with no category keywords.",
+};
+assert.equal(divisionForScore(unmatched), "");
+const preview = scoreAdvisoryChecks(previewAdvisoryChecks(unmatched));
+const server = scoreAdvisoryChecks(await computeAllAdvisoryChecks(unmatched));
 assert.equal(preview.done, server.done);
 assert.equal(preview.total, server.total);
 assert.equal(preview.pct, server.pct);
