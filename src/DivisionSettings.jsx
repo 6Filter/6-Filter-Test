@@ -291,20 +291,21 @@ export default function DivisionSettings({ apiFetch }) {
 }
 
 const CSS = `
-.div-settings{max-width:1180px;margin:0 auto;padding:0 28px 72px;}
+.div-settings{max-width:1180px;margin:0 auto;padding:0 28px 72px;color:#16202B;}
 .div-panel{padding:18px 20px 22px;}
-.div-lede{margin:0 0 14px;font-size:13.5px;line-height:1.45;color:var(--muted-2, rgba(243,234,248,.62));}
-.div-err{margin:0 0 12px;color:#E2716B;font-size:13px;}
-.div-ok{margin:0 0 12px;color:#7EDCA8;font-size:13px;}
-.div-loading{display:flex;align-items:center;gap:8px;color:var(--muted);}
+.div-lede{margin:0 0 14px;font-size:13.5px;line-height:1.45;color:#5C5647;}
+.div-err{margin:0 0 12px;color:#A3402F;font-size:13px;}
+.div-ok{margin:0 0 12px;color:#2F7A54;font-size:13px;}
+.div-loading{display:flex;align-items:center;gap:8px;color:#5C5647;}
 .div-table-wrap{overflow-x:auto;}
-.div-table{width:100%;border-collapse:collapse;font-size:13px;}
-.div-table th{text-align:left;font-family:var(--fm);font-size:11px;letter-spacing:.04em;
-  color:rgba(243,234,248,.55);padding:8px 8px 10px;border-bottom:1px solid rgba(243,234,248,.12);}
-.div-table td{padding:8px;border-bottom:1px solid rgba(243,234,248,.08);vertical-align:middle;}
-.div-table input{width:100%;min-width:72px;background:var(--bg-soft,#22113A);border:1px solid var(--line,rgba(243,234,248,.14));
-  border-radius:10px;color:var(--ink,#F3EAF8);font-family:var(--fd);font-size:13px;padding:8px 10px;}
-.div-save{display:inline-flex;align-items:center;gap:6px;background:#C9AEEF;color:#170C25;border:none;
+.div-table{width:100%;border-collapse:collapse;font-size:13px;color:#16202B;}
+.div-table thead th,.div-table th{text-align:left;font-family:var(--fm);font-size:11px;letter-spacing:.04em;font-weight:700;
+  color:#16202B !important;padding:8px 8px 10px;border-bottom:1px solid #E6E1D1;background:#FBF8EF;}
+.div-table td{padding:8px;border-bottom:1px solid #F1ECDD;vertical-align:middle;color:#16202B;}
+.div-table input{width:100%;min-width:72px;background:#FFFDF8;border:1px solid #E6E1D1;
+  border-radius:10px;color:#16202B;caret-color:#16202B;font-family:var(--fd);font-size:13px;padding:8px 10px;}
+.div-table input::placeholder{color:#8C8574;opacity:1;}
+.div-save{display:inline-flex;align-items:center;gap:6px;background:#16202B;color:#FFFDF8;border:none;
   border-radius:999px;padding:8px 12px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--fd);
   white-space:nowrap;}
 .div-save:disabled{opacity:.55;cursor:not-allowed;}
