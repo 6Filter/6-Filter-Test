@@ -52,12 +52,21 @@ const f3At40 = checkF3(
 );
 assert.equal(f3At70.checkLabel, "Cleared");
 assert.equal(f3At40.checkLabel, "Below floor");
+// Hold F1/F2/F4 cleared so unscored-filter weight does not collapse both cases to NO-GO.
+const restCleared = {
+  f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Attribute ok" }] },
+  f2: { checkLabel: "Cleared", items: [{ status: "done", text: "Margin clears floor" }] },
+  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Low risk" }] },
+};
 assert.notEqual(
-  computeGoNoGo({ f3: f3At70 }),
-  computeGoNoGo({ f3: f3At40 }),
+  computeGoNoGo({ ...restCleared, f3: f3At70 }),
+  computeGoNoGo({ ...restCleared, f3: f3At40 }),
   "changing only COGS must move GO/NO-GO when scoring runs on current fields"
 );
-assert.notEqual(scoreAdvisoryChecks({ f3: f3At70 }).pct, scoreAdvisoryChecks({ f3: f3At40 }).pct);
+assert.notEqual(
+  scoreAdvisoryChecks({ ...restCleared, f3: f3At70 }).pct,
+  scoreAdvisoryChecks({ ...restCleared, f3: f3At40 }).pct
+);
 
 const baseHashDoc = {
   ideaDescription: "herbal cooling hair oil",
