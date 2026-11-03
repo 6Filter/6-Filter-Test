@@ -212,7 +212,8 @@ assert.match(logSrc, /log-scoped-filters/);
 assert.match(logSrc, /LOG_UNLOCK_OPTIONS/);
 assert.match(logSrc, /isMasterUnlock/);
 assert.match(logSrc, /uniqueSubmitters/);
-assert.match(logSrc, /Export this idea/);
+assert.match(logSrc, /Export entered input fields to Excel/);
+assert.match(logSrc, /Inputs PDF/);
 assert.match(logSrc, /exportPropositionsToExcel/);
 assert.doesNotMatch(logSrc, /Export CSV/);
 

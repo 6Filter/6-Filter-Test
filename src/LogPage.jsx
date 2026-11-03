@@ -5,6 +5,7 @@ import {
   resolveFullPropositions,
 } from "../lib/logExport.js";
 import { exportMonthPropositionsPdf, exportPropositionOutputPdf } from "./exportGoNoGoPdf.jsx";
+import { exportPropositionInputsPdf } from "./exportInputsPdf.jsx";
 import {
   applyLogStatusFilter,
   applyMonthFilter,
@@ -192,7 +193,11 @@ export default function LogPage({
     Boolean(exportingPdfId);
   const masterView = isMasterUnlock(unlockedDepartment);
   // ADMIN (e.g. tanmay.v@cavinkare.com) or Master unlock may delete any idea.
-  const allowDelete = masterView || canDeleteRow || canDeleteAll;
+  const allowDelete =
+    masterView ||
+    canDeleteRow ||
+    canDeleteAll ||
+    String(currentUser?.role || "").trim() === "ADMIN";
   const pillCounts = useMemo(() => {
     const base = {
       ALL: scopedRows.length,
@@ -250,10 +255,29 @@ export default function LogPage({
     return Boolean(row?.goNoGo?.classification || row?.classification);
   }
 
-  async function handleExportPdfRow(row) {
+  async function handleExportInputsPdfRow(row) {
+    if (!row?.id || exporting || exportingPdfId || exportingMonthPdf) return;
+    if (!onFetchFull) {
+      setExportError("Could not load the full idea for PDF export.");
+      return;
+    }
+    setExportError("");
+    setExportingPdfId(row.id);
+    try {
+      const full = await onFetchFull(row.id);
+      if (!full) throw new Error("Could not load this idea.");
+      await exportPropositionInputsPdf(full);
+    } catch (e) {
+      setExportError(e.message || "Could not export inputs PDF.");
+    } finally {
+      setExportingPdfId("");
+    }
+  }
+
+  async function handleExportOutputPdfRow(row) {
     if (!row?.id || exporting || exportingPdfId || exportingMonthPdf) return;
     if (!rowIsScreened(row)) {
-      setExportError("Run the Go/No-Go screen first — PDF exports the output page.");
+      setExportError("Run the Go/No-Go screen first — Output PDF needs a verdict.");
       return;
     }
     if (!onFetchFull) {
@@ -908,40 +932,50 @@ export default function LogPage({
                           <button
                             type="button"
                             className="log-export-btn"
-                            aria-label="Export this idea to Excel"
-                            title="Export Excel"
+                            aria-label="Export entered input fields to Excel"
+                            title="Export entered inputs to Excel"
                             disabled={rowBusy}
                             onClick={() => handleExportRow(h)}
                           >
                             {isExportingRow ? <Loader2 size={14} className="spin" /> : <Download size={14} />}
-                            <span>Excel</span>
+                            <span>Inputs Excel</span>
                           </button>
                           <button
                             type="button"
                             className="log-export-btn"
-                            aria-label="Export Go/No-Go output as PDF"
-                            title={
-                              screened
-                                ? "Export output page as PDF"
-                                : "Run the Go/No-Go screen first to export PDF"
-                            }
-                            disabled={rowBusy || !screened}
-                            onClick={() => handleExportPdfRow(h)}
+                            aria-label="Export entered input fields as PDF screenshot"
+                            title="Export entered inputs as PDF (screenshot of values)"
+                            disabled={rowBusy}
+                            onClick={() => handleExportInputsPdfRow(h)}
                           >
                             {isExportingPdf ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />}
-                            <span>PDF</span>
+                            <span>Inputs PDF</span>
                           </button>
-                          {allowDelete && canDeleteRow ? (
-                          <button
-                            type="button"
-                            className="log-del"
-                            aria-label="Delete this proposition"
-                            title="Delete proposition"
-                            disabled={rowBusy}
-                            onClick={() => onDeleteRow(h)}
-                          >
-                            {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
-                          </button>
+                          {screened ? (
+                            <button
+                              type="button"
+                              className="log-export-btn"
+                              aria-label="Export Go/No-Go output as PDF"
+                              title="Export Go/No-Go output page as PDF"
+                              disabled={rowBusy}
+                              onClick={() => handleExportOutputPdfRow(h)}
+                            >
+                              {isExportingPdf ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />}
+                              <span>Output PDF</span>
+                            </button>
+                          ) : null}
+                          {allowDelete ? (
+                            <button
+                              type="button"
+                              className="log-del"
+                              aria-label="Delete this idea"
+                              title="Delete this idea"
+                              disabled={rowBusy}
+                              onClick={() => onDeleteRow(h)}
+                            >
+                              {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
+                              <span>Delete</span>
+                            </button>
                           ) : null}
                         </div>
                       </td>
@@ -1099,8 +1133,8 @@ export const LOG_PAGE_CSS = `
 }
 .log-export-btn:hover:not(:disabled){background:var(--table-row-hover);border-color:#d5cfb8;}
 .log-export-btn:disabled{opacity:.45;cursor:not-allowed;}
-.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;background:transparent;color:var(--ink-muted);border-radius:8px;cursor:pointer;flex-shrink:0;}
-.log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);color:var(--danger-text);}
+.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:30px;padding:4px 8px;border:1px solid var(--danger-border);background:transparent;color:var(--danger-text);border-radius:8px;cursor:pointer;flex-shrink:0;font-size:12px;font-family:inherit;}
+.log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);}
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
 @media (max-width:1100px){
   .log-page{padding:16px 12px 32px;}

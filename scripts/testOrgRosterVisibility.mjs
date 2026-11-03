@@ -50,7 +50,8 @@ assert.match(formSrc, /SUBMITTER_DEPARTMENTS/);
 assert.doesNotMatch(formSrc, /Only an ADMIN can change it/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
-assert.match(appSrc, /AdminUsersPage/);
+assert.doesNotMatch(appSrc, /AdminUsersPage/);
+assert.doesNotMatch(appSrc, />Admin</);
 
 const {
   BH_SEES_HOME_TEAM,

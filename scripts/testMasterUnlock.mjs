@@ -32,7 +32,9 @@ assert.equal(canRunDepartmentWipe({ department: LOG_MASTER_UNLOCK }), false);
 const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(pageSrc, /allowDelete/);
 assert.match(pageSrc, /ADMIN or Master can delete|canDeleteRow/);
-assert.match(pageSrc, /masterView \|\| canDeleteRow/);
+assert.match(pageSrc, /masterView \|\|/);
+assert.match(pageSrc, /canDeleteRow/);
+assert.match(pageSrc, /role \|\| ""\)\.trim\(\) === "ADMIN"/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /canDeleteLogProposition/);

@@ -177,7 +177,10 @@ assert.match(logSrc, /Kindly export your ideas to make sure you always have a co
 assert.match(logSrc, /ideas will be wiped out/);
 assert.match(logSrc, /ideasWipeAt|ideasWipeLabel/);
 assert.match(logSrc, /log-scoped-filters/);
-assert.match(logSrc, /Export this idea/);
+assert.match(logSrc, /Export entered input fields to Excel/);
+assert.match(logSrc, /Inputs PDF/);
+assert.match(logSrc, /exportPropositionInputsPdf/);
+assert.match(logSrc, /Delete this idea/);
 assert.match(logSrc, /Delete all/);
 assert.match(logSrc, /STATUS_PILLS|id: "GO"/);
 assert.match(logSrc, /Total ideas submitted/);

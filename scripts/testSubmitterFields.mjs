@@ -73,8 +73,8 @@ assert.match(logSrc, /rowTeam/);
 assert.match(logSrc, /SUBMITTER_DEPARTMENTS/);
 assert.match(logSrc, /Legacy team/);
 assert.match(appSrc, /LogPage/);
-assert.match(appSrc, /AdminUsersPage/);
-assert.match(appSrc, /setView\("admin"\)/);
+assert.doesNotMatch(appSrc, /AdminUsersPage/);
+assert.doesNotMatch(appSrc, /setView\("admin"\)/);
 
 const loginSrc = readFileSync(new URL("../src/LoginScreen.jsx", import.meta.url), "utf8");
 assert.doesNotMatch(loginSrc, /password/i);
