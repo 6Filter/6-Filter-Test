@@ -6,6 +6,7 @@ import {
   FORUM_VERDICT_FIELD,
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
+  SUBMITTER_DEPARTMENTS,
   VERDICT_NOTE_FIELD,
   hasSubmitterIdentity,
   mergeProposition,
@@ -1862,6 +1863,9 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
+            ideaDescription: doc.ideaDescription,
             division: doc.division,
             f1: doc.f1,
             f2: doc.f2,
@@ -2059,7 +2063,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const uploadedName = uploaded.name || file.name;
+      setConceptCardName(uploadedName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: uploadedName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -2068,12 +2077,18 @@ export default function PropositionForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      const keptName = String(data.conceptCardName || data.proposition?.f1?.conceptCardName || uploadedName).trim();
+      if (keptName) {
+        setConceptCardName(keptName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+        }));
+      }
+      if (data.extractError) setConceptCardError(data.extractError);
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -2082,7 +2097,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -2444,7 +2458,11 @@ export default function PropositionForm({
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
     if (!hasSubmitterIdentity(doc)) {
-      setLocalError("Enter your name before Submit. Your team comes from your account.");
+      setLocalError(
+        currentUser?.team
+          ? "Enter your name before Submit. Your team comes from your account."
+          : "Enter your name and choose your team before Submit."
+      );
       return;
     }
     if (!canSubmit) {
@@ -2665,18 +2683,31 @@ export default function PropositionForm({
         ))}
         <label className="field">
           <span className="field-label">Your team</span>
-          <input
-            value={
-              currentUser?.team ||
-              doc.submitterDepartment ||
-              (doc.teamIsLegacy ? `Legacy: ${doc.submitterDepartment}` : "")
-            }
-            disabled
-            readOnly
-            aria-label="Your team"
-          />
+          {currentUser?.team ? (
+            <input
+              value={currentUser.team}
+              disabled
+              readOnly
+              aria-label="Your team"
+            />
+          ) : (
+            <select
+              aria-label="Your team"
+              value={doc.submitterDepartment || ""}
+              onChange={(e) => setTop("submitterDepartment", e.target.value)}
+            >
+              <option value="">— select team —</option>
+              {SUBMITTER_DEPARTMENTS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="field-helper">
-            From your account. Only an ADMIN can change it.
+            {currentUser?.team
+              ? "From your account. Only an ADMIN can change it."
+              : "Pick your team so Submit can save this idea."}
           </span>
         </label>
       </section>
@@ -2802,9 +2833,9 @@ export default function PropositionForm({
         }
         const values = doc[spec.key] || {};
         const check =
-          spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
-            ? livePreviewChecks[spec.key]
-            : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
+          advisoryChecks?.[spec.key] ||
+          livePreviewChecks[spec.key] ||
+          { checkLabel: "Not yet run", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
         const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
         const filterScore = filterCheckScore(check);
