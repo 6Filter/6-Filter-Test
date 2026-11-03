@@ -191,7 +191,8 @@ export default function LogPage({
     exportingMonthPdf ||
     Boolean(exportingPdfId);
   const masterView = isMasterUnlock(unlockedDepartment);
-  const allowDelete = masterView;
+  // ADMIN (e.g. tanmay.v@cavinkare.com) or Master unlock may delete any idea.
+  const allowDelete = masterView || canDeleteRow || canDeleteAll;
   const pillCounts = useMemo(() => {
     const base = {
       ALL: scopedRows.length,
@@ -539,7 +540,7 @@ export default function LogPage({
               className="log-btn"
               onClick={onCleanupUntouched}
               disabled={busy || untouchedCount === 0 || !canCleanup || !allowDelete}
-              title={masterView ? undefined : "Only Master can delete"}
+              title={allowDelete ? undefined : "Only ADMIN or Master can delete"}
             >
               {deletingUntouched ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Clean up untouched drafts ({untouchedCount})
@@ -552,7 +553,7 @@ export default function LogPage({
                 setDeleteAllOpen(true);
               }}
               disabled={busy || rows.length === 0 || !canDeleteAll || !allowDelete}
-              title={masterView ? undefined : "Only Master can delete"}
+              title={allowDelete ? undefined : "Only ADMIN or Master can delete"}
             >
               {deletingAll ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
               Delete all
@@ -796,7 +797,6 @@ export default function LogPage({
                   const idea = String(h.ideaDescription || "").trim();
                   const team = rowTeam(h) || "—";
                   const division = String(h.division || "").trim();
-                  const usedAi = researchWasUsed(h);
                   const isExportingRow = exportingId === h.id;
                   const isExportingPdf = exportingPdfId === h.id;
                   const rowBusy =
@@ -831,9 +831,6 @@ export default function LogPage({
                                 {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
                               </span>
                             ) : null}
-                            <span className={`research-badge ${usedAi ? "used" : "unused"}`}>
-                              {usedAi ? "AI used" : "No API calls"}
-                            </span>
                           </div>
                         </button>
                       </td>

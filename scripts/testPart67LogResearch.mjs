@@ -40,12 +40,14 @@ assert.equal(logRowForCsv({ name: "Blank" }).research, "No API calls");
 
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /research-badge/);
-assert.match(logSrc, /No API calls/);
-assert.match(logSrc, /AI used/);
+assert.doesNotMatch(logSrc, /No API calls/);
+assert.match(logSrc, /AI used/); // status filter pill still lists AI-used ideas
+assert.doesNotMatch(logSrc, /usedAi \? "AI used"/);
 assert.match(logSrc, /Clean up untouched drafts/);
 assert.match(logSrc, /\.research-badge\.used/);
-assert.match(logSrc, /\.research-badge\.unused/);
 assert.match(logSrc, /id: "GO"/);
+assert.match(logSrc, /canDeleteRow/);
+assert.match(logSrc, /ADMIN or Master can delete|allowDelete/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 assert.match(appSrc, /cleanup-untouched/);

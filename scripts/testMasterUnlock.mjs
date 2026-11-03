@@ -31,11 +31,13 @@ assert.equal(canRunDepartmentWipe({ department: LOG_MASTER_UNLOCK }), false);
 
 const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(pageSrc, /allowDelete/);
-assert.match(pageSrc, /Only Master can delete/);
+assert.match(pageSrc, /ADMIN or Master can delete|canDeleteRow/);
+assert.match(pageSrc, /masterView \|\| canDeleteRow/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /canDeleteLogProposition/);
-assert.match(apiSrc, /Only Master unlock can delete propositions/);
+
+assert.equal(canDeleteLogProposition({ role: "ADMIN", email: "tanmay.v@cavinkare.com" }), true);
 
 await initDb();
 await upsertDepartmentPasswordHash(LOG_MASTER_UNLOCK, hashPassword("Iwillnottellthepassword"));
