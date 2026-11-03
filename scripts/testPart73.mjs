@@ -116,7 +116,8 @@ assert.match(router, /\/refresh-field\$/);
 
 assert.match(log, /table-layout:fixed/);
 assert.match(log, /log-export-btn|log-actions-cell/);
-assert.match(log, /position:sticky;right:0/);
+assert.match(log, /grid-template-columns:1fr 1fr/);
+assert.match(log, /Output PDF/);
 assert.doesNotMatch(log, /min-height:calc\(100vh - 180px\)/);
 assert.doesNotMatch(log, /min-width:880px/);
 

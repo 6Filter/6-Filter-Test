@@ -18,6 +18,7 @@ import { researchHashFor } from "../lib/researchCache.js";
 
 const costResearch = {
   estimatedCogsPerUnitInr: 42,
+  estimatedNetMarginPct: 38,
   estimatedGstRatePct: 18,
   gstBasis: "Analysed by AI: personal-care stick at 18%.",
   estimatedGrammage: "50g",
@@ -45,8 +46,8 @@ assert.equal(findingsA.f2.costEstimate.grammage, "50g");
 assert.equal(findingsA.f2.costEstimate.cogsAtScale, 42);
 assert.equal(
   findingsA.f2.costEstimate.netMarginAtScale,
-  undefined,
-  "AI cost estimate must not carry net margin — locked division minimum assigns it"
+  38,
+  "AI cost estimate carries ideal net margin for autofill (user may override)"
 );
 assert.equal(findingsA.f2.costEstimate.gstRatePct, 18);
 
@@ -66,6 +67,7 @@ assert.equal(hasCachedCostEstimate({ researchFindings: { f1: {}, f3: {} }, sugge
 const sug = f2SuggestionsFromCostEstimate(findingsA.f2.costEstimate);
 assert.equal(sug.grammage, "50g");
 assert.equal(sug.cogsAtScale, 42);
+assert.equal(sug.netMarginAtScale, 38);
 assert.deepEqual(sug, f2SuggestionsFromCostEstimate(costEstimateFromResearch(costResearch)));
 
 const legacySugOnly = {

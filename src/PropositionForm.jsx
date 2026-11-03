@@ -298,24 +298,18 @@ function mrpMissingReason(doc) {
 
 function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, canRestore }) {
   const entry = autofillStatusFor(doc, fieldPath);
+  // Do not show "Edited by …" under fields — manual override is silent.
   if (editedName) {
-    const suggested = entry?.aiSuggested;
-    return (
-      <div className="autofill-status" data-tone="edited">
-        Edited by {editedName}
-        {suggested != null && suggested !== "" ? (
-          <span className="autofill-ai-kept">
-            {" "}
-            (AI suggested {typeof suggested === "number" ? `₹${suggested}` : String(suggested).slice(0, 48)})
-          </span>
-        ) : null}
-        {canRestore && typeof onRestore === "function" ? (
+    if (canRestore && typeof onRestore === "function") {
+      return (
+        <div className="autofill-status" data-tone="edited">
           <button type="button" className="ghost-link" onClick={onRestore}>
             Restore AI value
           </button>
-        ) : null}
-      </div>
-    );
+        </div>
+      );
+    }
+    return null;
   }
   if (entry && (entry.reason || entry.status === "skipped" || entry.status === "unavailable")) {
     const reason = String(entry.reason || entry.message || "The AI had no figure, enter it manually.").trim();
@@ -2082,7 +2076,13 @@ export default function PropositionForm({
     const raw = storedSuggestionValue(filterKey, fieldKey);
     if (raw == null) return;
     const path = sourcedPath(filterKey, fieldKey);
-    if (filterKey) setFilter(filterKey, fieldKey, raw);
+    if (filterKey === "f2" && fieldKey === "netMarginAtScale") {
+      noteEdit();
+      setDoc((prev) => ({
+        ...prev,
+        f2: { ...(prev.f2 || {}), netMarginAtScale: raw, netMarginSource: "ai" },
+      }));
+    } else if (filterKey) setFilter(filterKey, fieldKey, raw);
     else setTop(fieldKey, raw);
     setEditedFields((prev) => {
       const next = { ...prev };
@@ -2330,6 +2330,9 @@ export default function PropositionForm({
       const nextFilter = { ...(prev[filterKey] || {}), [fieldKey]: value };
       if (filterKey === "f2" && fieldKey === "gstRatePct") {
         nextFilter.gstBasis = "";
+      }
+      if (filterKey === "f2" && fieldKey === "netMarginAtScale") {
+        nextFilter.netMarginSource = "user";
       }
       if (
         filterKey === "f5" &&
@@ -3252,7 +3255,8 @@ export default function PropositionForm({
                         : undefined
                     }
                     onRefresh={
-                      (spec.key === "f2" && ["cogsAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
+                      (spec.key === "f2" &&
+                        ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
                       (spec.key === "f3" && field.key === "marginElasticity") ||
                       (spec.key === "f4" && field.key === "techShiftRisk")
                         ? () => handleRefreshField(field.key)

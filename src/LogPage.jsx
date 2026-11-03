@@ -931,39 +931,41 @@ export default function LogPage({
                         <div className="log-row-actions">
                           <button
                             type="button"
+                            className="log-export-btn log-export-btn-output"
+                            aria-label="Export Go/No-Go output as PDF"
+                            title={
+                              screened
+                                ? "Export Go/No-Go output page as PDF"
+                                : "Available after the idea is screened"
+                            }
+                            disabled={rowBusy || !screened}
+                            onClick={() => handleExportOutputPdfRow(h)}
+                          >
+                            {isExportingPdf ? <Loader2 size={13} className="spin" /> : <FileDown size={13} />}
+                            <span>Output PDF</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="log-export-btn"
+                            aria-label="Export entered input fields as PDF screenshot"
+                            title="Export entered inputs as PDF"
+                            disabled={rowBusy}
+                            onClick={() => handleExportInputsPdfRow(h)}
+                          >
+                            {isExportingPdf ? <Loader2 size={13} className="spin" /> : <FileDown size={13} />}
+                            <span>Inputs PDF</span>
+                          </button>
+                          <button
+                            type="button"
                             className="log-export-btn"
                             aria-label="Export entered input fields to Excel"
                             title="Export entered inputs to Excel"
                             disabled={rowBusy}
                             onClick={() => handleExportRow(h)}
                           >
-                            {isExportingRow ? <Loader2 size={14} className="spin" /> : <Download size={14} />}
+                            {isExportingRow ? <Loader2 size={13} className="spin" /> : <Download size={13} />}
                             <span>Inputs Excel</span>
                           </button>
-                          <button
-                            type="button"
-                            className="log-export-btn"
-                            aria-label="Export entered input fields as PDF screenshot"
-                            title="Export entered inputs as PDF (screenshot of values)"
-                            disabled={rowBusy}
-                            onClick={() => handleExportInputsPdfRow(h)}
-                          >
-                            {isExportingPdf ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />}
-                            <span>Inputs PDF</span>
-                          </button>
-                          {screened ? (
-                            <button
-                              type="button"
-                              className="log-export-btn"
-                              aria-label="Export Go/No-Go output as PDF"
-                              title="Export Go/No-Go output page as PDF"
-                              disabled={rowBusy}
-                              onClick={() => handleExportOutputPdfRow(h)}
-                            >
-                              {isExportingPdf ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />}
-                              <span>Output PDF</span>
-                            </button>
-                          ) : null}
                           {allowDelete ? (
                             <button
                               type="button"
@@ -973,7 +975,7 @@ export default function LogPage({
                               disabled={rowBusy}
                               onClick={() => onDeleteRow(h)}
                             >
-                              {isDeleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
+                              {isDeleting ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
                               <span>Delete</span>
                             </button>
                           ) : null}
@@ -1008,7 +1010,7 @@ export const LOG_PAGE_CSS = `
   color:var(--ink); background:var(--bg);
   width:100%;max-width:100%;margin:0 auto;padding:16px 20px 40px;
   display:flex;flex-direction:column;gap:18px;
-  box-sizing:border-box;overflow-x:clip;
+  box-sizing:border-box;overflow-x:visible;
 }
 .log-page .mono{font-family:'IBM Plex Mono',monospace;}
 .log-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
@@ -1022,7 +1024,7 @@ export const LOG_PAGE_CSS = `
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
 .log-stat-value{font-size:32px;font-weight:700;letter-spacing:-.8px;line-height:1.1;}
 .log-stat-card p{margin:6px 0 0;font-size:13px;color:var(--ink-secondary);}
-.log-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 8px;max-width:100%;overflow:hidden;}
+.log-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 8px;max-width:100%;overflow:visible;}
 .log-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:0 0 16px;}
 .log-page .log-title{margin:0 0 6px;font-size:22px;color:var(--ink);}
 .log-page .log-sub{margin:0;font-size:13px;color:var(--ink-secondary);max-width:560px;line-height:1.45;}
@@ -1066,24 +1068,22 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
-.log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:auto;}
+.log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:visible;}
 .log-table{width:100%;max-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
 .log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 6px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
 .log-table td{padding:8px 6px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
-.log-table th:nth-child(1),.log-table td:nth-child(1){width:10%;}
-.log-table th:nth-child(2),.log-table td:nth-child(2){width:22%;}
-.log-table th:nth-child(3),.log-table td:nth-child(3){width:6%;}
-.log-table th:nth-child(4),.log-table td:nth-child(4){width:9%;}
-.log-table th:nth-child(5),.log-table td:nth-child(5){width:12%;}
-.log-table th:nth-child(6),.log-table td:nth-child(6){width:13%;}
-.log-table th:nth-child(7),.log-table td:nth-child(7){width:10%;}
-.log-table th:nth-child(8),.log-table td:nth-child(8),
+.log-table th:nth-child(1),.log-table td:nth-child(1){width:9%;}
+.log-table th:nth-child(2),.log-table td:nth-child(2){width:20%;}
+.log-table th:nth-child(3),.log-table td:nth-child(3){width:5%;}
+.log-table th:nth-child(4),.log-table td:nth-child(4){width:8%;}
+.log-table th:nth-child(5),.log-table td:nth-child(5){width:10%;}
+.log-table th:nth-child(6),.log-table td:nth-child(6){width:10%;}
+.log-table th:nth-child(7),.log-table td:nth-child(7){width:9%;}
 .log-th-actions,.log-actions-cell{
-  width:18%;text-align:right;
-  position:sticky;right:0;z-index:2;
-  box-shadow:-8px 0 12px -10px rgba(22,32,43,.28);
+  width:24%;min-width:220px;text-align:right;
+  overflow:visible !important;
 }
-.log-table th.log-th-actions{background:var(--table-header-bg);z-index:3;}
+.log-table th.log-th-actions{background:var(--table-header-bg);}
 .log-actions-cell{background:var(--card-bg);}
 .log-tr:hover td{background:var(--table-row-hover);}
 .log-tr:hover .log-actions-cell{background:var(--table-row-hover);}
@@ -1125,25 +1125,37 @@ export const LOG_PAGE_CSS = `
 .log-stage{font-size:10px;color:var(--ink-muted-2);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .log-submitted{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink-secondary);min-width:0;}
 .log-submitted span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.log-row-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:nowrap;}
+.log-row-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:4px;width:100%;
+  justify-items:stretch;align-items:stretch;
+}
 .log-export-btn{
-  display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 8px;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  min-height:28px;padding:4px 6px;width:100%;box-sizing:border-box;
   border:1px solid var(--card-border);border-radius:8px;background:#fff;
-  color:var(--ink);font:inherit;font-size:11px;font-weight:650;cursor:pointer;white-space:nowrap;
+  color:var(--ink);font:inherit;font-size:10px;font-weight:650;cursor:pointer;
+  white-space:nowrap;line-height:1.2;
 }
 .log-export-btn:hover:not(:disabled){background:var(--table-row-hover);border-color:#d5cfb8;}
-.log-export-btn:disabled{opacity:.45;cursor:not-allowed;}
-.log-page .log-del{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:30px;padding:4px 8px;border:1px solid var(--danger-border);background:transparent;color:var(--danger-text);border-radius:8px;cursor:pointer;flex-shrink:0;font-size:12px;font-family:inherit;}
+.log-export-btn:disabled{opacity:.4;cursor:not-allowed;}
+.log-export-btn-output:not(:disabled){
+  border-color:#16202B;background:#16202B;color:#FFFDF8;
+}
+.log-export-btn-output:not(:disabled):hover{background:#2a3542;border-color:#2a3542;color:#FFFDF8;}
+.log-page .log-del{
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  min-height:28px;padding:4px 6px;width:100%;box-sizing:border-box;
+  border:1px solid var(--danger-border);background:transparent;color:var(--danger-text);
+  border-radius:8px;cursor:pointer;font-size:10px;font-weight:650;font-family:inherit;
+}
 .log-page .log-del:hover:not(:disabled){background:var(--danger-hover-bg);}
 .log-page .log-del:disabled{opacity:.45;cursor:not-allowed;}
 @media (max-width:1100px){
   .log-page{padding:16px 12px 32px;}
   .log-table th,.log-table td{padding:8px 4px;}
   .log-table th:nth-child(2),.log-table td:nth-child(2){width:18%;}
-  .log-table th:nth-child(5),.log-table td:nth-child(5){width:10%;}
-  .log-table th:nth-child(8),.log-table td:nth-child(8),
-  .log-th-actions,.log-actions-cell{width:22%;}
-  .log-export-btn{padding:0 6px;font-size:10px;}
+  .log-th-actions,.log-actions-cell{width:24%;min-width:180px;}
+  .log-export-btn,.log-page .log-del{font-size:9.5px;padding:4px 5px;}
 }
 @media (max-width:860px){
   .log-stats{grid-template-columns:1fr;}

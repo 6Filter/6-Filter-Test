@@ -70,18 +70,12 @@ assert.throws(() => {
   assert.ok(drift.drift.some((d) => d.division === "Foods" && d.stored === 5 && d.locked === 35));
 }
 
-// 3) Cost prompt / schema have no floor and no estimatedNetMarginPct; never invent margin
+// 3) Cost prompt has no locked floor constant; AI may estimate ideal net margin for autofill
 {
   const costSrc = readFileSync(new URL("../lib/filters/runCostEstimate.js", import.meta.url), "utf8");
   assert.doesNotMatch(costSrc, /DIVISION_NET_MARGIN_FLOOR_PCT/);
   assert.doesNotMatch(costSrc, /vs the division floor/);
-  assert.doesNotMatch(costSrc, /estimatedNetMarginPct/);
-  assert.doesNotMatch(costSrc, /netMarginAtScale\s*=/);
-  const findingsSrc = readFileSync(new URL("../lib/researchFindings.js", import.meta.url), "utf8");
-  assert.doesNotMatch(
-    findingsSrc.slice(findingsSrc.indexOf("export function costEstimateFromResearch")),
-    /estimatedNetMarginPct/
-  );
+  assert.match(costSrc, /estimatedNetMarginPct/);
 }
 
 // 4) Proposer-input: never auto-assign; hint shows floor; below floor labels
@@ -221,7 +215,8 @@ assert.throws(() => {
   const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
   assert.match(formSrc, /formatMinimumMarginHint/);
   assert.match(formSrc, /Enter the net margin to compute MRP/);
+  assert.doesNotMatch(formSrc, /Edited by \{editedName\}/);
   assert.doesNotMatch(formSrc, /Reset to the division minimum/);
 }
 
-console.log("PASS testLockedMinimumMargins — proposer-input hints, AI no margin, IB/pending/Below floor");
+console.log("PASS testLockedMinimumMargins — floor hints, AI may estimate margin, IB/pending/Below floor");
