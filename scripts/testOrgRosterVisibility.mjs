@@ -159,8 +159,9 @@ for (const email of [
 }
 await setUserTeam(users["m.a1@cavinkare.com"].id, "FD and Dairy");
 let fixed = await syncUserTeamFromRoster(await getUserByEmail("m.a1@cavinkare.com"));
-assert.equal(fixed.team, "R&D", "roster corrects wrong self-chosen team");
-assert.equal(fixed.rosterLocked, true);
+assert.equal(fixed.team, "FD and Dairy", "roster must not overwrite account default team");
+assert.equal(fixed.rosterTeam, "R&D", "roster team attached for visibility only");
+assert.equal(fixed.rosterLocked, false);
 
 for (const [email, team] of [
   ["bh.rd@cavinkare.com", "R&D"],
@@ -171,8 +172,10 @@ for (const [email, team] of [
   ["m.b1@cavinkare.com", "CC"],
   ["m.b2@cavinkare.com", "CC"],
 ]) {
-  await syncUserTeamFromRoster(await getUserByEmail(email));
-  assert.equal((await getUserByEmail(email)).team, team);
+  await setUserTeam(users[email].id, team);
+  const synced = await syncUserTeamFromRoster(await getUserByEmail(email));
+  assert.equal(synced.team, team, "account team stays self-chosen");
+  assert.equal(synced.rosterTeam, team, "roster team metadata");
 }
 
 async function idea(ownerEmail, team) {
@@ -233,10 +236,10 @@ const badPreview = await previewOrgRosterImport(
 assert.equal(badPreview.ok, false);
 assert.ok((badPreview.issues || []).length > 0);
 
-// set-team locked for rostered person
+// set-team allowed for rostered person (account default ≠ roster team)
 const token = signSession({
   userId: users["m.a1@cavinkare.com"].id,
-  tokenVersion: Number(users["m.a1@cavinkare.com"].tokenVersion) || 1,
+  tokenVersion: Number((await getUserByEmail("m.a1@cavinkare.com")).tokenVersion) || 1,
 });
 const setRes = mkRes();
 const setReq = Object.assign(Readable.from([Buffer.from(JSON.stringify({ team: "CC" }))]), {
@@ -244,8 +247,9 @@ const setReq = Object.assign(Readable.from([Buffer.from(JSON.stringify({ team: "
   headers: { cookie: `primus_session=${token}`, "content-type": "application/json" },
 });
 await handleSetTeam(setReq, setRes);
-assert.equal(setRes.statusCode, 403);
-assert.match(String(setRes.body?.error || ""), /admin/i);
+assert.equal(setRes.statusCode, 200, setRes.body?.error);
+assert.equal(setRes.body?.user?.team, "CC");
+assert.equal(setRes.body?.user?.rosterLocked, false);
 
 // Admin endpoints 404 for non-admin
 const deny = mkRes();
@@ -320,34 +324,9 @@ await handlePropositionDraft(
   teamIdea.id,
   { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
 );
-assert.equal(locked.statusCode, 403);
-
-const adminMove = mkRes();
-await handlePropositionDraft(
-  Object.assign(
-    Readable.from([
-      Buffer.from(
-        JSON.stringify({
-          proposition: {
-            ...(await getPropositionById(teamIdea.id)),
-            submitterDepartment: "R&D",
-            submitterName: "A2",
-          },
-        })
-      ),
-    ]),
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      user: { ...(await as("admin@cavinkare.com")), role: "ADMIN" },
-    }
-  ),
-  adminMove,
-  teamIdea.id,
-  { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
-);
-assert.equal(adminMove.statusCode, 200, adminMove.body?.error);
+assert.equal(locked.statusCode, 200, locked.body?.error);
 assert.equal((await getPropositionById(teamIdea.id)).submitterDepartment, "R&D");
+assert.equal(await sees("bh.rd@cavinkare.com", await getPropositionById(teamIdea.id)), true);
 
 assert.ok(await getOrgRosterByEmail("m.a1@cavinkare.com"));
 

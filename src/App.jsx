@@ -1330,11 +1330,7 @@ export default function App() {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
-  useEffect(() => {
-    if (sessionUser?.rosterLocked && changingOwnTeam) setChangingOwnTeam(false);
-  }, [sessionUser?.rosterLocked, changingOwnTeam]);
-
-  if (authRequired && (sessionUser?.needsTeam || (changingOwnTeam && !sessionUser?.rosterLocked))) {
+  if (authRequired && (sessionUser?.needsTeam || changingOwnTeam)) {
     const pendingIdea = takeStashedDeepLinkIdeaId();
     if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return (
@@ -1457,21 +1453,15 @@ export default function App() {
             <em>{sessionUser.role}</em>
             {sessionUser.team ? <em title="Default team">{sessionUser.team}</em> : null}
           </span>
-          {sessionUser.rosterLocked ? (
-            <span className="session-chip-hint" title="Home team from the org roster">
-              Set by your admin
-            </span>
-          ) : (
-            <button
-              type="button"
-              className="ghost sq"
-              onClick={() => setChangingOwnTeam(true)}
-              aria-label="My team"
-              title="Change my default team"
-            >
-              My team
-            </button>
-          )}
+          <button
+            type="button"
+            className="ghost sq"
+            onClick={() => setChangingOwnTeam(true)}
+            aria-label="My default team"
+            title="Change my default team"
+          >
+            My default team
+          </button>
           <button type="button" className="ghost sq" onClick={signOut} aria-label="Sign out">
             <LogOut size={14} />
           </button>

@@ -51,6 +51,9 @@ assert.doesNotMatch(formSrc, /ownershipBanner/);
 assert.doesNotMatch(formSrc, /canWriteField/);
 assert.match(formSrc, /SUBMITTER_DEPARTMENTS/);
 assert.match(formSrc, /AutofillProvenance/);
+assert.match(formSrc, /re-routed if you change the team/);
+assert.doesNotMatch(formSrc, /Ask the admin to change it\./);
+assert.doesNotMatch(formSrc, /managerReviewRequestedOn\(doc\)\s*\?\s*String\(currentUser/);
 
 const {
   canEditIdeaInputs,
@@ -258,12 +261,13 @@ const teamAudit = await query(
 );
 assert.ok(teamAudit.some((r) => String(r.ids_json || "").includes(teamProp.id)), "idea-team-changed audited");
 
-// After manager review — creator refused
+// After manager review — creator can still change team (re-route)
 await setPropositionManagerReview(teamProp.id, {
   requestedAt: new Date().toISOString(),
   requestedByEmail: dbOwner.email,
+  status: "requested",
 });
-const lockedRes = mkRes();
+const rerouteRes = mkRes();
 await handlePropositionDraft(
   Object.assign(Readable.from([Buffer.from(JSON.stringify({
     proposition: {
@@ -272,28 +276,20 @@ await handlePropositionDraft(
       submitterName: "Owner",
     },
   }))]), { method: "POST", headers: { "content-type": "application/json" }, user: { ...dbOwner, team: "CC", role: "BM" } }),
-  lockedRes,
+  rerouteRes,
   teamProp.id,
   { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
 );
-assert.equal(lockedRes.statusCode, 403);
-
-// ADMIN allowed after review
-const adminRes = mkRes();
-await handlePropositionDraft(
-  Object.assign(Readable.from([Buffer.from(JSON.stringify({
-    proposition: {
-      ...(await getPropositionById(teamProp.id)),
-      submitterDepartment: "Sales & Distribution FMCG",
-      submitterName: "Owner",
-    },
-  }))]), { method: "POST", headers: { "content-type": "application/json" }, user: { ...dbAdmin, team: "R&D", role: "ADMIN" } }),
-  adminRes,
-  teamProp.id,
-  { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
-);
-assert.equal(adminRes.statusCode, 200, `admin team: ${adminRes.body?.error || ""}`);
+assert.equal(rerouteRes.statusCode, 200, `team after review: ${rerouteRes.body?.error || ""}`);
 assert.equal((await getPropositionById(teamProp.id)).submitterDepartment, "Sales & Distribution FMCG");
+const moveEvents = await query(
+  `SELECT event FROM manager_review_events WHERE idea_id = $1 ORDER BY created_at ASC`,
+  [teamProp.id]
+);
+assert.ok(
+  moveEvents.some((e) => e.event === "moved"),
+  `expected moved event, got ${moveEvents.map((e) => e.event).join(",")}`
+);
 
 // Unlisted team → 400
 const badTeamRes = mkRes();

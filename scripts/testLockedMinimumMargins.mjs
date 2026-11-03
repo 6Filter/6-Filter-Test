@@ -27,6 +27,8 @@ const {
   effectiveMarginDivision,
   lockedFloorForProposition,
   formatLockedDivisionLabel,
+  formatMinimumMarginHint,
+  marginBelowFloorWarning,
 } = await import("../lib/divisionMargin.js");
 const { computeAllAdvisoryChecks, computeGoNoGo } = await import("../lib/propositionScoring.js");
 const { scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
@@ -48,7 +50,7 @@ assert.equal(minNetMarginForDivision("Cold Chain Business"), 12);
 assert.equal(minNetMarginForDivision("Dairy Craft — UHT Milk"), 12);
 assert.equal(minNetMarginForDivision("International Business"), null);
 assert.equal(minNetMarginForDivision("Pets"), null);
-assert.equal(NET_MARGIN_ASSIGNMENT, "division-minimum");
+assert.equal(NET_MARGIN_ASSIGNMENT, "proposer-input");
 assert.equal(INTERNATIONAL_BUSINESS_MARGIN, "respective-division");
 assert.equal(UNMATCHED_DIVISION_F2, "pending");
 Object.freeze(DIVISION_MIN_NET_MARGIN_PCT);
@@ -68,12 +70,13 @@ assert.throws(() => {
   assert.ok(drift.drift.some((d) => d.division === "Foods" && d.stored === 5 && d.locked === 35));
 }
 
-// 3) Cost prompt / schema have no floor and no estimatedNetMarginPct
+// 3) Cost prompt / schema have no floor and no estimatedNetMarginPct; never invent margin
 {
   const costSrc = readFileSync(new URL("../lib/filters/runCostEstimate.js", import.meta.url), "utf8");
   assert.doesNotMatch(costSrc, /DIVISION_NET_MARGIN_FLOOR_PCT/);
   assert.doesNotMatch(costSrc, /vs the division floor/);
   assert.doesNotMatch(costSrc, /estimatedNetMarginPct/);
+  assert.doesNotMatch(costSrc, /netMarginAtScale\s*=/);
   const findingsSrc = readFileSync(new URL("../lib/researchFindings.js", import.meta.url), "utf8");
   assert.doesNotMatch(
     findingsSrc.slice(findingsSrc.indexOf("export function costEstimateFromResearch")),
@@ -81,12 +84,13 @@ assert.throws(() => {
   );
 }
 
-// 4) Assign locked minimum when empty; never overwrite typed higher; below floor labels
+// 4) Proposer-input: never auto-assign; hint shows floor; below floor labels
 {
   const empty = assignDivisionMinimumMargin({}, { division: "Foods" });
-  assert.equal(empty.assigned, true);
-  assert.equal(empty.f2.netMarginAtScale, 35);
-  assert.match(empty.f2.netMarginLockedLabel, /Minimum for Foods: 35% \(locked\)/);
+  assert.equal(empty.assigned, false);
+  assert.equal(empty.f2.netMarginAtScale, undefined);
+  assert.match(formatMinimumMarginHint({ division: "Foods" }), /Minimum net margin for Foods: 35% \(fixed\)/);
+  assert.match(marginBelowFloorWarning(20, { division: "Foods" }), /Below the minimum/);
 
   const kept = assignDivisionMinimumMargin({ netMarginAtScale: 48, netMarginSource: "user" }, { division: "Foods" });
   assert.equal(kept.assigned, false);
@@ -212,4 +216,12 @@ assert.throws(() => {
   assert.match(lc, /export const UNMATCHED_DIVISION_F2/);
 }
 
-console.log("PASS testLockedMinimumMargins — locked floors, AI no margin, IB/pending/Below floor");
+// 9) Form shows hint / no reset-to-minimum autofill
+{
+  const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
+  assert.match(formSrc, /formatMinimumMarginHint/);
+  assert.match(formSrc, /Enter the net margin to compute MRP/);
+  assert.doesNotMatch(formSrc, /Reset to the division minimum/);
+}
+
+console.log("PASS testLockedMinimumMargins — proposer-input hints, AI no margin, IB/pending/Below floor");

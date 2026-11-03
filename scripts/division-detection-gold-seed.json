@@ -1,0 +1,180 @@
+{
+  "_note": "PROVISIONAL labels until the owner confirms them. Used by scripts/measureDivisionDetection.mjs.",
+  "items": [
+    {
+      "id": "keratin-salon",
+      "name": "Keratin Pro Smooth",
+      "category": "Hair treatments",
+      "description": "Keratin smoothing treatment for salons",
+      "expectedDivision": "Professional Care"
+    },
+    {
+      "id": "ragi-malt",
+      "name": "Ragi Malt Plus",
+      "category": "Health drinks",
+      "description": "Ragi malt health drink powder",
+      "expectedDivision": "Foods"
+    },
+    {
+      "id": "spiced-buttermilk",
+      "name": "Masala Chaas Pack",
+      "category": "Dairy drinks",
+      "description": "Spiced buttermilk in a long-life pack",
+      "expectedDivision": "Ambient Dairy"
+    },
+    {
+      "id": "uht-toned",
+      "name": "UHT Toned 1L",
+      "category": "Milk",
+      "description": "UHT toned milk in a 1 litre tetra pack",
+      "expectedDivision": "Dairy Craft — UHT Milk"
+    },
+    {
+      "id": "retail-shampoo",
+      "name": "Everyday Shine Shampoo",
+      "category": "Hair care",
+      "description": "Mass-market shampoo for grocery and modern trade shelves",
+      "expectedDivision": "Personal Care"
+    },
+    {
+      "id": "namkeen-mix",
+      "name": "Evening Namkeen Mix",
+      "category": "Snacks",
+      "description": "Spicy extruded namkeen snack for impulse retail",
+      "expectedDivision": "Snacks"
+    },
+    {
+      "id": "ice-cream-cup",
+      "name": "Choco Scoop Cup",
+      "category": "Ice cream",
+      "description": "Chocolate ice cream cups needing continuous cold chain",
+      "expectedDivision": "Cold Chain Business"
+    },
+    {
+      "id": "curd-cup",
+      "name": "Set Curd Cup",
+      "category": "Dairy",
+      "description": "Fresh set curd cup sold chilled, non-UHT craft dairy",
+      "expectedDivision": "Dairy Craft — Non-UHT"
+    },
+    {
+      "id": "pickle-jar",
+      "name": "Mango Pickle Jar",
+      "category": "Pickles",
+      "description": "Traditional mango pickle in a glass jar for retail",
+      "expectedDivision": "Foods"
+    },
+    {
+      "id": "energy-drink",
+      "name": "Spark Energy",
+      "category": "Beverages",
+      "description": "Carbonated energy soft drink in a 250ml can",
+      "expectedDivision": "Beverages"
+    },
+    {
+      "id": "salon-colour",
+      "name": "Pro Colour Cream",
+      "category": "Hair colour",
+      "description": "Professional hair colour cream sold B2B to salon chains",
+      "expectedDivision": "Professional Care"
+    },
+    {
+      "id": "body-lotion",
+      "name": "Daily Soft Lotion",
+      "category": "Skin care",
+      "description": "Body lotion for mass personal care retail",
+      "expectedDivision": "Personal Care"
+    },
+    {
+      "id": "chips-pack",
+      "name": "Masala Chips",
+      "category": "Snacks",
+      "description": "Potato chips in a 30g impulse pack",
+      "expectedDivision": "Snacks"
+    },
+    {
+      "id": "sandwich-bread",
+      "name": "Soft Sandwich Loaf",
+      "category": "Bakery",
+      "description": "Packaged sandwich bread loaf for modern trade",
+      "expectedDivision": "Bakery"
+    },
+    {
+      "id": "flavoured-milk-ambient",
+      "name": "Badam Milk Drink",
+      "category": "Dairy drinks",
+      "description": "Shelf-stable flavoured milk drink in a long-life pack (not plain UHT milk)",
+      "expectedDivision": "Ambient Dairy"
+    },
+    {
+      "id": "export-shampoo-gcc",
+      "name": "Shine Export Pack",
+      "category": "Hair care",
+      "description": "Shampoo SKU packed for GCC export / international business",
+      "expectedDivision": "International Business"
+    },
+    {
+      "id": "paneer-block",
+      "name": "Fresh Paneer Block",
+      "category": "Dairy",
+      "description": "Value-added paneer block for domestic craft dairy (non-UHT)",
+      "expectedDivision": "Dairy Craft — Non-UHT"
+    },
+    {
+      "id": "frozen-dessert",
+      "name": "Kulfi Stick",
+      "category": "Frozen",
+      "description": "Frozen kulfi stick requiring cold chain distribution",
+      "expectedDivision": "Cold Chain Business"
+    },
+    {
+      "id": "juice-nectar",
+      "name": "Mango Nectar",
+      "category": "Beverages",
+      "description": "Ready-to-drink mango nectar beverage tetra",
+      "expectedDivision": "Beverages"
+    },
+    {
+      "id": "cookies-pack",
+      "name": "Butter Cookies",
+      "category": "Bakery",
+      "description": "Butter cookies sold as bakery packaged goods",
+      "expectedDivision": "Bakery"
+    },
+    {
+      "id": "uht-standardized",
+      "name": "Standardized UHT Milk",
+      "category": "Milk",
+      "description": "Standardized UHT milk in tetra for ambient shelf",
+      "expectedDivision": "Dairy Craft — UHT Milk"
+    },
+    {
+      "id": "hair-oil-retail",
+      "name": "Coconut Hair Oil",
+      "category": "Hair oils",
+      "description": "Coconut hair oil for grocery personal care shelves",
+      "expectedDivision": "Personal Care"
+    },
+    {
+      "id": "spice-blend",
+      "name": "Garam Masala Pack",
+      "category": "Spices",
+      "description": "Ground garam masala culinary spice blend",
+      "expectedDivision": "Foods"
+    },
+    {
+      "id": "popcorn-pack",
+      "name": "Butter Popcorn",
+      "category": "Snacks",
+      "description": "Ready-to-eat butter popcorn snack pouch",
+      "expectedDivision": "Snacks"
+    },
+    {
+      "id": "salon-spa-kit",
+      "name": "Salon Spa Protocol Kit",
+      "category": "Professional",
+      "description": "In-salon spa hair protocol kit sold only to salons",
+      "expectedDivision": "Professional Care"
+    }
+  ]
+}

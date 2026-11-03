@@ -73,6 +73,19 @@ import {
   normalizeTechShiftRisk,
 } from "../lib/techShiftRisk.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
+import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
+
+const LAST_TEAM_KEY = "primus.lastIdeaTeam";
+
+function rememberedIdeaTeam(accountTeam) {
+  try {
+    const last = String(localStorage.getItem(LAST_TEAM_KEY) || "").trim();
+    if (last) return last;
+  } catch {
+    /* ignore */
+  }
+  return String(accountTeam || "").trim();
+}
 
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
@@ -312,9 +325,18 @@ function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, 
       </div>
     );
   }
-  if (fieldPath === "f2.mrpInr" && !aiSourced && !(entry?.status === "filled")) {
+  if (fieldPath === "f2.mrpInr") {
+    const marginEmpty =
+      doc?.f2?.netMarginAtScale == null || String(doc.f2.netMarginAtScale).trim() === "";
+    if (marginEmpty) {
+      return (
+        <div className="autofill-status" data-tone="na">
+          Enter the net margin to compute MRP
+        </div>
+      );
+    }
     const mrpReason = mrpMissingReason(doc);
-    if (mrpReason) {
+    if (mrpReason && !aiSourced && !(entry?.status === "filled")) {
       return (
         <div className="autofill-status" data-tone="na">
           Not available — {mrpReason}
@@ -1589,13 +1611,23 @@ export default function PropositionForm({
     });
   }, [currentUser?.name, initial?.id]);
   useEffect(() => {
-    const accountTeam = String(currentUser?.team || "").trim();
-    if (!accountTeam) return;
+    const preferred = rememberedIdeaTeam(currentUser?.team);
+    if (!preferred) return;
     setDoc((prev) => {
-      if (prev?.submitterDepartment === accountTeam) return prev;
-      return { ...prev, submitterDepartment: accountTeam, teamIsLegacy: false };
+      if (String(prev?.submitterDepartment || "").trim()) return prev;
+      return { ...prev, submitterDepartment: preferred, teamIsLegacy: false };
     });
   }, [currentUser?.team, initial?.id]);
+
+  useEffect(() => {
+    const team = String(doc.submitterDepartment || "").trim();
+    if (!team) return;
+    try {
+      localStorage.setItem(LAST_TEAM_KEY, team);
+    } catch {
+      /* ignore */
+    }
+  }, [doc.submitterDepartment]);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
@@ -2858,9 +2890,7 @@ export default function PropositionForm({
           ) : (
             <select
               value={doc.submitterDepartment || currentUser?.team || ""}
-              disabled={
-                managerReviewRequestedOn(doc) && String(currentUser?.role || "") !== "ADMIN"
-              }
+              disabled={false}
               onChange={(e) => setTop("submitterDepartment", e.target.value)}
               aria-label="Your team"
             >
@@ -2873,12 +2903,11 @@ export default function PropositionForm({
             </select>
           )}
           <span className="field-helper">
+            {teamHeadHint ||
+              "Pick the team for this idea (you can change it any time). Reviewed by that team's business head."}
             {managerReviewRequestedOn(doc)
-              ? String(currentUser?.role || "") === "ADMIN"
-                ? "Manager review was requested — only ADMIN can change the team now."
-                : "Ask the admin to change it."
-              : teamHeadHint ||
-                "Pick the team for this idea (defaults to your account team). Reviewed by that team's business head."}
+              ? " A pending manager review will be re-routed if you change the team."
+              : ""}
           </span>
         </label>
       </section>
@@ -3046,10 +3075,12 @@ export default function PropositionForm({
                 <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
                 {spec.key === "f2" && doc.division ? (
                   <p className="prop-filter-sub">
-                    {doc.division === "International Business" &&
-                    doc.researchFindings?.divisionDetection?.respectiveDivision
-                      ? `International Business · respective division ${doc.researchFindings.divisionDetection.respectiveDivision} · locked minimum (INR at group level)`
-                      : `Division: ${doc.division} · minimum net margin locked`}
+                    {doc.researchFindings?.divisionDetection?.needsConfirmation
+                      ? `Detected: ${doc.division || "—"} (to be confirmed)`
+                      : doc.division === "International Business" &&
+                          doc.researchFindings?.divisionDetection?.respectiveDivision
+                        ? `International Business · respective division ${doc.researchFindings.divisionDetection.respectiveDivision} · locked minimum (INR at group level)`
+                        : `Division: ${doc.division}`}
                     {currentUser?.role === "ADMIN" && doc.researchFindings?.divisionDetection?.source
                       ? ` · source ${doc.researchFindings.divisionDetection.source}${
                           doc.researchFindings.divisionDetection.reason
@@ -3059,34 +3090,56 @@ export default function PropositionForm({
                       : ""}
                   </p>
                 ) : null}
-                {spec.key === "f2" && String(values.netMarginSource || doc.f2?.netMarginSource || "").toLowerCase() === "ai" ? (
-                  <p className="unlock-hint">
-                    This net margin was filled by an older AI estimate.{" "}
-                    <button
-                      type="button"
-                      className="ghost"
-                      disabled={Boolean(refreshingField) || saving}
-                      onClick={async () => {
-                        try {
-                          const res = await fetch(
-                            `/api/propositions/${encodeURIComponent(doc.id)}/reset-margin-floor`,
-                            { method: "POST", credentials: "include" }
-                          );
-                          const data = await res.json().catch(() => ({}));
-                          if (!res.ok) throw new Error(data.error || "Could not reset margin.");
-                          if (data.proposition) setDoc(mergeProposition(data.proposition));
-                          if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
-                        } catch (e) {
-                          setLocalError(e.message || "Could not reset margin.");
-                        }
-                      }}
-                    >
-                      Reset to the division minimum
-                    </button>
-                  </p>
-                ) : null}
-                {spec.key === "f2" && (values.netMarginLockedLabel || doc.f2?.netMarginLockedLabel) ? (
-                  <p className="prop-filter-sub">{values.netMarginLockedLabel || doc.f2?.netMarginLockedLabel}</p>
+                {spec.key === "f2" ? (
+                  <div className="margin-hint-block">
+                    <p className="prop-filter-sub">{formatMinimumMarginHint(doc)}</p>
+                    {doc.researchFindings?.divisionDetection?.reason || doc.division ? (
+                      <details className="why-division">
+                        <summary>Why this division?</summary>
+                        <p>
+                          {doc.researchFindings?.divisionDetection?.needsConfirmation
+                            ? `Detected: ${doc.division || "—"} (to be confirmed). `
+                            : ""}
+                          {doc.researchFindings?.divisionDetection?.reason ||
+                            (doc.division ? `Stored division: ${doc.division}.` : "No division detected yet.")}
+                        </p>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={!propositionId || saving}
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(
+                                `/api/propositions/${encodeURIComponent(propositionId)}/request-division-review`,
+                                {
+                                  method: "POST",
+                                  credentials: "include",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    suggestion: "",
+                                    detected: doc.division || null,
+                                  }),
+                                }
+                              );
+                              const data = await res.json().catch(() => ({}));
+                              if (!res.ok) throw new Error(data.error || "Could not notify admin.");
+                              setLocalError("");
+                              window.alert(data.message || "Admin notified.");
+                            } catch (e) {
+                              setLocalError(e.message || "Could not notify admin.");
+                            }
+                          }}
+                        >
+                          Division looks wrong? Ask the admin to change it
+                        </button>
+                      </details>
+                    ) : null}
+                    {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, doc) ? (
+                      <p className="margin-below-warn">
+                        {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, doc)}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
               <div className="prop-status-wrap">

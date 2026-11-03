@@ -6,6 +6,7 @@ const DEFAULT_ROLES = ["BM", "CMI", "FINANCE", "R&D", "SALES", "PACKAGING", "BH 
 
 const TABS = [
   { id: "users", label: "Users" },
+  { id: "divisions", label: "Division queue" },
   { id: "roster", label: "Roster import" },
   { id: "audit", label: "Audit" },
 ];
@@ -30,6 +31,8 @@ export default function AdminUsersPage({ apiFetch }) {
   const [audit, setAudit] = useState([]);
   const [leadEmail, setLeadEmail] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
+  const [divisionQueue, setDivisionQueue] = useState([]);
+  const [divisionBusy, setDivisionBusy] = useState("");
 
   const loadUsers = useCallback(async () => {
     setError("");
@@ -68,6 +71,17 @@ export default function AdminUsersPage({ apiFetch }) {
     }
   }, [apiFetch]);
 
+  const loadDivisionQueue = useCallback(async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/division-confirmations");
+      setDivisionQueue(data.items || []);
+    } catch (e) {
+      setError(e.message || "Could not load division queue.");
+      setDivisionQueue([]);
+    }
+  }, [apiFetch]);
+
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
@@ -75,7 +89,8 @@ export default function AdminUsersPage({ apiFetch }) {
   useEffect(() => {
     if (tab === "roster") loadRoster();
     if (tab === "audit") loadAudit();
-  }, [tab, loadRoster, loadAudit]);
+    if (tab === "divisions") loadDivisionQueue();
+  }, [tab, loadRoster, loadAudit, loadDivisionQueue]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -130,7 +145,7 @@ export default function AdminUsersPage({ apiFetch }) {
       setError("Preview must be clean before applying.");
       return;
     }
-    if (!window.confirm("Apply this roster import? Teams on matching users will be updated.")) return;
+    if (!window.confirm("Apply this roster import? Roster rows update; account default teams stay as each person set them.")) return;
     setError("");
     try {
       await apiFetch("/api/admin/users/roster/apply", {
@@ -187,6 +202,101 @@ export default function AdminUsersPage({ apiFetch }) {
         ))}
       </div>
       {error ? <p className="admin-error">{error}</p> : null}
+
+      {tab === "divisions" ? (
+        <section className="admin-panel">
+          <p className="admin-hint">
+            Ideas where AI and keyword rules disagreed, confidence was low, or someone reported a wrong
+            division. Only ADMIN can set the division.
+          </p>
+          <button type="button" className="ghost" onClick={loadDivisionQueue}>
+            Refresh
+          </button>
+          {!divisionQueue.length ? (
+            <p>No ideas need division confirmation.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Idea</th>
+                  <th>Detected</th>
+                  <th>Rules</th>
+                  <th>Confidence</th>
+                  <th>Reason</th>
+                  <th>Correct to</th>
+                </tr>
+              </thead>
+              <tbody>
+                {divisionQueue.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <code>{row.id}</code>
+                      <div>{row.name || "(untitled)"}</div>
+                      {row.divisionReviewRequested ? (
+                        <span className="admin-pill">Reporter asked</span>
+                      ) : null}
+                    </td>
+                    <td>{row.division || "—"}</td>
+                    <td>{row.rulesDivision || "—"}</td>
+                    <td>{row.confidence || "—"}</td>
+                    <td className="admin-reason">{row.reason || "—"}</td>
+                    <td>
+                      <select
+                        aria-label={`Correct division for ${row.id}`}
+                        disabled={divisionBusy === row.id}
+                        defaultValue=""
+                        onChange={async (e) => {
+                          const division = e.target.value;
+                          if (!division) return;
+                          setDivisionBusy(row.id);
+                          setError("");
+                          try {
+                            await apiFetch(
+                              `/api/propositions/${encodeURIComponent(row.id)}/correct-division`,
+                              {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  division,
+                                  reason: `ADMIN confirmed from division queue (${row.division || "none"} → ${division})`,
+                                }),
+                              }
+                            );
+                            await loadDivisionQueue();
+                          } catch (err) {
+                            setError(err.message || "Could not correct division.");
+                          } finally {
+                            setDivisionBusy("");
+                          }
+                        }}
+                      >
+                        <option value="">Set division…</option>
+                        {[
+                          "Professional Care",
+                          "Personal Care",
+                          "Foods",
+                          "Snacks",
+                          "Bakery",
+                          "Ambient Dairy",
+                          "Beverages",
+                          "Dairy Craft — Non-UHT",
+                          "Cold Chain Business",
+                          "Dairy Craft — UHT Milk",
+                          "International Business",
+                        ].map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      ) : null}
 
       {tab === "users" ? (
         <section className="admin-panel">
