@@ -152,16 +152,6 @@ export default function DivisionSettings({ apiFetch }) {
         ) : (
           <div className="div-table-wrap">
             <table className="div-table">
-              <thead>
-                <tr>
-                  <th>Division</th>
-                  <th>Margin floor % · Locked in code</th>
-                  <th>Revenue ₹ Cr</th>
-                  <th>Ecom/MT ₹ Cr</th>
-                  <th>Note</th>
-                  <th />
-                </tr>
-              </thead>
               <tbody>
                 {rows.map((row) => {
                   const d = drafts[row.id] || blankDraft();

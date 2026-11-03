@@ -36,7 +36,8 @@ const saved = await saveDivisionThreshold(foods.id, {
 assert.equal(saved.note, "locked-margins-test");
 
 const settingsSrc = readFileSync(new URL("../src/DivisionSettings.jsx", import.meta.url), "utf8");
-assert.match(settingsSrc, /Locked in code/);
+assert.match(settingsSrc, /locked in code/i);
+assert.doesNotMatch(settingsSrc, /<thead>/);
 assert.doesNotMatch(settingsSrc, /patchDraft\(row\.id, "min_net_margin_pct"/);
 
 const listed = await listDivisionThresholdRows();
