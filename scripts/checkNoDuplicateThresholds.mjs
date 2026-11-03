@@ -18,6 +18,9 @@ const ALLOWLIST = new Set([
   "lib/llmCatalog.js",
   "lib/gstRate.js",
   "src/specContent.js",
+  "lib/divisionSeed.js", // mirrors DIVISION_MIN_NET_MARGIN_PCT via import
+  "lib/divisionMargin.js",
+  "lib/divisionConfig.js",
 ]);
 
 const PATTERNS = [
@@ -29,6 +32,9 @@ const PATTERNS = [
   { label: "1 (10g band)", re: /(?:<=|<)\s*1(?:\.0)?\b(?!\d)/g },
   { label: "12 (100g band)", re: /(?:[<>]=?|===?|!==?)\s*12\b|\b12\s*(?:[<>]=?|===?|!==?)/g },
   { label: "2000", re: /Math\.min\(\s*2000\b|\bfetchPropositionList\(\s*2000\b/g },
+  // Division minimum margins — only lockedConstants may declare these for margin purposes
+  { label: "margin 35", re: /min_net_margin_pct\s*:\s*35\b|Professional Care["']?\s*:\s*60\b/g },
+  { label: "margin 50", re: /min_net_margin_pct\s*:\s*50\b|"Personal Care"\s*:\s*50\b/g },
 ];
 
 function walk(dir, out = []) {

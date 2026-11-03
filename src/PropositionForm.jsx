@@ -75,8 +75,8 @@ import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
     return division
-      ? `path to the ${division} division floor (v4)`
-      : "division not yet determined — no floor until matched (v4)";
+      ? `Locked minimum for ${division} — you may raise net margin; price test is Filter 3 (MRP must sit in the safe range). International Business uses INR at group level via the respective division.`
+      : "Pending: division not determined — Filter 2 stays unfinished until ADMIN assigns a locked division";
   }
   if (spec.key === "f5") {
     return division
@@ -90,7 +90,9 @@ function fieldHelper(field) {
   const parts = [];
   if (field.helper) parts.push(field.helper);
   if (typeof field.helperFromDivision === "function") {
-    parts.push("Division floor: matched automatically on first Submit (v4, non-negotiable)");
+    parts.push(
+      "Minimum net margin is assigned from the locked division table. You may enter a higher value; below the minimum reads Below floor. With the minimum assigned, Filter 3 tests that MRP sits inside the safe range."
+    );
   }
   return parts.join(" ");
 }
@@ -2828,6 +2830,50 @@ export default function PropositionForm({
                   {spec.title}
                 </h2>
                 <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
+                {spec.key === "f2" && doc.division ? (
+                  <p className="prop-filter-sub">
+                    {doc.division === "International Business" &&
+                    doc.researchFindings?.divisionDetection?.respectiveDivision
+                      ? `International Business · respective division ${doc.researchFindings.divisionDetection.respectiveDivision} · locked minimum (INR at group level)`
+                      : `Division: ${doc.division} · minimum net margin locked`}
+                    {currentUser?.role === "ADMIN" && doc.researchFindings?.divisionDetection?.source
+                      ? ` · source ${doc.researchFindings.divisionDetection.source}${
+                          doc.researchFindings.divisionDetection.reason
+                            ? ` — ${doc.researchFindings.divisionDetection.reason}`
+                            : ""
+                        }`
+                      : ""}
+                  </p>
+                ) : null}
+                {spec.key === "f2" && String(values.netMarginSource || doc.f2?.netMarginSource || "").toLowerCase() === "ai" ? (
+                  <p className="unlock-hint">
+                    This net margin was filled by an older AI estimate.{" "}
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={Boolean(refreshingField) || saving}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(
+                            `/api/propositions/${encodeURIComponent(doc.id)}/reset-margin-floor`,
+                            { method: "POST", credentials: "include" }
+                          );
+                          const data = await res.json().catch(() => ({}));
+                          if (!res.ok) throw new Error(data.error || "Could not reset margin.");
+                          if (data.proposition) setDoc(mergeProposition(data.proposition));
+                          if (data.advisoryChecks) setAdvisoryChecks(data.advisoryChecks);
+                        } catch (e) {
+                          setLocalError(e.message || "Could not reset margin.");
+                        }
+                      }}
+                    >
+                      Reset to the division minimum
+                    </button>
+                  </p>
+                ) : null}
+                {spec.key === "f2" && (values.netMarginLockedLabel || doc.f2?.netMarginLockedLabel) ? (
+                  <p className="prop-filter-sub">{values.netMarginLockedLabel || doc.f2?.netMarginLockedLabel}</p>
+                ) : null}
               </div>
               <div className="prop-status-wrap">
                 {filterScore.total ? (
@@ -2939,7 +2985,7 @@ export default function PropositionForm({
                         : undefined
                     }
                     onRefresh={
-                      (spec.key === "f2" && ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
+                      (spec.key === "f2" && ["cogsAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
                       (spec.key === "f3" && field.key === "marginElasticity") ||
                       (spec.key === "f4" && field.key === "techShiftRisk")
                         ? () => handleRefreshField(field.key)

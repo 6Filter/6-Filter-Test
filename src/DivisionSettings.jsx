@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Save } from "lucide-react";
+import { DIVISION_MIN_NET_MARGIN_PCT, minNetMarginForDivision } from "../lib/lockedConstants.js";
 
 function blankDraft() {
   return {
     division_name: "",
-    min_net_margin_pct: "",
     revenue_target_all_channels_cr: "",
     revenue_target_ecom_mt_cr: "",
     note: "",
@@ -20,6 +20,14 @@ function fromInput(value) {
   if (!s) return null;
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
+}
+
+function lockedFloorLabel(divisionName) {
+  const floor = minNetMarginForDivision(divisionName);
+  if (floor == null && Object.prototype.hasOwnProperty.call(DIVISION_MIN_NET_MARGIN_PCT, String(divisionName || "").trim())) {
+    return "Per respective division";
+  }
+  return floor == null ? "—" : String(floor);
 }
 
 export default function DivisionSettings({ apiFetch }) {
@@ -45,7 +53,6 @@ export default function DivisionSettings({ apiFetch }) {
       for (const row of list) {
         next[row.id] = {
           division_name: row.division_name || "",
-          min_net_margin_pct: toInput(row.min_net_margin_pct),
           revenue_target_all_channels_cr: toInput(row.revenue_target_all_channels_cr),
           revenue_target_ecom_mt_cr: toInput(row.revenue_target_ecom_mt_cr),
           note: row.note || "",
@@ -79,7 +86,6 @@ export default function DivisionSettings({ apiFetch }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           division_name: draft.division_name,
-          min_net_margin_pct: fromInput(draft.min_net_margin_pct),
           revenue_target_all_channels_cr: fromInput(draft.revenue_target_all_channels_cr),
           revenue_target_ecom_mt_cr: fromInput(draft.revenue_target_ecom_mt_cr),
           note: draft.note,
@@ -111,7 +117,6 @@ export default function DivisionSettings({ apiFetch }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           division_name: newRow.division_name,
-          min_net_margin_pct: fromInput(newRow.min_net_margin_pct),
           revenue_target_all_channels_cr: fromInput(newRow.revenue_target_all_channels_cr),
           revenue_target_ecom_mt_cr: fromInput(newRow.revenue_target_ecom_mt_cr),
           note: newRow.note,
@@ -135,9 +140,8 @@ export default function DivisionSettings({ apiFetch }) {
       <section className="panel div-panel">
         <div className="panel-tab">Settings · Division thresholds</div>
         <p className="div-lede">
-          Margin floors and year-3 revenue targets used by F2 and F5. Edits apply within about a
-          minute (cache TTL) — no redeploy. Anyone who can reach the app can edit these until auth
-          ships.
+          Margin floors are locked in code and used by F2. Revenue targets (year-3) stay editable here and
+          apply within about a minute (cache TTL) — no redeploy.
         </p>
         {error ? <div className="div-err">{error}</div> : null}
         {flash ? <div className="div-ok">{flash}</div> : null}
@@ -151,7 +155,7 @@ export default function DivisionSettings({ apiFetch }) {
               <thead>
                 <tr>
                   <th>Division</th>
-                  <th>Margin floor %</th>
+                  <th>Margin floor % · Locked in code</th>
                   <th>Revenue ₹ Cr</th>
                   <th>Ecom/MT ₹ Cr</th>
                   <th>Note</th>
@@ -171,13 +175,9 @@ export default function DivisionSettings({ apiFetch }) {
                         />
                       </td>
                       <td>
-                        <input
-                          inputMode="decimal"
-                          value={d.min_net_margin_pct}
-                          onChange={(e) => patchDraft(row.id, "min_net_margin_pct", e.target.value)}
-                          placeholder="—"
-                          aria-label={`${row.division_name} margin floor`}
-                        />
+                        <span className="div-locked" title="Minimum net margin is locked in code">
+                          {lockedFloorLabel(row.division_name)}
+                        </span>
                       </td>
                       <td>
                         <input
@@ -235,14 +235,7 @@ export default function DivisionSettings({ apiFetch }) {
                     />
                   </td>
                   <td>
-                    <input
-                      inputMode="decimal"
-                      value={newRow.min_net_margin_pct}
-                      onChange={(e) =>
-                        setNewRow((p) => ({ ...p, min_net_margin_pct: e.target.value }))
-                      }
-                      placeholder="—"
-                    />
+                    <span className="div-locked">{lockedFloorLabel(newRow.division_name)}</span>
                   </td>
                   <td>
                     <input
@@ -305,6 +298,8 @@ const CSS = `
 .div-table input{width:100%;min-width:72px;background:#FFFDF8;border:1px solid #E6E1D1;
   border-radius:10px;color:#16202B;caret-color:#16202B;font-family:var(--fd);font-size:13px;padding:8px 10px;}
 .div-table input::placeholder{color:#8C8574;opacity:1;}
+.div-locked{display:inline-block;min-width:72px;padding:8px 10px;border-radius:10px;background:#F1ECDD;
+  color:#16202B;font-family:var(--fm);font-size:12.5px;font-weight:600;}
 .div-save{display:inline-flex;align-items:center;gap:6px;background:#16202B;color:#FFFDF8;border:none;
   border-radius:999px;padding:8px 12px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--fd);
   white-space:nowrap;}

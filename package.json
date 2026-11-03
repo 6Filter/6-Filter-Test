@@ -11,7 +11,7 @@
     "seed-user": "node scripts/seedUser.js",
     "set-role": "node scripts/setRole.mjs",
     "issue-login-code": "node scripts/issueLoginCode.mjs",
-    "check:locks": "node scripts/checkNoDuplicateThresholds.mjs",
+    "check:locks": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/checkDivisionFloorsLocked.mjs",
     "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && npm run build && node scripts/checkClientBundle.mjs && node scripts/run-all-tests.mjs && node scripts/testPostgresNoClobber.mjs",
     "test:postgres": "node scripts/testPostgresNoClobber.mjs",
     "scratch-postgres": "node scripts/startScratchPostgres.mjs"
