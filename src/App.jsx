@@ -573,6 +573,7 @@ function hasFullScorecard(r) {
 
 export default function App() {
   const [sessionUser, setSessionUser] = useState(null);
+  const [changingOwnTeam, setChangingOwnTeam] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [teamSession, setTeamSession] = useState(null); // { department, unlockedAt }
@@ -1328,14 +1329,17 @@ export default function App() {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
-  if (authRequired && sessionUser?.needsTeam) {
+  if (authRequired && (sessionUser?.needsTeam || changingOwnTeam)) {
     const pendingIdea = takeStashedDeepLinkIdeaId();
     if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return (
       <LoginScreen
         initialUser={sessionUser}
         startAtTeam
-        onLogin={(user) => setSessionUser(user)}
+        onLogin={(user) => {
+          setSessionUser(user);
+          setChangingOwnTeam(false);
+        }}
       />
     );
   }
@@ -1437,7 +1441,17 @@ export default function App() {
           <span>
             {sessionUser.name}
             <em>{sessionUser.role}</em>
+            {sessionUser.team ? <em title="Default team">{sessionUser.team}</em> : null}
           </span>
+          <button
+            type="button"
+            className="ghost sq"
+            onClick={() => setChangingOwnTeam(true)}
+            aria-label="My team"
+            title="Change my default team"
+          >
+            My team
+          </button>
           <button type="button" className="ghost sq" onClick={signOut} aria-label="Sign out">
             <LogOut size={14} />
           </button>

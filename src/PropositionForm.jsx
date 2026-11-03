@@ -9,8 +9,10 @@ import {
   VERDICT_NOTE_FIELD,
   hasSubmitterIdentity,
   mergeProposition,
+  SUBMITTER_DEPARTMENTS,
+  isCanonicalTeam,
 } from "../lib/propositionFields.js";
-import { canWriteField, ownerLabel, ownershipBanner } from "../lib/fieldOwnership.js";
+import { managerReviewRequestedOn } from "../lib/logStatus.js";
 import { patchIgnoredKeys } from "../lib/ignoredKeyRefresh.js";
 import {
   canProceedToProofUpload,
@@ -241,9 +243,8 @@ function formatSuggestion(field, value) {
   return s.length > 180 ? `${s.slice(0, 177)}…` : s;
 }
 
-function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, currentValue) {
+function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, _currentValue) {
   if (SUGGEST_BLOCKLIST.has(fieldKey)) return null;
-  if (!isEmptyField(currentValue)) return null;
   const path = filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
   if (dismissed[path]) return null;
   const raw = filterKey
@@ -259,6 +260,76 @@ function AiWandMark({ size = 13 }) {
       <Wand2 size={size} strokeWidth={2.2} />
     </span>
   );
+}
+
+function autofillStatusFor(doc, fieldPath) {
+  const root =
+    (doc?.autofillStatus && typeof doc.autofillStatus === "object" && doc.autofillStatus) ||
+    (doc?.researchFindings?.autofillStatus &&
+      typeof doc.researchFindings.autofillStatus === "object" &&
+      doc.researchFindings.autofillStatus) ||
+    null;
+  if (!root || !fieldPath) return null;
+  return root[fieldPath] || root[fieldPath.replace(/^\./, "")] || null;
+}
+
+function mrpMissingReason(doc) {
+  const f2 = doc?.f2 || {};
+  const missing = [];
+  if (f2.cogsAtScale == null || String(f2.cogsAtScale).trim() === "") missing.push("COGS");
+  if (f2.netMarginAtScale == null || String(f2.netMarginAtScale).trim() === "") missing.push("margin");
+  if (f2.gstRatePct == null || String(f2.gstRatePct).trim() === "") missing.push("GST");
+  if (!missing.length) return "";
+  return `Needs ${missing.join(", ")} to compute MRP`;
+}
+
+function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, canRestore }) {
+  const entry = autofillStatusFor(doc, fieldPath);
+  if (editedName) {
+    const suggested = entry?.aiSuggested;
+    return (
+      <div className="autofill-status" data-tone="edited">
+        Edited by {editedName}
+        {suggested != null && suggested !== "" ? (
+          <span className="autofill-ai-kept">
+            {" "}
+            (AI suggested {typeof suggested === "number" ? `₹${suggested}` : String(suggested).slice(0, 48)})
+          </span>
+        ) : null}
+        {canRestore && typeof onRestore === "function" ? (
+          <button type="button" className="ghost-link" onClick={onRestore}>
+            Restore AI value
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  if (entry && (entry.reason || entry.status === "skipped" || entry.status === "unavailable")) {
+    const reason = String(entry.reason || entry.message || "The AI had no figure, enter it manually.").trim();
+    return (
+      <div className="autofill-status" data-tone="na">
+        Not available — {reason}
+      </div>
+    );
+  }
+  if (fieldPath === "f2.mrpInr" && !aiSourced && !(entry?.status === "filled")) {
+    const mrpReason = mrpMissingReason(doc);
+    if (mrpReason) {
+      return (
+        <div className="autofill-status" data-tone="na">
+          Not available — {mrpReason}
+        </div>
+      );
+    }
+  }
+  if (aiSourced || entry?.status === "filled") {
+    return (
+      <div className="autofill-status" data-tone="ai">
+        Filled by AI
+      </div>
+    );
+  }
+  return null;
 }
 
 function SuggestionChip({ field, suggestion, basis, onAccept, onDismiss }) {
@@ -389,21 +460,25 @@ function FieldControl({
   fileBusy = false,
   onRefresh,
   refreshing = false,
+  ideaDoc = null,
+  editedName = "",
+  onRestoreAi,
+  canRestoreAi = false,
 }) {
   const fileRef = useRef(null);
   if (field.type === "mitigation-map" || field.type === "range-override") return null;
-  const helper = inactive && inactiveHint ? inactiveHint : fieldHelper(field);
-  const owners = Array.isArray(field.owners) ? field.owners : [];
+  const ownerHint = Array.isArray(field.owners) && field.owners.length
+    ? `Usually provided by ${field.owners.join(" / ")}`
+    : "";
+  const helperParts = [];
+  if (inactive && inactiveHint) helperParts.push(inactiveHint);
+  else if (fieldHelper(field)) helperParts.push(fieldHelper(field));
+  if (ownerHint) helperParts.push(ownerHint);
+  const helper = helperParts.join(" ");
   const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range" || field.type === "computed-risk";
-  const roleLocked = Boolean(currentUser && !canWriteField(currentUser.role, field.key));
-  const locked = roleLocked || inactive;
-  const lockTitle = roleLocked
-    ? `Owned by ${ownerLabel(field.key) || owners.join(" / ") || "another role"}`
-    : inactive
-      ? inactiveHint || "Name a benchmark to declare a gap."
-      : undefined;
-  const f2AutoKeys = new Set(["cogsAtScale", "netMarginAtScale", "gstRatePct", "mrpInr", "grammage", "qcomTrajectory", "marginElasticity", "techShiftRisk"]);
-  const showChip = !locked && suggestion != null && !f2AutoKeys.has(field.key);
+  const locked = inactive;
+  const lockTitle = inactive ? inactiveHint || "Name a benchmark to declare a gap." : undefined;
+  const showChip = suggestion != null;
   const chip =
     showChip ? (
       <SuggestionChip
@@ -505,7 +580,15 @@ function FieldControl({
             ) : null}
           </>
         )}
-        {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        <AutofillProvenance
+        fieldPath={fieldPath}
+        doc={ideaDoc}
+        aiSourced={aiSourced}
+        editedName={editedName}
+        onRestore={onRestoreAi}
+        canRestore={canRestoreAi}
+      />
+      {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
       </div>
@@ -591,7 +674,15 @@ function FieldControl({
             />
           </label>
         </div>
-        {aiSourced && !loading ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+        <AutofillProvenance
+          fieldPath={fieldPath}
+          doc={ideaDoc}
+          aiSourced={aiSourced}
+          editedName={editedName}
+          onRestore={onRestoreAi}
+          canRestore={canRestoreAi}
+        />
+        {aiSourced && !editedName && !loading ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {!loading && liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
       </div>
@@ -681,7 +772,15 @@ function FieldControl({
         </span>
         {input}
       </label>
-      {aiSourced ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+      <AutofillProvenance
+        fieldPath={fieldPath}
+        doc={ideaDoc}
+        aiSourced={aiSourced}
+        editedName={editedName}
+        onRestore={onRestoreAi}
+        canRestore={canRestoreAi}
+      />
+      {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
       {taxNotes}
       {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
@@ -1534,7 +1633,9 @@ export default function PropositionForm({
   const [managerComment, setManagerComment] = useState("");
   const [managerRejectReason, setManagerRejectReason] = useState("");
   const [reviewAnnounce, setReviewAnnounce] = useState("");
+  const [teamHeadHint, setTeamHeadHint] = useState("");
   const [aiSourced, setAiSourced] = useState({});
+  const [editedFields, setEditedFields] = useState({});
   const [mrpBaseInr, setMrpBaseInr] = useState(null);
   const [mrpFinalInr, setMrpFinalInr] = useState(null);
   const [researchKeyAtRun, setResearchKeyAtRun] = useState(() =>
@@ -1855,6 +1956,37 @@ export default function PropositionForm({
   }, []);
 
   useEffect(() => {
+    const team = String(doc.submitterDepartment || "").trim();
+    if (!propositionId || !team || managerReviewRequestedOn(doc)) {
+      setTeamHeadHint("");
+      return undefined;
+    }
+    const ctrl = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/request-manager-review`, {
+          method: "POST",
+          credentials: "include",
+          signal: ctrl.signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preview: true, team }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || ctrl.signal.aborted) return;
+        const names = Array.isArray(data.recipients)
+          ? data.recipients.map((r) => r.name || r.email).filter(Boolean)
+          : [];
+        if (names.length === 1) setTeamHeadHint(`Reviewed by ${names[0]}`);
+        else if (names.length > 1) setTeamHeadHint(`Reviewed by ${names.join(", ")}`);
+        else setTeamHeadHint(String(data.announce || "").replace(/^Business heads?:\s*/i, "Reviewed by ") || "");
+      } catch {
+        if (!ctrl.signal.aborted) setTeamHeadHint("");
+      }
+    })();
+    return () => ctrl.abort();
+  }, [propositionId, doc.submitterDepartment, doc.managerReview?.requestedAt]);
+
+  useEffect(() => {
     if (!propositionId) return undefined;
     const ctrl = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -1898,6 +2030,8 @@ export default function PropositionForm({
 
   function markEdited(filterKey, fieldKey) {
     const path = sourcedPath(filterKey, fieldKey);
+    const by = String(currentUser?.name || currentUser?.email || "you").trim() || "you";
+    setEditedFields((prev) => ({ ...prev, [path]: by }));
     setAiSourced((prev) => {
       if (!prev[path]) return prev;
       const next = { ...prev };
@@ -1906,10 +2040,30 @@ export default function PropositionForm({
     });
   }
 
+  function storedSuggestionValue(filterKey, fieldKey) {
+    if (!aiSuggestions || typeof aiSuggestions !== "object") return null;
+    if (filterKey) return aiSuggestions[filterKey]?.[fieldKey] ?? null;
+    return aiSuggestions.top?.[fieldKey] ?? aiSuggestions[fieldKey] ?? null;
+  }
+
+  function restoreAiValue(filterKey, fieldKey) {
+    const raw = storedSuggestionValue(filterKey, fieldKey);
+    if (raw == null) return;
+    const path = sourcedPath(filterKey, fieldKey);
+    if (filterKey) setFilter(filterKey, fieldKey, raw);
+    else setTop(fieldKey, raw);
+    setEditedFields((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
+    setAiSourced((prev) => ({ ...prev, [path]: true }));
+  }
+
   function handleMrpInput(value) {
     mrpTouchedByHuman.current = true;
     noteEdit();
-    setAiSourced((prev) => ({ ...prev, [sourcedPath("f2", "mrpInr")]: false }));
+    markEdited("f2", "mrpInr");
     setDoc((prev) => ({
       ...prev,
       f2: { ...(prev.f2 || {}), mrpInr: value },
@@ -1958,6 +2112,19 @@ export default function PropositionForm({
 
   async function handleRefreshField(fieldKey) {
     if (!propositionId || refreshingField || saving) return;
+    const pathGuess = fieldKey.includes(".") ? fieldKey : `f2.${fieldKey}`;
+    const editedName = editedFields[pathGuess] || editedFields[fieldKey] || "";
+    if (editedName) {
+      const current =
+        pathGuess.includes(".")
+          ? docRef.current?.[pathGuess.split(".")[0]]?.[pathGuess.split(".")[1]]
+          : docRef.current?.[fieldKey];
+      const stored = storedSuggestionValue(pathGuess.split(".")[0] || "f2", pathGuess.split(".")[1] || fieldKey);
+      const ok = window.confirm(
+        `You edited this field (${editedName}). Re-run will replace your value.\n\nCurrent: ${String(current ?? "(empty)")}\nAI estimate: ${String(stored ?? "(new run)")}\n\nReplace your edit?`
+      );
+      if (!ok) return;
+    }
     setRefreshingField(fieldKey);
     setLocalError("");
     try {
@@ -1978,13 +2145,20 @@ export default function PropositionForm({
       }
       const filterKey = data.filterKey;
       const nextKey = data.fieldKey || fieldKey;
+      const path = sourcedPath(filterKey, nextKey);
       noteEdit();
+      setEditedFields((prev) => {
+        if (!prev[path]) return prev;
+        const next = { ...prev };
+        delete next[path];
+        return next;
+      });
       setDoc((prev) => {
         const nextFilter = { ...(prev[filterKey] || {}), [nextKey]: data.value };
         if (data.extra && typeof data.extra === "object") Object.assign(nextFilter, data.extra);
         return { ...prev, [filterKey]: nextFilter };
       });
-      setAiSourced((prev) => ({ ...prev, [sourcedPath(filterKey, nextKey)]: true }));
+      setAiSourced((prev) => ({ ...prev, [path]: true }));
     } catch (e) {
       setLocalError(e.message || "Could not re-run that estimate.");
     } finally {
@@ -2191,6 +2365,18 @@ export default function PropositionForm({
       suggestionBasis,
       onAcceptSuggestion: suggestion == null ? undefined : () => acceptSuggestion(filterKey, field.key, suggestion),
       onDismissSuggestion: () => dismissSuggestion(filterKey, field.key),
+    };
+  }
+
+  function fieldControlExtras(filterKey, field) {
+    const path = sourcedPath(filterKey, field.key);
+    const editedName = editedFields[path] || "";
+    const canRestore = storedSuggestionValue(filterKey, field.key) != null && Boolean(editedName);
+    return {
+      ideaDoc: doc,
+      editedName,
+      canRestoreAi: canRestore,
+      onRestoreAi: canRestore ? () => restoreAiValue(filterKey, field.key) : undefined,
     };
   }
 
@@ -2645,7 +2831,6 @@ export default function PropositionForm({
             </a>
           ))}
         </nav>
-        <p className="ownership-note">{ownershipBanner(currentUser?.role)}</p>
         <p className="draft-saved mono">
           {Number(doc.version) > 1 || doc.updatedAt
             ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
@@ -2663,25 +2848,57 @@ export default function PropositionForm({
             onChange={(v) => setTop(field.key, v)}
             currentUser={currentUser}
             aiSourced={false}
+            {...fieldControlExtras("", field)}
           />
         ))}
         <label className="field">
           <span className="field-label">Your team</span>
-          <input
-            value={
-              currentUser?.team ||
-              doc.submitterDepartment ||
-              (doc.teamIsLegacy ? `Legacy: ${doc.submitterDepartment}` : "")
-            }
-            disabled
-            readOnly
-            aria-label="Your team"
-          />
+          {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? (
+            <input value={`Legacy: ${doc.submitterDepartment}`} disabled readOnly aria-label="Your team" />
+          ) : (
+            <select
+              value={doc.submitterDepartment || currentUser?.team || ""}
+              disabled={
+                managerReviewRequestedOn(doc) && String(currentUser?.role || "") !== "ADMIN"
+              }
+              onChange={(e) => setTop("submitterDepartment", e.target.value)}
+              aria-label="Your team"
+            >
+              <option value="">Select team…</option>
+              {SUBMITTER_DEPARTMENTS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="field-helper">
-            From your account. Only an ADMIN can change it.
+            {managerReviewRequestedOn(doc)
+              ? String(currentUser?.role || "") === "ADMIN"
+                ? "Manager review was requested — only ADMIN can change the team now."
+                : "Ask the admin to change it."
+              : teamHeadHint ||
+                "Pick the team for this idea (defaults to your account team). Reviewed by that team's business head."}
           </span>
         </label>
       </section>
+
+      {String(currentUser?.role || "") === "ADMIN" &&
+      (doc.researchFindings?.autofillReport?.fields || doc.researchFindings?.autofillStatus) ? (
+        <details className="ai-fill-report">
+          <summary>AI fill report</summary>
+          <ul>
+            {Object.entries(
+              doc.researchFindings?.autofillReport?.fields || doc.researchFindings?.autofillStatus || {}
+            ).map(([path, entry]) => (
+              <li key={path}>
+                <code>{path}</code>: {entry?.status || "?"}
+                {entry?.reason ? ` — ${entry.reason}` : ""}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       <section id="the-proposition" className="prop-form-hero">
         <h1>Start with the idea</h1>
@@ -2689,7 +2906,6 @@ export default function PropositionForm({
         <input
           placeholder="Enter the proposition name — e.g. Herbal cooling hair oil"
           value={doc.name || ""}
-          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "name"))}
           onChange={(e) => setTop("name", e.target.value)}
           aria-label="Proposition name"
         />
@@ -2697,7 +2913,6 @@ export default function PropositionForm({
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
-          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "category"))}
           onChange={(e) => setTop("category", e.target.value)}
           aria-label="Category"
         />
@@ -2721,7 +2936,6 @@ export default function PropositionForm({
         <textarea
           placeholder="Describe the product idea, or attach a PDF, Word file, or image with the insight."
           value={doc.ideaDescription || ""}
-          disabled={Boolean(currentUser && !canWriteField(currentUser.role, "ideaDescription"))}
           onChange={(e) => setTop("ideaDescription", e.target.value)}
           aria-label="Idea / insight description"
           rows={4}
@@ -2748,7 +2962,7 @@ export default function PropositionForm({
           <button
             type="button"
             className="ghost"
-            disabled={conceptCardBusy || Boolean(currentUser && !canWriteField(currentUser.role, "ideaDescription"))}
+            disabled={conceptCardBusy}
             onClick={() => conceptCardRef.current?.click()}
           >
             {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
@@ -2887,7 +3101,7 @@ export default function PropositionForm({
                 {missingStep ? (
                   <>
                     <span className="check-pill" data-tone="watch">
-                      Research incomplete: {researchPlan.steps.length} steps did not run
+                      Research incomplete: {researchPlan.steps.join(", ")} did not run
                     </span>
                     <button
                       type="button"
@@ -2999,6 +3213,7 @@ export default function PropositionForm({
                         : ""
                     }
                     {...suggestionProps(spec.key, field, values[field.key])}
+                    {...fieldControlExtras(spec.key, field)}
                   />
                 )
               )}
@@ -3267,6 +3482,15 @@ export const PROP_CSS = `
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
 .prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
+.autofill-status{margin-top:4px;font-size:12px;line-height:1.35;color:#c4b5d8;}
+.autofill-status[data-tone="ai"]{color:#C9A0E8;}
+.autofill-status[data-tone="edited"]{color:#93c5fd;}
+.autofill-status[data-tone="na"]{color:#E8B563;}
+.autofill-status .ghost-link{margin-left:8px;font-size:12px;color:#a78bfa;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}
+.ai-fill-report{margin:12px 0 20px;padding:10px 12px;border:1px solid rgba(201,160,232,.25);border-radius:8px;font-size:12px;color:#c4b5d8;}
+.ai-fill-report summary{cursor:pointer;font-weight:600;color:#E8D5F5;}
+.ai-fill-report ul{margin:8px 0 0;padding-left:18px;}
+.ai-fill-report li{margin:4px 0;}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}

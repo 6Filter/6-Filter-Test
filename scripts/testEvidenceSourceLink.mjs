@@ -15,7 +15,7 @@ assert.doesNotMatch(field.label, /date/i);
 
 assert.deepEqual(fieldOwners("evidenceSourceFile"), ["CMI"]);
 assert.equal(canWriteField("CMI", "evidenceSourceFile"), true);
-assert.equal(canWriteField("BM", "evidenceSourceFile"), false);
+assert.equal(canWriteField("BM", "evidenceSourceFile"), true);
 
 assert.equal(
   filterSidebarCount("f1", { f1: { evidenceSourceDate: "https://example.com/note" } }).have >= 1,

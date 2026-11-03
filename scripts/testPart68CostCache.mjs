@@ -182,6 +182,8 @@ assert.match(apiSrc, /forceFresh: forceResearch/);
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /initial\?\.researchRunAt \|\| docRef\.current\?\.researchRunAt/);
 assert.match(formSrc, /Grammage \/ COGS \/ margin: same empty-field guard/);
-assert.match(formSrc, /f2AutoKeys[\s\S]*grammage/);
+// Part 124: AI suggestion chips stay visible on auto-filled fields (including grammage).
+assert.match(formSrc, /grammage/);
+assert.doesNotMatch(formSrc, /f2AutoKeys/);
 
 console.log("PASS Part 68 cost-estimate cache + grammage/MRP/score/classification determinism");
