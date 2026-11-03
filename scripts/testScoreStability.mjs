@@ -21,7 +21,7 @@ const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js")
 const idea = {
   name: "Score stability fixture",
   category: "Iced tea",
-  division: "",
+  division: "Beverages",
   ideaDescription: "Ready to drink tea for the score test.",
   submitterName: "Tester",
   submitterDepartment: "R&D",

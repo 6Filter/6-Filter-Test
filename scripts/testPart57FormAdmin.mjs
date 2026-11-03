@@ -23,6 +23,7 @@ assert.equal(isFormAdminCheck(startedF2.items.at(-1)), true);
 assert.notEqual(startedF2.checkLabel, "Not yet run");
 
 const signedSame = previewAdvisoryChecks({
+  division: "Personal Care",
   f2: {
     mrpInr: 120,
     grammage: "100 ml",
@@ -32,6 +33,7 @@ const signedSame = previewAdvisoryChecks({
   },
 }).f2;
 const unsignedSame = previewAdvisoryChecks({
+  division: "Personal Care",
   f2: {
     mrpInr: 120,
     grammage: "100 ml",

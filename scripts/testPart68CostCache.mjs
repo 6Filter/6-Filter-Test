@@ -18,7 +18,6 @@ import { researchHashFor } from "../lib/researchCache.js";
 
 const costResearch = {
   estimatedCogsPerUnitInr: 42,
-  estimatedNetMarginPct: 52,
   estimatedGstRatePct: 18,
   gstBasis: "Analysed by AI: personal-care stick at 18%.",
   estimatedGrammage: "50g",
@@ -44,7 +43,11 @@ assert.ok(findingsA.f2?.costEstimate, "research findings must store the F2 cost 
 assert.deepEqual(findingsA.f2.costEstimate, findingsB.f2.costEstimate);
 assert.equal(findingsA.f2.costEstimate.grammage, "50g");
 assert.equal(findingsA.f2.costEstimate.cogsAtScale, 42);
-assert.equal(findingsA.f2.costEstimate.netMarginAtScale, 52);
+assert.equal(
+  findingsA.f2.costEstimate.netMarginAtScale,
+  undefined,
+  "AI cost estimate must not carry net margin — locked division minimum assigns it"
+);
 assert.equal(findingsA.f2.costEstimate.gstRatePct, 18);
 
 const withoutCost = buildResearchFindings({
