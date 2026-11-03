@@ -3,7 +3,11 @@
  */
 import { createRoot } from "react-dom/client";
 import { PROPOSITION_TOP_FIELDS, SIX_FILTERS_FORM } from "../lib/propositionFields.js";
-import { exportElementToPdf, sanitizePdfFilenamePart } from "../lib/exportOutputPdf.js";
+import {
+  createOutputPdfDocument,
+  exportElementToPdf,
+  sanitizePdfFilenamePart,
+} from "../lib/exportOutputPdf.js";
 
 function waitFrames(n = 2) {
   return new Promise((resolve) => {
@@ -153,7 +157,9 @@ export async function exportPropositionInputsPdf(full, opts = {}) {
     return await exportElementToPdf(el, {
       filename: opts.filename || inputsPdfFilename(full),
       backgroundColor: "#FFFDF8",
-      save: opts.save !== false,
+      pdf: opts.pdf,
+      startNewIdea: Boolean(opts.startNewIdea),
+      save: opts.save !== false && !opts.pdf,
     });
   } finally {
     try {
@@ -163,4 +169,32 @@ export async function exportPropositionInputsPdf(full, opts = {}) {
     }
     host.remove();
   }
+}
+
+/**
+ * One combined PDF of entered inputs for every idea in the month list.
+ * @param {object[]} fullDocs
+ * @param {{ monthKey?: string }} [opts]
+ */
+export async function exportMonthInputsPdf(fullDocs, opts = {}) {
+  const docs = (Array.isArray(fullDocs) ? fullDocs : []).filter(
+    (d) => d && (d.id || d.name || d.ideaDescription)
+  );
+  if (!docs.length) {
+    throw new Error("No ideas in this month to export as inputs PDF.");
+  }
+  const pdf = createOutputPdfDocument();
+  let index = 0;
+  for (const full of docs) {
+    await exportPropositionInputsPdf(full, {
+      pdf,
+      startNewIdea: index > 0,
+      save: false,
+    });
+    index += 1;
+  }
+  const monthBit = sanitizePdfFilenamePart(opts.monthKey || "month", "month");
+  const filename = `6-filter-month-${monthBit}-inputs.pdf`;
+  pdf.save(filename);
+  return { filename, ideas: docs.length, pages: pdf.getNumberOfPages() };
 }

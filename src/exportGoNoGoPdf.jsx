@@ -126,7 +126,7 @@ export async function exportMonthPropositionsPdf(fullDocs, opts = {}) {
     index += 1;
   }
   const monthBit = sanitizePdfFilenamePart(opts.monthKey || "month", "month");
-  const filename = `6-filter-month-${monthBit}.pdf`;
+  const filename = `6-filter-month-${monthBit}-output.pdf`;
   pdf.save(filename);
   return { filename, ideas: docs.length, pages: pdf.getNumberOfPages() };
 }

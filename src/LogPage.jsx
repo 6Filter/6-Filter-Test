@@ -5,7 +5,7 @@ import {
   resolveFullPropositions,
 } from "../lib/logExport.js";
 import { exportMonthPropositionsPdf, exportPropositionOutputPdf } from "./exportGoNoGoPdf.jsx";
-import { exportPropositionInputsPdf } from "./exportInputsPdf.jsx";
+import { exportMonthInputsPdf, exportPropositionInputsPdf } from "./exportInputsPdf.jsx";
 import {
   applyLogStatusFilter,
   applyMonthFilter,
@@ -304,18 +304,45 @@ export default function LogPage({
 
   async function handleExportMonthExcel() {
     if (!isAdminUser || !monthFilter || !monthRows.length || exporting || exportingMonthPdf) return;
-    await handleExport(monthRows, `propositions-${monthFilter}`);
+    await handleExport(monthRows, `propositions-${monthFilter}-inputs`);
   }
 
-  async function handleExportMonthPdf() {
+  async function handleExportMonthInputsPdf() {
     if (!isAdminUser || !monthFilter || exporting || exportingMonthPdf || exportingPdfId) return;
     if (!onFetchFull) {
-      setExportError("Could not load ideas for month PDF export.");
+      setExportError("Could not load ideas for month inputs PDF export.");
+      return;
+    }
+    if (!monthRows.length) {
+      setExportError("No ideas in this month to export as inputs PDF.");
+      return;
+    }
+    setExportError("");
+    setExportingMonthPdf(true);
+    try {
+      const fullDocs = [];
+      for (const row of monthRows) {
+        const full = await onFetchFull(row.id);
+        if (full) fullDocs.push(full);
+      }
+      if (!fullDocs.length) throw new Error("Could not load ideas for this month.");
+      await exportMonthInputsPdf(fullDocs, { monthKey: monthFilter });
+    } catch (e) {
+      setExportError(e.message || "Could not export month inputs PDF.");
+    } finally {
+      setExportingMonthPdf(false);
+    }
+  }
+
+  async function handleExportMonthOutputPdf() {
+    if (!isAdminUser || !monthFilter || exporting || exportingMonthPdf || exportingPdfId) return;
+    if (!onFetchFull) {
+      setExportError("Could not load ideas for month output PDF export.");
       return;
     }
     const screened = monthRows.filter((row) => rowIsScreened(row));
     if (!screened.length) {
-      setExportError("No screened ideas in this month to export as PDF.");
+      setExportError("No screened ideas in this month to export as output PDF.");
       return;
     }
     setExportError("");
@@ -328,7 +355,7 @@ export default function LogPage({
       }
       await exportMonthPropositionsPdf(fullDocs, { monthKey: monthFilter, currentUser });
     } catch (e) {
-      setExportError(e.message || "Could not export month PDF.");
+      setExportError(e.message || "Could not export month output PDF.");
     } finally {
       setExportingMonthPdf(false);
     }
@@ -536,26 +563,40 @@ export default function LogPage({
                   disabled={busy || !monthFilter || monthRows.length === 0}
                   title={
                     monthFilter
-                      ? `Export all ${formatMonthLabel(monthFilter)} ideas to Excel`
+                      ? `Export all ${formatMonthLabel(monthFilter)} entered inputs to Excel`
                       : "Choose a month first"
                   }
                 >
                   {exporting && !exportingId ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
-                  Month Excel{monthFilter ? ` (${monthRows.length})` : ""}
+                  Month Inputs Excel{monthFilter ? ` (${monthRows.length})` : ""}
                 </button>
                 <button
                   type="button"
                   className="log-btn"
-                  onClick={handleExportMonthPdf}
-                  disabled={busy || !monthFilter || !monthRows.some((r) => rowIsScreened(r))}
+                  onClick={handleExportMonthInputsPdf}
+                  disabled={busy || !monthFilter || monthRows.length === 0}
                   title={
                     monthFilter
-                      ? `Export screened ${formatMonthLabel(monthFilter)} ideas to one PDF`
+                      ? `Export all ${formatMonthLabel(monthFilter)} entered inputs as one PDF`
                       : "Choose a month first"
                   }
                 >
                   {exportingMonthPdf ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />}
-                  Month PDF
+                  Month Inputs PDF{monthFilter ? ` (${monthRows.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  className="log-btn"
+                  onClick={handleExportMonthOutputPdf}
+                  disabled={busy || !monthFilter || !monthRows.some((r) => rowIsScreened(r))}
+                  title={
+                    monthFilter
+                      ? `Export screened ${formatMonthLabel(monthFilter)} Go/No-Go outputs as one PDF`
+                      : "Choose a month first"
+                  }
+                >
+                  {exportingMonthPdf ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />}
+                  Month Output PDF
                 </button>
               </>
             ) : null}
@@ -1028,7 +1069,7 @@ export const LOG_PAGE_CSS = `
 .log-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:0 0 16px;}
 .log-page .log-title{margin:0 0 6px;font-size:22px;color:var(--ink);}
 .log-page .log-sub{margin:0;font-size:13px;color:var(--ink-secondary);max-width:560px;line-height:1.45;}
-.log-page .log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.log-page .log-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:100%;}
 .log-unlock-badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
 .log-lock-screen{max-width:420px;margin:48px auto;background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;}
 .log-lock-label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--ink);}
