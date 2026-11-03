@@ -2632,7 +2632,7 @@ export default function PropositionForm({
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
     if (!hasSubmitterIdentity(doc)) {
-      setLocalError("Enter your name before Submit. Your team comes from your account.");
+      setLocalError("Enter your name and pick the team for this idea before Submit.");
       return;
     }
     if (!canSubmit) {

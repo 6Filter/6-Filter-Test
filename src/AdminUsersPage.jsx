@@ -1,0 +1,476 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
+
+const DEFAULT_ROLES = ["BM", "CMI", "FINANCE", "R&D", "SALES", "PACKAGING", "BH FORUM", "ADMIN"];
+
+const TABS = [
+  { id: "users", label: "Users" },
+  { id: "roster", label: "Roster import" },
+  { id: "audit", label: "Audit" },
+];
+
+export default function AdminUsersPage({ apiFetch }) {
+  const [tab, setTab] = useState("users");
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState(DEFAULT_ROLES);
+  const [teams, setTeams] = useState(SUBMITTER_DEPARTMENTS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+  const [teamFilter, setTeamFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [rosterFilter, setRosterFilter] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [csvText, setCsvText] = useState("");
+  const [preview, setPreview] = useState(null);
+  const [notInRoster, setNotInRoster] = useState([]);
+  const [rosterRows, setRosterRows] = useState([]);
+  const [deactivateMissing, setDeactivateMissing] = useState(false);
+  const [audit, setAudit] = useState([]);
+  const [leadEmail, setLeadEmail] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+
+  const loadUsers = useCallback(async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/admin/users");
+      setUsers(data.users || []);
+      if (data.roles?.length) setRoles(data.roles);
+      if (data.teams?.length) setTeams(data.teams);
+    } catch (e) {
+      setError(e.message || "Could not load users.");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiFetch]);
+
+  const loadRoster = useCallback(async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/users/roster");
+      setRosterRows(data.roster || []);
+      setNotInRoster(data.notInRoster || []);
+    } catch (e) {
+      setError(e.message || "Could not load roster.");
+    }
+  }, [apiFetch]);
+
+  const loadAudit = useCallback(async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/users/audit");
+      setAudit(data.audit || []);
+    } catch (e) {
+      setError(e.message || "Could not load audit.");
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  useEffect(() => {
+    if (tab === "roster") loadRoster();
+    if (tab === "audit") loadAudit();
+  }, [tab, loadRoster, loadAudit]);
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return users.filter((u) => {
+      if (teamFilter && String(u.team || "") !== teamFilter) return false;
+      if (roleFilter && String(u.role || "") !== roleFilter) return false;
+      if (rosterFilter === "in" && !u.inRoster) return false;
+      if (rosterFilter === "out" && u.inRoster) return false;
+      if (!needle) return true;
+      return (
+        String(u.email || "").toLowerCase().includes(needle) ||
+        String(u.name || "").toLowerCase().includes(needle)
+      );
+    });
+  }, [users, q, teamFilter, roleFilter, rosterFilter]);
+
+  async function patchUser(id, patch) {
+    setBusyId(id);
+    setError("");
+    try {
+      await apiFetch(`/api/admin/users/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      await loadUsers();
+    } catch (e) {
+      setError(e.message || "Update failed.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function runPreview() {
+    setError("");
+    setPreview(null);
+    try {
+      const data = await apiFetch("/api/admin/users/roster/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: csvText }),
+      });
+      setPreview(data.preview || data);
+    } catch (e) {
+      setError(e.message || "Preview failed.");
+      if (e.preview) setPreview(e.preview);
+    }
+  }
+
+  async function runApply() {
+    if (!preview?.ok) {
+      setError("Preview must be clean before applying.");
+      return;
+    }
+    if (!window.confirm("Apply this roster import? Teams on matching users will be updated.")) return;
+    setError("");
+    try {
+      await apiFetch("/api/admin/users/roster/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          csv: csvText,
+          confirm: true,
+          deactivateMissing,
+        }),
+      });
+      setPreview(null);
+      await loadRoster();
+      await loadUsers();
+    } catch (e) {
+      setError(e.message || "Apply failed.");
+    }
+  }
+
+  async function runSetLead() {
+    setError("");
+    try {
+      await apiFetch("/api/admin/users/roster/set-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: memberEmail, leadEmail }),
+      });
+      setMemberEmail("");
+      setLeadEmail("");
+      await loadRoster();
+    } catch (e) {
+      setError(e.message || "Could not set lead.");
+    }
+  }
+
+  return (
+    <main className="admin-page">
+      <header className="admin-head">
+        <h1>Admin</h1>
+        <p>Users, org roster, and audit. ADMIN only.</p>
+      </header>
+      <div className="admin-tabs" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            className={`nav-tab${tab === t.id ? " active" : ""}`}
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {error ? <p className="admin-error">{error}</p> : null}
+
+      {tab === "users" ? (
+        <section className="admin-panel">
+          <div className="admin-filters">
+            <input
+              placeholder="Search name or email"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Search users"
+            />
+            <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} aria-label="Team filter">
+              <option value="">All teams</option>
+              {teams.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} aria-label="Role filter">
+              <option value="">All roles</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <select
+              value={rosterFilter}
+              onChange={(e) => setRosterFilter(e.target.value)}
+              aria-label="Roster filter"
+            >
+              <option value="">In or out of roster</option>
+              <option value="in">In roster</option>
+              <option value="out">Not in roster</option>
+            </select>
+            <button type="button" className="ghost" onClick={loadUsers} disabled={loading}>
+              {loading ? <Loader2 size={14} className="spin" /> : null} Refresh
+            </button>
+          </div>
+          {loading ? (
+            <p>
+              <Loader2 className="spin" size={16} /> Loading…
+            </p>
+          ) : (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Team</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Roster</th>
+                    <th>Last sign-in</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td>
+                        <select
+                          value={u.team || ""}
+                          disabled={busyId === u.id}
+                          onChange={(e) => patchUser(u.id, { team: e.target.value })}
+                          aria-label={`Team for ${u.email}`}
+                        >
+                          <option value="">—</option>
+                          {teams.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={u.role || "BM"}
+                          disabled={busyId === u.id}
+                          onChange={(e) => patchUser(u.id, { role: e.target.value })}
+                          aria-label={`Role for ${u.email}`}
+                        >
+                          {roles.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={u.status || "active"}
+                          disabled={busyId === u.id}
+                          onChange={(e) => patchUser(u.id, { status: e.target.value })}
+                          aria-label={`Status for ${u.email}`}
+                        >
+                          <option value="active">active</option>
+                          <option value="disabled">disabled</option>
+                        </select>
+                      </td>
+                      <td>
+                        {u.inRoster ? (
+                          <span>
+                            {u.orgRole}
+                            {u.rosterActive === false ? " (inactive)" : ""}
+                          </span>
+                        ) : (
+                          <em>Not in roster</em>
+                        )}
+                      </td>
+                      <td>{u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleString() : "—"}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={busyId === u.id}
+                          onClick={() => patchUser(u.id, { signOutEverywhere: true })}
+                        >
+                          Sign out everywhere
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {tab === "roster" ? (
+        <section className="admin-panel">
+          <h2>Import org roster</h2>
+          <p>
+            CSV columns: <code>email,name,team,org_role,reports_to_email</code>. Preview first; apply only after
+            confirm. Template: <code>Primus-AI_OrgRoster_Template.csv</code>.
+          </p>
+          <textarea
+            rows={10}
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder="Paste CSV…"
+            aria-label="Roster CSV"
+          />
+          <div className="admin-actions">
+            <button type="button" onClick={runPreview} disabled={!csvText.trim()}>
+              Preview
+            </button>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={deactivateMissing}
+                onChange={(e) => setDeactivateMissing(e.target.checked)}
+              />
+              On apply, mark people missing from the file as inactive
+            </label>
+            <button type="button" onClick={runApply} disabled={!preview?.ok}>
+              Apply import
+            </button>
+          </div>
+          {preview ? (
+            <div className="admin-preview">
+              <p>
+                {preview.ok ? "Ready to apply" : preview.error} · rows {preview.rowCount ?? 0} · would change{" "}
+                {preview.wouldChange ?? 0} · unchanged {preview.unchanged ?? 0}
+              </p>
+              {(preview.issues || []).length ? (
+                <ul>
+                  {preview.issues.map((it, i) => (
+                    <li key={`${it.email}-${i}`}>
+                      Line {it.line}: {it.email} — {(it.reasons || []).join("; ")}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {(preview.bhDisagreements || []).length ? (
+                <ul>
+                  {preview.bhDisagreements.map((d, i) => (
+                    <li key={`${d.email}-${i}`}>
+                      BH map: {d.email} / {d.team} — {d.reason}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {(preview.missingFromFile || []).length ? (
+                <div>
+                  <h3>Not in file (still active)</h3>
+                  <ul>
+                    {preview.missingFromFile.map((m) => (
+                      <li key={m.email}>
+                        {m.name} ({m.email}) — {m.team}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <h2>Not in the roster</h2>
+          {notInRoster.length === 0 ? (
+            <p>Everyone who has signed in is on the roster.</p>
+          ) : (
+            <ul>
+              {notInRoster.map((u) => (
+                <li key={u.id}>
+                  {u.name} ({u.email}) — team {u.team || "—"}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h2>Set lead</h2>
+          <div className="admin-filters">
+            <input
+              placeholder="Member email"
+              value={memberEmail}
+              onChange={(e) => setMemberEmail(e.target.value)}
+            />
+            <input placeholder="Lead email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} />
+            <button type="button" onClick={runSetLead} disabled={!memberEmail || !leadEmail}>
+              Set lead
+            </button>
+          </div>
+          <p className="admin-muted">{rosterRows.filter((r) => r.active).length} active roster rows.</p>
+        </section>
+      ) : null}
+
+      {tab === "audit" ? (
+        <section className="admin-panel">
+          <button type="button" className="ghost" onClick={loadAudit}>
+            Refresh
+          </button>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Action</th>
+                  <th>Target</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {audit.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.createdAt ? new Date(a.createdAt).toLocaleString() : "—"}</td>
+                    <td>{a.action}</td>
+                    <td>{a.targetEmail || a.targetUserId || "—"}</td>
+                    <td>
+                      <code>{JSON.stringify(a.detail || {})}</code>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      <style>{`
+.admin-page{padding:28px 32px 64px;max-width:1200px;margin:0 auto;color:var(--ink,#f3eaf8);}
+.admin-head h1{font-size:1.6rem;margin:0 0 4px;}
+.admin-head p{opacity:.75;margin:0 0 16px;}
+.admin-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.admin-error{color:#f5a3a3;margin:8px 0 16px;}
+.admin-panel{display:grid;gap:12px;}
+.admin-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.admin-filters input,.admin-filters select,.admin-panel textarea,.admin-table select{
+  background:#1a1224;color:#f3eaf8;border:1px solid rgba(201,160,232,.28);border-radius:8px;padding:8px 10px;
+}
+.admin-table-wrap{overflow:auto;border:1px solid rgba(201,160,232,.2);border-radius:10px;}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px;}
+.admin-table th,.admin-table td{padding:8px 10px;border-bottom:1px solid rgba(201,160,232,.12);text-align:left;vertical-align:top;}
+.admin-table th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;opacity:.7;}
+.admin-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+.admin-check{display:flex;gap:8px;align-items:center;font-size:13px;}
+.admin-preview{padding:12px;border:1px solid rgba(201,160,232,.25);border-radius:10px;background:rgba(0,0,0,.2);}
+.admin-muted{opacity:.65;font-size:13px;}
+.admin-panel textarea{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;}
+`}</style>
+    </main>
+  );
+}

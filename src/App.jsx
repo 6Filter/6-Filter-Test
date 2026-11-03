@@ -16,6 +16,7 @@ import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
 import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
+import AdminUsersPage from "./AdminUsersPage.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
@@ -1329,7 +1330,11 @@ export default function App() {
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
-  if (authRequired && (sessionUser?.needsTeam || changingOwnTeam)) {
+  useEffect(() => {
+    if (sessionUser?.rosterLocked && changingOwnTeam) setChangingOwnTeam(false);
+  }, [sessionUser?.rosterLocked, changingOwnTeam]);
+
+  if (authRequired && (sessionUser?.needsTeam || (changingOwnTeam && !sessionUser?.rosterLocked))) {
     const pendingIdea = takeStashedDeepLinkIdeaId();
     if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return (
@@ -1421,6 +1426,15 @@ export default function App() {
           >
             <Settings size={14} /> Settings
           </button>
+          {sessionUser?.role === "ADMIN" ? (
+            <button
+              type="button"
+              className={`nav-tab${view === "admin" ? " active" : ""}`}
+              onClick={() => setView("admin")}
+            >
+              Admin
+            </button>
+          ) : null}
         </nav>
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
@@ -1443,15 +1457,21 @@ export default function App() {
             <em>{sessionUser.role}</em>
             {sessionUser.team ? <em title="Default team">{sessionUser.team}</em> : null}
           </span>
-          <button
-            type="button"
-            className="ghost sq"
-            onClick={() => setChangingOwnTeam(true)}
-            aria-label="My team"
-            title="Change my default team"
-          >
-            My team
-          </button>
+          {sessionUser.rosterLocked ? (
+            <span className="session-chip-hint" title="Home team from the org roster">
+              Set by your admin
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="ghost sq"
+              onClick={() => setChangingOwnTeam(true)}
+              aria-label="My team"
+              title="Change my default team"
+            >
+              My team
+            </button>
+          )}
           <button type="button" className="ghost sq" onClick={signOut} aria-label="Sign out">
             <LogOut size={14} />
           </button>
@@ -1517,6 +1537,10 @@ export default function App() {
       )}
 
       {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
+
+      {view === "admin" && sessionUser?.role === "ADMIN" ? (
+        <AdminUsersPage apiFetch={apiFetch} />
+      ) : null}
 
       {msgOpen && (
         <div className="modal-bg" onClick={() => setMsgOpen(false)}>

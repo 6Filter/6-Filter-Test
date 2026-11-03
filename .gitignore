@@ -7,6 +7,9 @@ dist
 data/
 *BusinessHeads*.csv
 Primus-AI_BusinessHeads_TeamMapping.csv
+*OrgRoster*.csv
+!Primus-AI_OrgRoster_Template.csv
+
 john text
 john text.txt
 docs/API_KEY_BEST_PRACTICES.md

@@ -88,6 +88,7 @@ export default function LogPage({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [viewScope, setViewScope] = useState("all"); // mine | team | all
   const [personFilter, setPersonFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
@@ -147,13 +148,40 @@ export default function LogPage({
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
   const isAdminUser =
     String(currentUser?.role || "").trim() === "ADMIN" || isMasterUnlock(unlockedDepartment);
+  const showCreatedBy =
+    isAdminUser ||
+    String(currentUser?.role || "").trim() === "BH FORUM" ||
+    viewScope === "team" ||
+    viewScope === "all";
+  const myEmail = String(currentUser?.email || "")
+    .trim()
+    .toLowerCase();
+  const myTeam = String(currentUser?.team || "").trim();
 
   const filteredRows = useMemo(() => {
-    if (status === "bh-waiting") {
-      return scopedRows.filter((row) => isWaitingForBusinessHead(row));
+    let rowsForView = scopedRows;
+    if (viewScope === "mine" && myEmail) {
+      rowsForView = scopedRows.filter((row) => {
+        const owner = String(row.createdByEmail || row.created_by_email || "")
+          .trim()
+          .toLowerCase();
+        return owner && owner === myEmail;
+      });
+    } else if (viewScope === "team" && myTeam) {
+      rowsForView = scopedRows.filter((row) => {
+        const owner = String(row.createdByEmail || row.created_by_email || "")
+          .trim()
+          .toLowerCase();
+        if (owner && owner === myEmail) return true;
+        const team = rowTeam(row);
+        return team === myTeam;
+      });
     }
-    return applyLogStatusFilter(scopedRows, status);
-  }, [scopedRows, status]);
+    if (status === "bh-waiting") {
+      return rowsForView.filter((row) => isWaitingForBusinessHead(row));
+    }
+    return applyLogStatusFilter(rowsForView, status);
+  }, [scopedRows, status, viewScope, myEmail, myTeam]);
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
   const busy =
     loading ||
@@ -603,6 +631,18 @@ export default function LogPage({
           </label>
           <div className="log-scoped-filters">
             <label>
+              <span className="sr-only">View</span>
+              <select
+                value={viewScope}
+                onChange={(e) => setViewScope(e.target.value)}
+                aria-label="View"
+              >
+                <option value="mine">Mine</option>
+                <option value="team">My team's</option>
+                <option value="all">All I can see</option>
+              </select>
+            </label>
+            <label>
               <span className="sr-only">Team-wise ideas</span>
               <select
                 value={teamFilter}
@@ -736,6 +776,7 @@ export default function LogPage({
                   <th>Proposition</th>
                   <th>Scale</th>
                   <th>Team</th>
+                  {showCreatedBy ? <th>Created by</th> : null}
                   <th title="Manager review">Mgr review</th>
                   <th>Filters</th>
                   <th>Submitted</th>
@@ -841,6 +882,7 @@ export default function LogPage({
                           <span className="log-dept-division">{division}</span>
                         ) : null}
                       </td>
+                      {showCreatedBy ? <td>{rowPerson(h) || h.submitterName || "—"}</td> : null}
                       <td>
                         {(() => {
                           const ui = reviewDisplayState(h);

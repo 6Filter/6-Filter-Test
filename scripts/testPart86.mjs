@@ -64,7 +64,8 @@ assert.equal(applyLogStatusFilter(searched, "ALL").length, 1);
 
 const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(pageSrc, /const scopedRows = useMemo/);
-assert.match(pageSrc, /applyLogStatusFilter\(scopedRows, status\)/);
+assert.match(pageSrc, /applyLogStatusFilter\((?:scopedRows|rowsForView), status\)/);
+assert.match(pageSrc, /viewScope/);
 assert.match(pageSrc, /filteredRows\.map\(/);
 assert.match(pageSrc, /pillCounts/);
 assert.match(pageSrc, /classificationOf\(row\)/);

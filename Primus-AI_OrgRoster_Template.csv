@@ -1,0 +1,5 @@
+email,name,team,org_role,reports_to_email
+bh.rd@example.com,R&D Business Head,R&D,BUSINESS_HEAD,
+lead.a@example.com,Team Lead A,R&D,TEAM_LEAD,bh.rd@example.com
+member.a1@example.com,Member A1,R&D,MEMBER,lead.a@example.com
+member.a2@example.com,Member A2,R&D,MEMBER,lead.a@example.com
