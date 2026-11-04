@@ -27,25 +27,34 @@ const emptyDoc = {
 const emptyGate = applyLocalGate(emptyDoc);
 assert.ok(verdicts.has(emptyGate.classification), "empty idea still gets a verdict");
 assert.equal(emptyGate.classification, "INCOMPLETE", "empty idea is INCOMPLETE under v4.2");
-assert.ok(["10g", "100g", "1000g"].includes(emptyGate.ideaScale));
+assert.equal(emptyGate.ideaScale, undefined, "INCOMPLETE ideas do not carry a gram badge");
 assert.ok(String(emptyGate.rationale || "").length > 10, "verdict rationale must be generated");
+
+const f5Findings = {
+  householdsReachedY3Mn: 0.4,
+  trialRatePct: 20,
+  repeatConversionPct: 25,
+  purchaseFrequencyYr: 4,
+  avgPackValueInr: 80,
+  computedRevenue: 0.64,
+};
+assert.equal(
+  ideaSizeForResult({
+    ...emptyDoc,
+    goNoGo: { classification: "INCOMPLETE" },
+    researchFindings: { f5: f5Findings },
+  }),
+  null,
+  "INCOMPLETE suppresses gram badge even when F5 revenue exists"
+);
 
 const sizedDoc = {
   ...emptyDoc,
-  goNoGo: { classification: emptyGate.classification },
-  researchFindings: {
-    f5: {
-      householdsReachedY3Mn: 0.4,
-      trialRatePct: 20,
-      repeatConversionPct: 25,
-      purchaseFrequencyYr: 4,
-      avgPackValueInr: 80,
-      computedRevenue: 0.64,
-    },
-  },
+  goNoGo: { classification: "WATCH" },
+  researchFindings: { f5: f5Findings },
 };
 const badge = ideaSizeForResult(sizedDoc);
-assert.ok(badge, "output badge must exist");
+assert.ok(badge, "output badge must exist for complete banded ideas");
 assert.equal(badge.tier, "10g");
 assert.match(String(badge.label || ""), /Cr|business|₹/i);
 assert.equal(ideaScaleFromDoc(sizedDoc), badge.tier);

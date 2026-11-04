@@ -20,7 +20,7 @@ const failedResearch = computeGoNoGo({
   f3: cleared(1),
   f4,
 });
-assert.notEqual(failedResearch, "GO", "research-failed F4 cannot be GO");
+assert.equal(failedResearch, "INCOMPLETE", "research-failed F4 is INCOMPLETE");
 
 const notRun = computeGoNoGo({
   f1: cleared(5),
@@ -28,21 +28,21 @@ const notRun = computeGoNoGo({
   f3: cleared(1),
   f4: { checkLabel: "Not yet run", items: [] },
 });
-assert.notEqual(notRun, "GO", "not-yet-run F4 cannot be GO");
+assert.equal(notRun, "INCOMPLETE", "not-yet-run F4 is INCOMPLETE");
 
 const missing = computeGoNoGo({
   f1: cleared(5),
   f2: cleared(3),
   f3: cleared(1),
 });
-assert.notEqual(missing, "GO", "missing F4 cannot be GO");
+assert.equal(missing, "INCOMPLETE", "missing F4 is INCOMPLETE");
 
 const f3 = checkF3({}, {}, { researchFailed: true });
 assert.match(f3.items[0].text, /Research failed — retry/);
-assert.notEqual(
+assert.equal(
   computeGoNoGo({ f1: cleared(5), f2: cleared(3), f3, f4: cleared(7) }),
-  "GO",
-  "research-failed F3 cannot be GO"
+  "INCOMPLETE",
+  "research-failed F3 is INCOMPLETE"
 );
 
 const scored = await computeAllAdvisoryChecks({

@@ -3028,7 +3028,9 @@ export default function PropositionForm({
         }),
       score: nextScore,
       scoreInputKey: savedGo?.scoreInputKey,
-      ideaScale: savedGo?.ideaScale || ideaScaleFromDoc(nextDoc),
+      ...(classification === "INCOMPLETE"
+        ? {}
+        : { ideaScale: savedGo?.ideaScale || ideaScaleFromDoc(nextDoc) }),
       ideaName,
       category,
       at: savedGo?.at || new Date().toISOString(),

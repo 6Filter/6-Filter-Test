@@ -6,11 +6,11 @@ The percent is the share of Filter 1 to Filter 4 checks that are complete for th
 
 ## Hard stops
 
-A hard stop is applied first. A filter below a non-negotiable floor forces NO-GO, whatever the percent. A filter that has not run, or whose research failed, keeps the idea at WATCH even when the percent would otherwise read GO.
+A hard stop is applied first. A filter below a non-negotiable floor forces NO-GO, whatever the percent. A filter that has not run, or whose research failed, keeps the idea INCOMPLETE (not a GO/WATCH/NO-GO band) until Filter 1–4 finish — unless a floor failure already forced NO-GO.
 
 ## Bands
 
-After the hard stops, GO is above 80, WATCH is 60 to 80, and NO-GO is below 60.
+After the hard stops, complete ideas band as: GO above 80, WATCH 60 to 80, and NO-GO below 60. INCOMPLETE ideas still show the percent and checks-complete count, but are not banded.
 
 ## Where numbers come from
 
