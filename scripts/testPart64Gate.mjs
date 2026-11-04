@@ -17,7 +17,7 @@ const f4Ready = {
     growthArgument: "category growing",
   },
   f2: { cogsAtScale: 40, netMarginAtScale: 22 },
-  f3: { marginElasticity: { maxMarginPct: 35 } },
+  f3: { marginElasticity: { minMrpInr: 80, maxMrpInr: 120 } },
   f4: { techShiftRisk: { dimensions: { format: { risk: "Low" } } } },
 };
 
