@@ -1,21 +1,22 @@
 {
   "rulesetVersion": "v5.0",
-  "fingerprint": "a2e430d888b351975db9ce89e1e650c3e811ccbeeaec59d9eb6912e1f391470e",
+  "fingerprint": "05b51ca4df161e118e6640026f09ab6349adc24262e297b941163bc1c91df274",
   "files": {
-    "lib/lockedConstants.js": "78194ab17763d7b70ce2ff73db7209c964f5c18c8b7e6cf95db41348e75e86ac",
-    "lib/goNoGo.js": "c36dd3c33f5129d2220fd71266208754cbf5fbd405624fd662858a53d8531e10",
-    "lib/filterChecks.js": "7f1cb32c95ee607bc2d8c1925f56c5fdab79da2b108cf13b716392437ad76bad",
-    "lib/propositionScoring.js": "7c7e4d7109b16c0e2acc2829b93009c81b87e8cbd5aec0e1ea2b796f2ec59b5f",
-    "lib/analysisStability.js": "dd0b076de4371421dea54b19ebec0c5f18b605e5b34e14f96768928956cbc4aa",
+    "lib/lockedConstants.js": "da60eb8956de7e7a74fa6817e0d0944abf622156f615f14e62d58cb6d0a6913e",
+    "lib/goNoGo.js": "bb1b70c4a50a4f9b33c16388ee6b0d7aa848ee0a9d13f11936b8d65579b88e7b",
+    "lib/filterChecks.js": "bb0686190e7a723dad891a613e6574948c3548a035ede83abf81826aa6170afe",
+    "lib/propositionScoring.js": "d40647e85e709cb3c18bf7dd53317aba199bc17ec5a911cc97b87d71f35cd0b4",
+    "lib/analysisStability.js": "e5cdc602e2fd2a930f75efabdb72c75c0695b4573af073169d6009634e6168d1",
     "lib/techShiftRisk.js": "becea8c9a53d397f371532bdcfcedfe3445c09b35710b45d856afdc0aede73d1",
-    "lib/scoreSlots.js": "8477c5f8d0dfad308f5d443936876a367fa25fe9209967b28829ff5e87d12609",
+    "lib/scoreSlots.js": "43cac3a68a4366981739fe57356bba19df46b3efa96cf871b40acbcba4df5141",
     "lib/mrpFormula.js": "04921c82a8a364ddef12c91a799283f5bb21d3fa23844e7bf74f60127803211d",
     "lib/divisionMargin.js": "bcd6276deb69b804771ae8ccaf9456110e732c3d128915b1e9f5f405222b155f",
-    "lib/improvementPoints.js": "205c3d339051d576240de672ba62f04661f2ad2ff5fad0a04011af75197f6eba",
+    "lib/improvementPoints.js": "175f7a86a55403fc9d46f8d0aa5a2c4bdbb145234d47f24840a77408e2f32f9b",
     "lib/propositionGateApi.js": "837c3c4ac40f22731dba9f83609d2168ac539c6cc749684f17ba2fae440ccb5a",
     "lib/inputReview.js": "cf85a9130ebbba8d0a5cfd9c629e48219c076040034102812c4e49cb7468702c",
-    "lib/itemCopy.js": "9b6ce59d3f2b8519573616bc91ea921daffac36cfd15277b7490a8455cf88107",
-    "lib/filter1Check.js": "1bdb3cdd12d0138986f516934583f2b3515e8b3bf86f536a50a4407379e1194d",
-    "lib/f1ResearchSafeguards.js": "a2efa1772a07408d1f0499b5d1c8ebf58ad565f8e25164afbcd9a0b5d1647d2c"
+    "lib/itemCopy.js": "7f2594d9651bfcb4eb0582e21593cfd3f3b31f1a2cd0861c3b918e68e14d9fb9",
+    "lib/filter1Check.js": "4cfe6d09b986e46089c51c0f046c92ed2b49f8cbadd417e461ce1a5e1a89469d",
+    "lib/f1ResearchSafeguards.js": "5ba28ddae74293b25f464b695eda7cdf63d6745c743b0bd633a36c86c55ae0d2",
+    "lib/relevanceGrade.js": "b251183c3a848bafc278bfb21236fc9f44513cfa80a8870ee5e6d0a614322af8"
   }
 }

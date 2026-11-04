@@ -9,6 +9,7 @@ const TABS = [
   { id: "divisions", label: "Division queue" },
   { id: "roster", label: "Roster import" },
   { id: "scoring", label: "Scoring re-score" },
+  { id: "comparison", label: "Scoring comparison" },
   { id: "audit", label: "Audit" },
 ];
 
@@ -39,6 +40,8 @@ export default function AdminUsersPage({ apiFetch }) {
   const [scoringBusy, setScoringBusy] = useState(false);
   const [scoringConfirm, setScoringConfirm] = useState("");
   const [scoringSelected, setScoringSelected] = useState(() => new Set());
+  const [scoringShadow, setScoringShadow] = useState(true);
+  const [scoringWeightNote, setScoringWeightNote] = useState("");
 
   const loadUsers = useCallback(async () => {
     setError("");
@@ -95,6 +98,8 @@ export default function AdminUsersPage({ apiFetch }) {
       const data = await apiFetch("/api/admin/scoring-audit");
       setScoringPreview(data.preview || []);
       setScoringRuleset(data.rulesetVersion || "");
+      setScoringShadow(data.shadowMode !== false);
+      setScoringWeightNote(data.weightEffectNote || "");
       setScoringSelected(new Set((data.preview || []).filter((r) => r.wouldChange).map((r) => r.id)));
     } catch (e) {
       setError(e.message || "Could not load scoring preview.");
@@ -112,7 +117,7 @@ export default function AdminUsersPage({ apiFetch }) {
     if (tab === "roster") loadRoster();
     if (tab === "audit") loadAudit();
     if (tab === "divisions") loadDivisionQueue();
-    if (tab === "scoring") loadScoringPreview();
+    if (tab === "scoring" || tab === "comparison") loadScoringPreview();
   }, [tab, loadRoster, loadAudit, loadDivisionQueue, loadScoringPreview]);
 
   const filtered = useMemo(() => {
@@ -332,6 +337,57 @@ export default function AdminUsersPage({ apiFetch }) {
                     </td>
                     <td>{row.scoreStatus}</td>
                     <td>{row.wouldChange ? "yes" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      ) : null}
+
+      {tab === "comparison" ? (
+        <section className="admin-panel">
+          <p className="admin-hint">
+            Part 133 shadow mode ({scoringShadow ? "ON" : "OFF"}): users still see the legacy binary
+            verdict; relevance is stored for calibration. Ruleset {scoringRuleset || "…"}.{" "}
+            {scoringWeightNote ||
+              "Equal CHECK_WEIGHTS: Filter 4 is ~41% of the score; five judged Filter 1 checks are ~29%."}
+          </p>
+          <button type="button" className="ghost" onClick={loadScoringPreview} disabled={scoringBusy}>
+            {scoringBusy ? <Loader2 size={14} className="spin" /> : null}
+            Refresh comparison
+          </button>
+          {!scoringPreview.length ? (
+            <p>{scoringBusy ? "Loading…" : "No screened ideas found."}</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Idea</th>
+                  <th>Legacy %</th>
+                  <th>Legacy verdict</th>
+                  <th>Relevance %</th>
+                  <th>Relevance verdict</th>
+                  <th>Checks moved</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoringPreview.map((row) => (
+                  <tr key={`cmp-${row.id}`}>
+                    <td>{row.name || row.id}</td>
+                    <td className="mono">{row.legacyPct ?? "—"}%</td>
+                    <td className="mono">{row.legacyClass || "—"}</td>
+                    <td className="mono">{row.relevancePct ?? "—"}%</td>
+                    <td className="mono">{row.relevanceClass || "—"}</td>
+                    <td className="mono">
+                      {(row.moved || []).length
+                        ? (row.moved || [])
+                            .map((m) => `${m.filter}: ${m.binary}→${m.credit}`)
+                            .join("; ")
+                        : "—"}
+                    </td>
+                    <td>{row.scoreStatus}</td>
                   </tr>
                 ))}
               </tbody>

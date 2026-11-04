@@ -48,13 +48,13 @@ const { sanitizeBenchmarkCheck, sanitizeClaimChecks } = await import("../../lib/
 const {
   F1_BENCHMARK_PROMPT_TOKEN,
   F1_CLAIM_PROMPT_TOKEN,
-  F1_ROUTE_PROMPT_TOKEN,
+  F1_PLAN_PROMPT_TOKEN,
 } = await import("../../lib/f1Research.js");
 const { inputReviewSystemPrompt: _ir } = await import("../../lib/inputReviewAi.js");
 
 assert.match(F1_BENCHMARK_PROMPT_TOKEN, /PRIMUS_F1_BENCHMARK_CHECK/);
 assert.match(F1_CLAIM_PROMPT_TOKEN, /PRIMUS_F1_CLAIM_CHECK/);
-assert.match(F1_ROUTE_PROMPT_TOKEN, /PRIMUS_F1_ROUTE_CHECK/);
+assert.match(F1_PLAN_PROMPT_TOKEN, /PRIMUS_PLAN_CHECK/);
 
 // No money on first-movers / blank benchmarks / unconfirmed AI text
 assert.equal(shouldRunBenchmarkCheck({ declaredGap: 0, benchmark: "" }), false);

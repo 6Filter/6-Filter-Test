@@ -2,7 +2,7 @@
 
 ## What the percent is
 
-The percent is the share of Filter 1 to Filter 4 checks that are complete for this idea (17 checks: six in Filter 1, three in Filter 2, one in Filter 3, seven in Filter 4). Filters 5 and 6 are not in the percent. Filter 6 is validation only.
+The percent is points out of 17 Filter 1–4 checks. Judged checks earn none, weak (1/3), adequate (2/3) or strong (1) from relevance assessments — never because a field is filled in. Filters 5 and 6 are not in the percent. Filter 6 is validation only.
 
 ## Hard stops
 

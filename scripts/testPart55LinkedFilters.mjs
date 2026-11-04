@@ -46,12 +46,35 @@ const evidenceOk = checkF1(
     evidenceSourceDate: "https://example.com/study",
   },
   {
-    benchmarkCheck: { status: "relevant", source_url: "https://example.com/parachute" },
-    claimChecks: {
-      gapDerivation: { verdict: "supported" },
-      parityExceptions: { verdict: "unverified" },
-      growthArgument: { verdict: "supported" },
+    assessments: {
+      benchmark: {
+        raw: { relevance: "strong", source_url: "https://example.com/parachute" },
+        returnedSources: ["https://example.com/parachute"],
+      },
+      attributes: { raw: { relevance: "strong", specific: true }, returnedSources: [] },
+      derivation: {
+        raw: {
+          relevance: "strong",
+          specific: true,
+          supported: true,
+          source_url: "https://example.com/parachute",
+          quote: "hair-fall",
+        },
+        returnedSources: ["https://example.com/parachute"],
+      },
+      argument: {
+        raw: {
+          relevance: "strong",
+          specific: true,
+          supported: true,
+          source_url: "https://example.com/parachute",
+          quote: "households",
+        },
+        returnedSources: ["https://example.com/parachute"],
+      },
+      route: { raw: { matches: "yes", confidence: "high", expected: "penetration" }, returnedSources: [] },
     },
+    benchmarkCheck: { status: "relevant", source_url: "https://example.com/parachute" },
     routeCheck: { expected: "penetration", confidence: "high" },
   },
   {

@@ -1,6 +1,7 @@
 /**
  * F1 (v5.0): attrs 2–3 optional; typed benchmark/route/argument need research;
  * card copy must not echo form inputs as Already on record / Still needed.
+ * Credit requires stored relevance assessments (never presence alone).
  */
 import assert from "node:assert/strict";
 import { checkF1 } from "../lib/filterChecks.js";
@@ -14,24 +15,26 @@ function fullRest(f1Check) {
     f2: {
       checkLabel: "Cleared",
       items: [
-        { status: "done", text: "MRP ₹99 · 50g" },
-        { status: "done", text: "Net margin 55% clears the division floor" },
-        { status: "done", text: "Quick-commerce terms assumption recorded" },
+        { status: "done", text: "MRP ₹99 · 50g", credit: 1 },
+        { status: "done", text: "Net margin 55% clears the division floor", credit: 1 },
+        { status: "done", text: "Quick-commerce terms assumption recorded", credit: 1, slot: "qcom" },
       ],
     },
-    f3: { checkLabel: "Cleared", items: [{ status: "done", text: "Filter 2 MRP sits within the safe range" }] },
+    f3: { checkLabel: "Cleared", items: [{ status: "done", text: "Filter 2 MRP sits within the safe range", credit: 1 }] },
     f4: {
       checkLabel: "Cleared",
-      items: Array.from({ length: 7 }, (_, i) => ({ status: "done", text: `Dim ${i} Low` })),
+      items: Array.from({ length: 7 }, (_, i) => ({ status: "done", text: `Dim ${i} Low`, credit: 1 })),
     },
   };
 }
 
+const SRC = "https://example.com/maaza";
+
 const base = {
-  declaredAttribute: "taste",
+  declaredAttribute: "taste preferred over benchmark",
   benchmark: "Maaza mango fruit drink",
   declaredGap: 3,
-  gapDerivation: "Beat Maaza on freshness",
+  gapDerivation: "Beat Maaza on freshness perception by 2 points",
   parityExceptions: "none",
   growthRoute: "new-market",
   growthArgument: "expanding into new occasions with a fruit drink format",
@@ -39,12 +42,35 @@ const base = {
 };
 
 const clearedFindings = {
-  benchmarkCheck: { status: "relevant", source_url: "https://example.com/maaza", reason: "on shelf in India" },
-  claimChecks: {
-    gapDerivation: { verdict: "supported" },
-    parityExceptions: { verdict: "unverified" },
-    growthArgument: { verdict: "supported" },
+  assessments: {
+    benchmark: {
+      raw: { relevance: "strong", source_url: SRC, reason: "on shelf in India" },
+      returnedSources: [SRC],
+    },
+    derivation: {
+      raw: {
+        relevance: "strong",
+        specific: true,
+        supported: true,
+        source_url: SRC,
+        quote: "freshness leads purchase",
+      },
+      returnedSources: [SRC],
+    },
+    argument: {
+      raw: {
+        relevance: "strong",
+        specific: true,
+        supported: true,
+        source_url: SRC,
+        quote: "occasion expansion",
+      },
+      returnedSources: [SRC],
+    },
+    attributes: { raw: { relevance: "strong", specific: true }, returnedSources: [] },
+    route: { raw: { matches: "yes", confidence: "high", expected: "new-market" }, returnedSources: [] },
   },
+  benchmarkCheck: { status: "relevant", source_url: SRC, reason: "on shelf in India" },
   routeCheck: { expected: "new-market", confidence: "high", reason: "new audience" },
 };
 
@@ -71,12 +97,12 @@ const clearedCtx = {
   assert.doesNotMatch(attr.text, /of 3/i);
 }
 
-// 2) Named on the form alone is not accepted — awaiting web check
+// 2) Named on the form alone is not accepted — awaiting assessment
 {
   const f1 = checkF1(base, {});
   const bench = f1.items.find((i) => i.slot === "benchmark");
   assert.equal(bench.status, "pending");
-  assert.match(bench.text, /awaiting web check/i);
+  assert.match(bench.text, /awaiting web check|awaiting relevance|assessed when you Submit/i);
   assert.doesNotMatch(bench.text, /^Benchmark named:/i);
   assert.doesNotMatch(bench.text, /Maaza/i);
 }
@@ -87,9 +113,9 @@ const clearedCtx = {
   const route = f1.items.find((i) => i.slot === "route");
   const argument = f1.items.find((i) => i.slot === "argument");
   assert.equal(route.status, "pending");
-  assert.match(route.text, /awaiting AI check/i);
+  assert.match(route.text, /awaiting AI check|awaiting|assessed when you Submit/i);
   assert.equal(argument.status, "pending");
-  assert.match(argument.text, /awaiting fact-check/i);
+  assert.match(argument.text, /awaiting fact-check|awaiting|assessed when you Submit/i);
 }
 
 // 4) Narrative never echoes cleared inputs as Already on record / Still needed
@@ -127,7 +153,7 @@ const clearedCtx = {
   });
   assert.equal(path.kind, "path");
   assert.ok(!path.actions.some((a) => /^Benchmark named:/i.test(a.text)));
-  assert.ok(path.actions.some((a) => /web search|Submit|web check|fact-check|AI check/i.test(a.text)));
+  assert.ok(path.actions.some((a) => /web search|Submit|web check|fact-check|AI check|assess/i.test(a.text)));
 }
 
 console.log("PASS testF1OptionalAndPendingResearch");

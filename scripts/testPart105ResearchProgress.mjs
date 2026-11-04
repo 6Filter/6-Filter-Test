@@ -40,11 +40,11 @@ const plan = planResearch(incomplete);
 assert.equal(plan.researchState, "incomplete");
 assert.deepEqual(
   plan.steps,
-  ["F1", "f1Benchmark", "f1Claims", "f1Route", "F3", "F4"],
+  ["F1", "f1Benchmark", "f1Claims", "f1Plan", "F3", "F4"],
   "typed F1 fields still need web verify plus Part 133 F1 checks"
 );
 
-const calls = { F3: 0, F4: 0, F1: 0, F2: 0, f1Benchmark: 0, f1Claims: 0, f1Route: 0 };
+const calls = { F3: 0, F4: 0, F1: 0, F2: 0, f1Benchmark: 0, f1Claims: 0, f1Plan: 0 };
 const declined = await submitWithRunners(incomplete, {
   F3: async () => { throw new Error("declined must not call"); },
 }, { confirm: async () => false });
@@ -59,9 +59,9 @@ const first = await submitWithRunners(incomplete, {
   F2: async () => { calls.F2 += 1; },
   f1Benchmark: async () => { calls.f1Benchmark += 1; },
   f1Claims: async () => { calls.f1Claims += 1; },
-  f1Route: async () => { calls.f1Route += 1; },
+  f1Plan: async () => { calls.f1Plan += 1; },
 });
-assert.deepEqual(first.calls, ["F1", "f1Benchmark", "f1Claims", "f1Route", "F3", "F4"]);
+assert.deepEqual(first.calls, ["F1", "f1Benchmark", "f1Claims", "f1Plan", "F3", "F4"]);
 assert.equal(planResearch(first.doc).researchState, "complete");
 const second = await submitWithRunners(first.doc, {
   F3: async () => { calls.F3 += 1; },
@@ -69,7 +69,7 @@ const second = await submitWithRunners(first.doc, {
   F1: async () => { calls.F1 += 1; },
   f1Benchmark: async () => { calls.f1Benchmark += 1; },
   f1Claims: async () => { calls.f1Claims += 1; },
-  f1Route: async () => { calls.f1Route += 1; },
+  f1Plan: async () => { calls.f1Plan += 1; },
 });
 assert.deepEqual(second.calls, []);
 assert.equal(calls.F1, 1);
@@ -78,7 +78,7 @@ assert.equal(calls.F3, 1);
 assert.equal(calls.F4, 1);
 assert.equal(calls.f1Benchmark, 1);
 assert.equal(calls.f1Claims, 1);
-assert.equal(calls.f1Route, 1);
+assert.equal(calls.f1Plan, 1);
 
 assert.equal(planResearch({ researchRunAt: null, f1: {}, f2: {}, f3: {}, f4: {} }).researchState, "draft");
 assert.equal(

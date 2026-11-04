@@ -7138,8 +7138,8 @@
         }
       },
       "expected": {
-        "pct": 100,
-        "done": 17,
+        "pct": 94,
+        "done": 16,
         "total": 17,
         "classification": "GO",
         "byFilter": {
@@ -7148,7 +7148,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -7169,54 +7169,92 @@
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "benchmark",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "gap",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "attributes",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "derivation",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "route",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "done",
               "text": "Pure commodity — differentiation floor does not apply",
               "slot": "argument",
-              "code": "F1_NOT_APPLICABLE"
+              "code": "F1_NOT_APPLICABLE",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             }
           ]
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -7360,8 +7398,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -7370,7 +7408,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -7389,56 +7427,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -7578,8 +7666,8 @@
         }
       },
       "expected": {
-        "pct": 59,
-        "done": 10,
+        "pct": 53,
+        "done": 9,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -7588,7 +7676,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -7607,58 +7695,108 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "pending",
               "text": "MRP and grammage not yet declared",
               "formAdmin": true,
-              "code": "F2_MRP_MISSING"
+              "code": "F2_MRP_MISSING",
+              "slot": "mrpGrammage",
+              "level": "none",
+              "credit": 0
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -7800,8 +7938,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -7810,7 +7948,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -7829,56 +7967,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹80.5 · 50g"
+              "text": "MRP ₹80.5 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -8014,17 +8202,17 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 0,
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -8045,54 +8233,106 @@
               "status": "pending",
               "text": "Benchmark not named — enter a competitor brand · variant · pack",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_NAMED"
+              "code": "F1_BENCHMARK_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Declared gap missing — enter points on the 10-pt scale",
               "slot": "gap",
-              "code": "F1_GAP_MISSING"
+              "code": "F1_GAP_MISSING",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -8233,8 +8473,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -8243,7 +8483,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -8262,57 +8502,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 59.9% is below the 60% Professional Care floor (v4, non-negotiable). Raise net margin at scale above 60%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -8453,8 +8743,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -8463,7 +8753,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -8482,56 +8772,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 60% clears the 60% floor"
+              "text": "Net margin 60% clears the 60% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -8672,8 +9012,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -8682,7 +9022,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -8701,56 +9041,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 60.1% clears the 60% floor"
+              "text": "Net margin 60.1% clears the 60% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -8891,8 +9281,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -8901,7 +9291,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -8920,57 +9310,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 49.9% is below the 50% Personal Care floor (v4, non-negotiable). Raise net margin at scale above 50%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -9111,8 +9551,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -9121,7 +9561,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -9140,56 +9580,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 50% clears the 50% floor"
+              "text": "Net margin 50% clears the 50% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -9330,8 +9820,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -9340,7 +9830,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -9359,56 +9849,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 50.1% clears the 50% floor"
+              "text": "Net margin 50.1% clears the 50% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -9549,8 +10089,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -9559,7 +10099,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -9578,57 +10118,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 34.9% is below the 35% Foods floor (v4, non-negotiable). Raise net margin at scale above 35%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -9769,8 +10359,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -9779,7 +10369,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -9798,56 +10388,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 35% clears the 35% floor"
+              "text": "Net margin 35% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -9988,8 +10628,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -9998,7 +10638,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -10017,56 +10657,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 35.1% clears the 35% floor"
+              "text": "Net margin 35.1% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -10207,8 +10897,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -10217,7 +10907,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -10236,57 +10926,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 29.9% is below the 30% Snacks floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -10427,8 +11167,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -10437,7 +11177,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -10456,56 +11196,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 30% clears the 30% floor"
+              "text": "Net margin 30% clears the 30% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -10646,8 +11436,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -10656,7 +11446,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -10675,56 +11465,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 30.1% clears the 30% floor"
+              "text": "Net margin 30.1% clears the 30% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -10865,8 +11705,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -10875,7 +11715,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -10894,57 +11734,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 29.9% is below the 30% Bakery floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -11085,8 +11975,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -11095,7 +11985,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -11114,56 +12004,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 30% clears the 30% floor"
+              "text": "Net margin 30% clears the 30% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -11304,8 +12244,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -11314,7 +12254,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -11333,56 +12273,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 30.1% clears the 30% floor"
+              "text": "Net margin 30.1% clears the 30% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -11523,8 +12513,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -11533,7 +12523,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -11552,57 +12542,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 24.9% is below the 25% Ambient Dairy floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -11743,8 +12783,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -11753,7 +12793,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -11772,56 +12812,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25% clears the 25% floor"
+              "text": "Net margin 25% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -11962,8 +13052,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -11972,7 +13062,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -11991,56 +13081,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25.1% clears the 25% floor"
+              "text": "Net margin 25.1% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -12181,8 +13321,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -12191,7 +13331,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -12210,57 +13350,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 24.9% is below the 25% Beverages floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -12401,8 +13591,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -12411,7 +13601,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -12430,56 +13620,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25% clears the 25% floor"
+              "text": "Net margin 25% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -12620,8 +13860,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -12630,7 +13870,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -12649,56 +13889,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25.1% clears the 25% floor"
+              "text": "Net margin 25.1% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -12839,8 +14129,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -12849,7 +14139,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -12868,57 +14158,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 24.9% is below the 25% Dairy Craft — Non-UHT floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -13059,8 +14399,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -13069,7 +14409,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -13088,56 +14428,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25% clears the 25% floor"
+              "text": "Net margin 25% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -13278,8 +14668,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -13288,7 +14678,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -13307,56 +14697,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 25.1% clears the 25% floor"
+              "text": "Net margin 25.1% clears the 25% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -13497,8 +14937,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -13507,7 +14947,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -13526,57 +14966,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 11.9% is below the 12% Cold Chain Business floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -13717,8 +15207,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -13727,7 +15217,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -13746,56 +15236,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 12% clears the 12% floor"
+              "text": "Net margin 12% clears the 12% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -13936,8 +15476,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -13946,7 +15486,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -13965,56 +15505,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 12.1% clears the 12% floor"
+              "text": "Net margin 12.1% clears the 12% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -14155,8 +15745,8 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
         "classification": "NO-GO",
         "byFilter": {
@@ -14165,7 +15755,7 @@
             "total": 6
           },
           "f2": {
-            "done": 2,
+            "done": 1,
             "total": 3
           },
           "f3": {
@@ -14184,57 +15774,107 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
           "checkLabel": "Below floor",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "pending",
               "text": "Net margin 11.9% is below the 12% Dairy Craft — UHT Milk floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor.",
-              "code": "F2_MARGIN_BELOW_FLOOR"
+              "code": "F2_MARGIN_BELOW_FLOOR",
+              "slot": "netMarginFloor",
+              "level": "none",
+              "credit": 0
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -14375,8 +16015,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -14385,7 +16025,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -14404,56 +16044,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 12% clears the 12% floor"
+              "text": "Net margin 12% clears the 12% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -14594,8 +16284,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -14604,7 +16294,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -14623,56 +16313,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 12.1% clears the 12% floor"
+              "text": "Net margin 12.1% clears the 12% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -14782,8 +16522,8 @@
         }
       },
       "expected": {
-        "pct": 29,
-        "done": 5,
+        "pct": 24,
+        "done": 4,
         "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
@@ -14792,7 +16532,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -14811,56 +16551,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -14972,17 +16762,17 @@
         }
       },
       "expected": {
-        "pct": 65,
-        "done": 11,
+        "pct": 59,
+        "done": 10,
         "total": 17,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -15001,56 +16791,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 40% clears the 35% floor"
+              "text": "Net margin 40% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -15192,8 +17032,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -15202,7 +17042,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -15221,56 +17061,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 36% clears the 35% floor"
+              "text": "Net margin 36% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -15411,8 +17301,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -15421,7 +17311,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -15440,56 +17330,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 37% clears the 35% floor"
+              "text": "Net margin 37% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
@@ -15630,8 +17570,8 @@
         }
       },
       "expected": {
-        "pct": 71,
-        "done": 12,
+        "pct": 65,
+        "done": 11,
         "total": 17,
         "classification": "WATCH",
         "byFilter": {
@@ -15640,7 +17580,7 @@
             "total": 6
           },
           "f2": {
-            "done": 3,
+            "done": 2,
             "total": 3
           },
           "f3": {
@@ -15659,56 +17599,106 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check for relevance in India",
+              "text": "Named benchmark awaiting web check — assessed when you Submit",
               "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_CHECKED"
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "done",
               "text": "Declared gap 3 clears the 2.0 floor",
               "slot": "gap",
-              "code": "F1_GAP_OK"
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
             },
             {
               "status": "pending",
               "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
               "slot": "attributes",
-              "code": "F1_EVIDENCE_MISSING"
+              "code": "F1_ATTRIBUTES_NO_EVIDENCE",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NO_EVIDENCE"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Enter gap derivation — what we intend to beat on",
               "slot": "derivation",
-              "code": "F1_DERIVATION_MISSING"
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth route awaiting AI check on Submit",
               "slot": "route",
-              "code": "F1_ROUTE_NOT_CHECKED"
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",
               "text": "Growth argument awaiting fact-check on Submit",
               "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_CHECKED"
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             }
-          ]
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": true
         },
         "f2": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Evidence missing",
           "items": [
             {
               "status": "done",
-              "text": "MRP ₹99 · 50g"
+              "text": "MRP ₹99 · 50g",
+              "slot": "mrpGrammage",
+              "level": "strong",
+              "credit": 1
             },
             {
               "status": "done",
-              "text": "Net margin 38% clears the 35% floor"
+              "text": "Net margin 38% clears the 35% floor",
+              "slot": "netMarginFloor",
+              "level": "strong",
+              "credit": 1
             },
             {
-              "status": "done",
-              "text": "Quick-commerce 3-year terms recorded — stable"
+              "status": "pending",
+              "text": "Quick-commerce terms awaiting relevance assessment on Submit",
+              "code": "F2_QCOM_NOT_ASSESSED",
+              "slot": "qcom",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
             },
             {
               "status": "pending",

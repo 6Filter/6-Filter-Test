@@ -60,13 +60,13 @@ assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 4)), "GO"); // 14/17 ≈ 82%
 
 const namedOnly = checkF1(
   {
-    declaredAttribute: "cooling",
-    benchmark: "5",
+    declaredAttribute: "cooling feel that lasts",
+    benchmark: "Indulekha Bringha",
     declaredGap: 5,
     gapDerivation: "beat on cooling",
     parityExceptions: "none",
     growthRoute: "penetration",
-    growthArgument: "5",
+    growthArgument: "share take from current oil users",
   },
   {}
 );
@@ -75,32 +75,55 @@ assert.equal(
   "pending",
   "named benchmark needs web check before it counts"
 );
-assert.match(namedOnly.items.find((i) => i.slot === "benchmark").text, /awaiting web check/i);
+assert.match(namedOnly.items.find((i) => i.slot === "benchmark").text, /awaiting web check|awaiting relevance|assessed when you Submit/i);
 assert.equal(
   namedOnly.items.find((i) => i.slot === "route").status,
   "pending",
   "growth route needs AI check before it counts"
 );
-assert.match(namedOnly.items.find((i) => i.slot === "route").text, /awaiting AI check/i);
+assert.match(namedOnly.items.find((i) => i.slot === "route").text, /awaiting AI check|awaiting|assessed when you Submit/i);
 
 const verified = checkF1(
   {
-    declaredAttribute: "cooling",
+    declaredAttribute: "cooling feel that lasts",
     benchmark: "Indulekha",
     declaredGap: 2.2,
     gapDerivation: "beat on cooling",
     parityExceptions: "none",
     growthRoute: "penetration",
-    growthArgument: "share take",
+    growthArgument: "share take from current oil users",
     evidenceSourceDate: "https://example.com/study",
   },
   {
-    benchmarkCheck: { status: "relevant", source_url: "https://example.com/indulekha" },
-    claimChecks: {
-      gapDerivation: { verdict: "supported" },
-      parityExceptions: { verdict: "unverified" },
-      growthArgument: { verdict: "supported" },
+    assessments: {
+      benchmark: {
+        raw: { relevance: "strong", source_url: "https://example.com/indulekha" },
+        returnedSources: ["https://example.com/indulekha"],
+      },
+      attributes: { raw: { relevance: "strong", specific: true }, returnedSources: [] },
+      route: { raw: { matches: "yes", confidence: "high", expected: "penetration" }, returnedSources: [] },
+      derivation: {
+        raw: {
+          relevance: "strong",
+          specific: true,
+          supported: true,
+          source_url: "https://example.com/indulekha",
+          quote: "cooling",
+        },
+        returnedSources: ["https://example.com/indulekha"],
+      },
+      argument: {
+        raw: {
+          relevance: "strong",
+          specific: true,
+          supported: true,
+          source_url: "https://example.com/indulekha",
+          quote: "share",
+        },
+        returnedSources: ["https://example.com/indulekha"],
+      },
     },
+    benchmarkCheck: { status: "relevant", source_url: "https://example.com/indulekha" },
     routeCheck: { expected: "penetration", confidence: "high" },
   },
   {

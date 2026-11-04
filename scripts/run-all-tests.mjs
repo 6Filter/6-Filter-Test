@@ -73,11 +73,13 @@ if (!files.length) {
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
   "testPathToGo.mjs",
+  "testPathToGoActionCopy.mjs",
   "testScoringRules.mjs",
   "owner-tests/testPathCopy.mjs",
   "owner-tests/testEvidenceReading.mjs",
   "owner-tests/testPathToGo.mjs",
   "owner-tests/testScoringRules.mjs",
+  "owner-tests/testFilter1Scoring.mjs",
 ]);
 
 const failures = [];

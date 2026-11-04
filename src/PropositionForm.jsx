@@ -1002,9 +1002,13 @@ function FilterComparePair({ label, actual, target, unit }) {
 function FilterStatusCard({ spec, check, narrative, compare }) {
   const tone = filterCardTone(check, spec.key);
   const items = analysisCheckItems(check?.items);
+  const judged = items.filter((i) => i.level != null || i.slot);
+  const creditSum = judged.reduce((s, i) => s + (Number.isFinite(Number(i.credit)) ? Number(i.credit) : i.status === "done" ? 1 : 0), 0);
   const done = items.filter((i) => i.status === "done").length;
   const total = items.length;
-  const pct = total ? Math.round((100 * done) / total) : 0;
+  const pct = total
+    ? Math.round((100 * (judged.length ? creditSum : done)) / total)
+    : 0;
   const label = check?.checkLabel || spec.defaultStatus || "Evidence missing";
   return (
     <article className="filter-status-card" data-tone={tone}>
@@ -1014,11 +1018,20 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
       </div>
       <h3>{spec.title}</h3>
       <p>{narrative}</p>
-      {spec.key === "f4" && items.length ? (
+      {(spec.key === "f1" || spec.key === "f4" || (spec.key === "f2" && judged.some((i) => i.slot === "qcom"))) &&
+      items.length ? (
         <ul className="f4-analysis-dims">
           {items.map((it, i) => (
-            <li key={`${spec.key}-dim-${i}`} data-status={it.status}>
+            <li key={`${spec.key}-dim-${i}`} data-status={it.status} data-level={it.level || ""}>
+              {it.level ? (
+                <span className="mono" style={{ opacity: 0.75, marginRight: 6 }}>
+                  {String(it.level).toUpperCase()}
+                </span>
+              ) : null}
               {it.text}
+              {Array.isArray(it.reasons) && it.reasons.length ? (
+                <small style={{ display: "block", opacity: 0.7 }}>{it.reasons.join(" · ")}</small>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -1029,7 +1042,9 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
           <div className="filter-progress-track">
             <div className="filter-progress-fill" style={{ width: `${pct}%` }} />
           </div>
-          <span className="mono filter-progress-n">{done}/{total}</span>
+          <span className="mono filter-progress-n">
+            {judged.length ? `${Math.round(creditSum * 10) / 10}/${total}` : `${done}/{total}`}
+          </span>
         </div>
       ) : (
         <span className="mono filter-progress-n">—</span>
@@ -1367,9 +1382,18 @@ export function GoNoGoResultPage({
             </div>
             <div className="gonogo-badge-row">
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{classification}</div>
-              {isIncomplete && Number.isFinite(Number(score.done)) ? (
+              {Number.isFinite(Number(score.pct)) ? (
                 <span className="mono badge-chip">
-                  {score.done} of {score.total || 15} checks complete
+                  {Number.isFinite(Number(score.points))
+                    ? `${score.points} of ${score.total || 17} relevance points · ${score.pct}%`
+                    : `${score.pct}% relevance`}
+                  {score.shadowMode && Number.isFinite(Number(score.legacyPct))
+                    ? ` · legacy ${score.legacyPct}%`
+                    : ""}
+                </span>
+              ) : isIncomplete && Number.isFinite(Number(score.done)) ? (
+                <span className="mono badge-chip">
+                  {score.done} of {score.total || 17} checks
                 </span>
               ) : null}
               {!isIncomplete && sizeTier ? (

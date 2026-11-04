@@ -43,7 +43,11 @@ const unsignedSame = previewAdvisoryChecks({
   },
 }).f2;
 assert.equal(filterCheckScore(signedSame).pct, filterCheckScore(unsignedSame).pct);
-assert.equal(filterCheckScore(unsignedSame).pct, 100);
+// Quick-commerce is judged on Submit — preview never marks it done from presence alone.
+assert.equal(filterCheckScore(unsignedSame).pct, 67);
+assert.ok(
+  unsignedSame.items.some((it) => /assessed when you Submit|Quick-commerce/i.test(it.text) && it.slot === "qcom")
+);
 assert.ok(unsignedSame.items.some((it) => it.text === unsigned && it.formAdmin));
 
 const belowAndUnsigned = {
@@ -92,7 +96,7 @@ const mixedScore = scoreAdvisoryChecks({
   f3: belowAndUnsigned,
   f4: { items: [] },
 });
-assert.ok(mixedScore.byFilter.f2.pct === 100);
+assert.ok(mixedScore.byFilter.f2.pct === 67, `f2 preview qcom is not done until assessed, got ${mixedScore.byFilter.f2.pct}`);
 assert.ok(mixedScore.byFilter.f3.pct === 0);
 assert.doesNotMatch(JSON.stringify(analysisCheckItems(unsignedSame.items)), /Finance/);
 
