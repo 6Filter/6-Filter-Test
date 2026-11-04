@@ -1,12 +1,12 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v4.3**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v4.4**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v4.3` |
+| `SCORING_RULESET_VERSION` | `v4.4` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `INCOMPLETE_VERDICT_MODE` | `incomplete` |
 | `SCORE_KEY_IGNORES_NAME_TYPOS` | `false` |
@@ -15,6 +15,13 @@ Generated from `lib/lockedConstants.js` (ruleset **v4.3**). Filters 5–6 stay v
 | `CATEGORY_SIZE_NEEDS_SOURCED_FIGURE` | `true` |
 | `EVIDENCE_TRUST_MODE` | `count` |
 | `EVIDENCE_CONFLICT_RATIO` | `2` |
+| `INVALID_INPUTS_BLOCK_SUBMIT` | `true` |
+| `AI_INPUT_REVIEW` | `true` |
+| `GST_STANDARD_RATES` | `0, 3, 5, 12, 18, 28, 40` |
+
+### What changed in v4.4
+
+Deterministic `reviewInputs` runs before Submit. Invalid inputs return HTTP 422, spend nothing, and seal no verdict (drafts still save). Path-to-GO items carry stable `ITEM_CODES` and instruction/why/gain copy from `lib/itemCopy.js` — never a neutral “Benchmark named: X”. Research prompts use a title-cased benchmark suggestion when capitals are odd; the typed value stays until the user accepts. Advisory AI input review (D14) may add notes only and never changes a score.
 
 ### What changed in v4.3
 

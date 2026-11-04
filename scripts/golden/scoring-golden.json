@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "v4.3",
+  "rulesetVersion": "v4.4",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {
@@ -6641,7 +6641,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -6839,7 +6840,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -6849,7 +6851,8 @@
             {
               "status": "pending",
               "text": "MRP and grammage not yet declared",
-              "formAdmin": true
+              "formAdmin": true,
+              "code": "F2_MRP_MISSING"
             },
             {
               "status": "done",
@@ -6871,7 +6874,8 @@
           "items": [
             {
               "status": "pending",
-              "text": "Current MRP implies a price below the safe ₹80 floor"
+              "text": "Current MRP implies a price below the safe ₹80 floor",
+              "code": "F3_MRP_OUTSIDE_RANGE"
             }
           ]
         },
@@ -7039,7 +7043,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -7226,16 +7231,19 @@
             {
               "status": "pending",
               "text": "Benchmark not named",
-              "formAdmin": true
+              "formAdmin": true,
+              "code": "F1_BENCHMARK_NOT_NAMED"
             },
             {
               "status": "pending",
               "text": "Declared gap missing",
-              "formAdmin": true
+              "formAdmin": true,
+              "code": "F1_GAP_MISSING"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -7434,7 +7442,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -7447,7 +7456,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 59.9% is below the 60% Professional Care floor (v4, non-negotiable). Raise net margin at scale above 60%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 59.9% is below the 60% Professional Care floor (v4, non-negotiable). Raise net margin at scale above 60%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -7633,7 +7643,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -7832,7 +7843,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -8031,7 +8043,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -8044,7 +8057,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 49.9% is below the 50% Personal Care floor (v4, non-negotiable). Raise net margin at scale above 50%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 49.9% is below the 50% Personal Care floor (v4, non-negotiable). Raise net margin at scale above 50%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -8230,7 +8244,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -8429,7 +8444,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -8628,7 +8644,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -8641,7 +8658,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 34.9% is below the 35% Foods floor (v4, non-negotiable). Raise net margin at scale above 35%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 34.9% is below the 35% Foods floor (v4, non-negotiable). Raise net margin at scale above 35%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -8827,7 +8845,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9026,7 +9045,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9225,7 +9245,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9238,7 +9259,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 29.9% is below the 30% Snacks floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 29.9% is below the 30% Snacks floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -9424,7 +9446,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9623,7 +9646,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9822,7 +9846,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -9835,7 +9860,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 29.9% is below the 30% Bakery floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 29.9% is below the 30% Bakery floor (v4, non-negotiable). Raise net margin at scale above 30%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -10021,7 +10047,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -10220,7 +10247,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -10419,7 +10447,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -10432,7 +10461,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 24.9% is below the 25% Ambient Dairy floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 24.9% is below the 25% Ambient Dairy floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -10618,7 +10648,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -10817,7 +10848,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -11016,7 +11048,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -11029,7 +11062,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 24.9% is below the 25% Beverages floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 24.9% is below the 25% Beverages floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -11215,7 +11249,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -11414,7 +11449,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -11613,7 +11649,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -11626,7 +11663,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 24.9% is below the 25% Dairy Craft — Non-UHT floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 24.9% is below the 25% Dairy Craft — Non-UHT floor (v4, non-negotiable). Raise net margin at scale above 25%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -11812,7 +11850,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12011,7 +12050,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12210,7 +12250,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12223,7 +12264,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 11.9% is below the 12% Cold Chain Business floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 11.9% is below the 12% Cold Chain Business floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -12409,7 +12451,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12608,7 +12651,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12807,7 +12851,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -12820,7 +12865,8 @@
             },
             {
               "status": "pending",
-              "text": "Net margin 11.9% is below the 12% Dairy Craft — UHT Milk floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor."
+              "text": "Net margin 11.9% is below the 12% Dairy Craft — UHT Milk floor (v4, non-negotiable). Raise net margin at scale above 12%, or revise COGS/MRP so the path clears that floor.",
+              "code": "F2_MARGIN_BELOW_FLOOR"
             },
             {
               "status": "done",
@@ -13006,7 +13052,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -13205,7 +13252,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -13373,7 +13421,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -13543,7 +13592,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -13583,7 +13633,8 @@
           "items": [
             {
               "status": "pending",
-              "text": "Functional core stability: High risk — High for golden. Clear via a Filter 4 mitigation response on \"Functional core stability\" naming contracts, lab proof, or a dated certification path"
+              "text": "Functional core stability: High risk — High for golden. Clear via a Filter 4 mitigation response on \"Functional core stability\" naming contracts, lab proof, or a dated certification path",
+              "code": "F4_DIMENSION_RISK"
             },
             {
               "status": "done",
@@ -13742,7 +13793,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -13941,7 +13993,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },
@@ -14140,7 +14193,8 @@
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated"
+              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
+              "code": "F1_CATEGORY_SIZE_UNSOURCED"
             }
           ]
         },

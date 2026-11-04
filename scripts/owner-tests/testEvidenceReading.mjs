@@ -29,7 +29,7 @@ import { gateInputKey } from "../../lib/analysisStability.js";
 import { researchHashFor } from "../../lib/researchCache.js";
 import { checkF1 } from "../../lib/filterChecks.js";
 
-assert.equal(SCORING_RULESET_VERSION, "v4.3");
+assert.equal(SCORING_RULESET_VERSION, "v4.4");
 assert.ok(EVIDENCE_EXTRACT_CHARS >= 60000);
 
 // D9 — ₹0 and PASS-without-size do not count when the constant is true

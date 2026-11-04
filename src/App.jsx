@@ -138,7 +138,12 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Could not save proposition.");
+    if (!res.ok) {
+      const err = new Error(data.error || "Could not save proposition.");
+      if (res.status === 422 && data.inputReview) err.inputReview = data.inputReview;
+      err.status = res.status;
+      throw err;
+    }
     return {
       proposition: attachAdvisory(data),
       suggestions: data.suggestions ?? null,
@@ -1020,7 +1025,17 @@ export default function App() {
       window.setTimeout(() => setSavedFlash(false), 1600);
       return result;
     } catch (e) {
-      setError(e.message || "Could not save this proposition.");
+      const reviewMsgs = Array.isArray(e?.inputReview?.fields)
+        ? e.inputReview.fields
+            .filter((f) => f.status === "invalid")
+            .map((f) => f.message)
+            .filter(Boolean)
+        : [];
+      setError(
+        reviewMsgs.length
+          ? `${e.message || "Fix the invalid inputs before Submit."} ${reviewMsgs.join(" ")}`.trim()
+          : e.message || "Could not save this proposition."
+      );
       return null;
     } finally {
       setSavingProp(false);

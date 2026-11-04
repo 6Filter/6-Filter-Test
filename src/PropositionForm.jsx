@@ -44,7 +44,8 @@ import { scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
-import { isGoScore } from "../lib/lockedConstants.js";
+import { isGoScore, INVALID_INPUTS_BLOCK_SUBMIT } from "../lib/lockedConstants.js";
+import { reviewInputs, titleCaseName } from "../lib/inputReview.js";
 import {
   buildPathToGo,
   resolveOutputScore,
@@ -356,6 +357,27 @@ function SuggestionChip({ field, suggestion, basis, onAccept, onDismiss }) {
       </span>
       <button type="button" onClick={onAccept}>Accept</button>
       <button type="button" onClick={onDismiss}>Dismiss</button>
+    </div>
+  );
+}
+
+/** Part 132 — deterministic input-review hint under a field (never auto-changes). */
+function InputReviewHint({ issue, onUseSuggestion, onKeepTyped }) {
+  if (!issue) return null;
+  const tone = issue.status === "invalid" ? "invalid" : "fix";
+  return (
+    <div className={`input-review-hint is-${tone}`} role="status">
+      <span>{issue.message}</span>
+      {issue.suggestion ? (
+        <span className="input-review-actions">
+          <button type="button" onClick={() => onUseSuggestion?.(issue.suggestion)}>
+            Use suggestion
+          </button>
+          <button type="button" onClick={() => onKeepTyped?.()}>
+            Keep as typed
+          </button>
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -1268,6 +1290,8 @@ export function GoNoGoResultPage({
         sealedScore: score,
         scoreStatus: scoreStatus || "current",
         screenedAt: result.screenedAt || result.at || null,
+        doc,
+        listAllOpen: true,
       }),
     {
       kind: "path",
@@ -1437,7 +1461,8 @@ export function GoNoGoResultPage({
                     <li key={`${it.id || it.filter}-${i}`}>
                       <span className="mono imp-filter-tag">{it.filter}</span>
                       <span className="path-action-text">
-                        {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                        <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                        {it.why ? <small className="path-why">{it.why}</small> : null}
                       </span>
                       <span className="mono path-gain">
                         +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -1455,11 +1480,14 @@ export function GoNoGoResultPage({
                   <li key={`b-${it.id || i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
-                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                      <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                      {it.why ? <small className="path-why">{it.why}</small> : null}
                     </span>
-                    <span className="mono path-gain">
-                      +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
-                    </span>
+                    {Number(it.gainPct) > 0 ? (
+                      <span className="mono path-gain">
+                        +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -1471,7 +1499,8 @@ export function GoNoGoResultPage({
                       <li key={`a-${it.id || i}`}>
                         <span className="mono imp-filter-tag">{it.filter}</span>
                         <span className="path-action-text">
-                          {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                          <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                          {it.why ? <small className="path-why">{it.why}</small> : null}
                         </span>
                         <span className="mono path-gain">
                           +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -1521,7 +1550,8 @@ export function GoNoGoResultPage({
                   <li key={`${it.id || it.filter}-${i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
-                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                      <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                      {it.why ? <small className="path-why">{it.why}</small> : null}
                     </span>
                     <span className="mono path-gain">
                       +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -1879,6 +1909,8 @@ export default function PropositionForm({
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiDismissed, setAiDismissed] = useState({});
   const [aiPassMeta, setAiPassMeta] = useState(null);
+  /** field → true once the user clicked Keep as typed for that review issue. */
+  const [inputReviewKept, setInputReviewKept] = useState({});
   const [localError, setLocalError] = useState("");
   const [slackNotice, setSlackNotice] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
@@ -1975,6 +2007,7 @@ export default function PropositionForm({
   useEffect(() => {
     setAiDismissed({});
     setAiPassMeta(null);
+    setInputReviewKept({});
     setLocalError("");
     setSlackNotice("");
     setProofError("");
@@ -2133,7 +2166,45 @@ export default function PropositionForm({
   const propositionId = doc.id || initial?.id;
   const hasIdentity = hasSubmitterIdentity(doc);
   const progress = submitProgress(doc);
-  const canSubmit = progress.requiredLeft === 0;
+  const liveInputReview = reviewInputs(doc);
+  const visibleInputReviewFields = liveInputReview.fields.filter(
+    (f) => !(f.suggestion && inputReviewKept[f.field])
+  );
+  const inputBlocking = INVALID_INPUTS_BLOCK_SUBMIT && liveInputReview.blocking;
+  const canSubmit = progress.requiredLeft === 0 && !inputBlocking;
+
+  function inputReviewIssue(field) {
+    return visibleInputReviewFields.find((f) => f.field === field) || null;
+  }
+
+  function applyInputSuggestion(field, suggestion) {
+    setInputReviewKept((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    if (field === "name" || field === "category" || field === "ideaDescription") {
+      setTop(field, suggestion);
+      return;
+    }
+    if (field === "declaredAttribute" || field === "benchmark" || field === "declaredGap") {
+      setFilter("f1", field, suggestion);
+      return;
+    }
+    if (
+      field === "gstRatePct" ||
+      field === "netMarginAtScale" ||
+      field === "mrpInr" ||
+      field === "cogsAtScale" ||
+      field === "grammage"
+    ) {
+      setFilter("f2", field, suggestion);
+    }
+  }
+
+  function keepInputTyped(field) {
+    setInputReviewKept((prev) => ({ ...prev, [field]: true }));
+  }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
   const livePreviewChecks = previewAdvisoryChecks(liveDoc);
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
@@ -2925,6 +2996,15 @@ export default function PropositionForm({
       return;
     }
     if (!canSubmit) {
+      if (inputBlocking) {
+        setLocalError(
+          liveInputReview.fields
+            .filter((f) => f.status === "invalid")
+            .map((f) => f.message)
+            .join(" ") || "Fix invalid inputs before Submit."
+        );
+        return;
+      }
       setLocalError(
         progress.missingFieldLabels.length
           ? `Fill ${progress.missingFieldLabels.join(", ")} before Submit.`
@@ -3216,15 +3296,39 @@ export default function PropositionForm({
         <input
           placeholder="Enter the proposition name — e.g. Herbal cooling hair oil"
           value={doc.name || ""}
-          onChange={(e) => setTop("name", e.target.value)}
+          onChange={(e) => {
+            setInputReviewKept((prev) => {
+              const next = { ...prev };
+              delete next.name;
+              return next;
+            });
+            setTop("name", e.target.value);
+          }}
           aria-label="Proposition name"
+        />
+        <InputReviewHint
+          issue={inputReviewIssue("name")}
+          onUseSuggestion={(s) => applyInputSuggestion("name", s)}
+          onKeepTyped={() => keepInputTyped("name")}
         />
         <input
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
-          onChange={(e) => setTop("category", e.target.value)}
+          onChange={(e) => {
+            setInputReviewKept((prev) => {
+              const next = { ...prev };
+              delete next.category;
+              return next;
+            });
+            setTop("category", e.target.value);
+          }}
           aria-label="Category"
+        />
+        <InputReviewHint
+          issue={inputReviewIssue("category")}
+          onUseSuggestion={(s) => applyInputSuggestion("category", s)}
+          onKeepTyped={() => keepInputTyped("category")}
         />
         <datalist id="primus-fmcg-categories">
           {FMCG_CATEGORIES.map((v) => (
@@ -3246,9 +3350,21 @@ export default function PropositionForm({
         <textarea
           placeholder="Describe the product idea, or attach a PDF, Word file, or image with the insight."
           value={doc.ideaDescription || ""}
-          onChange={(e) => setTop("ideaDescription", e.target.value)}
+          onChange={(e) => {
+            setInputReviewKept((prev) => {
+              const next = { ...prev };
+              delete next.ideaDescription;
+              return next;
+            });
+            setTop("ideaDescription", e.target.value);
+          }}
           aria-label="Idea / insight description"
           rows={4}
+        />
+        <InputReviewHint
+          issue={inputReviewIssue("ideaDescription")}
+          onUseSuggestion={(s) => applyInputSuggestion("ideaDescription", s)}
+          onKeepTyped={() => keepInputTyped("ideaDescription")}
         />
         {(() => {
           const sp = suggestionProps("", { key: "ideaDescription", type: "textarea" }, doc.ideaDescription);
@@ -3478,78 +3594,91 @@ export default function PropositionForm({
                     </div>
                   </div>
                 ) : (
-                  <FieldControl
-                    key={field.key}
-                    field={field}
-                    fieldPath={`${spec.key}.${field.key}`}
-                    value={values[field.key]}
-                    onChange={(v) => setFilter(spec.key, field.key, v)}
-                    currentUser={currentUser}
-                    aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
-                    fileValue={field.fileKey ? values[field.fileKey] : null}
-                    onPickFile={field.fileKey ? handleEvidenceSourceFile : undefined}
-                    onClearFile={field.fileKey ? clearEvidenceSourceFile : undefined}
-                    fileError={field.fileKey ? evidenceFileError : ""}
-                    fileBusy={field.fileKey ? saving : false}
-                    inactive={
-                      spec.key === "f1" && field.key === "declaredGap" && !isNamedBenchmark(values.benchmark)
-                    }
-                    inactiveHint="Name a real benchmark (brand · variant · pack) to declare a gap."
-                    cogsAtScale={spec.key === "f3" ? doc.f2?.cogsAtScale : undefined}
-                    taxNotes={
-                      spec.key === "f2" && field.key === "mrpInr" ? (
-                        <>
-                          <p className="derived-note">
-                            MRP before tax: {formatRupeeInr(mrpBaseInr, { digits: 2 })}
-                          </p>
-                          <p className="derived-note">
-                            MRP after tax:{" "}
-                            {mrpFinalInr != null ? formatRupeeInr(mrpFinalInr, { digits: 2 }) : "— (set a GST rate)"}
-                          </p>
-                        </>
-                      ) : null
-                    }
-                    loading={
-                      spec.key === "f3" && field.key === "marginElasticity" && marginElasticityLoading
-                    }
-                    onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
-                    reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
-                    mitigationResponses={spec.key === "f4" ? values.f4MitigationResponses : null}
-                    onMitigationChange={
-                      spec.key === "f4" && field.key === "techShiftRisk"
-                        ? (key, text) => {
-                            const prevMap =
-                              values.f4MitigationResponses && typeof values.f4MitigationResponses === "object"
-                                ? values.f4MitigationResponses
-                                : {};
-                            setFilter("f4", "f4MitigationResponses", { ...prevMap, [key]: text });
-                          }
-                        : undefined
-                    }
-                    rangeOverride={spec.key === "f3" ? values.f3RangeOverride : null}
-                    onRangeOverride={
-                      spec.key === "f3" && field.key === "marginElasticity"
-                        ? (next) => setFilter("f3", "f3RangeOverride", next)
-                        : undefined
-                    }
-                    onRefresh={
-                      (spec.key === "f2" &&
-                        ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
-                      (spec.key === "f3" && field.key === "marginElasticity") ||
-                      (spec.key === "f4" && field.key === "techShiftRisk")
-                        ? () => handleRefreshField(field.key)
-                        : undefined
-                    }
-                    refreshing={refreshingField === field.key}
-                    liveNote=""
-                    breakdownNote={
-                      spec.key === "f2" && field.key === "gstRatePct"
-                        ? String(values.gstBasis || "").trim()
-                        : ""
-                    }
-                    {...suggestionProps(spec.key, field, values[field.key])}
-                    {...fieldControlExtras(spec.key, field)}
-                  />
+                  <div key={field.key} className="prop-field-wrap">
+                    <FieldControl
+                      field={field}
+                      fieldPath={`${spec.key}.${field.key}`}
+                      value={values[field.key]}
+                      onChange={(v) => {
+                        setInputReviewKept((prev) => {
+                          const next = { ...prev };
+                          delete next[field.key];
+                          return next;
+                        });
+                        setFilter(spec.key, field.key, v);
+                      }}
+                      currentUser={currentUser}
+                      aiSourced={Boolean(aiSourced[sourcedPath(spec.key, field.key)])}
+                      fileValue={field.fileKey ? values[field.fileKey] : null}
+                      onPickFile={field.fileKey ? handleEvidenceSourceFile : undefined}
+                      onClearFile={field.fileKey ? clearEvidenceSourceFile : undefined}
+                      fileError={field.fileKey ? evidenceFileError : ""}
+                      fileBusy={field.fileKey ? saving : false}
+                      inactive={
+                        spec.key === "f1" && field.key === "declaredGap" && !isNamedBenchmark(values.benchmark)
+                      }
+                      inactiveHint="Name a real benchmark (brand · variant · pack) to declare a gap."
+                      cogsAtScale={spec.key === "f3" ? doc.f2?.cogsAtScale : undefined}
+                      taxNotes={
+                        spec.key === "f2" && field.key === "mrpInr" ? (
+                          <>
+                            <p className="derived-note">
+                              MRP before tax: {formatRupeeInr(mrpBaseInr, { digits: 2 })}
+                            </p>
+                            <p className="derived-note">
+                              MRP after tax:{" "}
+                              {mrpFinalInr != null ? formatRupeeInr(mrpFinalInr, { digits: 2 }) : "— (set a GST rate)"}
+                            </p>
+                          </>
+                        ) : null
+                      }
+                      loading={
+                        spec.key === "f3" && field.key === "marginElasticity" && marginElasticityLoading
+                      }
+                      onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
+                      reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
+                      mitigationResponses={spec.key === "f4" ? values.f4MitigationResponses : null}
+                      onMitigationChange={
+                        spec.key === "f4" && field.key === "techShiftRisk"
+                          ? (key, text) => {
+                              const prevMap =
+                                values.f4MitigationResponses && typeof values.f4MitigationResponses === "object"
+                                  ? values.f4MitigationResponses
+                                  : {};
+                              setFilter("f4", "f4MitigationResponses", { ...prevMap, [key]: text });
+                            }
+                          : undefined
+                      }
+                      rangeOverride={spec.key === "f3" ? values.f3RangeOverride : null}
+                      onRangeOverride={
+                        spec.key === "f3" && field.key === "marginElasticity"
+                          ? (next) => setFilter("f3", "f3RangeOverride", next)
+                          : undefined
+                      }
+                      onRefresh={
+                        (spec.key === "f2" &&
+                          ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
+                        (spec.key === "f3" && field.key === "marginElasticity") ||
+                        (spec.key === "f4" && field.key === "techShiftRisk")
+                          ? () => handleRefreshField(field.key)
+                          : undefined
+                      }
+                      refreshing={refreshingField === field.key}
+                      liveNote=""
+                      breakdownNote={
+                        spec.key === "f2" && field.key === "gstRatePct"
+                          ? String(values.gstBasis || "").trim()
+                          : ""
+                      }
+                      {...suggestionProps(spec.key, field, values[field.key])}
+                      {...fieldControlExtras(spec.key, field)}
+                    />
+                    <InputReviewHint
+                      issue={inputReviewIssue(field.key)}
+                      onUseSuggestion={(s) => applyInputSuggestion(field.key, s)}
+                      onKeepTyped={() => keepInputTyped(field.key)}
+                    />
+                  </div>
                 )
               )}
             </div>
@@ -3647,6 +3776,13 @@ export default function PropositionForm({
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
         <span><b>{progress.requiredLeft}</b> required fields left before you can submit</span>
         <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
+        {liveInputReview.fields.length ? (
+          <span className="mono field-list" title={liveInputReview.fields.map((f) => f.message).join(" ")}>
+            {liveInputReview.fields.filter((f) => f.status === "invalid").length
+              ? `${liveInputReview.fields.filter((f) => f.status === "invalid").length} invalid input(s) block Submit`
+              : `${liveInputReview.fields.length} input warning(s)`}
+          </span>
+        ) : null}
         <span className="save-state">
           v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
         </span>
@@ -3657,6 +3793,11 @@ export default function PropositionForm({
           title={
             !hasIdentity
               ? "Enter your name and department before Submit"
+              : inputBlocking
+              ? liveInputReview.fields
+                  .filter((f) => f.status === "invalid")
+                  .map((f) => f.message)
+                  .join(" ")
               : !canSubmit
               ? progress.missingFieldLabels.join(", ")
               : marginElasticityLoading
@@ -4008,7 +4149,21 @@ export const PROP_CSS = `
 .gonogo-hero.tone-incomplete{border-color:rgba(180,160,90,.35);}
 .gonogo-rescore-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}
 .path-gain{margin-left:auto;flex-shrink:0;opacity:.95;color:var(--watch,#f0c14b);font-weight:600;}
-.path-action-text{flex:1;min-width:0;}
+.path-action-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.path-why{display:block;font-size:11px;line-height:1.35;opacity:.72;margin-top:2px;}
+.input-review-hint{margin:.35rem 0 .55rem;padding:.45rem .65rem;border-radius:6px;font-size:12px;line-height:1.4;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;}
+.input-review-hint.is-invalid{background:rgba(180,40,40,.12);border:1px solid rgba(180,40,40,.35);color:#7a1f1f;}
+.input-review-hint.is-fix{background:rgba(160,110,20,.1);border:1px solid rgba(160,110,20,.35);color:#6a4a10;}
+.input-review-actions{display:inline-flex;gap:6px;flex-wrap:wrap;}
+.input-review-actions button{font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid currentColor;
+  background:transparent;cursor:pointer;}
+.input-review-actions button:hover{opacity:.85;}
+.prop-field-wrap{display:contents;}
+.field-review-msg{margin:4px 0 0;font-size:12px;line-height:1.4;color:#f0a8a8;}
+.field-review-msg[data-status="warn"]{color:#e6c07b;}
+.field-review-actions{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;}
+.field-review-actions button{font-size:11px;padding:2px 8px;}
 .path-top-list li{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{

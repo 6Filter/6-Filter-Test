@@ -57,15 +57,25 @@ await initDb();
 
 function sample(field) {
   if (field.type === "checkbox") return true;
+  if (field.key === "declaredGap") return 3;
+  if (field.key === "netMarginAtScale") return 55;
+  if (field.key === "gstRatePct") return 18;
+  if (field.key === "mrpInr") return 299;
+  if (field.key === "cogsAtScale") return 80;
   if (field.type === "number") return 18;
   if (field.key === "growthRoute") return "penetration";
   if (field.key === "forumVerdict") return "pass";
   if (field.key === "submitterDepartment") return "R&D";
+  if (field.key === "grammage") return "50 ml";
+  if (field.key === "benchmark") return "Dove Scalp Serum 100 ml";
+  if (field.key === "declaredAttribute") return "hair growth";
+  if (field.key === "growthArgument") return "households growing in hair care with CMI numbers";
   if (field.key === "marginElasticity" || field.type === "computed-range") return { minMrpInr: 40, maxMrpInr: 90 };
   if (field.key === "techShiftRisk" || field.type === "computed-risk") {
     return { dimensions: { functionalCoreStability: { risk: "Low" } } };
   }
   if (field.type === "computed") return 12;
+  if (field.key === "ideaDescription") return "A leave-in hair growth serum for Indian women with thinning hair.";
   return "field-ok";
 }
 

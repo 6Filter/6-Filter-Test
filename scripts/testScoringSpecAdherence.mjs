@@ -1,5 +1,5 @@
 /**
- * Live scoring must match docs/SCORING_SPEC.md v4.3 (fixed 15 slots, INCOMPLETE,
+ * Live scoring must match docs/SCORING_SPEC.md v4.4 (fixed 15 slots, INCOMPLETE,
  * web-verified F1, no gram badge on INCOMPLETE, explainer not teaching WATCH-cap).
  */
 import assert from "node:assert/strict";
@@ -22,7 +22,7 @@ import { flattenProposition } from "../lib/logExport.js";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const howDoc = readFileSync(path.join(root, "../docs/HOW_THE_SCORE_WORKS.md"), "utf8");
 
-assert.equal(SCORING_RULESET_VERSION, "v4.3");
+assert.equal(SCORING_RULESET_VERSION, "v4.4");
 assert.equal(SCORE_DENOMINATOR_MODE, "fixed-slots");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
 assert.equal(SCORE_CHECK_SLOTS_TOTAL, 15);
@@ -147,4 +147,4 @@ function cleared(filterKey) {
   assert.equal(howDoc.replace(/\r\n/g, "\n").trim(), scoreExplainerMarkdown().trim());
 }
 
-console.log("PASS testScoringSpecAdherence — v4.3 live logic matches SCORING_SPEC");
+console.log("PASS testScoringSpecAdherence — v4.4 live logic matches SCORING_SPEC");

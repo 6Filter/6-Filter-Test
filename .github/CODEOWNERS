@@ -1,8 +1,10 @@
-# Part 129 — scoring lock ownership.
+# Part 129/132 — scoring lock ownership.
 # GitHub enforces this only when branch protection on `main` requires a pull
 # request and a review from the code owner (no direct pushes).
 scripts/owner-tests/ @cavinkarecia
 lib/lockedConstants.js @cavinkarecia
+lib/inputReview.js @cavinkarecia
+lib/itemCopy.js @cavinkarecia
 scripts/golden/ @cavinkarecia
 scripts/scoringFingerprint.json @cavinkarecia
 docs/SCORING_SPEC.md @cavinkarecia
