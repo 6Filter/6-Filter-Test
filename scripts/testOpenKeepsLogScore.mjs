@@ -107,16 +107,15 @@ const outputPct = resolveOutputScore(drifted, readGo.score, stored, readGo.score
 assert.equal(outputPct, sealedPct, "output page must keep Log percent against drifted checks");
 assert.notEqual(outputPct, driftedPct);
 
-// Stale sealed 100% with open analytical gaps must yield to live — never show every idea as 100%.
+// Part 128 — sealed snapshot wins everywhere, including a stale 100%. Re-screen to update.
 const stalePerfect = {
   ...readGo,
   score: { pct: 100, done: 14, total: 14, byFilter: {}, scoreInputKey: key },
   scoreInputKey: key,
 };
-const corrected = resolveOutputScore(checks, stalePerfect.score, stored, key);
-assert.ok(corrected.pct < 100, "stale 100% must not win over live open gaps");
-assert.ok(corrected.total > corrected.done);
+const sealedEvenIfStale = resolveOutputScore(checks, stalePerfect.score, stored, key);
+assert.equal(sealedEvenIfStale.pct, 100, "Part 128 keeps the sealed snapshot until re-screen");
 
 console.log(
-  `PASS open keeps Log score ${sealedPct}% (live would have been ${driftedPct}%, class=${classification}; stale 100→${corrected.pct})`
+  `PASS open keeps Log score ${sealedPct}% (live would have been ${driftedPct}%, class=${classification}; sealed 100 stays sealed)`
 );

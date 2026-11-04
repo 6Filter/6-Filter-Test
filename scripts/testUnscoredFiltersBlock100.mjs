@@ -40,8 +40,10 @@ assert.equal(filterIsUnscoredForAggregate(f4Empty), true);
 const noF4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f4: f4Empty });
 assert.ok(noF4.pct < 100, `cleared F1–F3 + unrun F4 must not be 100% (got ${noF4.pct})`);
 assert.equal(noF4.byFilter.f4.unscored, true);
-assert.equal(noF4.byFilter.f4.total, 1);
-assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "WATCH");
+assert.equal(noF4.total, 15, "Part 128 fixed slots — denominator is always 15");
+assert.equal(noF4.byFilter.f4.total, 7, "unrun F4 opens all 7 risk slots");
+// Fixed slots: 8/15 ≈ 53% → NO-GO band (unscored F4 only promotes GO→WATCH, not NO-GO→WATCH).
+assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "NO-GO");
 
 const f3Empty = checkF3({ netMarginAtScale: 40 }, {});
 assert.equal(f3Empty.checkLabel, "Not yet run");
@@ -49,6 +51,7 @@ assert.equal(filterCheckScore(f3Empty).total, 0);
 const noF3F4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f3: f3Empty, f4: f4Empty });
 assert.ok(noF3F4.pct < 100);
 assert.ok(noF3F4.pct < noF4.pct, "two unscored filters must weigh more than one");
+assert.equal(noF3F4.total, 15);
 
 const formAdminOnlyF3 = {
   checkLabel: "Evidence missing",

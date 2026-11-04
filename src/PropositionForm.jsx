@@ -1189,6 +1189,24 @@ export function GoNoGoResultPage({
   const tone = goNoGoTone(classification);
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
+  const scoreStatus = String(result.scoreStatus || "").trim();
+  const screenedWhen = result.screenedAt || result.at || "";
+  const screenedLabel = screenedWhen
+    ? new Date(screenedWhen).toLocaleString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Kolkata",
+      })
+    : "";
+  const scoreStatusBanner =
+    scoreStatus === "edited-since-screening"
+      ? `Inputs changed since this score. This is the score from ${screenedLabel || "the last screen"}. Screen again to update it.`
+      : scoreStatus === "older-ruleset"
+        ? "Scored under an older release. Screen again to update under the current rules."
+        : "";
   const categoryName = String(category || result.category || "").trim();
   const divisionName = String(doc?.division || "").trim();
   const idea = String(ideaName || result.ideaName || "").trim();
@@ -1257,6 +1275,11 @@ export function GoNoGoResultPage({
       </header>
 
       <div className="output-hero-row">
+        {scoreStatusBanner ? (
+          <p className="gonogo-blocked-note" role="status" data-score-status={scoreStatus}>
+            {scoreStatusBanner}
+          </p>
+        ) : null}
         <section className={`gonogo-hero tone-${tone}`} data-tone={tone}>
           <div className="gonogo-hero-copy">
             {idea ? <h1 className="gonogo-idea">{idea}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}

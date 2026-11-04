@@ -82,7 +82,11 @@ const driftedChecks = {
   f1: {
     ...(checks.f1 || {}),
     checkLabel: "Cleared",
-    items: Array.from({ length: 8 }, (_, i) => ({ status: "done", text: `fake ${i}` })),
+    items: Array.from({ length: 4 }, (_, i) => ({ status: "done", text: `fake ${i}` })),
+  },
+  f4: {
+    checkLabel: "Cleared",
+    items: Array.from({ length: 7 }, (_, i) => ({ status: "done", text: `dim ${i}` })),
   },
 };
 const driftedLive = scoreAdvisoryChecks(driftedChecks);
@@ -99,13 +103,15 @@ const edited = {
 };
 assert.equal(scoreInputsMatch(edited, goNoGo), false);
 assert.equal(lockedScoreFromPrior(edited, goNoGo), null);
-const unlocked = resolveOutputScore(
+// Part 128: resolveOutputScore still returns the sealed snapshot even after edits;
+// a new screen (Submit) is required to recompute.
+const stillSealed = resolveOutputScore(
   await computeAllAdvisoryChecks(edited),
   goNoGo.score,
   edited,
   goNoGo.scoreInputKey
 );
-assert.notEqual(unlocked.pct, firstScore.pct, "cleared form inputs must unlock and recompute");
+assert.equal(stillSealed.pct, firstScore.pct, "edited idea keeps sealed score until re-screen");
 
 function sendJson(res, status, body) {
   res.statusCode = status;

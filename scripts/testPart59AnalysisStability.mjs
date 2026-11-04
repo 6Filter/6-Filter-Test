@@ -52,11 +52,29 @@ const f3At40 = checkF3(
 );
 assert.equal(f3At70.checkLabel, "Cleared");
 assert.equal(f3At40.checkLabel, "Below floor");
-// Hold F1/F2/F4 cleared so unscored-filter weight does not collapse both cases to NO-GO.
+// Fill all fixed slots so F3 floor failure alone flips the verdict.
 const restCleared = {
-  f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Attribute ok" }] },
-  f2: { checkLabel: "Cleared", items: [{ status: "done", text: "Margin clears floor" }] },
-  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Low risk" }] },
+  f1: {
+    checkLabel: "Cleared",
+    items: [
+      { status: "done", text: "Attribute ok" },
+      { status: "done", text: "Benchmark verified" },
+      { status: "done", text: "Gap clears floor" },
+      { status: "done", text: "Growth recorded" },
+    ],
+  },
+  f2: {
+    checkLabel: "Cleared",
+    items: [
+      { status: "done", text: "MRP ok" },
+      { status: "done", text: "Margin clears floor" },
+      { status: "done", text: "Qcom recorded" },
+    ],
+  },
+  f4: {
+    checkLabel: "Cleared",
+    items: Array.from({ length: 7 }, (_, i) => ({ status: "done", text: `d${i}` })),
+  },
 };
 assert.notEqual(
   computeGoNoGo({ ...restCleared, f3: f3At70 }),

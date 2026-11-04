@@ -1,3 +1,5 @@
+> Superseded by `docs/SCORING_SPEC.md` (Part 128 / ruleset v4.1). Kept for history only.
+
 # 6 Filter Test — Product Validation Logic & Scoring System
 
 ## Current model — 4-Filter NPD Weightage Engine (product ideas)

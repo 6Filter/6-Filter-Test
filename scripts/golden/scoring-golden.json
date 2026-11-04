@@ -1,0 +1,4715 @@
+{
+  "rulesetVersion": "v4.1",
+  "denominatorMode": "fixed-slots",
+  "slots": {
+    "f1": 4,
+    "f2": 3,
+    "f3": 1,
+    "f4": 7
+  },
+  "toleranceInr": 0.5,
+  "bands": {
+    "NOGO_MAX": 60,
+    "WATCH_MAX": 80
+  },
+  "declaredGapFloor": 2,
+  "ideas": [
+    {
+      "id": "stage-0",
+      "note": "empty",
+      "expected": {
+        "pct": 0,
+        "done": 0,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 0,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "stage-1",
+      "note": "f1 only",
+      "expected": {
+        "pct": 27,
+        "done": 4,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "stage-2",
+      "note": "f1+f2",
+      "expected": {
+        "pct": 47,
+        "done": 7,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "stage-3",
+      "note": "f1-f3",
+      "expected": {
+        "pct": 53,
+        "done": 8,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "stage-4",
+      "note": "all cleared",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Professional_Care-below",
+      "note": "Professional Care margin below (60)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Professional_Care-at",
+      "note": "Professional Care margin at (60)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Professional_Care-above",
+      "note": "Professional Care margin above (60)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Personal_Care-below",
+      "note": "Personal Care margin below (50)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Personal_Care-at",
+      "note": "Personal Care margin at (50)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Personal_Care-above",
+      "note": "Personal Care margin above (50)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Foods-below",
+      "note": "Foods margin below (35)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Foods-at",
+      "note": "Foods margin at (35)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Foods-above",
+      "note": "Foods margin above (35)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Snacks-below",
+      "note": "Snacks margin below (30)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Snacks-at",
+      "note": "Snacks margin at (30)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Snacks-above",
+      "note": "Snacks margin above (30)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Bakery-below",
+      "note": "Bakery margin below (30)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Bakery-at",
+      "note": "Bakery margin at (30)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Bakery-above",
+      "note": "Bakery margin above (30)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Ambient_Dairy-below",
+      "note": "Ambient Dairy margin below (25)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Ambient_Dairy-at",
+      "note": "Ambient Dairy margin at (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Ambient_Dairy-above",
+      "note": "Ambient Dairy margin above (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Beverages-below",
+      "note": "Beverages margin below (25)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Beverages-at",
+      "note": "Beverages margin at (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Beverages-above",
+      "note": "Beverages margin above (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_Non_UHT-below",
+      "note": "Dairy Craft — Non-UHT margin below (25)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_Non_UHT-at",
+      "note": "Dairy Craft — Non-UHT margin at (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_Non_UHT-above",
+      "note": "Dairy Craft — Non-UHT margin above (25)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Cold_Chain_Business-below",
+      "note": "Cold Chain Business margin below (12)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Cold_Chain_Business-at",
+      "note": "Cold Chain Business margin at (12)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Cold_Chain_Business-above",
+      "note": "Cold Chain Business margin above (12)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_UHT_Milk-below",
+      "note": "Dairy Craft — UHT Milk margin below (12)",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 2,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "pending",
+              "text": "Net margin below floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_UHT_Milk-at",
+      "note": "Dairy Craft — UHT Milk margin at (12)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "margin-Dairy_Craft_UHT_Milk-above",
+      "note": "Dairy Craft — UHT Milk margin above (12)",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gap-below",
+      "note": "gap below floor",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 3,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified"
+            },
+            {
+              "status": "pending",
+              "text": "Declared gap 1.5 is below the 2.0 floor (v4)"
+            },
+            {
+              "status": "done",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gap-at",
+      "note": "gap at floor",
+      "expected": {
+        "pct": 100,
+        "done": 15,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 2 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "first-mover",
+      "note": "first mover",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 3,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "pending",
+              "text": "Benchmark not named",
+              "formAdmin": true
+            },
+            {
+              "status": "done",
+              "text": "No established competitor found"
+            },
+            {
+              "status": "done",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f3-below-range",
+      "note": "f3 below",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "pending",
+              "text": "below safe floor"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f3-above-range",
+      "note": "f3 above",
+      "expected": {
+        "pct": 93,
+        "done": 14,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 7,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Below floor",
+          "items": [
+            {
+              "status": "pending",
+              "text": "above safe ceiling"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "done",
+              "text": "d3"
+            },
+            {
+              "status": "done",
+              "text": "d4"
+            },
+            {
+              "status": "done",
+              "text": "d5"
+            },
+            {
+              "status": "done",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f4-partial",
+      "note": "f4 3/7",
+      "expected": {
+        "pct": 73,
+        "done": 11,
+        "total": 15,
+        "classification": "WATCH",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 3,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute 1 declared"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark verified: X"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor"
+            },
+            {
+              "status": "done",
+              "text": "Growth route recorded"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            },
+            {
+              "status": "pending",
+              "text": "Finance unsigned",
+              "formAdmin": true
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "done",
+              "text": "d0"
+            },
+            {
+              "status": "done",
+              "text": "d1"
+            },
+            {
+              "status": "done",
+              "text": "d2"
+            },
+            {
+              "status": "pending",
+              "text": "d3"
+            },
+            {
+              "status": "pending",
+              "text": "d4"
+            },
+            {
+              "status": "pending",
+              "text": "d5"
+            },
+            {
+              "status": "pending",
+              "text": "d6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f1-partial-0",
+      "note": "f1 0/4",
+      "expected": {
+        "pct": 0,
+        "done": 0,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 0,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "pending",
+              "text": "Attribute"
+            },
+            {
+              "status": "pending",
+              "text": "Benchmark"
+            },
+            {
+              "status": "pending",
+              "text": "Gap"
+            },
+            {
+              "status": "pending",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "f1-partial-1",
+      "note": "f1 1/4",
+      "expected": {
+        "pct": 7,
+        "done": 1,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 1,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "pending",
+              "text": "Benchmark"
+            },
+            {
+              "status": "pending",
+              "text": "Gap"
+            },
+            {
+              "status": "pending",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "f1-partial-2",
+      "note": "f1 2/4",
+      "expected": {
+        "pct": 13,
+        "done": 2,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 2,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark"
+            },
+            {
+              "status": "pending",
+              "text": "Gap"
+            },
+            {
+              "status": "pending",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "f1-partial-3",
+      "note": "f1 3/4",
+      "expected": {
+        "pct": 20,
+        "done": 3,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 3,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark"
+            },
+            {
+              "status": "done",
+              "text": "Gap"
+            },
+            {
+              "status": "pending",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "f1-partial-4",
+      "note": "f1 4/4",
+      "expected": {
+        "pct": 27,
+        "done": 4,
+        "total": 15,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 4,
+            "total": 4
+          },
+          "f2": {
+            "done": 0,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Attribute"
+            },
+            {
+              "status": "done",
+              "text": "Benchmark"
+            },
+            {
+              "status": "done",
+              "text": "Gap"
+            },
+            {
+              "status": "done",
+              "text": "Growth"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f3": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f4": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    }
+  ]
+}

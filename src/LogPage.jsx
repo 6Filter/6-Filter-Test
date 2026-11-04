@@ -896,6 +896,16 @@ export default function LogPage({
                                 {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
                               </span>
                             ) : null}
+                            {h.goNoGo?.scoreStatus === "edited-since-screening" ? (
+                              <span className="research-badge incomplete" title="Inputs changed since screening">
+                                edited since screening
+                              </span>
+                            ) : null}
+                            {h.goNoGo?.scoreStatus === "older-ruleset" ? (
+                              <span className="research-badge incomplete" title="Scored under an older release">
+                                older release
+                              </span>
+                            ) : null}
                           </div>
                         </button>
                       </td>

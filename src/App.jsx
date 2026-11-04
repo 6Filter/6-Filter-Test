@@ -896,7 +896,7 @@ export default function App() {
     setDeepLinkMissing(false);
     try {
       const full = await fetchPropositionById(row.id);
-      // Prefer GET (withAdvisory may correct a stale 100% against live gaps). Fall back to Log row.
+      // Prefer GET (withAdvisory returns the sealed snapshot). Fall back to Log row.
       const fullSeal = full?.goNoGo?.classification ? full.goNoGo : null;
       const rowSeal = row.goNoGo?.classification ? row.goNoGo : null;
       const sealed = fullSeal || rowSeal || full?.goNoGo || null;

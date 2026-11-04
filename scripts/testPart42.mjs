@@ -20,10 +20,10 @@ assert(goNoGoTone(missing) === "fail", "incomplete should use fail tone");
 assert(!goNoGoIsFloorFailure({}), "empty checks are incompleteness, not a floor failure");
 
 const go = computeGoNoGo({
-  f1: { checkLabel: "Cleared", items: items(3, 0) },
-  f2: { checkLabel: "Exempt", items: items(3, 0) },
-  f3: { checkLabel: "Cleared", items: items(2, 0) },
-  f4: { checkLabel: "Cleared", items: items(2, 0) },
+  f1: { checkLabel: "Cleared", items: items(4, 0) },
+  f2: { checkLabel: "Cleared", items: items(3, 0) },
+  f3: { checkLabel: "Cleared", items: items(1, 0) },
+  f4: { checkLabel: "Cleared", items: items(7, 0) },
 });
 assert(go === "GO", `all clear should be GO, got ${go}`);
 assert(goNoGoTone(go) === "pass", "GO should use pass tone");

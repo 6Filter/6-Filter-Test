@@ -209,9 +209,9 @@ const milkKey = scoreInputKey(milkDoc);
 const liveMilk = scoreAdvisoryChecks(milkshakeChecks);
 assert.ok(liveMilk.pct < 100 && liveMilk.total > liveMilk.done);
 
-const liveBeatsStale100 = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
-assert.ok(liveBeatsStale100.pct < 100, "live pending F4 items must beat a stale 100% store");
-assert.ok(liveBeatsStale100.total > liveBeatsStale100.done);
+// Part 128 — sealed snapshot wins; re-screen is required to update a stale 100%.
+const sealedStale100 = resolveOutputScore(milkshakeChecks, { pct: 100, done: 14, total: 14 });
+assert.equal(sealedStale100.pct, 100, "stored 100% remains until re-screen");
 
 const stale100Locked = resolveOutputScore(
   milkshakeChecks,
@@ -219,8 +219,7 @@ const stale100Locked = resolveOutputScore(
   milkDoc,
   milkKey
 );
-assert.ok(stale100Locked.pct < 100, "stale 100% loses even when a lock key still matches");
-assert.ok(stale100Locked.total > stale100Locked.done);
+assert.equal(stale100Locked.pct, 100, "sealed 100% stays sealed even with matching lock key");
 
 const lockedHonest = resolveOutputScore(
   milkshakeChecks,

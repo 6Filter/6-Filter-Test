@@ -43,13 +43,20 @@ assert.equal(scoreAdvisoryChecks(highPctF2Floor).pct >= 80, true);
 assert.equal(goNoGoIsFloorFailure(highPctF2Floor), true);
 assert.equal(computeGoNoGo(highPctF2Floor), "NO-GO");
 
-function allFour(done, pending) {
-  const check = { checkLabel: "Cleared", items: items(done, pending) };
-  return { f1: check, f2: check, f3: check, f4: check };
+function slotChecks(f1Done, f2Done, f3Done, f4Done) {
+  return {
+    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 4 - f1Done)) },
+    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
+    f3: {
+      checkLabel: f3Done ? "Cleared" : "Evidence missing",
+      items: items(f3Done, Math.max(0, 1 - f3Done)),
+    },
+    f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
+  };
 }
-assert.equal(computeGoNoGo(allFour(6, 4)), "WATCH");
-assert.equal(computeGoNoGo(allFour(8, 2)), "WATCH");
-assert.equal(computeGoNoGo(allFour(19, 1)), "GO");
+assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 2)), "WATCH"); // 10/15 ≈ 67%
+assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 4)), "WATCH"); // 12/15 = 80%
+assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 6)), "GO"); // 14/15 ≈ 93%
 
 const namedOnly = checkF1(
   { declaredAttribute: "cooling", benchmark: "5", declaredGap: 5, growthRoute: "penetration", growthArgument: "5" },
