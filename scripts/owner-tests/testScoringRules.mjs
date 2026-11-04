@@ -23,7 +23,7 @@ import {
 import { checkF1, checkF3, checkF4 } from "../../lib/filterChecks.js";
 
 assert.equal(SCORE_DENOMINATOR_MODE, "fixed-slots");
-assert.equal(SCORING_RULESET_VERSION, "v4.2");
+assert.equal(SCORING_RULESET_VERSION, "v4.3");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
 assert.equal(SCORE_KEY_IGNORES_NAME_TYPOS, false);
 assert.equal(F3_MRP_RANGE_TOLERANCE_INR, 0.5);

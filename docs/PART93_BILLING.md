@@ -17,6 +17,14 @@ There is **no silent fallback** from one team's exhausted key onto another team'
 key. A missing team key may use the shared infra key. Credit failures return a
 hard, visible error naming the department.
 
+## Evidence read (Part 131)
+
+When an Evidence Source file or link is present, Submit adds one priced step
+(`evidence`, ≤ 20,000 input tokens, no web search). It is listed in
+`expectedResearchSteps` and the Submit price confirmation. Cache key =
+file sha256 + idea/category/benchmark/attributes hash. Changing the evidence
+forces a research-cache miss.
+
 ## Cross-department research-cache policy — **REUSE**
 
 Decision (explicit): the research fingerprint does **not** include session or

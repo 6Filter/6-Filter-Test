@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "v4.2",
+  "rulesetVersion": "v4.3",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {

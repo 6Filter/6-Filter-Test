@@ -1,16 +1,24 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v4.2**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v4.3**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v4.2` |
+| `SCORING_RULESET_VERSION` | `v4.3` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `INCOMPLETE_VERDICT_MODE` | `incomplete` |
 | `SCORE_KEY_IGNORES_NAME_TYPOS` | `false` |
 | `F3_MRP_RANGE_TOLERANCE_INR` | `0.5` |
+| `BENCHMARK_VERIFIED_NEEDS_EVIDENCE` | `true` |
+| `CATEGORY_SIZE_NEEDS_SOURCED_FIGURE` | `true` |
+| `EVIDENCE_TRUST_MODE` | `count` |
+| `EVIDENCE_CONFLICT_RATIO` | `2` |
+
+### What changed in v4.3
+
+Team-provided Evidence Source (file or Primus Evidence library link) is read once on Submit. Quote-verified facts can clear F1 benchmark, category size, or attribute through the existing findings flags — bands, floors and the 15-slot table are unchanged. A stated-only benchmark and a ₹0 Cr / PASS-without-size category no longer count (`BENCHMARK_VERIFIED_NEEDS_EVIDENCE`, `CATEGORY_SIZE_NEEDS_SOURCED_FIGURE`). Evidence sha256 and the link (query stripped) join `gateInputKey` / `researchHashFor`.
 
 ### What changed in v4.2
 

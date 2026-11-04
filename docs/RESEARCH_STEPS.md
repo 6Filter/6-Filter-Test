@@ -10,12 +10,13 @@ A Submit calls a step only when `expectedResearchSteps` in `lib/researchProgress
 | F3 margin elasticity | The min/max MRP band is empty, inverted, or not a real rupee range. |
 | F4 tech-shift | The seven structural-obsolescence dimensions are not stored. |
 | F5 sizing | One or more of the five sizing factors (households, trial, repeat, frequency, pack value) is blank. Filter 5 is still not scored. |
+| Evidence read | An Evidence Source link or file is present. Exactly one plain call (no web search), budget ≤ 20,000 input tokens, cached by file sha256 + idea context. Quote-verified facts may clear F1 benchmark / category size / attribute. |
 
 `researchRunAt` is written only when every step in `stepsExpected` is in `stepsDone` or `stepsFailed`. A timestamp by itself does not mean the pass finished. A missing failure flag does not mean a step succeeded.
 
 ## Bundle cache and identical scores (permanent rule)
 
-The research fingerprint (`researchHashFor`) covers the idea text, category, attributes, benchmark, division, and attachment — not the Log name or team. Once that hash has a **finished** filter outcome in `research_cache`, every later Submit with the same fingerprint is a cache HIT and keeps the **same scores**.
+The research fingerprint (`researchHashFor`) covers the idea text, category, attributes, benchmark, division, attachment, evidence file sha256, and evidence link (query stripped) — not the Log name or team. Once that hash has a **finished** filter outcome in `research_cache`, every later Submit with the same fingerprint is a cache HIT and keeps the **same scores**.
 
 Documented filter failures are stored on purpose (for example F3 “no usable range”). Twin ideas cannot re-roll the model. The **first writer wins**: a second concurrent pass cannot overwrite findings for that hash. Empty or truncated parts are still refused.
 

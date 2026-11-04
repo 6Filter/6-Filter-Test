@@ -43,18 +43,22 @@ try {
       ...(created.f1 || {}),
       evidenceSourceDate: "https://example.com/source",
       evidenceSourceFile: {
-        name: "note.xlsx",
-        mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        data: "dGVzdA==",
+        name: "note.pdf",
+        mediaType: "application/pdf",
+        // Minimal PDF magic — bytes must leave the idea record (Part 131).
+        data: Buffer.from("%PDF-1.4\n% Primus evidence fixture\n").toString("base64"),
       },
     },
   });
   assert.equal(saved.f1.evidenceSourceDate, "https://example.com/source");
-  assert.equal(saved.f1.evidenceSourceFile.name, "note.xlsx");
+  assert.equal(saved.f1.evidenceSourceFile.name, "note.pdf");
+  assert.ok(saved.f1.evidenceSourceFile.fileId, "file lives in evidence_files");
+  assert.ok(saved.f1.evidenceSourceFile.sha256, "sha256 kept on the idea");
+  assert.equal(saved.f1.evidenceSourceFile.data, undefined);
   const loaded = await getPropositionById(created.id);
   assert.equal(loaded.f1.evidenceSourceDate, "https://example.com/source");
-  assert.equal(loaded.f1.evidenceSourceFile.name, "note.xlsx");
-  assert.equal(loaded.f1.evidenceSourceFile.data, "dGVzdA==");
+  assert.equal(loaded.f1.evidenceSourceFile.name, "note.pdf");
+  assert.equal(loaded.f1.evidenceSourceFile.data, undefined);
 } finally {
   await deleteProposition(created.id);
 }

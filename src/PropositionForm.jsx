@@ -836,6 +836,34 @@ function FieldControl({
               <AlertTriangle size={14} /> {fileError}
             </div>
           ) : null}
+          {field.key === "evidenceSourceDate" ? (
+            <p className="prop-helper evidence-read-status">
+              {ideaDoc?.researchFindings?.evidenceRead?.status === "read"
+                ? `Read: ${ideaDoc.researchFindings.evidenceRead.pagesApprox || "?"} pages, ${(
+                    ideaDoc.researchFindings.evidenceRead.facts || []
+                  ).filter((f) => f.verified).length} facts verified${
+                    (ideaDoc.researchFindings.evidenceRead.used || []).length
+                      ? `, used for ${(ideaDoc.researchFindings.evidenceRead.used || [])
+                          .map((u) =>
+                            u.check === "f1.growth"
+                              ? "Category size"
+                              : u.check === "f1.benchmark"
+                                ? "Benchmark"
+                                : "Attribute"
+                          )
+                          .filter((v, i, a) => a.indexOf(v) === i)
+                          .join(", ")}`
+                      : ""
+                  }.`
+                : ideaDoc?.researchFindings?.evidenceRead?.status === "unreadable"
+                  ? `Could not read: ${ideaDoc.researchFindings.evidenceRead.reason || "unknown"}. ${
+                      ideaDoc.researchFindings.evidenceRead.advice || ""
+                    }`
+                  : fileValue?.name || String(value || "").trim()
+                    ? "Not read yet. It is read when you Submit."
+                    : "Optional. Read on Submit when a link or file is provided."}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -1583,6 +1611,59 @@ export function GoNoGoResultPage({
           );
         })}
       </div>
+
+      {doc?.researchFindings?.evidenceRead &&
+      doc.researchFindings.evidenceRead.status &&
+      doc.researchFindings.evidenceRead.status !== "none" ? (
+        <section className="evidence-provided-card" id="evidence-provided">
+          <div className="next-steps-head">
+            <h2>Evidence provided</h2>
+            <span className="mono">{String(doc.researchFindings.evidenceRead.status).toUpperCase()}</span>
+          </div>
+          <p className="path-if">
+            {doc.f1?.evidenceSourceFile?.name
+              ? `File: ${doc.f1.evidenceSourceFile.name}`
+              : doc.researchFindings.evidenceRead.file?.name
+                ? `File: ${doc.researchFindings.evidenceRead.file.name}`
+                : null}
+            {doc.researchFindings.evidenceRead.link?.url
+              ? ` · Link: ${doc.researchFindings.evidenceRead.link.url}`
+              : ""}
+          </p>
+          {(doc.researchFindings.evidenceRead.used || []).length ? (
+            <ul className="path-top-list">
+              {(doc.researchFindings.evidenceRead.used || []).map((u, i) => (
+                <li key={`ev-used-${i}`}>
+                  <span className="mono imp-filter-tag">F1</span>
+                  <span className="path-action-text">
+                    Supported {u.check === "f1.growth" ? "category size" : u.check === "f1.benchmark" ? "benchmark" : "attribute"}
+                  </span>
+                  <span className="mono path-gain">+7%</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {(doc.researchFindings.evidenceRead.facts || []).some((f) => !f.verified) ? (
+            <ul className="path-top-list">
+              {(doc.researchFindings.evidenceRead.facts || [])
+                .filter((f) => !f.verified)
+                .map((f, i) => (
+                  <li key={`ev-rej-${i}`}>
+                    <span className="mono imp-filter-tag">—</span>
+                    <span className="path-action-text">
+                      Rejected ({f.topic}): {f.rejectReason || "not verified"}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          ) : null}
+          {doc.researchFindings.evidenceRead.status === "unreadable" ? (
+            <p className="path-empty">
+              {doc.researchFindings.evidenceRead.reason}. {doc.researchFindings.evidenceRead.advice || ""}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="next-steps" id="what-to-do-next">
         <div className="next-steps-head">

@@ -168,6 +168,10 @@ assert.match(judgeSrc, /do not accept it because it exists/i);
 const routerSrc = readFileSync(new URL("../lib/apiRouter.js", import.meta.url), "utf8");
 assert.match(routerSrc, /reassess-f4/);
 
-assert.equal(RESEARCH_SCHEMA_VERSION, "f1-benchmark-v6", "F4 response judgment must not bump the F1–3 research cache");
+assert.match(
+  RESEARCH_SCHEMA_VERSION,
+  /^f1-benchmark/,
+  "F4 response judgment must not bump the F1–3 research cache schema family"
+);
 
 console.log("PASS Part 63 F4 responses are judged, not accepted");

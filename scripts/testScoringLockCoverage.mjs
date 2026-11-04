@@ -26,10 +26,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const golden = JSON.parse(readFileSync(join(root, "scripts/golden/scoring-golden.json"), "utf8"));
 const fpJson = JSON.parse(readFileSync(join(root, "scripts/scoringFingerprint.json"), "utf8"));
 
-assert.equal(SCORING_RULESET_VERSION, "v4.2");
+assert.equal(SCORING_RULESET_VERSION, "v4.3");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(golden.rulesetVersion, "v4.2");
-assert.equal(fpJson.rulesetVersion, "v4.2");
+assert.equal(golden.rulesetVersion, "v4.3");
+assert.equal(fpJson.rulesetVersion, "v4.3");
 
 const requiredFiles = [
   "lib/mrpFormula.js",
