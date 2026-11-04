@@ -1378,15 +1378,13 @@ export default function App() {
     );
   }
 
+  // Deep-link stash for after sign-in is handled in the auth-gate useEffect via stashReturnIdea —
+  // never call undefined helpers or run sessionStorage side effects during render.
   if (authRequired && !sessionUser) {
-    const pendingIdea = takeStashedDeepLinkIdeaId();
-    if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return <LoginScreen onLogin={(user) => setSessionUser(user)} />;
   }
 
   if (authRequired && (sessionUser?.needsTeam || changingOwnTeam)) {
-    const pendingIdea = takeStashedDeepLinkIdeaId();
-    if (pendingIdea) stashDeepLinkIdeaId(pendingIdea);
     return (
       <LoginScreen
         initialUser={sessionUser}
