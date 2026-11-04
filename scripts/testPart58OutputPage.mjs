@@ -241,18 +241,28 @@ const sealedPath = closestPathToGo(
 assert.equal(sealedPath.currentPct, 86, "path current % must follow the sealed ring score");
 assert.equal(sealedPath.projectedPct, 86, "already-GO sealed ring must not invent a higher path target");
 
-// Sealed tiny denominator must not project to 100% while live still has several gaps.
+// Part 129: current scoreStatus projects from sealed done/total.
 const mismatchedSealPath = closestPathToGo(
   milkshakeChecks,
   computeImprovementPointValues(milkshakeChecks),
-  { pct: 60, done: 3, total: 5 }
+  { pct: 60, done: 3, total: 5 },
+  "current"
 );
 assert.equal(mismatchedSealPath.currentPct, 60);
-assert.ok(mismatchedSealPath.projectedPct > 60);
-assert.ok(
-  mismatchedSealPath.projectedPct <= Math.round((100 * (liveMilk.done + mismatchedSealPath.items.length)) / liveMilk.total),
-  "path projection must follow live done/total, not the sealed denominator"
+assert.ok(mismatchedSealPath.projectedPct >= 60);
+assert.equal(
+  mismatchedSealPath.projectedPct,
+  Math.round((100 * (3 + mismatchedSealPath.items.length)) / 5),
+  "path projection uses sealed done/total when scoreStatus is current"
 );
+const editedPath = closestPathToGo(
+  milkshakeChecks,
+  computeImprovementPointValues(milkshakeChecks),
+  { pct: 40, done: 6, total: 15 },
+  "edited-since-screening"
+);
+assert.equal(editedPath.projectionHidden, true);
+assert.match(editedPath.emptyReason, /Screen again/i);
 assert.match(src, /resolveOutputScore/);
 const watchRationale = buildGateRationale({
   classification: "WATCH",

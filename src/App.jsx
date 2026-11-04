@@ -16,6 +16,7 @@ import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
 import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
+import AdminUsersPage from "./AdminUsersPage.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import TeamUnlockScreen from "./TeamUnlockScreen.jsx";
 import { processTimerCopy } from "../lib/processTimer.js";
@@ -1507,16 +1508,21 @@ export default function App() {
           deletingUntouched={deletingUntouched}
           deletingId={deletingId}
           openingId={openingId}
-          canDeleteAll={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
-          canDeleteRow={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
-          canCleanup={isMasterUnlock(teamSession.department) || sessionUser?.role === "ADMIN"}
+          canDeleteAll={sessionUser?.role === "ADMIN"}
+          canDeleteRow={sessionUser?.role === "ADMIN"}
+          canCleanup={sessionUser?.role === "ADMIN"}
           openingDisabled={loading}
           onFetchFull={async (id) => fetchPropositionById(id)}
           currentUser={sessionUser}
         />
       )}
 
-      {view === "settings" && <DivisionSettings apiFetch={apiFetch} />}
+      {view === "settings" &&
+        (sessionUser?.role === "ADMIN" ? (
+          <AdminUsersPage apiFetch={apiFetch} />
+        ) : (
+          <DivisionSettings apiFetch={apiFetch} />
+        ))}
 
       {msgOpen && (
         <div className="modal-bg" onClick={() => setMsgOpen(false)}>

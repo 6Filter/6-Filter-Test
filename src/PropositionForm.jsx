@@ -1158,10 +1158,12 @@ export function GoNoGoResultPage({
   onManagerRejectReason,
   reviewAnnounce = "",
   pdfMode = false,
+  onEvidenceRescore = null,
 }) {
   const pageRef = useRef(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [rescoreBusy, setRescoreBusy] = useState(false);
 
   async function handleDownloadPdf() {
     if (pdfBusy || !pageRef.current) return;
@@ -1181,7 +1183,7 @@ export function GoNoGoResultPage({
 
   if (!result?.classification) return null;
   const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
-  // Single resolver: hard-lock when fingerprint matches; live beats a stale 100% with open gaps.
+  // Single resolver: screened ideas always show the sealed snapshot (Part 128).
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
   const score = { ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}), pct: scorePct };
@@ -1189,6 +1191,7 @@ export function GoNoGoResultPage({
   const tone = goNoGoTone(classification);
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
+  const isIncomplete = classification === "INCOMPLETE";
   const scoreStatus = String(result.scoreStatus || "").trim();
   const screenedWhen = result.screenedAt || result.at || "";
   const screenedLabel = screenedWhen
@@ -1243,7 +1246,7 @@ export function GoNoGoResultPage({
   );
   const path = safeCall(
     "closest path to GO",
-    () => closestPathToGo(checks, improvementItems, score),
+    () => closestPathToGo(checks, improvementItems, score, scoreStatus || "current"),
     { items: [], currentPct: scorePct, projectedPct: scorePct, reachesGo: isGoScore(scorePct), emptyReason: "" }
   );
   const pathItems = Array.isArray(path?.items) ? path.items : [];
@@ -1289,7 +1292,12 @@ export function GoNoGoResultPage({
             </div>
             <div className="gonogo-badge-row">
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{classification}</div>
-              {sizeTier ? (
+              {isIncomplete && Number.isFinite(Number(score.done)) ? (
+                <span className="mono badge-chip">
+                  {score.done} of {score.total || 15} checks complete
+                </span>
+              ) : null}
+              {!isIncomplete && sizeTier ? (
                 <span
                   className="gonogo-scale-chip idea-size-badge"
                   data-provisional={sizeTier.provisional ? "true" : "false"}
@@ -1302,10 +1310,37 @@ export function GoNoGoResultPage({
                 </span>
               ) : null}
             </div>
-            {sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
+            {!isIncomplete && sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
             <p className="gonogo-rationale">{rationale}</p>
             {storedVerdictWithoutInputs(savedDoc || doc) ? (
               <p className="gonogo-blocked-note">Stored verdict; inputs for this idea are missing</p>
+            ) : null}
+            {(scoreStatus === "older-ruleset" || scoreStatus === "edited-since-screening") &&
+            doc?.id &&
+            typeof onEvidenceRescore === "function" ? (
+              <div className="gonogo-rescore-row pdf-hide">
+                <button
+                  type="button"
+                  className="prop-save"
+                  disabled={rescoreBusy}
+                  onClick={async () => {
+                    setRescoreBusy(true);
+                    try {
+                      await onEvidenceRescore(doc.id);
+                    } catch (e) {
+                      window.alert(e?.message || "Could not recompute from saved evidence.");
+                    } finally {
+                      setRescoreBusy(false);
+                    }
+                  }}
+                >
+                  {rescoreBusy ? <Loader2 size={14} className="spin" /> : null}
+                  Recompute from saved evidence
+                </button>
+                <span className="mono" style={{ opacity: 0.7 }}>
+                  No AI call — re-seals under the current rules from stored checks
+                </span>
+              </div>
             ) : null}
           </div>
           <div
@@ -1328,43 +1363,49 @@ export function GoNoGoResultPage({
         >
         <aside className="path-panel">
           <div className="panel-kicker mono">Closest path to GO</div>
-          <p className="path-score-line">
-            <span className="mono">{scorePct}%</span>
-            <span className="path-arrow" aria-hidden="true">→</span>
-            <span className="mono path-projected">
-              {Number.isFinite(Number(path.projectedPct)) ? Number(path.projectedPct) : scorePct}%
-            </span>
-            {pathItems.length ? (
-              <span className="path-if">
-                {path.reachesGo
-                  ? `if the top ${pathItems.length === 1 ? "item" : `${pathItems.length} items`} clear`
-                  : `if ${pathItems.length === 1 ? "the remaining item clears" : `all ${pathItems.length} remaining items clear`} — still short of GO`}
-              </span>
-            ) : (
-              <span className="path-if">
-                {path.reachesGo ? "already above 80" : emptyReason || "no open analytical gaps for this idea"}
-              </span>
-            )}
-          </p>
-          {pathItems.length ? (
-            <ul className="path-top-list">
-              {pathItems.map((it, i) => (
-                <li key={`${it.filter}-${i}`}>
-                  <span className="mono imp-filter-tag">{it.filter}</span>
-                  {it.text}
-                </li>
-              ))}
-            </ul>
+          {path?.projectionHidden ? (
+            <p className="path-empty">{path.emptyReason || "Screen again to see the path to GO"}</p>
           ) : (
-            <p className="path-empty">
-              {path.reachesGo
-                ? "No scored gaps left on Filters 1–4 for the values entered."
-                : emptyReason || "No scored gaps left on Filters 1–4 for the values entered."}
-            </p>
+            <>
+              <p className="path-score-line">
+                <span className="mono">{scorePct}%</span>
+                <span className="path-arrow" aria-hidden="true">→</span>
+                <span className="mono path-projected">
+                  {Number.isFinite(Number(path.projectedPct)) ? Number(path.projectedPct) : scorePct}%
+                </span>
+                {pathItems.length ? (
+                  <span className="path-if">
+                    {path.reachesGo
+                      ? `if the top ${pathItems.length === 1 ? "item" : `${pathItems.length} items`} clear`
+                      : `if ${pathItems.length === 1 ? "the remaining item clears" : `all ${pathItems.length} remaining items clear`} — still short of GO`}
+                  </span>
+                ) : (
+                  <span className="path-if">
+                    {path.reachesGo ? "already above 80" : emptyReason || "no open analytical gaps for this idea"}
+                  </span>
+                )}
+              </p>
+              {pathItems.length ? (
+                <ul className="path-top-list">
+                  {pathItems.map((it, i) => (
+                    <li key={`${it.filter}-${i}`}>
+                      <span className="mono imp-filter-tag">{it.filter}</span>
+                      {it.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="path-empty">
+                  {path.reachesGo
+                    ? "No scored gaps left on Filters 1–4 for the values entered."
+                    : emptyReason || "No scored gaps left on Filters 1–4 for the values entered."}
+                </p>
+              )}
+              {improvementItems.length ? (
+                <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
+              ) : null}
+            </>
           )}
-          {improvementItems.length ? (
-            <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
-          ) : null}
         </aside>
         </ErrorBoundary>
       </div>
@@ -2852,6 +2893,28 @@ export default function PropositionForm({
           managerRejectReason={managerRejectReason}
           onManagerRejectReason={setManagerRejectReason}
           reviewAnnounce={reviewAnnounce}
+          onEvidenceRescore={async (id) => {
+            const res = await fetch(
+              `/api/propositions/${encodeURIComponent(id)}/rescore-from-evidence`,
+              {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: "{}",
+              }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Recompute failed.");
+            if (data.goNoGo) {
+              setGoNoGo(data.goNoGo);
+              setDoc((prev) => ({
+                ...prev,
+                ...(data.proposition || {}),
+                goNoGo: data.goNoGo,
+                classification: data.goNoGo.classification,
+              }));
+            }
+          }}
         />
       </main>
     );
@@ -3748,7 +3811,10 @@ export const PROP_CSS = `
 }
 .gonogo-badge.tone-pass{background:rgba(126,224,168,.16);color:var(--pass);}
 .gonogo-badge.tone-watch{background:rgba(240,193,75,.16);color:var(--watch);}
+.gonogo-badge.tone-incomplete{background:rgba(180,160,90,.18);color:#d4c48a;border:1px solid rgba(180,160,90,.35);}
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
+.gonogo-hero.tone-incomplete{border-color:rgba(180,160,90,.35);}
+.gonogo-rescore-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
   width:132px;height:132px;border-radius:50%;flex-shrink:0;

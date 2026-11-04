@@ -1,26 +1,35 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v4.1**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v4.2**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v4.1` |
+| `SCORING_RULESET_VERSION` | `v4.2` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
+| `INCOMPLETE_VERDICT_MODE` | `incomplete` |
+| `SCORE_KEY_IGNORES_NAME_TYPOS` | `false` |
 | `F3_MRP_RANGE_TOLERANCE_INR` | `0.5` |
 
-## GO / NO-GO / WATCH bands
+### What changed in v4.2
 
-| Band | Rule |
+Unfinished Filter 1–4 research (not yet run, research failed, or division pending) with **no** floor failure is classified **INCOMPLETE**, not a band. The percent and “X of 15 checks complete” still show. A **Below floor** check still forces **NO-GO**. Band edges, the WATCH cap for complete ideas, floors, margins and the 15-slot table are unchanged from v4.1.
+
+## GO / NO-GO / WATCH / INCOMPLETE
+
+| Verdict | Rule |
 |---|---|
-| **NO-GO** | score &lt; 60% |
-| **WATCH** | 60% ≤ score ≤ 80% |
-| **GO** | score &gt; 80% |
+| **INCOMPLETE** | No floor failure, and any of F1–F4 is unfinished (`INCOMPLETE_VERDICT_MODE=incomplete`) |
+| **NO-GO** | Floor failure, or (when complete) score &lt; 60% |
+| **WATCH** | Complete idea with 60% ≤ score ≤ 80% |
+| **GO** | Complete idea with score &gt; 80% |
 
-An unscored Filter 1–4 (not yet run / research failed / division pending) promotes a raw **GO** to **WATCH**. A **Below floor** check forces **NO-GO** until the idea is re-screened.
+When `INCOMPLETE_VERDICT_MODE` is `"as-built"`, unfinished filters keep the v4.1 behaviour (band from percent; a raw GO promotes to WATCH).
 
 ## Fixed check slots (15)
+
+Slots are matched by **name** (`expectedSlotKeys()`), not list position.
 
 | Filter | Slots | Canonical checks |
 |---|---:|---|
@@ -59,6 +68,8 @@ Finance sign-off is administrative and outside the slots. Blank or missing evide
 | 100g | ₹1–12 Cr |
 | 1000g | above ₹12 Cr |
 
+INCOMPLETE ideas do not show a gram badge.
+
 ## One sealed score
 
-The only number shown in the Log, output page, PDF and Excel is `goNoGo.score` from the last explicit screen (Submit / Run missing steps). Opening an idea never rewrites it. Snapshots without a version are labelled `legacy` / older release until re-screened.
+The only number shown in the Log, output page, PDF and Excel is `goNoGo.score` from the last explicit screen (Submit / Run missing steps) or an ADMIN no-cost re-score from stored evidence. Opening an idea never rewrites it. Snapshots without a version are labelled `legacy` / older release until re-screened or re-scored.

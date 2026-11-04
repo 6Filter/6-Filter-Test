@@ -50,8 +50,9 @@ assert.match(formSrc, /SUBMITTER_DEPARTMENTS/);
 assert.doesNotMatch(formSrc, /Only an ADMIN can change it/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
-assert.doesNotMatch(appSrc, /AdminUsersPage/);
-assert.doesNotMatch(appSrc, />Admin</);
+// Part 129 — ADMIN Settings hosts AdminUsersPage (scoring re-score + users).
+assert.match(appSrc, /AdminUsersPage/);
+assert.doesNotMatch(appSrc, /setView\("admin"\)/);
 
 const {
   BH_SEES_HOME_TEAM,

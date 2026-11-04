@@ -73,7 +73,8 @@ assert.match(logSrc, /rowTeam/);
 assert.match(logSrc, /SUBMITTER_DEPARTMENTS/);
 assert.match(logSrc, /Legacy team/);
 assert.match(appSrc, /LogPage/);
-assert.doesNotMatch(appSrc, /AdminUsersPage/);
+// Part 129 — ADMIN Settings mounts AdminUsersPage for scoring re-score.
+assert.match(appSrc, /AdminUsersPage/);
 assert.doesNotMatch(appSrc, /setView\("admin"\)/);
 
 const loginSrc = readFileSync(new URL("../src/LoginScreen.jsx", import.meta.url), "utf8");

@@ -1,13 +1,17 @@
 {
-  "rulesetVersion": "v4.1",
-  "fingerprint": "8677094a903675afb219b89f8437c26a550518a1262ac8e5638240edbd0c2b47",
+  "rulesetVersion": "v4.2",
+  "fingerprint": "c1dae443b1d38d5542cd4fb3970e78a10522030e1cdf5852abebb677828f242b",
   "files": {
-    "lib/lockedConstants.js": "ae0547100255c70e91f96e4d02c01f46b1a0f25d5301caf39fea61a65b04acf2",
-    "lib/goNoGo.js": "c5758592c7103d56ce774fef080b967b8913411eded9f2011532536e97e899e4",
+    "lib/lockedConstants.js": "ecdba3ef6e8bec04b55ff27c6704a188f9150474d2249b8aed730785f20ba9b4",
+    "lib/goNoGo.js": "d33bb37d8ed55d87a2f5e6af518b4e6fc969d2d2714d1f7e7662521f77267bad",
     "lib/filterChecks.js": "589601787ee5370f9a49c364a6124aeb614cdd3a4fd5f29fa237b8779ea4142d",
     "lib/propositionScoring.js": "e9c563b6ec0c9790bd59804d76da9b284bc873fcade2c018e020b6ddaba601fe",
-    "lib/analysisStability.js": "bdc717dda2d6636b9f581a1a550e25f2b1345ac3c8e26cc7a14a6c300e43edfe",
+    "lib/analysisStability.js": "d034c6c463e0e6d7798da5e2874005fb9355634044ede1bc2b0858d073f3f31b",
     "lib/techShiftRisk.js": "becea8c9a53d397f371532bdcfcedfe3445c09b35710b45d856afdc0aede73d1",
-    "lib/scoreSlots.js": "8bf0a3a4e455d59d102dbe74e39876c58397ddb1e7c6e48bd0ef7c67be6354cf"
+    "lib/scoreSlots.js": "cec9d3b051d156497bb837aae8fb8bcb8192efad801b4baef594bf0d713e925d",
+    "lib/mrpFormula.js": "ef9efc0f092fc9bf744e72c30a90e446ebe75e1dcdb64f947fe20daedf70c329",
+    "lib/divisionMargin.js": "bcd6276deb69b804771ae8ccaf9456110e732c3d128915b1e9f5f405222b155f",
+    "lib/improvementPoints.js": "e7fd01a570a5403d8fe93aa4f032226f3154525ba70e7a5156de443826da6daa",
+    "lib/propositionGateApi.js": "837c3c4ac40f22731dba9f83609d2168ac539c6cc749684f17ba2fae440ccb5a"
   }
 }

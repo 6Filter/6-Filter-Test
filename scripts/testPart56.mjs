@@ -32,6 +32,7 @@ assert.equal(classifyGoNoGoFromScore(100), "GO");
 assert.equal(goNoGoTone("WATCH"), "watch");
 assert.equal(goNoGoTone("GO"), "pass");
 assert.equal(goNoGoTone("NO-GO"), "fail");
+assert.equal(goNoGoTone("INCOMPLETE"), "incomplete");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {

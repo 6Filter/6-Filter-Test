@@ -45,7 +45,20 @@ delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
 const files = readdirSync(scriptsDir)
   .filter((name) => /^test.*\.mjs$/i.test(name))
-  .sort();
+  .sort()
+  .map((name) => ({ name, full: path.join(scriptsDir, name) }));
+
+const ownerDir = path.join(scriptsDir, "owner-tests");
+try {
+  for (const name of readdirSync(ownerDir).filter((n) => /^test.*\.mjs$/i.test(n)).sort()) {
+    // Prefer owner originals; skip if a wrapper in scripts/ already imports the same basename.
+    const wrapper = files.find((f) => f.name === name);
+    if (wrapper) continue;
+    files.push({ name: `owner-tests/${name}`, full: path.join(ownerDir, name) });
+  }
+} catch {
+  /* owner-tests optional until Part 129 */
+}
 
 if (!files.length) {
   console.error("No test scripts found.");
@@ -55,14 +68,14 @@ if (!files.length) {
 const failures = [];
 for (const file of files) {
   const code = await new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(scriptsDir, file)], {
+    const child = spawn(process.execPath, [file.full], {
       cwd: root,
       stdio: "inherit",
       env: process.env,
     });
     child.on("exit", (status) => resolve(status ?? 1));
   });
-  if (code !== 0) failures.push(file);
+  if (code !== 0) failures.push(file.name);
 }
 
 if (failures.length) {

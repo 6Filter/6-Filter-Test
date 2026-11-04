@@ -3,12 +3,13 @@ import { readFileSync } from "node:fs";
 import { applyLocalGate, computeGoNoGo, classifyGoNoGoFromScore } from "../lib/goNoGo.js";
 import { ideaSizeForResult, ideaScaleFromDoc } from "../lib/ideaScale.js";
 
-const verdicts = new Set(["GO", "NO-GO", "WATCH"]);
+const verdicts = new Set(["GO", "NO-GO", "WATCH", "INCOMPLETE"]);
+const bandVerdicts = new Set(["GO", "NO-GO", "WATCH"]);
 
 assert.equal(classifyGoNoGoFromScore(0), "NO-GO");
-assert.ok(verdicts.has(classifyGoNoGoFromScore(40)));
-assert.ok(verdicts.has(classifyGoNoGoFromScore(70)));
-assert.ok(verdicts.has(classifyGoNoGoFromScore(90)));
+assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(40)));
+assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(70)));
+assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(90)));
 
 const floorFail = computeGoNoGo({
   f1: { checkLabel: "Below floor", items: [] },
@@ -25,6 +26,7 @@ const emptyDoc = {
 };
 const emptyGate = applyLocalGate(emptyDoc);
 assert.ok(verdicts.has(emptyGate.classification), "empty idea still gets a verdict");
+assert.equal(emptyGate.classification, "INCOMPLETE", "empty idea is INCOMPLETE under v4.2");
 assert.ok(["10g", "100g", "1000g"].includes(emptyGate.ideaScale));
 assert.ok(String(emptyGate.rationale || "").length > 10, "verdict rationale must be generated");
 

@@ -8,6 +8,7 @@ const TABS = [
   { id: "users", label: "Users" },
   { id: "divisions", label: "Division queue" },
   { id: "roster", label: "Roster import" },
+  { id: "scoring", label: "Scoring re-score" },
   { id: "audit", label: "Audit" },
 ];
 
@@ -33,6 +34,11 @@ export default function AdminUsersPage({ apiFetch }) {
   const [memberEmail, setMemberEmail] = useState("");
   const [divisionQueue, setDivisionQueue] = useState([]);
   const [divisionBusy, setDivisionBusy] = useState("");
+  const [scoringPreview, setScoringPreview] = useState([]);
+  const [scoringRuleset, setScoringRuleset] = useState("");
+  const [scoringBusy, setScoringBusy] = useState(false);
+  const [scoringConfirm, setScoringConfirm] = useState("");
+  const [scoringSelected, setScoringSelected] = useState(() => new Set());
 
   const loadUsers = useCallback(async () => {
     setError("");
@@ -82,6 +88,22 @@ export default function AdminUsersPage({ apiFetch }) {
     }
   }, [apiFetch]);
 
+  const loadScoringPreview = useCallback(async () => {
+    setError("");
+    setScoringBusy(true);
+    try {
+      const data = await apiFetch("/api/admin/scoring-audit");
+      setScoringPreview(data.preview || []);
+      setScoringRuleset(data.rulesetVersion || "");
+      setScoringSelected(new Set((data.preview || []).filter((r) => r.wouldChange).map((r) => r.id)));
+    } catch (e) {
+      setError(e.message || "Could not load scoring preview.");
+      setScoringPreview([]);
+    } finally {
+      setScoringBusy(false);
+    }
+  }, [apiFetch]);
+
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
@@ -90,7 +112,8 @@ export default function AdminUsersPage({ apiFetch }) {
     if (tab === "roster") loadRoster();
     if (tab === "audit") loadAudit();
     if (tab === "divisions") loadDivisionQueue();
-  }, [tab, loadRoster, loadAudit, loadDivisionQueue]);
+    if (tab === "scoring") loadScoringPreview();
+  }, [tab, loadRoster, loadAudit, loadDivisionQueue, loadScoringPreview]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -202,6 +225,120 @@ export default function AdminUsersPage({ apiFetch }) {
         ))}
       </div>
       {error ? <p className="admin-error">{error}</p> : null}
+
+      {tab === "scoring" ? (
+        <section className="admin-panel">
+          <p className="admin-hint">
+            Preview every sealed score against the current ruleset ({scoringRuleset || "…"}) using stored
+            evidence only — no AI calls. Re-score writes a new sealed snapshot and keeps the old number in
+            the audit trail.
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <button type="button" className="ghost" onClick={loadScoringPreview} disabled={scoringBusy}>
+              {scoringBusy ? <Loader2 size={14} className="spin" /> : null}
+              Refresh preview
+            </button>
+            <input
+              value={scoringConfirm}
+              onChange={(e) => setScoringConfirm(e.target.value)}
+              placeholder='Type RE-SCORE to confirm'
+              style={{ minWidth: 180 }}
+            />
+            <button
+              type="button"
+              disabled={scoringBusy || scoringConfirm !== "RE-SCORE" || !scoringSelected.size}
+              onClick={async () => {
+                setScoringBusy(true);
+                setError("");
+                try {
+                  await apiFetch("/api/admin/scoring-rescore", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      confirm: "RE-SCORE",
+                      ids: [...scoringSelected],
+                    }),
+                  });
+                  setScoringConfirm("");
+                  await loadScoringPreview();
+                } catch (e) {
+                  setError(e.message || "Re-score failed.");
+                } finally {
+                  setScoringBusy(false);
+                }
+              }}
+            >
+              Re-score selected ({scoringSelected.size})
+            </button>
+            <button
+              type="button"
+              disabled={scoringBusy || scoringConfirm !== "RE-SCORE"}
+              onClick={async () => {
+                setScoringBusy(true);
+                setError("");
+                try {
+                  await apiFetch("/api/admin/scoring-rescore", {
+                    method: "POST",
+                    body: JSON.stringify({ confirm: "RE-SCORE" }),
+                  });
+                  setScoringConfirm("");
+                  await loadScoringPreview();
+                } catch (e) {
+                  setError(e.message || "Bulk re-score failed.");
+                } finally {
+                  setScoringBusy(false);
+                }
+              }}
+            >
+              Re-score all that change
+            </button>
+          </div>
+          {!scoringPreview.length ? (
+            <p>{scoringBusy ? "Loading…" : "No screened ideas found."}</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th />
+                  <th>Idea</th>
+                  <th>Stored</th>
+                  <th>Current rules</th>
+                  <th>Status</th>
+                  <th>Change?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoringPreview.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={scoringSelected.has(row.id)}
+                        onChange={(e) => {
+                          setScoringSelected((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(row.id);
+                            else next.delete(row.id);
+                            return next;
+                          });
+                        }}
+                      />
+                    </td>
+                    <td>{row.name || row.id}</td>
+                    <td className="mono">
+                      {row.storedClass} {row.storedPct}%
+                    </td>
+                    <td className="mono">
+                      {row.liveClass} {row.livePct}%
+                    </td>
+                    <td>{row.scoreStatus}</td>
+                    <td>{row.wouldChange ? "yes" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      ) : null}
 
       {tab === "divisions" ? (
         <section className="admin-panel">

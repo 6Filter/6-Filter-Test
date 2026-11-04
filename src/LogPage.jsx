@@ -39,6 +39,7 @@ const STATUS_PILLS = [
   { id: "GO", label: "GO" },
   { id: "NO-GO", label: "NO-GO" },
   { id: "WATCH", label: "WATCH" },
+  { id: "INCOMPLETE", label: "INCOMPLETE" },
 ];
 
 const CHIP = {
@@ -147,8 +148,7 @@ export default function LogPage({
     [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter]
   );
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
-  const isAdminUser =
-    String(currentUser?.role || "").trim() === "ADMIN" || isMasterUnlock(unlockedDepartment);
+  const isAdminUser = String(currentUser?.role || "").trim() === "ADMIN";
   const showCreatedBy =
     isAdminUser ||
     String(currentUser?.role || "").trim() === "BH FORUM" ||
@@ -192,9 +192,8 @@ export default function LogPage({
     exportingMonthPdf ||
     Boolean(exportingPdfId);
   const masterView = isMasterUnlock(unlockedDepartment);
-  // ADMIN (e.g. tanmay.v@cavinkare.com) or Master unlock may delete any idea.
+  // Part 129 — Log delete is role ADMIN only (Master unlock grants no admin rights).
   const allowDelete =
-    masterView ||
     canDeleteRow ||
     canDeleteAll ||
     String(currentUser?.role || "").trim() === "ADMIN";
@@ -205,12 +204,13 @@ export default function LogPage({
       GO: 0,
       "NO-GO": 0,
       WATCH: 0,
+      INCOMPLETE: 0,
       "bh-waiting": 0,
     };
     for (const row of scopedRows) {
       if (researchWasUsed(row)) base["ai-used"] += 1;
       const cls = classificationOf(row);
-      if (cls === "GO" || cls === "NO-GO" || cls === "WATCH") base[cls] += 1;
+      if (cls === "GO" || cls === "NO-GO" || cls === "WATCH" || cls === "INCOMPLETE") base[cls] += 1;
       if (isWaitingForBusinessHead(row)) base["bh-waiting"] += 1;
     }
     return base;
@@ -801,6 +801,7 @@ export default function LogPage({
               <span><i className="tone-pass" /> Pass</span>
               <span><i className="tone-fail" /> Fail</span>
               <span><i className="tone-review" /> In review</span>
+              <span><i className="tone-incomplete" /> Incomplete</span>
               <span><i className="tone-none" /> Locked</span>
             </div>
           </div>
@@ -891,9 +892,15 @@ export default function LogPage({
                               {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
                             </span>
                             {lockedVerdict ? (
-                              <span className="research-badge used" title="Stored gate verdict">
+                              <span
+                                className={`research-badge ${lockedVerdict === "INCOMPLETE" ? "incomplete" : "used"}`}
+                                title="Stored gate verdict"
+                              >
                                 {lockedVerdict}
                                 {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
+                                {lockedVerdict === "INCOMPLETE" && Number.isFinite(Number(h.goNoGo?.score?.done))
+                                  ? ` · ${h.goNoGo.score.done} of ${h.goNoGo.score.total || 15}`
+                                  : ""}
                               </span>
                             ) : null}
                             {h.goNoGo?.scoreStatus === "edited-since-screening" ? (
@@ -1116,6 +1123,7 @@ export const LOG_PAGE_CSS = `
 .log-legend .tone-pass,.log-seg-bit.tone-pass{background:var(--pass);}
 .log-legend .tone-fail,.log-seg-bit.tone-fail{background:var(--fail);}
 .log-legend .tone-review,.log-seg-bit.tone-review{background:var(--review);}
+.log-legend .tone-incomplete,.log-seg-bit.tone-incomplete{background:#8a7a4a;}
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}

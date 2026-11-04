@@ -24,17 +24,17 @@ assert.equal(matchesUnlockedDepartment(rd, LOG_MASTER_UNLOCK), true);
 assert.equal(matchesUnlockedDepartment(npd, LOG_MASTER_UNLOCK), true);
 assert.equal(canViewProposition({ department: LOG_MASTER_UNLOCK }, rd), true);
 assert.equal(canViewProposition({ department: LOG_MASTER_UNLOCK }, npd), true);
-assert.equal(canDeleteLogProposition({ department: LOG_MASTER_UNLOCK }), true);
+// Part 129 — Master unlock grants no admin rights (delete is ADMIN role only).
+assert.equal(canDeleteLogProposition({ department: LOG_MASTER_UNLOCK }), false);
 assert.equal(canDeleteLogProposition({ department: "R&D" }), false);
 assert.equal(canRunDepartmentWipe({ department: "R&D" }), false);
 assert.equal(canRunDepartmentWipe({ department: LOG_MASTER_UNLOCK }), false);
 
 const pageSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(pageSrc, /allowDelete/);
-assert.match(pageSrc, /ADMIN or Master can delete|canDeleteRow/);
-assert.match(pageSrc, /masterView \|\|/);
 assert.match(pageSrc, /canDeleteRow/);
 assert.match(pageSrc, /role \|\| ""\)\.trim\(\) === "ADMIN"/);
+assert.match(pageSrc, /ADMIN only|role ADMIN only/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /canDeleteLogProposition/);
@@ -46,4 +46,4 @@ await upsertDepartmentPasswordHash(LOG_MASTER_UNLOCK, hashPassword("Iwillnottell
 assert.equal(await verifyDepartmentPassword(LOG_MASTER_UNLOCK, "Iwillnottellthepassword"), true);
 assert.equal(await verifyDepartmentPassword(LOG_MASTER_UNLOCK, "wrong"), false);
 
-console.log("PASS Master unlock: sees all teams; only Master may delete");
+console.log("PASS Master unlock: sees all teams; delete is ADMIN role only");

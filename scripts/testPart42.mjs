@@ -15,8 +15,8 @@ function items(done, pending) {
 }
 
 const missing = computeGoNoGo({});
-assert(missing === "NO-GO", `incomplete evidence should be NO-GO, got ${missing}`);
-assert(goNoGoTone(missing) === "fail", "incomplete should use fail tone");
+assert(missing === "INCOMPLETE", `incomplete evidence should be INCOMPLETE, got ${missing}`);
+assert(goNoGoTone(missing) === "incomplete", "incomplete should use incomplete tone");
 assert(!goNoGoIsFloorFailure({}), "empty checks are incompleteness, not a floor failure");
 
 const go = computeGoNoGo({
@@ -33,13 +33,14 @@ assert(classifyGoNoGoFromScore(61) === "WATCH", "61 is WATCH");
 assert(classifyGoNoGoFromScore(60) === "WATCH", "60 is WATCH");
 assert(classifyGoNoGoFromScore(59) === "NO-GO", "59 is NO-GO");
 
-const incomplete = computeGoNoGo({
+const lowBand = computeGoNoGo({
   f1: { checkLabel: "Evidence missing", items: items(0, 4) },
   f2: { checkLabel: "Cleared", items: items(1, 1) },
   f3: { checkLabel: "Cleared", items: items(2, 0) },
   f4: { checkLabel: "Cleared", items: items(2, 0) },
 });
-assert(incomplete === "NO-GO", "a sub-60 score with no floor failure is NO-GO");
+// Filters ran (have items) but score is sub-60 → NO-GO band.
+assert(lowBand === "NO-GO", "a sub-60 score with no floor failure is NO-GO");
 assert(
   !goNoGoIsFloorFailure({
     f1: { checkLabel: "Evidence missing" },
@@ -49,6 +50,14 @@ assert(
   }),
   "Evidence missing is not a floor failure"
 );
+
+const notRun = computeGoNoGo({
+  f1: { checkLabel: "Cleared", items: items(4, 0) },
+  f2: { checkLabel: "Cleared", items: items(3, 0) },
+  f3: { checkLabel: "Cleared", items: items(1, 0) },
+  f4: { checkLabel: "Not yet run", items: [] },
+});
+assert(notRun === "INCOMPLETE", "F4 not yet run with floors passing is INCOMPLETE");
 
 const floorChecks = {
   f1: { checkLabel: "Below floor" },

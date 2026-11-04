@@ -42,8 +42,8 @@ assert.ok(noF4.pct < 100, `cleared F1–F3 + unrun F4 must not be 100% (got ${no
 assert.equal(noF4.byFilter.f4.unscored, true);
 assert.equal(noF4.total, 15, "Part 128 fixed slots — denominator is always 15");
 assert.equal(noF4.byFilter.f4.total, 7, "unrun F4 opens all 7 risk slots");
-// Fixed slots: 8/15 ≈ 53% → NO-GO band (unscored F4 only promotes GO→WATCH, not NO-GO→WATCH).
-assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "NO-GO");
+// Fixed slots: 8/15 ≈ 53%; unfinished F4 → INCOMPLETE (Part 129), not a NO-GO band.
+assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "INCOMPLETE");
 
 const f3Empty = checkF3({ netMarginAtScale: 40 }, {});
 assert.equal(f3Empty.checkLabel, "Not yet run");
