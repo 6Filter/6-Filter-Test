@@ -14,11 +14,11 @@ After the hard stops, GO is above 80, WATCH is 60 to 80, and NO-GO is below 60.
 
 ## Where numbers come from
 
-Research looks for a publicly cited Nielsen or Kantar figure first, then category engines, then a public proxy. A local Nielsen or Kantar row is used only when that category has been loaded. There is no live Nielsen or Kantar feed. Until a row is loaded, the evidence line says there is no local row.
+Research looks for a publicly cited Nielsen or Kantar figure first, then category engines, then a public proxy. A local Nielsen or Kantar row is used only when that category has been loaded. There is no live Nielsen or Kantar feed.
 
 ## Searches
 
-Each research step may run up to 4 web searches. That budget is 1 when both a local Nielsen row and a local Kantar row match the exact category. The verdict sentence and the improvement list do not search. Submitting the same idea again reuses the saved research, and the evidence line keeps the original date.
+Each research step may run up to 4 web searches. That budget is 1 when both a local Nielsen row and a local Kantar row match the exact category. The verdict sentence and the improvement list do not search. Submitting the same idea again reuses the saved research.
 
 ## Points to improve
 

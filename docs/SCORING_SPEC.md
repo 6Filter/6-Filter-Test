@@ -46,6 +46,8 @@ Slots are matched by **name** (`expectedSlotKeys()`), not list position.
 | F3 | 1 | Filter 2 MRP inside the safe ₹ range (± ₹0.5) |
 | F4 | 7 | Seven structural-obsolescence risk dimensions |
 
+**F1 scoring notes:** Attributes 2 and 3 are optional — leaving them blank never opens the attribute slot or lowers the percent. Entered benchmark / growth values are **not** accepted as correct until web research verifies them (`benchmarkVerified` / `categorySizeFound` true) or team Evidence Source clears the slot. Checklist and card copy must not echo form inputs as “Already on record / Still needed”; open slots ask for Submit / web verification or state the research failure.
+
 Finance sign-off is administrative and outside the slots. Blank or missing evidence keeps the slot **open** — the denominator stays 15 at every stage, so more evidence can only raise the percent.
 
 ## Declared gap floor

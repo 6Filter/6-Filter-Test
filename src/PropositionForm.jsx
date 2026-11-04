@@ -39,7 +39,6 @@ import {
   previewAdvisoryChecks,
 } from "../lib/goNoGo.js";
 import { isScoredProposition, shouldForkLogResubmit } from "../lib/analysisStability.js";
-import { evidenceLineForFilter } from "../lib/evidenceProvenance.js";
 import { storedVerdictWithoutInputs } from "../lib/storedVerdict.js";
 import { scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
@@ -963,7 +962,7 @@ function FilterComparePair({ label, actual, target, unit }) {
   );
 }
 
-function FilterStatusCard({ spec, check, narrative, compare, evidenceLine }) {
+function FilterStatusCard({ spec, check, narrative, compare }) {
   const tone = filterCardTone(check, spec.key);
   const items = analysisCheckItems(check?.items);
   const done = items.filter((i) => i.status === "done").length;
@@ -978,7 +977,6 @@ function FilterStatusCard({ spec, check, narrative, compare, evidenceLine }) {
       </div>
       <h3>{spec.title}</h3>
       <p>{narrative}</p>
-      {evidenceLine ? <p className="evidence-line">{evidenceLine}</p> : null}
       {spec.key === "f4" && items.length ? (
         <ul className="f4-analysis-dims">
           {items.map((it, i) => (
@@ -1606,7 +1604,6 @@ export function GoNoGoResultPage({
               check={check}
               narrative={narrative}
               compare={compare}
-              evidenceLine={evidenceLineForFilter(spec.key, doc)}
             />
           );
         })}

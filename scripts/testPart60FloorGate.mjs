@@ -65,13 +65,15 @@ const namedOnly = checkF1(
 assert.equal(
   namedOnly.items[1].status,
   "pending",
-  "naming a benchmark without verification must not count as done"
+  "named benchmark needs web verification before it counts"
 );
+assert.match(namedOnly.items[1].text, /awaiting web verification/i);
 assert.equal(
   namedOnly.items[3].status,
   "pending",
-  "growth prose without researched category size must not count as done"
+  "growth inputs need web category-size research before they count"
 );
+assert.match(namedOnly.items[3].text, /awaiting web research/i);
 
 const verified = checkF1(
   { declaredAttribute: "cooling", benchmark: "Indulekha", declaredGap: 2.2, growthRoute: "penetration", growthArgument: "share take" },
@@ -85,6 +87,18 @@ const unverified = checkF1(
   { benchmarkVerified: false }
 );
 assert.equal(unverified.items[1].status, "pending");
+
+const sizeNotFound = checkF1(
+  {
+    declaredAttribute: "cooling",
+    benchmark: "Indulekha",
+    declaredGap: 2.2,
+    growthRoute: "penetration",
+    growthArgument: "share take",
+  },
+  { benchmarkVerified: true, categorySizeFound: false }
+);
+assert.equal(sizeNotFound.items[3].status, "pending");
 
 const range = { minMrpInr: 80, maxMrpInr: 120, minMarginPct: 12, maxMarginPct: 28 };
 assert.equal(checkF3({}, { marginElasticity: {} }).checkLabel, "Not yet run");

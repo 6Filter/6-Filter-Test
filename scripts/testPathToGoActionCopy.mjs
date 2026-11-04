@@ -1,6 +1,6 @@
 /**
  * Path-to-GO actions must say what to do and how many points they add —
- * never restate a filled field as "Benchmark named: X", never X% → X%.
+ * never restate a correctly named benchmark as the defect, never X% → X%.
  */
 import assert from "node:assert/strict";
 import { checkF1 } from "../lib/filterChecks.js";
@@ -11,12 +11,28 @@ import {
 } from "../lib/improvementPoints.js";
 
 assert.match(
-  actionFixCopy("f1", "benchmark", "Benchmark named: dOVE SCALP SERUM"),
-  /Verify that benchmark "dOVE SCALP SERUM"/i
+  actionFixCopy(
+    "f1",
+    "benchmark",
+    "Named benchmark awaiting web verification — Submit so India listings can be checked"
+  ),
+  /Submit so web search can verify/i
 );
-assert.doesNotMatch(
-  actionFixCopy("f1", "benchmark", "Benchmark named: dOVE SCALP SERUM"),
-  /^Benchmark named:/i
+assert.match(
+  actionFixCopy(
+    "f1",
+    "benchmark",
+    'Benchmark "dOVE SCALP SERUM" is named correctly, but not verified — no listing'
+  ),
+  /did not verify|not verified/i
+);
+assert.match(
+  actionFixCopy(
+    "f1",
+    "growth",
+    "Category size awaiting web research — Submit so the growth route can be substantiated"
+  ),
+  /Submit so web search can substantiate/i
 );
 
 const f1 = checkF1(
@@ -29,6 +45,8 @@ const f1 = checkF1(
   },
   {}
 );
+assert.equal(f1.items.filter((i) => i.status === "done").length, 2, "attr + gap only until research verifies");
+
 const empty = { checkLabel: "Not yet run", items: [] };
 const f2Pending = {
   checkLabel: "Evidence missing",
@@ -41,7 +59,7 @@ const f2Pending = {
 const checks = { f1, f2: f2Pending, f3: empty, f4: empty };
 const path = buildPathToGo({
   advisoryChecks: checks,
-  sealedScore: { pct: 33, done: 5, total: 15 },
+  sealedScore: { pct: 13, done: 2, total: 15 },
   scoreStatus: "current",
 });
 
@@ -52,11 +70,10 @@ assert.ok(path.actions.length >= 2, "incomplete ideas list every open action nee
 for (const a of path.actions) {
   assert.ok(Number(a.gainPct) > 0, `gain required: ${a.text}`);
   assert.doesNotMatch(a.text, /^Benchmark named:/i);
-  assert.doesNotMatch(a.text, /^\w+ named:/i);
 }
 assert.ok(
-  path.actions.some((a) => /Verify that benchmark "dOVE SCALP SERUM"/i.test(a.text)),
-  "benchmark line must tell the user to verify, not restate the name"
+  !path.actions.some((a) => /dOVE SCALP SERUM/i.test(a.text) && /named:/i.test(a.text)),
+  "must not restate the typed name as the defect"
 );
 assert.ok(path.actions.some((a) => a.gainPct === 47 && /Filter 4/i.test(a.text)));
 
@@ -64,7 +81,6 @@ const ranked = computeImprovementPointValues(checks);
 assert.ok(ranked.every((r) => Number(r.gainPct || r.pointValue) > 0));
 assert.ok(!ranked.some((r) => /^Benchmark named:/i.test(r.text)));
 
-// Same→same must not happen even when sealed is low and checks look empty-ish
 const silent = buildPathToGo({
   advisoryChecks: {
     f1: { checkLabel: "Cleared", items: [] },
