@@ -59,9 +59,11 @@ const blank = {
 const reason = emptyImprovementReason(blank, []);
 assert.match(reason, /not been scored yet|No scored Filter 1–4/i);
 assert.doesNotMatch(reason, /nothing outstanding/i);
+// Part 130 — unrun filters are explicit path actions (never a silent empty path).
 const path = closestPathToGo(blank, []);
-assert.equal(path.items.length, 0);
-assert.match(path.emptyReason, /scored|Submit/i);
+assert.ok(path.items.length >= 1, "unrun filters appear on the path");
+assert.ok(path.items.some((it) => /Filter 4 research/i.test(it.text)));
+assert.notEqual(path.projectedPct, path.currentPct);
 
 const narrative = fallbackFilterNarrative({
   checkLabel: "Evidence missing",
@@ -94,6 +96,6 @@ const ranked = computeImprovementPointValues({
   },
 });
 assert.equal(ranked[0].filter, "F2", "floor failures lead the next-steps list");
-assert.match(ranked[0].text, /Personal Care floor|Raise net margin/);
+assert.match(ranked[0].text, /needs at least 50%|Personal Care|Raise net margin|non-negotiable/i);
 
 console.log("PASS grounded improvement feedback cites inputs and findings");

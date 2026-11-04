@@ -47,9 +47,8 @@ import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
 import { isGoScore } from "../lib/lockedConstants.js";
 import {
-  closestPathToGo,
+  buildPathToGo,
   resolveOutputScore,
-  emptyImprovementReason,
   computeImprovementPointValues,
   countFiltersWithEvidence,
   f2ActualVsFloor,
@@ -1235,6 +1234,25 @@ export function GoNoGoResultPage({
       ),
     String(result.rationale || "No rationale returned.")
   );
+  const pathPlan = safeCall(
+    "path to GO",
+    () =>
+      buildPathToGo({
+        advisoryChecks: checks,
+        sealedScore: score,
+        scoreStatus: scoreStatus || "current",
+        screenedAt: result.screenedAt || result.at || null,
+      }),
+    {
+      kind: "path",
+      currentPct: scorePct,
+      toGo: { count: 0, pct: scorePct },
+      allDonePct: scorePct,
+      blockers: [],
+      actions: [],
+      message: "",
+    }
+  );
   const improvementItems = safeCall(
     "improvement items",
     () =>
@@ -1244,17 +1262,9 @@ export function GoNoGoResultPage({
       })),
     []
   );
-  const path = safeCall(
-    "closest path to GO",
-    () => closestPathToGo(checks, improvementItems, score, scoreStatus || "current"),
-    { items: [], currentPct: scorePct, projectedPct: scorePct, reachesGo: isGoScore(scorePct), emptyReason: "" }
-  );
-  const pathItems = Array.isArray(path?.items) ? path.items : [];
-  const emptyReason = safeCall(
-    "empty improvement reason",
-    () => path?.emptyReason || emptyImprovementReason(checks, improvementItems),
-    ""
-  );
+  const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
+  const pathActions = Array.isArray(pathPlan?.actions) ? pathPlan.actions : [];
+  const pathKind = String(pathPlan?.kind || "path");
   const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {
     have: 0,
     total: 6,
@@ -1361,47 +1371,120 @@ export function GoNoGoResultPage({
             </aside>
           }
         >
-        <aside className="path-panel">
+        <aside className="path-panel" data-path-kind={pathKind}>
           <div className="panel-kicker mono">Closest path to GO</div>
-          {path?.projectionHidden ? (
-            <p className="path-empty">{path.emptyReason || "Screen again to see the path to GO"}</p>
-          ) : (
+          {pathKind === "recompute" ? (
+            <>
+              <p className="path-empty">{pathPlan.message}</p>
+              {doc?.id && typeof onEvidenceRescore === "function" ? (
+                <button
+                  type="button"
+                  className="prop-save pdf-hide"
+                  disabled={rescoreBusy}
+                  onClick={async () => {
+                    setRescoreBusy(true);
+                    try {
+                      await onEvidenceRescore(doc.id);
+                    } catch (e) {
+                      window.alert(e?.message || "Could not recompute from saved evidence.");
+                    } finally {
+                      setRescoreBusy(false);
+                    }
+                  }}
+                >
+                  {rescoreBusy ? <Loader2 size={14} className="spin" /> : null}
+                  Recompute from saved evidence
+                </button>
+              ) : (
+                <p className="path-if">Screen again to update under the current rules.</p>
+              )}
+            </>
+          ) : pathKind === "go" ? (
             <>
               <p className="path-score-line">
-                <span className="mono">{scorePct}%</span>
-                <span className="path-arrow" aria-hidden="true">→</span>
-                <span className="mono path-projected">
-                  {Number.isFinite(Number(path.projectedPct)) ? Number(path.projectedPct) : scorePct}%
-                </span>
-                {pathItems.length ? (
-                  <span className="path-if">
-                    {path.reachesGo
-                      ? `if the top ${pathItems.length === 1 ? "item" : `${pathItems.length} items`} clear`
-                      : `if ${pathItems.length === 1 ? "the remaining item clears" : `all ${pathItems.length} remaining items clear`} — still short of GO`}
-                  </span>
-                ) : (
-                  <span className="path-if">
-                    {path.reachesGo ? "already above 80" : emptyReason || "no open analytical gaps for this idea"}
-                  </span>
-                )}
+                <span className="mono path-projected">{pathPlan.currentPct}%</span>
+                <span className="path-if">{pathPlan.message || "GO, above 80%."}</span>
               </p>
-              {pathItems.length ? (
+              {pathActions.length ? (
                 <ul className="path-top-list">
-                  {pathItems.map((it, i) => (
-                    <li key={`${it.filter}-${i}`}>
+                  {pathActions.map((it, i) => (
+                    <li key={`${it.id || it.filter}-${i}`}>
                       <span className="mono imp-filter-tag">{it.filter}</span>
-                      {it.text}
+                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                      {Number.isFinite(Number(it.gainPct)) ? (
+                        <span className="mono path-gain">+{it.gainPct}%</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="path-empty">
-                  {path.reachesGo
-                    ? "No scored gaps left on Filters 1–4 for the values entered."
-                    : emptyReason || "No scored gaps left on Filters 1–4 for the values entered."}
-                </p>
-              )}
-              {improvementItems.length ? (
+              ) : null}
+            </>
+          ) : pathKind === "blockers" ? (
+            <>
+              <p className="path-empty">{pathPlan.message}</p>
+              <ul className="path-top-list">
+                {pathBlockers.map((it, i) => (
+                  <li key={`b-${it.id || i}`}>
+                    <span className="mono imp-filter-tag">{it.filter}</span>
+                    {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                    {Number.isFinite(Number(it.gainPct)) ? (
+                      <span className="mono path-gain">+{it.gainPct}%</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {pathActions.length ? (
+                <>
+                  <p className="path-if">Then open checks</p>
+                  <ul className="path-top-list">
+                    {pathActions.map((it, i) => (
+                      <li key={`a-${it.id || i}`}>
+                        <span className="mono imp-filter-tag">{it.filter}</span>
+                        {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                        {Number.isFinite(Number(it.gainPct)) ? (
+                          <span className="mono path-gain">+{it.gainPct}%</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              <p className="path-if">
+                All cleared: {Number.isFinite(Number(pathPlan.allDonePct)) ? pathPlan.allDonePct : 100}%
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="path-score-line">
+                <span className="mono">{pathPlan.currentPct}%</span>
+                {Number(pathPlan.toGo?.pct) !== Number(pathPlan.currentPct) ? (
+                  <>
+                    <span className="path-arrow" aria-hidden="true">→</span>
+                    <span className="mono path-projected">{pathPlan.toGo?.pct}%</span>
+                  </>
+                ) : null}
+                <span className="path-if">
+                  {pathPlan.toGo?.count
+                    ? `if these ${pathPlan.toGo.count} check${pathPlan.toGo.count === 1 ? "" : "s"} clear`
+                    : pathPlan.message || ""}
+                </span>
+              </p>
+              <ul className="path-top-list">
+                {pathActions.map((it, i) => (
+                  <li key={`${it.id || it.filter}-${i}`}>
+                    <span className="mono imp-filter-tag">{it.filter}</span>
+                    {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                    {Number.isFinite(Number(it.gainPct)) ? (
+                      <span className="mono path-gain">+{it.gainPct}%</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              <p className="path-if">
+                All {pathActions.length || improvementItems.length} cleared:{" "}
+                {Number.isFinite(Number(pathPlan.allDonePct)) ? pathPlan.allDonePct : 100}%
+              </p>
+              {improvementItems.length > pathActions.length ? (
                 <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
               ) : null}
             </>
@@ -3815,6 +3898,8 @@ export const PROP_CSS = `
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
 .gonogo-hero.tone-incomplete{border-color:rgba(180,160,90,.35);}
 .gonogo-rescore-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}
+.path-gain{margin-left:8px;opacity:.85;color:var(--watch,#f0c14b);}
+.path-top-list li{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
   width:132px;height:132px;border-radius:50%;flex-shrink:0;

@@ -28,6 +28,13 @@ import {
   OPEN_ACCESS_TEAM,
   PLATFORM_TEAM_LOCK_ENABLED,
 } from "../lib/departmentAuthConstants.js";
+import {
+  clearStashedReturnIdea,
+  parseAppLocation,
+  pathForView,
+  readStashedReturnIdea,
+  stashReturnIdea,
+} from "../lib/appRoutes.js";
 
 function ProcessEta({ startedAt, expectedMs }) {
   const [now, setNow] = useState(() => Date.now());
@@ -107,8 +114,8 @@ async function createPropositionRecord() {
   return attachAdvisory(data);
 }
 
-async function fetchPropositionById(id) {
-  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`);
+async function fetchPropositionById(id, { signal } = {}) {
+  const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, signal ? { signal } : {});
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not load proposition.");
   return attachAdvisory(data);
@@ -615,45 +622,28 @@ export default function App() {
   const [outcomeMsg, setOutcomeMsg] = useState("");
   const [deepLinkMissing, setDeepLinkMissing] = useState(false);
   const deepLinkHandled = useRef(false);
+  const navTokenRef = useRef(0);
+  const openAbortRef = useRef(null);
 
-  function readDeepLinkIdeaId() {
-    try {
-      const path = String(window.location.pathname || "");
-      const m = path.match(/^\/propositions\/([^/]+)\/?$/i);
-      if (m?.[1]) return decodeURIComponent(m[1]);
-      const q = new URLSearchParams(window.location.search || "").get("idea");
-      return q ? String(q).trim() : "";
-    } catch {
-      return "";
-    }
-  }
-
-  function stashDeepLinkIdeaId(id) {
-    const cleaned = String(id || "").trim();
-    if (!cleaned) return;
-    try {
-      sessionStorage.setItem("primus_return_idea", cleaned);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function takeStashedDeepLinkIdeaId() {
-    try {
-      const fromUrl = readDeepLinkIdeaId();
-      if (fromUrl) {
-        stashDeepLinkIdeaId(fromUrl);
-        return fromUrl;
+  function bumpNavToken() {
+    navTokenRef.current += 1;
+    if (openAbortRef.current) {
+      try {
+        openAbortRef.current.abort();
+      } catch {
+        /* ignore */
       }
-      return String(sessionStorage.getItem("primus_return_idea") || "").trim();
-    } catch {
-      return readDeepLinkIdeaId();
+      openAbortRef.current = null;
     }
+    return navTokenRef.current;
   }
 
-  function clearStashedDeepLinkIdeaId() {
+  function syncAddress(nextView, ideaId = "", { replace = false } = {}) {
+    const path = pathForView(nextView === "spec" ? "spec" : nextView, ideaId);
     try {
-      sessionStorage.removeItem("primus_return_idea");
+      const state = { view: nextView, ideaId: ideaId || "" };
+      if (replace) window.history.replaceState(state, "", path);
+      else window.history.pushState(state, "", path);
     } catch {
       /* ignore */
     }
@@ -689,9 +679,11 @@ export default function App() {
   }
 
   useEffect(() => {
-    const fromUrl = readDeepLinkIdeaId();
-    if (fromUrl) stashDeepLinkIdeaId(fromUrl);
-  }, []);
+    // While gated on sign-in, keep a Slack /propositions/<id> or ?idea= for after login only.
+    if (!authRequired || sessionUser) return;
+    const loc = parseAppLocation(window.location.pathname, window.location.search);
+    if (loc.kind === "proposition" && loc.ideaId) stashReturnIdea(loc.ideaId);
+  }, [authRequired, sessionUser]);
 
   useEffect(() => {
     let cancelled = false;
@@ -717,51 +709,73 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    function onPopState() {
+      const token = bumpNavToken();
+      clearStashedReturnIdea();
+      setOpeningId(null);
+      setDeepLinkMissing(false);
+      const loc = parseAppLocation(window.location.pathname, window.location.search);
+      if (loc.kind === "log") {
+        setProposition(null);
+        setReturnView("log");
+        setView("log");
+        return;
+      }
+      if (loc.kind === "settings") {
+        setProposition(null);
+        setView("settings");
+        return;
+      }
+      if (loc.kind === "proposition" && loc.ideaId) {
+        // Re-open from address without pushing again.
+        void openProposition({ id: loc.ideaId }, "spec", { token, replaceAddress: true, fromPop: true });
+        return;
+      }
+      setProposition(null);
+      setView("spec");
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+    // openProposition is stable enough via token; intentional once-per-mount listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (sessionLoading || !teamGateReady) return;
     if (authRequired && (!sessionUser || sessionUser.needsTeam)) return;
     if (PLATFORM_TEAM_LOCK_ENABLED && !teamSession?.department) return;
     if (deepLinkHandled.current) return;
-    const ideaId = takeStashedDeepLinkIdeaId();
-    if (!ideaId) {
-      deepLinkHandled.current = true;
+    deepLinkHandled.current = true;
+
+    const loc = parseAppLocation(window.location.pathname, window.location.search);
+    if (loc.kind === "log") {
+      clearStashedReturnIdea();
+      setReturnView("log");
+      setView("log");
+      syncAddress("log", "", { replace: true });
       return;
     }
-    deepLinkHandled.current = true;
-    let cancelled = false;
-    (async () => {
-      setOpeningId(ideaId);
-      setError("");
-      setDeepLinkMissing(false);
-      try {
-        const full = await fetchPropositionById(ideaId);
-        if (cancelled) return;
-        setProposition(full);
-        setSavedFlash(false);
-        setReturnView("spec");
-        setView("form");
-        clearStashedDeepLinkIdeaId();
-        try {
-          window.history.replaceState({}, "", `/propositions/${encodeURIComponent(ideaId)}`);
-        } catch {
-          /* ignore */
-        }
-      } catch {
-        if (cancelled) return;
-        setDeepLinkMissing(true);
-        setView("missing-idea");
-        clearStashedDeepLinkIdeaId();
-        try {
-          window.history.replaceState({}, "", "/");
-        } catch {
-          /* ignore */
-        }
-      } finally {
-        if (!cancelled) setOpeningId(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (loc.kind === "settings") {
+      clearStashedReturnIdea();
+      setView("settings");
+      syncAddress("settings", "", { replace: true });
+      return;
+    }
+    if (loc.kind === "proposition" && loc.ideaId) {
+      void openProposition({ id: loc.ideaId }, "spec", { replaceAddress: true, initialDeepLink: true });
+      return;
+    }
+
+    // Stash is only for return-after-sign-in — never for ordinary loads.
+    const stashed = readStashedReturnIdea();
+    if (stashed) {
+      clearStashedReturnIdea();
+      void openProposition({ id: stashed }, "spec", { replaceAddress: true, fromStash: true });
+      return;
+    }
+
+    syncAddress("spec", "", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLoading, teamGateReady, authRequired, sessionUser, teamSession]);
 
   useEffect(() => {
@@ -817,28 +831,26 @@ export default function App() {
   }, [view]);
 
   function goBack() {
-    if (view === "form") {
+    if (view === "form" || view === "result") {
       if (returnView === "log") {
         openLogTab();
       } else {
+        bumpNavToken();
+        clearStashedReturnIdea();
+        setOpeningId(null);
+        setProposition(null);
         setView("spec");
+        syncAddress("spec", "");
       }
       return;
     }
-    if (view === "result") {
-      if (returnView === "log") {
-        openLogTab();
-      } else {
-        setView("spec");
-      }
-      return;
-    }
-    if (view === "log") {
+    if (view === "log" || view === "settings") {
+      bumpNavToken();
+      clearStashedReturnIdea();
+      setOpeningId(null);
+      setProposition(null);
       setView("spec");
-      return;
-    }
-    if (view === "settings") {
-      setView("spec");
+      syncAddress("spec", "");
       return;
     }
     if (result) {
@@ -847,11 +859,36 @@ export default function App() {
     }
   }
 
-  async function openLogTab() {
+  function openLogTab() {
+    bumpNavToken();
+    clearStashedReturnIdea();
+    setOpeningId(null);
+    setProposition(null);
+    setDeepLinkMissing(false);
     setReturnView("log");
     setView("log");
     setLogError("");
-    setPropositionList([]);
+    syncAddress("log", "");
+  }
+
+  function openSettingsTab() {
+    bumpNavToken();
+    clearStashedReturnIdea();
+    setOpeningId(null);
+    setProposition(null);
+    setDeepLinkMissing(false);
+    setView("settings");
+    syncAddress("settings", "");
+  }
+
+  function openHomeTab() {
+    bumpNavToken();
+    clearStashedReturnIdea();
+    setOpeningId(null);
+    setProposition(null);
+    setDeepLinkMissing(false);
+    setView("spec");
+    syncAddress("spec", "");
   }
 
   async function loadLogRows() {
@@ -874,29 +911,41 @@ export default function App() {
   }
 
   async function openNewProposition(from = "spec") {
+    const token = bumpNavToken();
+    clearStashedReturnIdea();
     setError("");
     setLoading(true);
     try {
       const created = await createPropositionRecord();
+      if (token !== navTokenRef.current) return;
       setProposition(created);
       setSavedFlash(false);
       setReturnView(from === "log" ? "log" : "spec");
       setView("form");
+      syncAddress("form", created.id);
     } catch (e) {
+      if (token !== navTokenRef.current) return;
       setError(e.message || "Could not open a new proposition.");
     } finally {
-      setLoading(false);
+      if (token === navTokenRef.current) setLoading(false);
     }
   }
 
-  async function openProposition(row, from = "log") {
-    if (!row?.id || openingId) return;
+  async function openProposition(row, from = "log", opts = {}) {
+    if (!row?.id) return;
+    // Ignore a second click on the same row while it is opening.
+    if (openingId && openingId === row.id && !opts.fromPop && !opts.initialDeepLink) return;
+    const token = opts.token || bumpNavToken();
+    if (!opts.fromPop) clearStashedReturnIdea();
+    const ac = new AbortController();
+    openAbortRef.current = ac;
     setOpeningId(row.id);
     setLogError("");
     setError("");
     setDeepLinkMissing(false);
     try {
-      const full = await fetchPropositionById(row.id);
+      const full = await fetchPropositionById(row.id, { signal: ac.signal });
+      if (token !== navTokenRef.current || ac.signal.aborted) return;
       // Prefer GET (withAdvisory returns the sealed snapshot). Fall back to Log row.
       const fullSeal = full?.goNoGo?.classification ? full.goNoGo : null;
       const rowSeal = row.goNoGo?.classification ? row.goNoGo : null;
@@ -911,21 +960,23 @@ export default function App() {
       setSavedFlash(false);
       setReturnView(from);
       setView("form");
-      try {
-        window.history.replaceState({}, "", `/propositions/${encodeURIComponent(row.id)}`);
-      } catch {
-        /* ignore */
+      if (!opts.fromPop) {
+        syncAddress("form", row.id, { replace: Boolean(opts.replaceAddress) });
       }
     } catch (e) {
+      if (e?.name === "AbortError" || token !== navTokenRef.current) return;
       const msg = e.message || "Could not open that proposition.";
       if (/not found/i.test(msg)) {
         setDeepLinkMissing(true);
         setView("missing-idea");
-      } else {
+        syncAddress("spec", "", { replace: true });
+      } else if (from === "log") {
         setLogError(msg);
+      } else {
+        setError(msg);
       }
     } finally {
-      setOpeningId(null);
+      if (token === navTokenRef.current) setOpeningId(null);
     }
   }
 
@@ -1313,7 +1364,10 @@ export default function App() {
     }
     setSessionUser(null);
     setProposition(null);
+    bumpNavToken();
+    clearStashedReturnIdea();
     setView("spec");
+    syncAddress("spec", "", { replace: true });
   }
 
   if (sessionLoading || !teamGateReady) {
@@ -1359,7 +1413,7 @@ export default function App() {
             className="nav-tab active"
             onClick={() => {
               setDeepLinkMissing(false);
-              setView("spec");
+              openHomeTab();
             }}
           >
             Back to home
@@ -1384,7 +1438,7 @@ export default function App() {
       <style>{CSS}</style>
 
       <header className="masthead">
-        <button type="button" className="brand-btn" onClick={() => { setProductModalOpen(false); setView("spec"); }} aria-label="Go to screening spec">
+        <button type="button" className="brand-btn" onClick={() => { setProductModalOpen(false); openHomeTab(); }} aria-label="Go to screening spec">
           <div className="brandmark"><span className="star">✦</span></div>
           <div>
             <div className="eyebrow">NPD SCREENING</div>
@@ -1401,8 +1455,8 @@ export default function App() {
         <nav className="top-nav" aria-label="Main">
           <button
             type="button"
-            className={`nav-tab${view === "form" ? " active" : ""}`}
-            onClick={() => openNewProposition("spec")}
+            className={`nav-tab${view === "form" || view === "spec" ? " active" : ""}`}
+            onClick={() => openHomeTab()}
             disabled={loading}
           >
             {loading && view !== "form" ? <Loader2 size={14} className="spin" /> : null}
@@ -1418,7 +1472,7 @@ export default function App() {
           <button
             type="button"
             className={`nav-tab${view === "settings" ? " active" : ""}`}
-            onClick={() => setView("settings")}
+            onClick={openSettingsTab}
           >
             <Settings size={14} /> Settings
           </button>
