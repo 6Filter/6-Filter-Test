@@ -29,10 +29,18 @@ assert.match(
 assert.match(
   actionFixCopy(
     "f1",
-    "growth",
-    "Category size awaiting web research — Submit so the growth route can be substantiated"
+    "route",
+    "Growth route awaiting AI check on Submit"
   ),
-  /Submit so web search can substantiate/i
+  /Submit so web search can substantiate|Submit so the growth/i
+);
+assert.match(
+  actionFixCopy(
+    "f1",
+    "benchmark",
+    "Named benchmark awaiting web check for relevance in India"
+  ),
+  /Submit so web search can verify/i
 );
 
 const f1 = checkF1(
@@ -45,7 +53,11 @@ const f1 = checkF1(
   },
   {}
 );
-assert.equal(f1.items.filter((i) => i.status === "done").length, 2, "attr + gap only until research verifies");
+assert.equal(
+  f1.items.filter((i) => i.status === "done").length,
+  1,
+  "gap only until research verifies (v5.0 six-check F1)"
+);
 
 const empty = { checkLabel: "Not yet run", items: [] };
 const f2Pending = {
@@ -59,7 +71,7 @@ const f2Pending = {
 const checks = { f1, f2: f2Pending, f3: empty, f4: empty };
 const path = buildPathToGo({
   advisoryChecks: checks,
-  sealedScore: { pct: 13, done: 2, total: 15 },
+  sealedScore: { pct: 6, done: 1, total: 17 },
   scoreStatus: "current",
 });
 
@@ -75,7 +87,7 @@ assert.ok(
   !path.actions.some((a) => /dOVE SCALP SERUM/i.test(a.text) && /named:/i.test(a.text)),
   "must not restate the typed name as the defect"
 );
-assert.ok(path.actions.some((a) => a.gainPct === 47 && /Filter 4/i.test(a.text)));
+assert.ok(path.actions.some((a) => a.gainPct === 41 && /Filter 4/i.test(a.text)));
 
 const ranked = computeImprovementPointValues(checks);
 assert.ok(ranked.every((r) => Number(r.gainPct || r.pointValue) > 0));
@@ -88,7 +100,7 @@ const silent = buildPathToGo({
     f3: { checkLabel: "Cleared", items: [] },
     f4: { checkLabel: "Cleared", items: [] },
   },
-  sealedScore: { pct: 20, done: 3, total: 15 },
+  sealedScore: { pct: 18, done: 3, total: 17 },
   scoreStatus: "current",
 });
 assert.notEqual(silent.kind, "go");

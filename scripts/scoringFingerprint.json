@@ -1,19 +1,21 @@
 {
-  "rulesetVersion": "v4.4",
-  "fingerprint": "aa488df4e4103ace0fa2ae01a13025a2743ec3c4cae28802a0816701d769bd5f",
+  "rulesetVersion": "v5.0",
+  "fingerprint": "a2e430d888b351975db9ce89e1e650c3e811ccbeeaec59d9eb6912e1f391470e",
   "files": {
-    "lib/lockedConstants.js": "85f42e68ce06e619ea807372d47fa319fa161832aae73203d34a555a11bfc40a",
+    "lib/lockedConstants.js": "78194ab17763d7b70ce2ff73db7209c964f5c18c8b7e6cf95db41348e75e86ac",
     "lib/goNoGo.js": "c36dd3c33f5129d2220fd71266208754cbf5fbd405624fd662858a53d8531e10",
-    "lib/filterChecks.js": "27c31af0f0ddf4efb4c68b52dbd1b114bcfd2508edb7c763894e8e0e76f60f23",
-    "lib/propositionScoring.js": "0f5b175cb9a552dbb13ea96f3d81f94d5a69638c5c54dca322717bd84cb3ad35",
-    "lib/analysisStability.js": "e460d4ccd072e41ce83c7487b0496a7c9c62e1f11b5d143241b88902bf141741",
+    "lib/filterChecks.js": "7f1cb32c95ee607bc2d8c1925f56c5fdab79da2b108cf13b716392437ad76bad",
+    "lib/propositionScoring.js": "7c7e4d7109b16c0e2acc2829b93009c81b87e8cbd5aec0e1ea2b796f2ec59b5f",
+    "lib/analysisStability.js": "dd0b076de4371421dea54b19ebec0c5f18b605e5b34e14f96768928956cbc4aa",
     "lib/techShiftRisk.js": "becea8c9a53d397f371532bdcfcedfe3445c09b35710b45d856afdc0aede73d1",
-    "lib/scoreSlots.js": "fd43c3b0477d24fd98356fec5d9ecbafdb7e860dfd05f6955598d58e53ebcdc0",
+    "lib/scoreSlots.js": "8477c5f8d0dfad308f5d443936876a367fa25fe9209967b28829ff5e87d12609",
     "lib/mrpFormula.js": "04921c82a8a364ddef12c91a799283f5bb21d3fa23844e7bf74f60127803211d",
     "lib/divisionMargin.js": "bcd6276deb69b804771ae8ccaf9456110e732c3d128915b1e9f5f405222b155f",
-    "lib/improvementPoints.js": "c8b512de99d48d6660cf9eddd721cc23204533c7b1688702b31ad7eaa057a104",
+    "lib/improvementPoints.js": "205c3d339051d576240de672ba62f04661f2ad2ff5fad0a04011af75197f6eba",
     "lib/propositionGateApi.js": "837c3c4ac40f22731dba9f83609d2168ac539c6cc749684f17ba2fae440ccb5a",
     "lib/inputReview.js": "cf85a9130ebbba8d0a5cfd9c629e48219c076040034102812c4e49cb7468702c",
-    "lib/itemCopy.js": "2e0cf006f1532fee311b38814e78b638e0f4ed8cc1d67c119840a2a7deec759d"
+    "lib/itemCopy.js": "9b6ce59d3f2b8519573616bc91ea921daffac36cfd15277b7490a8455cf88107",
+    "lib/filter1Check.js": "1bdb3cdd12d0138986f516934583f2b3515e8b3bf86f536a50a4407379e1194d",
+    "lib/f1ResearchSafeguards.js": "a2efa1772a07408d1f0499b5d1c8ebf58ad565f8e25164afbcd9a0b5d1647d2c"
   }
 }

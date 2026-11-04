@@ -16,7 +16,8 @@ assert.match(six, /validate the 3 stated USPs/i);
 
 assert.match(RESEARCH_SCHEMA_VERSION, /f1-benchmark/);
 
-const notCore = checkF1(
+// Part 133 — attributes earn credit only with Evidence Source read + relevant (not category-key validation).
+const missingEvidence = checkF1(
   {
     declaredAttribute: "Sparkle finish",
     declaredAttribute2: "Hair strengthening",
@@ -25,45 +26,46 @@ const notCore = checkF1(
     growthRoute: "penetration",
     growthArgument: "share take",
   },
-  {
-    categoryKeyAttributes: ["hair fall control", "fragrance", "non-sticky feel"],
-    attributeValidation: [
-      { stated: "Sparkle finish", status: "not-core", note: "Not a category purchase driver" },
-      { stated: "Hair strengthening", status: "aligned", note: "Maps to hair-fall / strength" },
-    ],
-  }
+  {}
 );
-assert.equal(notCore.items[0].status, "pending");
-assert.match(notCore.items[0].text, /category currently sells on hair fall control, fragrance, and non-sticky feel/i);
-assert.match(notCore.items[0].text, /Sparkle finish requires primary research/i);
-assert.match(notCore.items[0].text, /general trade, modern trade, e-com and quick-commerce/i);
-assert.doesNotMatch(notCore.items[0].text, /needs validation/i);
+const attrMissing = missingEvidence.items.find((i) => i.slot === "attributes");
+assert.equal(attrMissing.status, "pending");
+assert.match(attrMissing.text, /Evidence Source|Upload/i);
 
-const replaced = checkF1(
+const evidenceOk = checkF1(
   {
     declaredAttribute: "less hair fall after oiling",
     declaredAttribute2: "cooling feel that lasts",
     declaredAttribute3: "ayurvedic herb story",
     benchmark: "Parachute",
     declaredGap: 2.5,
+    gapDerivation: "Beat on hair-fall",
+    parityExceptions: "none",
     growthRoute: "penetration",
     growthArgument: "households",
+    evidenceSourceDate: "https://example.com/study",
   },
   {
-    categoryKeyAttributes: ["hair-fall reduction", "ayurvedic ingredient story"],
-    attributeValidation: [
-      { stated: "no sticky residue", status: "not-core", note: "old attribute" },
-      { stated: "less hair fall after oiling", status: "aligned", note: "driver" },
-    ],
-    benchmarkVerified: true,
-    categorySizeFound: true,
+    benchmarkCheck: { status: "relevant", source_url: "https://example.com/parachute" },
+    claimChecks: {
+      gapDerivation: { verdict: "supported" },
+      parityExceptions: { verdict: "unverified" },
+      growthArgument: { verdict: "supported" },
+    },
+    routeCheck: { expected: "penetration", confidence: "high" },
+  },
+  {
+    evidenceRead: {
+      status: "ok",
+      relevant: true,
+      facts: [{ topic: "attribute", verified: true, quote: "hair-fall" }],
+    },
   }
 );
-assert.equal(replaced.items[0].status, "done");
-assert.doesNotMatch(replaced.items[0].text, /no sticky residue/i);
-assert.doesNotMatch(notCore.items[0].text, /pending/i);
+assert.equal(evidenceOk.items.find((i) => i.slot === "attributes").status, "done");
+assert.equal(evidenceOk.items.find((i) => i.slot === "benchmark").status, "done");
 
-const aligned = checkF1(
+const unread = checkF1(
   {
     declaredAttribute: "Hair strengthening",
     declaredAttribute2: "Non-sticky feel",
@@ -71,17 +73,12 @@ const aligned = checkF1(
     declaredGap: 2.2,
     growthRoute: "penetration",
     growthArgument: "share take",
+    evidenceSourceDate: "https://example.com/study",
   },
-  {
-    categoryKeyAttributes: ["hair strengthening", "non-sticky feel"],
-    attributeValidation: [
-      { stated: "Hair strengthening", status: "aligned" },
-      { stated: "Non-sticky feel", status: "aligned" },
-    ],
-  }
+  {}
 );
-assert.equal(aligned.items[0].status, "done");
-assert.match(aligned.items[0].text, /confirms 2/);
+assert.equal(unread.items.find((i) => i.slot === "attributes").status, "pending");
+assert.match(unread.items.find((i) => i.slot === "attributes").text, /Submit so it can be read|not yet read|awaiting/i);
 
 const price = normalizeCategoryAvgPrice({
   avgPriceInr: 81.675,

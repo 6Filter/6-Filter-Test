@@ -32,11 +32,18 @@ assert.match(swappedFindings.f1.benchmarkEvidence, /did not verify Qxzlph Brand 
 assert.doesNotMatch(swappedFindings.f1.benchmarkEvidence, /purchase-decision attribute/);
 const swappedCheck = checkF1(
   { declaredAttribute: "Hair strengthening", benchmark: "Qxzlph Brand 88421", declaredGap: 2, growthRoute: "penetration", growthArgument: "x" },
-  swappedFindings.f1
+  {
+    ...swappedFindings.f1,
+    benchmarkCheck: {
+      status: "not-found",
+      reason: `Research did not verify Qxzlph Brand 88421`,
+    },
+  }
 );
-assert.match(swappedCheck.items[1].text, /Qxzlph Brand 88421/);
-assert.match(swappedCheck.items[1].text, /did not verify|no verifiable/);
-assert.doesNotMatch(swappedCheck.items[1].text, /purchase-decision attribute/);
+const swappedBench = swappedCheck.items.find((i) => i.slot === "benchmark");
+assert.match(swappedBench.text, /Qxzlph Brand 88421|not found/i);
+assert.match(swappedBench.text, /not found|did not verify|no verifiable|replace/i);
+assert.doesNotMatch(swappedBench.text, /purchase-decision attribute/);
 
 assert.equal(researchTextIsUsable(""), false);
 assert.equal(researchTextIsUsable("short"), false);
@@ -76,19 +83,26 @@ const checked = checkF1(
   },
   findings.f1
 );
-assert.match(checked.items[1].text, /Research failed/);
-assert.doesNotMatch(checked.items[1].text, /purchase-decision attribute/);
-assert.match(checked.items[3].text, /Research failed/);
-assert.match(checked.items[3].text, /penetration|category size/i);
+const checkedBench = checked.items.find((i) => i.slot === "benchmark");
+assert.match(checkedBench.text, /Research failed/);
+assert.doesNotMatch(checkedBench.text, /purchase-decision attribute/);
+const checkedRoute = checked.items.find((i) => i.slot === "route");
+assert.equal(checkedRoute.status, "pending");
+assert.match(checkedRoute.text, /awaiting AI check|Growth route/i);
 
 const f4Failed = checkF4({}, { researchFailed: true });
 assert.match(f4Failed.items[0].text, /Research failed — retry/);
 
 const unverified = checkF1(
   { declaredAttribute: "Hold", benchmark: "Zzxq-not-a-real-brand-999", declaredGap: 2, growthRoute: "penetration", growthArgument: "x" },
-  { benchmarkVerified: false, benchmarkEvidence: "Searched and found no verifiable competitive presence for this benchmark" }
+  {
+    benchmarkCheck: {
+      status: "not-found",
+      reason: "Searched and found no verifiable competitive presence for this benchmark",
+    },
+  }
 );
-assert.match(unverified.items[1].text, /no verifiable competitive presence/);
+assert.match(unverified.items.find((i) => i.slot === "benchmark").text, /no verifiable competitive presence|not found/i);
 
 assert.match(RESEARCH_SCHEMA_VERSION, /f1-benchmark/);
 
@@ -229,13 +243,17 @@ const stalePlaceholder = checkF1(
     growthArgument: "share take",
   },
   {
-    benchmarkVerified: false,
+    // Stale research used to leak "purchase-decision attribute" into the benchmark line.
+    benchmarkCheck: {
+      status: "not-found",
+      reason: "no India retail listing found for this brand",
+    },
     benchmarkEvidence: "Missing evidence: name the purchase-decision attribute.",
   }
 );
-assert.doesNotMatch(stalePlaceholder.items[1].text, /purchase-decision attribute/);
-assert.match(stalePlaceholder.items[1].text, /Indulekha/);
-
+const staleBench = stalePlaceholder.items.find((i) => i.slot === "benchmark");
+assert.doesNotMatch(staleBench.text, /purchase-decision attribute/);
+assert.match(staleBench.text, /not found|replace|no India retail/i);
 const verifiedCheck = checkF1(
   {
     declaredAttribute: "Hair strengthening",
@@ -244,11 +262,19 @@ const verifiedCheck = checkF1(
     growthRoute: "penetration",
     growthArgument: "share take",
   },
-  schemaFindings.f1
+  {
+    ...schemaFindings.f1,
+    benchmarkCheck: {
+      status: "relevant",
+      reason: schemaFindings.f1.benchmarkEvidence,
+      source_url: "https://example.com/indulekha",
+    },
+  }
 );
-assert.equal(verifiedCheck.items[1].status, "done");
-assert.match(verifiedCheck.items[1].text, /Benchmark verified: Indulekha/);
-assert.match(verifiedCheck.items[1].text, /HUL/);
+const verifiedBench = verifiedCheck.items.find((i) => i.slot === "benchmark");
+assert.equal(verifiedBench.status, "done");
+assert.match(verifiedBench.text, /Benchmark relevant: Indulekha/);
+assert.match(verifiedBench.text, /HUL/);
 
 const sizingSrc = readFileSync(new URL("../lib/categoryIntelligence/runSizing.js", import.meta.url), "utf8");
 assert.match(sizingSrc, /STATED_BENCHMARK must be researched as a named brand/);

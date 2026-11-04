@@ -36,7 +36,7 @@ assert.equal(goNoGoTone("INCOMPLETE"), "incomplete");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {
-    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 4 - f1Done)) },
+    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 6 - f1Done)) },
     f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
     f3: {
       checkLabel: f3Done ? "Cleared" : "Evidence missing",
@@ -45,10 +45,10 @@ function slotChecks(f1Done, f2Done, f3Done, f4Done) {
     f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
   };
 }
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 2)), "WATCH"); // 10/15 ≈ 67%
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 4)), "WATCH"); // 12/15 = 80%
-assert.equal(computeGoNoGo(slotChecks(4, 3, 0, 5)), "WATCH"); // 12/15 = 80%
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 6)), "GO"); // 14/15 ≈ 93%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 1)), "WATCH"); // 11/17 ≈ 65%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 3)), "WATCH"); // 13/17 ≈ 76%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 0, 4)), "WATCH"); // 13/17 ≈ 76%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 4)), "GO"); // 14/17 ≈ 82%
 
 assert.equal(ideaScaleLabel(0), "10g");
 assert.equal(ideaScaleLabel(1), "10g");

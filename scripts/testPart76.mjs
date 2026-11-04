@@ -142,13 +142,13 @@ assert.match(
 );
 
 assert.equal(isClaimingNoCompetitor({ declaredGap: 0 }), true);
-assert.equal(isClaimingNoCompetitor({ declaredGap: "", benchmark: "" }), true);
-assert.equal(isClaimingNoCompetitor({ declaredGap: 0, benchmark: "none" }), true);
+assert.equal(isClaimingNoCompetitor({ declaredGap: "", benchmark: "" }), false);
+assert.equal(isClaimingNoCompetitor({ declaredGap: 0, benchmark: "none" }), false);
 assert.equal(isClaimingNoCompetitor({ declaredGap: 1.5 }), false);
 assert.equal(
   isClaimingNoCompetitor({ declaredGap: 0, benchmark: "Parachute Advansed" }),
-  true,
-  "unverified text in the benchmark field is not a real competitor"
+  false,
+  "gap 0 with a typed benchmark is below the floor, not a first-mover claim (Part 133)"
 );
 assert.equal(
   isClaimingNoCompetitor(
@@ -171,9 +171,8 @@ const firstMover = checkF1(novelF1, {
     majorCompetitorsFound: [],
     searchSummary: "no established ambient probiotic dal brand found in India retail",
   },
-  categorySizeFound: true,
 });
-const gapDone = firstMover.items.find((it) => /first-mover/i.test(it.text));
+const gapDone = firstMover.items.find((it) => it.slot === "gap" && /first-mover/i.test(it.text));
 assert.ok(gapDone);
 assert.equal(gapDone.status, "done");
 assert.notEqual(firstMover.checkLabel, "Below floor");
@@ -197,12 +196,12 @@ const crowded = checkF1(novelF1, {
   },
 });
 assert.equal(crowded.checkLabel, "Below floor");
-const crowdedGap = crowded.items.find((it) => /established competitors/i.test(it.text));
+const crowdedGap = crowded.items.find((it) => it.slot === "gap");
 assert.equal(crowdedGap.status, "pending");
 assert.match(crowdedGap.text, /MTR/);
 assert.match(crowdedGap.text, /iD Fresh/);
 assert.match(crowdedGap.text, /ITC Aashirvaad/);
-assert.doesNotMatch(crowdedGap.text, /first-mover/);
+assert.doesNotMatch(crowdedGap.text, /first-mover verified|accepted as a verified first-mover/i);
 
 const shortGap = {
   declaredAttribute: "cooling",

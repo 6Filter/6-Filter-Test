@@ -50,8 +50,14 @@ assert.equal(expectedResearchSteps(hand).includes("F2"), false);
 const priced = planResearch({ ...hand, researchRunAt: "2026-10-01T00:00:00.000Z", f3: {}, f4: {} });
 assert.equal(priced.steps.includes("F2"), false);
 
+const firstMoverClaim = { f1: { declaredGap: 0 }, f2: hand.f2, f5: sized };
+assert.equal(expectedResearchSteps(firstMoverClaim).includes("noCompetitor"), true);
 const gapBlank = { f1: {}, f2: hand.f2, f5: sized };
-assert.equal(expectedResearchSteps(gapBlank).includes("noCompetitor"), true);
+assert.equal(
+  expectedResearchSteps(gapBlank).includes("noCompetitor"),
+  false,
+  "blank gap is a missing input, not a first-mover claim (Part 133)"
+);
 const gapSet = { f1: { declaredGap: 3, benchmark: "Brand", declaredAttribute: "strength" }, f2: hand.f2, f5: sized };
 assert.equal(expectedResearchSteps(gapSet).includes("noCompetitor"), false);
 const verified = {

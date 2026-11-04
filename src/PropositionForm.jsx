@@ -295,7 +295,7 @@ function mrpMissingReason(doc) {
   return `Needs ${missing.join(", ")} to compute MRP`;
 }
 
-function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, canRestore }) {
+function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, canRestore, onConfirmAi }) {
   const entry = autofillStatusFor(doc, fieldPath);
   // Do not show "Edited by …" under fields — manual override is silent.
   if (editedName) {
@@ -336,6 +336,17 @@ function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, 
         </div>
       );
     }
+  }
+  // Part 133 D21 — AI-written F1 text needs edit or one-click confirm.
+  if (entry?.aiSuggested != null && entry?.confirmed !== true && typeof onConfirmAi === "function") {
+    return (
+      <div className="autofill-status" data-tone="ai">
+        Written by AI: edit or confirm{" "}
+        <button type="button" className="ghost-link" onClick={onConfirmAi}>
+          Confirm
+        </button>
+      </div>
+    );
   }
   if (aiSourced || entry?.status === "filled") {
     return (
@@ -500,6 +511,7 @@ function FieldControl({
   editedName = "",
   onRestoreAi,
   canRestoreAi = false,
+  onConfirmAi,
 }) {
   const fileRef = useRef(null);
   if (field.type === "mitigation-map" || field.type === "range-override") return null;
@@ -623,6 +635,7 @@ function FieldControl({
         editedName={editedName}
         onRestore={onRestoreAi}
         canRestore={canRestoreAi}
+        onConfirmAi={onConfirmAi}
       />
       {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
@@ -717,6 +730,7 @@ function FieldControl({
           editedName={editedName}
           onRestore={onRestoreAi}
           canRestore={canRestoreAi}
+          onConfirmAi={onConfirmAi}
         />
         {aiSourced && !editedName && !loading ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {!loading && liveNote ? <p className="derived-note">{liveNote}</p> : null}
@@ -815,6 +829,7 @@ function FieldControl({
         editedName={editedName}
         onRestore={onRestoreAi}
         canRestore={canRestoreAi}
+        onConfirmAi={onConfirmAi}
       />
       {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
@@ -2728,15 +2743,35 @@ export default function PropositionForm({
     };
   }
 
+  function confirmAiField(filterKey, fieldKey) {
+    const path = sourcedPath(filterKey, fieldKey);
+    noteEdit();
+    setDoc((prev) => {
+      const findings = { ...(prev.researchFindings || {}) };
+      const status = { ...(findings.autofillStatus || {}) };
+      const entry = { ...(status[path] || {}) };
+      entry.confirmed = true;
+      status[path] = entry;
+      findings.autofillStatus = status;
+      return { ...prev, researchFindings: findings };
+    });
+  }
+
   function fieldControlExtras(filterKey, field) {
     const path = sourcedPath(filterKey, field.key);
     const editedName = editedFields[path] || "";
     const canRestore = storedSuggestionValue(filterKey, field.key) != null && Boolean(editedName);
+    const entry = autofillStatusFor(doc, path);
+    const needsConfirm =
+      Boolean(field.aiConfirmable) &&
+      entry?.aiSuggested != null &&
+      entry?.confirmed !== true;
     return {
       ideaDoc: doc,
       editedName,
       canRestoreAi: canRestore,
       onRestoreAi: canRestore ? () => restoreAiValue(filterKey, field.key) : undefined,
+      onConfirmAi: needsConfirm ? () => confirmAiField(filterKey, field.key) : undefined,
     };
   }
 

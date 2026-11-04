@@ -69,10 +69,12 @@ function f4Dims(levels) {
 const clearedF1 = {
   checkLabel: "Cleared",
   items: [
-    { status: "done", text: "Attribute 1 declared" },
-    { status: "done", text: "Benchmark verified: X" },
-    { status: "done", text: "Declared gap 3 clears the 2.0 floor" },
-    { status: "done", text: "Growth route recorded" },
+    { status: "done", text: "Benchmark relevant: X", slot: "benchmark" },
+    { status: "done", text: "Declared gap 3 clears the 2.0 floor", slot: "gap" },
+    { status: "done", text: "Evidence Source read and relevant", slot: "attributes" },
+    { status: "done", text: "Gap derivation and parity entered", slot: "derivation" },
+    { status: "done", text: "Growth route penetration selected", slot: "route" },
+    { status: "done", text: "Growth argument entered", slot: "argument" },
   ],
 };
 const clearedF2 = {
@@ -92,31 +94,31 @@ const clearedF4 = {
 const empty = { checkLabel: "Not yet run", items: [] };
 
 function checksForDone(done) {
-  // Build a complete F1–F4 checklist with exactly `done` of 15 slots cleared.
-  const items = [];
-  const push = (n, texts, prefix = "") => {
-    for (let i = 0; i < n; i++) {
-      items.push({ filter: prefix, status: "done", text: texts[i] || `${prefix}-${i}` });
-    }
-  };
-  void push;
-  const f1n = Math.min(4, done);
-  const f2n = Math.min(3, Math.max(0, done - 4));
-  const f3n = Math.min(1, Math.max(0, done - 7));
-  const f4n = Math.min(7, Math.max(0, done - 8));
+  // Build a complete F1–F4 checklist with exactly `done` of 17 slots cleared (Part 133).
+  const f1Slots = ["benchmark", "gap", "attributes", "derivation", "route", "argument"];
+  const f1Texts = [
+    "Benchmark relevant",
+    "Declared gap 3 clears the 2.0 floor",
+    "Evidence Source read and relevant",
+    "Gap derivation and parity entered",
+    "Growth route selected",
+    "Growth argument entered",
+  ];
+  const f1n = Math.min(6, done);
+  const f2n = Math.min(3, Math.max(0, done - 6));
+  const f3n = Math.min(1, Math.max(0, done - 9));
+  const f4n = Math.min(7, Math.max(0, done - 10));
   const f1 = {
-    checkLabel: f1n === 4 ? "Cleared" : f1n ? "Evidence missing" : "Not yet run",
+    checkLabel: f1n === 6 ? "Cleared" : f1n ? "Evidence missing" : "Not yet run",
     items:
       f1n === 0
         ? []
-        : [
-            { status: f1n > 0 ? "done" : "pending", text: "Attribute 1 declared" },
-            { status: f1n > 1 ? "done" : "pending", text: "Benchmark verified" },
-            { status: f1n > 2 ? "done" : "pending", text: "Declared gap 3 clears the 2.0 floor" },
-            { status: f1n > 3 ? "done" : "pending", text: "Growth route recorded" },
-          ].slice(0, 4),
+        : f1Slots.map((slot, i) => ({
+            status: i < f1n ? "done" : "pending",
+            text: f1Texts[i],
+            slot,
+          })),
   };
-  if (f1n === 0) f1.items = [];
   const f2 = {
     checkLabel: f2n === 3 ? "Cleared" : f2n ? "Evidence missing" : "Not yet run",
     items:
@@ -131,11 +133,11 @@ function checksForDone(done) {
   const f3 =
     f3n === 1
       ? clearedF3
-      : done >= 7
+      : done >= 9
         ? { checkLabel: "Evidence missing", items: [{ status: "pending", text: "range open" }] }
         : empty;
   const f4 =
-    f4n === 0 && done < 8
+    f4n === 0 && done < 10
       ? empty
       : {
           checkLabel: f4n === 7 ? "Cleared" : "Evidence missing",
@@ -156,16 +158,14 @@ ideas.push(packChecks("stage-2", { f1: clearedF1, f2: clearedF2, f3: empty, f4: 
 ideas.push(packChecks("stage-3", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: empty }, "f1-f3"));
 ideas.push(packChecks("stage-4", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: clearedF4 }, "all cleared"));
 
-// Band edges (required)
+// Band edges (required) — 17 slots: 10/17=59 NO-GO, 11/17=65 WATCH, 13/17=76 WATCH, 14/17=82 GO
 for (const [id, done] of [
-  ["band-59", 9], // 9/15 = 60% → WATCH; use 8/15=53 for NO-GO edge below
-  ["band-60", 9],
-  ["band-80", 12],
-  ["band-81", 13],
+  ["band-59", 10],
+  ["band-60", 11],
+  ["band-80", 13],
+  ["band-81", 14],
 ]) {
-  // Precise percents: 8/15=53, 9/15=60, 12/15=80, 13/15=87
-  const map = { "band-59": 8, "band-60": 9, "band-80": 12, "band-81": 13 };
-  ideas.push(packChecks(id, checksForDone(map[id]), `band edge ${id}`));
+  ideas.push(packChecks(id, checksForDone(done), `band edge ${id}`));
 }
 
 ideas.push(

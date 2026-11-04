@@ -54,7 +54,7 @@ const checks = {
 const scored = scoreAdvisoryChecks(checks);
 const items = computeImprovementPointValues(checks);
 assert.ok(items.length >= 2, "floor gaps must appear as next steps");
-assert.ok(items.every((it) => it.pointValue === Math.round(100 / 15)), "fixed-slot +N%");
+assert.ok(items.every((it) => it.pointValue === Math.round(100 / 17)), "fixed-slot +N%");
 assert.doesNotMatch(JSON.stringify(items), /Finance/);
 assert.ok(items.some((it) => it.filter === "F2"));
 assert.ok(items.some((it) => /Net margin|50%/i.test(it.text)));
@@ -71,10 +71,12 @@ assert.deepEqual(ownersForCheckItem("f1", notCoreCopy), fieldOwners("declaredAtt
 const chipsLike = {
   f1: {
     items: [
-      { status: "pending", text: notCoreCopy },
-      { status: "done", text: "Benchmark verified: Lay's" },
-      { status: "done", text: "Declared gap 3 clears the 2.0 floor" },
-      { status: "done", text: "Growth route and argument recorded, backed by researched category size" },
+      { status: "done", text: "Benchmark relevant: Lay's", slot: "benchmark" },
+      { status: "done", text: "Declared gap 3 clears the 2.0 floor", slot: "gap" },
+      { status: "pending", text: notCoreCopy, slot: "attributes" },
+      { status: "done", text: "Gap derivation and parity entered", slot: "derivation" },
+      { status: "done", text: "Growth route penetration selected", slot: "route" },
+      { status: "done", text: "Growth argument entered", slot: "argument" },
     ],
   },
   f2: {
@@ -98,9 +100,9 @@ const chipsLike = {
   },
 };
 const chipsScore = scoreAdvisoryChecks(chipsLike);
-assert.equal(chipsScore.done, 10);
-assert.equal(chipsScore.total, 15);
-assert.equal(chipsScore.pct, 67);
+assert.equal(chipsScore.done, 12);
+assert.equal(chipsScore.total, 17);
+assert.equal(chipsScore.pct, 71);
 const chipsItems = computeImprovementPointValues(chipsLike);
 const path = closestPathToGo(chipsLike, chipsItems);
 assert.ok(path.items.length >= 2, "path lists checks that clear GO");
@@ -255,7 +257,7 @@ if (mismatchedSealPath.items.length) {
 const editedPath = closestPathToGo(
   milkshakeChecks,
   computeImprovementPointValues(milkshakeChecks),
-  { pct: 40, done: 6, total: 15 },
+  { pct: 35, done: 6, total: 17 },
   "edited-since-screening"
 );
 assert.equal(editedPath.projectionHidden, true);

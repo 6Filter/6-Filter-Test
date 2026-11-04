@@ -1,9 +1,9 @@
 {
-  "rulesetVersion": "v4.4",
+  "rulesetVersion": "v5.0",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {
-    "f1": 4,
+    "f1": 6,
     "f2": 3,
     "f3": 1,
     "f4": 7
@@ -21,12 +21,12 @@
       "expected": {
         "pct": 0,
         "done": 0,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 0,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -65,14 +65,14 @@
       "id": "stage-1",
       "note": "f1 only",
       "expected": {
-        "pct": 27,
-        "done": 4,
-        "total": 15,
+        "pct": 35,
+        "done": 6,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -94,19 +94,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -128,14 +142,14 @@
       "id": "stage-2",
       "note": "f1+f2",
       "expected": {
-        "pct": 47,
-        "done": 7,
-        "total": 15,
+        "pct": 53,
+        "done": 9,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -157,19 +171,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -209,14 +237,14 @@
       "id": "stage-3",
       "note": "f1-f3",
       "expected": {
-        "pct": 53,
-        "done": 8,
-        "total": 15,
+        "pct": 59,
+        "done": 10,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -238,19 +266,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -296,13 +338,13 @@
       "note": "all cleared",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -324,19 +366,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -410,14 +466,14 @@
       "id": "band-59",
       "note": "band edge band-59",
       "expected": {
-        "pct": 53,
-        "done": 8,
-        "total": 15,
+        "pct": 59,
+        "done": 10,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -439,19 +495,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -520,14 +590,14 @@
       "id": "band-60",
       "note": "band edge band-60",
       "expected": {
-        "pct": 60,
-        "done": 9,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -549,19 +619,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -630,14 +714,138 @@
       "id": "band-80",
       "note": "band edge band-80",
       "expected": {
-        "pct": 80,
-        "done": 12,
-        "total": 15,
+        "pct": 76,
+        "done": 13,
+        "total": 17,
         "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 1,
+            "total": 1
+          },
+          "f4": {
+            "done": 3,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
+            },
+            {
+              "status": "done",
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
+            },
+            {
+              "status": "done",
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
+            }
+          ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "MRP ok"
+            },
+            {
+              "status": "done",
+              "text": "Net margin clears floor"
+            },
+            {
+              "status": "done",
+              "text": "Qcom recorded"
+            }
+          ]
+        },
+        "f3": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "in range"
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "done",
+              "text": "functionalCoreStability Low"
+            },
+            {
+              "status": "done",
+              "text": "consumptionContextStability Low"
+            },
+            {
+              "status": "done",
+              "text": "manufacturingDisruptionRisk Low"
+            },
+            {
+              "status": "pending",
+              "text": "userHabitShiftPotential open"
+            },
+            {
+              "status": "pending",
+              "text": "adjacentSubstitutionThreat open"
+            },
+            {
+              "status": "pending",
+              "text": "purchaseFrequencyShift open"
+            },
+            {
+              "status": "pending",
+              "text": "regulatoryDisruptionRisk open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "band-81",
+      "note": "band edge band-81",
+      "expected": {
+        "pct": 82,
+        "done": 14,
+        "total": 17,
+        "classification": "GO",
+        "byFilter": {
+          "f1": {
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -659,19 +867,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -737,127 +959,17 @@
       }
     },
     {
-      "id": "band-81",
-      "note": "band edge band-81",
-      "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
-        "classification": "GO",
-        "byFilter": {
-          "f1": {
-            "done": 4,
-            "total": 4
-          },
-          "f2": {
-            "done": 3,
-            "total": 3
-          },
-          "f3": {
-            "done": 1,
-            "total": 1
-          },
-          "f4": {
-            "done": 5,
-            "total": 7
-          }
-        }
-      },
-      "checks": {
-        "f1": {
-          "checkLabel": "Cleared",
-          "items": [
-            {
-              "status": "done",
-              "text": "Attribute 1 declared"
-            },
-            {
-              "status": "done",
-              "text": "Benchmark verified"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
-            },
-            {
-              "status": "done",
-              "text": "Growth route recorded"
-            }
-          ]
-        },
-        "f2": {
-          "checkLabel": "Cleared",
-          "items": [
-            {
-              "status": "done",
-              "text": "MRP ok"
-            },
-            {
-              "status": "done",
-              "text": "Net margin clears floor"
-            },
-            {
-              "status": "done",
-              "text": "Qcom recorded"
-            }
-          ]
-        },
-        "f3": {
-          "checkLabel": "Cleared",
-          "items": [
-            {
-              "status": "done",
-              "text": "in range"
-            }
-          ]
-        },
-        "f4": {
-          "checkLabel": "Evidence missing",
-          "items": [
-            {
-              "status": "done",
-              "text": "functionalCoreStability Low"
-            },
-            {
-              "status": "done",
-              "text": "consumptionContextStability Low"
-            },
-            {
-              "status": "done",
-              "text": "manufacturingDisruptionRisk Low"
-            },
-            {
-              "status": "done",
-              "text": "userHabitShiftPotential Low"
-            },
-            {
-              "status": "done",
-              "text": "adjacentSubstitutionThreat Low"
-            },
-            {
-              "status": "pending",
-              "text": "purchaseFrequencyShift open"
-            },
-            {
-              "status": "pending",
-              "text": "regulatoryDisruptionRisk open"
-            }
-          ]
-        }
-      }
-    },
-    {
       "id": "f4-two-high",
       "note": "two High dimensions → F4 floor",
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 88,
+        "done": 15,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -879,19 +991,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -966,13 +1092,13 @@
       "note": "one High → Medium overall, no floor",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -994,19 +1120,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1080,14 +1220,14 @@
       "id": "cap-not-run",
       "note": "F4 not run → INCOMPLETE",
       "expected": {
-        "pct": 53,
-        "done": 8,
-        "total": 15,
+        "pct": 59,
+        "done": 10,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1109,19 +1249,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1166,14 +1320,14 @@
       "id": "cap-research-failed",
       "note": "research failed → INCOMPLETE",
       "expected": {
-        "pct": 53,
-        "done": 8,
-        "total": 15,
+        "pct": 59,
+        "done": 10,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1195,19 +1349,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1257,14 +1425,14 @@
       "id": "cap-no-division",
       "note": "no division → INCOMPLETE",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -1286,19 +1454,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1367,14 +1549,14 @@
       "id": "first-mover",
       "note": "first mover",
       "expected": {
-        "pct": 93,
+        "pct": 82,
         "done": 14,
-        "total": 15,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
             "done": 3,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1483,14 +1665,14 @@
       "id": "f3-below-range",
       "note": "f3 below",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1512,19 +1694,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1598,14 +1794,14 @@
       "id": "f3-above-range",
       "note": "f3 above",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1627,19 +1823,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1713,14 +1923,14 @@
       "id": "f4-partial",
       "note": "f4 3/7",
       "expected": {
-        "pct": 73,
-        "done": 11,
-        "total": 15,
+        "pct": 76,
+        "done": 13,
+        "total": 17,
         "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -1742,19 +1952,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -1830,12 +2054,12 @@
       "expected": {
         "pct": 0,
         "done": 0,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 0,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -1891,14 +2115,14 @@
       "id": "f1-partial-1",
       "note": "f1 1/4",
       "expected": {
-        "pct": 7,
+        "pct": 6,
         "done": 1,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 1,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -1954,14 +2178,14 @@
       "id": "f1-partial-2",
       "note": "f1 2/4",
       "expected": {
-        "pct": 13,
+        "pct": 12,
         "done": 2,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 2,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -2017,14 +2241,14 @@
       "id": "f1-partial-3",
       "note": "f1 3/4",
       "expected": {
-        "pct": 20,
+        "pct": 18,
         "done": 3,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 3,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -2080,14 +2304,14 @@
       "id": "f1-partial-4",
       "note": "f1 4/4",
       "expected": {
-        "pct": 27,
+        "pct": 24,
         "done": 4,
-        "total": 15,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
             "done": 4,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 0,
@@ -2143,14 +2367,14 @@
       "id": "gap-below",
       "note": "gap below floor",
       "expected": {
-        "pct": 93,
+        "pct": 82,
         "done": 14,
-        "total": 15,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 3,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2258,14 +2482,14 @@
       "id": "gap-at",
       "note": "gap at floor",
       "expected": {
-        "pct": 100,
+        "pct": 88,
         "done": 15,
-        "total": 15,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
             "done": 4,
-            "total": 4
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2373,14 +2597,14 @@
       "id": "margin-Professional_Care-below",
       "note": "Professional Care margin below (60)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -2402,19 +2626,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -2484,13 +2722,13 @@
       "note": "Professional Care margin at (60)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2512,19 +2750,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -2594,13 +2846,13 @@
       "note": "Professional Care margin above (60)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2622,19 +2874,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -2703,14 +2969,14 @@
       "id": "margin-Personal_Care-below",
       "note": "Personal Care margin below (50)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -2732,19 +2998,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -2814,13 +3094,13 @@
       "note": "Personal Care margin at (50)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2842,19 +3122,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -2924,13 +3218,13 @@
       "note": "Personal Care margin above (50)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -2952,19 +3246,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3033,14 +3341,14 @@
       "id": "margin-Foods-below",
       "note": "Foods margin below (35)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -3062,19 +3370,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3144,13 +3466,13 @@
       "note": "Foods margin at (35)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3172,19 +3494,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3254,13 +3590,13 @@
       "note": "Foods margin above (35)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3282,19 +3618,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3363,14 +3713,14 @@
       "id": "margin-Snacks-below",
       "note": "Snacks margin below (30)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -3392,19 +3742,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3474,13 +3838,13 @@
       "note": "Snacks margin at (30)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3502,19 +3866,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3584,13 +3962,13 @@
       "note": "Snacks margin above (30)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3612,19 +3990,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3693,14 +4085,14 @@
       "id": "margin-Bakery-below",
       "note": "Bakery margin below (30)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -3722,19 +4114,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3804,13 +4210,13 @@
       "note": "Bakery margin at (30)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3832,19 +4238,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -3914,13 +4334,13 @@
       "note": "Bakery margin above (30)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -3942,19 +4362,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4023,14 +4457,14 @@
       "id": "margin-Ambient_Dairy-below",
       "note": "Ambient Dairy margin below (25)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -4052,19 +4486,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4134,13 +4582,13 @@
       "note": "Ambient Dairy margin at (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4162,19 +4610,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4244,13 +4706,13 @@
       "note": "Ambient Dairy margin above (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4272,19 +4734,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4353,14 +4829,14 @@
       "id": "margin-Beverages-below",
       "note": "Beverages margin below (25)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -4382,19 +4858,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4464,13 +4954,13 @@
       "note": "Beverages margin at (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4492,19 +4982,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4574,13 +5078,13 @@
       "note": "Beverages margin above (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4602,19 +5106,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4683,14 +5201,14 @@
       "id": "margin-Dairy_Craft_Non_UHT-below",
       "note": "Dairy Craft — Non-UHT margin below (25)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -4712,19 +5230,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4794,13 +5326,13 @@
       "note": "Dairy Craft — Non-UHT margin at (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4822,19 +5354,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -4904,13 +5450,13 @@
       "note": "Dairy Craft — Non-UHT margin above (25)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -4932,19 +5478,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5013,14 +5573,14 @@
       "id": "margin-Cold_Chain_Business-below",
       "note": "Cold Chain Business margin below (12)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -5042,19 +5602,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5124,13 +5698,13 @@
       "note": "Cold Chain Business margin at (12)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5152,19 +5726,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5234,13 +5822,13 @@
       "note": "Cold Chain Business margin above (12)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5262,19 +5850,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5343,14 +5945,14 @@
       "id": "margin-Dairy_Craft_UHT_Milk-below",
       "note": "Dairy Craft — UHT Milk margin below (12)",
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
+        "pct": 94,
+        "done": 16,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -5372,19 +5974,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5454,13 +6070,13 @@
       "note": "Dairy Craft — UHT Milk margin at (12)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5482,19 +6098,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5564,13 +6194,13 @@
       "note": "Dairy Craft — UHT Milk margin above (12)",
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5592,19 +6222,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant: X",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: X"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route penetration selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5673,14 +6317,14 @@
       "id": "watch-pad-0",
       "note": "WATCH pad 0",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5691,7 +6335,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -5702,19 +6346,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5748,12 +6406,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -5783,14 +6441,14 @@
       "id": "watch-pad-1",
       "note": "WATCH pad 1",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5801,7 +6459,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -5812,19 +6470,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5858,12 +6530,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -5893,14 +6565,14 @@
       "id": "watch-pad-2",
       "note": "WATCH pad 2",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -5911,7 +6583,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -5922,19 +6594,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -5968,12 +6654,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -6003,14 +6689,14 @@
       "id": "watch-pad-3",
       "note": "WATCH pad 3",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -6021,7 +6707,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -6032,19 +6718,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -6078,12 +6778,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -6113,14 +6813,14 @@
       "id": "watch-pad-4",
       "note": "WATCH pad 4",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -6131,7 +6831,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -6142,19 +6842,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -6188,12 +6902,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -6223,14 +6937,14 @@
       "id": "watch-pad-5",
       "note": "WATCH pad 5",
       "expected": {
-        "pct": 67,
+        "pct": 59,
         "done": 10,
-        "total": 15,
-        "classification": "WATCH",
+        "total": 17,
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -6241,7 +6955,7 @@
             "total": 1
           },
           "f4": {
-            "done": 2,
+            "done": 0,
             "total": 7
           }
         }
@@ -6252,19 +6966,33 @@
           "items": [
             {
               "status": "done",
-              "text": "Attribute 1 declared"
+              "text": "Benchmark relevant",
+              "slot": "benchmark"
             },
             {
               "status": "done",
-              "text": "Benchmark verified"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap"
             },
             {
               "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Evidence Source read and relevant",
+              "slot": "attributes"
             },
             {
               "status": "done",
-              "text": "Growth route recorded"
+              "text": "Gap derivation and parity entered",
+              "slot": "derivation"
+            },
+            {
+              "status": "done",
+              "text": "Growth route selected",
+              "slot": "route"
+            },
+            {
+              "status": "done",
+              "text": "Growth argument entered",
+              "slot": "argument"
             }
           ]
         },
@@ -6298,12 +7026,12 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "functionalCoreStability Low"
+              "status": "pending",
+              "text": "functionalCoreStability open"
             },
             {
-              "status": "done",
-              "text": "consumptionContextStability Low"
+              "status": "pending",
+              "text": "consumptionContextStability open"
             },
             {
               "status": "pending",
@@ -6411,13 +7139,13 @@
       },
       "expected": {
         "pct": 100,
-        "done": 15,
-        "total": 15,
+        "done": 17,
+        "total": 17,
         "classification": "GO",
         "byFilter": {
           "f1": {
-            "done": 4,
-            "total": 4
+            "done": 6,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -6439,7 +7167,39 @@
           "items": [
             {
               "status": "done",
-              "text": "Pure commodity — differentiation floor doesn't apply (v4)"
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "benchmark",
+              "code": "F1_NOT_APPLICABLE"
+            },
+            {
+              "status": "done",
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "gap",
+              "code": "F1_NOT_APPLICABLE"
+            },
+            {
+              "status": "done",
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "attributes",
+              "code": "F1_NOT_APPLICABLE"
+            },
+            {
+              "status": "done",
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "derivation",
+              "code": "F1_NOT_APPLICABLE"
+            },
+            {
+              "status": "done",
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "route",
+              "code": "F1_NOT_APPLICABLE"
+            },
+            {
+              "status": "done",
+              "text": "Pure commodity — differentiation floor does not apply",
+              "slot": "argument",
+              "code": "F1_NOT_APPLICABLE"
             }
           ]
         },
@@ -6600,14 +7360,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -6628,21 +7388,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -6799,14 +7578,14 @@
         }
       },
       "expected": {
-        "pct": 80,
-        "done": 12,
-        "total": 15,
+        "pct": 59,
+        "done": 10,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -6827,21 +7606,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -7002,14 +7800,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -7030,21 +7828,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -7197,14 +8014,14 @@
         }
       },
       "expected": {
-        "pct": 80,
-        "done": 12,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 1,
-            "total": 4
+            "done": 0,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -7225,25 +8042,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
-            },
-            {
               "status": "pending",
-              "text": "Benchmark not named",
-              "formAdmin": true,
+              "text": "Benchmark not named — enter a competitor brand · variant · pack",
+              "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_NAMED"
             },
             {
               "status": "pending",
-              "text": "Declared gap missing",
-              "formAdmin": true,
+              "text": "Declared gap missing — enter points on the 10-pt scale",
+              "slot": "gap",
               "code": "F1_GAP_MISSING"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -7401,14 +8233,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -7429,21 +8261,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -7602,14 +8453,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -7630,21 +8481,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -7802,14 +8672,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -7830,21 +8700,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -8002,14 +8891,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -8030,21 +8919,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -8203,14 +9111,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -8231,21 +9139,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -8403,14 +9330,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -8431,21 +9358,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -8603,14 +9549,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -8631,21 +9577,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -8804,14 +9769,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -8832,21 +9797,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -9004,14 +9988,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -9032,21 +10016,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -9204,14 +10207,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -9232,21 +10235,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -9405,14 +10427,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -9433,21 +10455,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -9605,14 +10646,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -9633,21 +10674,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -9805,14 +10865,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -9833,21 +10893,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -10006,14 +11085,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -10034,21 +11113,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -10206,14 +11304,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -10234,21 +11332,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -10406,14 +11523,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -10434,21 +11551,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -10607,14 +11743,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -10635,21 +11771,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -10807,14 +11962,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -10835,21 +11990,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -11007,14 +12181,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -11035,21 +12209,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -11208,14 +12401,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -11236,21 +12429,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -11408,14 +12620,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -11436,21 +12648,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -11608,14 +12839,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -11636,21 +12867,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -11809,14 +13059,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -11837,21 +13087,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -12009,14 +13278,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -12037,21 +13306,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -12209,14 +13497,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -12237,21 +13525,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -12410,14 +13717,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -12438,21 +13745,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -12610,14 +13936,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -12638,21 +13964,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -12810,14 +14155,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
+        "pct": 65,
+        "done": 11,
+        "total": 17,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 2,
@@ -12838,21 +14183,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13011,14 +14375,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13039,21 +14403,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13211,14 +14594,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13239,21 +14622,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13380,14 +14782,14 @@
         }
       },
       "expected": {
-        "pct": 47,
-        "done": 7,
-        "total": 15,
+        "pct": 29,
+        "done": 5,
+        "total": 17,
         "classification": "INCOMPLETE",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13408,21 +14810,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13551,14 +14972,14 @@
         }
       },
       "expected": {
-        "pct": 87,
-        "done": 13,
-        "total": 15,
-        "classification": "GO",
+        "pct": 65,
+        "done": 11,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13579,21 +15000,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13752,14 +15192,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13780,21 +15220,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -13952,14 +15411,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -13980,21 +15439,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },
@@ -14152,14 +15630,14 @@
         }
       },
       "expected": {
-        "pct": 93,
-        "done": 14,
-        "total": 15,
-        "classification": "GO",
+        "pct": 71,
+        "done": 12,
+        "total": 17,
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
-            "done": 3,
-            "total": 4
+            "done": 1,
+            "total": 6
           },
           "f2": {
             "done": 3,
@@ -14180,21 +15658,40 @@
           "checkLabel": "Evidence missing",
           "items": [
             {
-              "status": "done",
-              "text": "Attribute 1 declared"
+              "status": "pending",
+              "text": "Named benchmark awaiting web check for relevance in India",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_CHECKED"
             },
             {
               "status": "done",
-              "text": "Benchmark verified: Maggi"
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor"
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_OK"
             },
             {
               "status": "pending",
-              "text": "Category size awaiting web research — Submit so the growth route can be substantiated",
-              "code": "F1_CATEGORY_SIZE_UNSOURCED"
+              "text": "Upload a study or paste an Evidence Source link to back the attribute claim",
+              "slot": "attributes",
+              "code": "F1_EVIDENCE_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_MISSING"
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check on Submit",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_CHECKED"
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check on Submit",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_CHECKED"
             }
           ]
         },

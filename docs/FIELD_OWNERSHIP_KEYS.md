@@ -21,6 +21,7 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 | `declaredAttribute3` | F1 | Typed by a person. |
 | `evidenceSourceDate` | F1 | Typed by a person. |
 | `benchmark` | F1 | Typed by a person. Research may suggest it. A person confirms it. |
+| `targetConsumer` | F1 | Typed by a person. Who the idea is for, and whether they are new to the brand's current buyers. |
 | `declaredGap` | F1 | Typed by a person. |
 | `gapDerivation` | F1 | Typed by a person. |
 | `parityExceptions` | F1 | Typed by a person. |

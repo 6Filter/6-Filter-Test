@@ -1,5 +1,5 @@
 /**
- * F1: attrs 2–3 optional; entered benchmark/growth need web verification;
+ * F1 (v5.0): attrs 2–3 optional; typed benchmark/route/argument need research;
  * card copy must not echo form inputs as Already on record / Still needed.
  */
 import assert from "node:assert/strict";
@@ -31,48 +31,65 @@ const base = {
   declaredAttribute: "taste",
   benchmark: "Maaza mango fruit drink",
   declaredGap: 3,
+  gapDerivation: "Beat Maaza on freshness",
+  parityExceptions: "none",
   growthRoute: "new-market",
   growthArgument: "expanding into new occasions with a fruit drink format",
+  evidenceSourceDate: "https://example.com/study.pdf",
 };
 
-const verified = {
-  benchmarkVerified: true,
-  categorySizeFound: true,
-  benchmarkEvidence: "shelf",
-  categorySizeEvidence: "₹200 Cr",
+const clearedFindings = {
+  benchmarkCheck: { status: "relevant", source_url: "https://example.com/maaza", reason: "on shelf in India" },
+  claimChecks: {
+    gapDerivation: { verdict: "supported" },
+    parityExceptions: { verdict: "unverified" },
+    growthArgument: { verdict: "supported" },
+  },
+  routeCheck: { expected: "new-market", confidence: "high", reason: "new audience" },
 };
 
-// 1) Attr 2/3 optional — same percent with or without them once research verifies
+const clearedCtx = {
+  evidenceRead: {
+    status: "ok",
+    relevant: true,
+    facts: [{ topic: "attribute", verified: true, quote: "taste preferred" }],
+  },
+};
+
+// 1) Attr 2/3 optional — same percent with or without them once research clears
 {
-  const one = checkF1(base, verified);
+  const one = checkF1(base, clearedFindings, clearedCtx);
   const three = checkF1(
     { ...base, declaredAttribute2: "refreshment", declaredAttribute3: "value" },
-    verified
+    clearedFindings,
+    clearedCtx
   );
   assert.equal(scoreAdvisoryChecks(fullRest(one)).pct, 100);
   assert.equal(scoreAdvisoryChecks(fullRest(three)).pct, 100);
-  assert.equal(one.items.find((i) => /attribute/i.test(i.text)).status, "done");
-  assert.doesNotMatch(one.items.find((i) => /attribute/i.test(i.text)).text, /of 3/i);
+  const attr = one.items.find((i) => i.slot === "attributes");
+  assert.equal(attr.status, "done");
+  assert.doesNotMatch(attr.text, /of 3/i);
 }
 
-// 2) Named on the form alone is not accepted — awaiting web verification
+// 2) Named on the form alone is not accepted — awaiting web check
 {
   const f1 = checkF1(base, {});
-  const bench = f1.items.find((i) => /benchmark|verification/i.test(i.text));
+  const bench = f1.items.find((i) => i.slot === "benchmark");
   assert.equal(bench.status, "pending");
-  assert.match(bench.text, /awaiting web verification/i);
+  assert.match(bench.text, /awaiting web check/i);
   assert.doesNotMatch(bench.text, /^Benchmark named:/i);
   assert.doesNotMatch(bench.text, /Maaza/i);
 }
 
-// 3) Growth inputs alone are not accepted — awaiting web research for size
+// 3) Growth route / argument alone are not accepted — awaiting checks
 {
   const f1 = checkF1(base, {});
-  const growth = f1.items.find((i) => /growth|category size/i.test(i.text));
-  assert.equal(growth.status, "pending");
-  assert.match(growth.text, /awaiting web research/i);
-  assert.doesNotMatch(growth.text, /has not returned/i);
-  assert.doesNotMatch(growth.text, /argument recorded/i);
+  const route = f1.items.find((i) => i.slot === "route");
+  const argument = f1.items.find((i) => i.slot === "argument");
+  assert.equal(route.status, "pending");
+  assert.match(route.text, /awaiting AI check/i);
+  assert.equal(argument.status, "pending");
+  assert.match(argument.text, /awaiting fact-check/i);
 }
 
 // 4) Narrative never echoes cleared inputs as Already on record / Still needed
@@ -82,30 +99,22 @@ const verified = {
   assert.doesNotMatch(narrative, /Already on record/i);
   assert.doesNotMatch(narrative, /Still needed/i);
   assert.doesNotMatch(narrative, /Attribute 1 declared/i);
-  assert.match(narrative, /web verification|web research/i);
 }
 
-// Actively failed verification / size still open with defect copy
+// Actively failed relevance / missing evidence stay open
 {
   const badBench = checkF1(base, {
-    researchFailed: false,
-    benchmarkVerified: false,
-    benchmarkEvidence: "no listing found",
-    categorySizeFound: true,
-    categorySizeEvidence: "₹200 Cr",
+    benchmarkCheck: { status: "not-found", reason: "no listing found" },
   });
-  assert.equal(badBench.items.find((i) => /benchmark/i.test(i.text)).status, "pending");
-  assert.match(badBench.items.find((i) => /benchmark/i.test(i.text)).text, /not verified/i);
+  assert.equal(badBench.items.find((i) => i.slot === "benchmark").status, "pending");
+  assert.match(badBench.items.find((i) => i.slot === "benchmark").text, /not found/i);
 
-  const badSize = checkF1(base, {
-    researchFailed: false,
-    benchmarkVerified: true,
-    benchmarkEvidence: "ok",
-    categorySizeFound: false,
-    categorySizeEvidence: "no triangulated category size",
-  });
-  assert.equal(badSize.items.find((i) => /growth/i.test(i.text)).status, "pending");
-  assert.match(badSize.items.find((i) => /growth/i.test(i.text)).text, /not substantiated/i);
+  const noEvidence = checkF1(
+    { ...base, evidenceSourceDate: "" },
+    { ...clearedFindings }
+  );
+  assert.equal(noEvidence.items.find((i) => i.slot === "attributes").status, "pending");
+  assert.match(noEvidence.items.find((i) => i.slot === "attributes").text, /Evidence Source|Upload/i);
 }
 
 // Path asks for Submit / web check — never "Benchmark named: …"
@@ -113,12 +122,12 @@ const verified = {
   const f1 = checkF1(base, {});
   const path = buildPathToGo({
     advisoryChecks: fullRest(f1),
-    sealedScore: { pct: 73, done: 11, total: 15 },
+    sealedScore: { pct: 65, done: 11, total: 17 },
     scoreStatus: "current",
   });
   assert.equal(path.kind, "path");
   assert.ok(!path.actions.some((a) => /^Benchmark named:/i.test(a.text)));
-  assert.ok(path.actions.some((a) => /web search|Submit/i.test(a.text)));
+  assert.ok(path.actions.some((a) => /web search|Submit|web check|fact-check|AI check/i.test(a.text)));
 }
 
 console.log("PASS testF1OptionalAndPendingResearch");

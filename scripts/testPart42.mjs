@@ -20,7 +20,7 @@ assert(goNoGoTone(missing) === "incomplete", "incomplete should use incomplete t
 assert(!goNoGoIsFloorFailure({}), "empty checks are incompleteness, not a floor failure");
 
 const go = computeGoNoGo({
-  f1: { checkLabel: "Cleared", items: items(4, 0) },
+  f1: { checkLabel: "Cleared", items: items(6, 0) },
   f2: { checkLabel: "Cleared", items: items(3, 0) },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
   f4: { checkLabel: "Cleared", items: items(7, 0) },
@@ -34,7 +34,7 @@ assert(classifyGoNoGoFromScore(60) === "WATCH", "60 is WATCH");
 assert(classifyGoNoGoFromScore(59) === "NO-GO", "59 is NO-GO");
 
 const lowBand = computeGoNoGo({
-  f1: { checkLabel: "Evidence missing", items: items(0, 4) },
+  f1: { checkLabel: "Evidence missing", items: items(0, 6) },
   f2: { checkLabel: "Cleared", items: items(1, 1) },
   f3: { checkLabel: "Cleared", items: items(2, 0) },
   f4: { checkLabel: "Cleared", items: items(2, 0) },
@@ -52,7 +52,7 @@ assert(
 );
 
 const notRun = computeGoNoGo({
-  f1: { checkLabel: "Cleared", items: items(4, 0) },
+  f1: { checkLabel: "Cleared", items: items(6, 0) },
   f2: { checkLabel: "Cleared", items: items(3, 0) },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
   f4: { checkLabel: "Not yet run", items: [] },

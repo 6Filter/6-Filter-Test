@@ -95,7 +95,7 @@ assert.match(form, /Check: \{checkLabel\}/);
 const checksSrc = readFileSync(new URL("../lib/filterChecks.js", import.meta.url), "utf8");
 assert.match(checksSrc, /export function hasAnyRealInput/);
 assert.match(checksSrc, /export function checkFilter/);
-assert.match(checksSrc, /return checkFilter\(f1/);
+assert.match(checksSrc, /checkF1Six|return checkF1Six/);
 assert.match(checksSrc, /return checkFilter\(f3/);
 assert.match(checksSrc, /return checkFilter\(f4/);
 assert.match(checksSrc, /return checkFilter\(f6/);

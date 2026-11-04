@@ -5,6 +5,9 @@ scripts/owner-tests/ @cavinkarecia
 lib/lockedConstants.js @cavinkarecia
 lib/inputReview.js @cavinkarecia
 lib/itemCopy.js @cavinkarecia
+lib/filter1Check.js @cavinkarecia
+lib/f1Research.js @cavinkarecia
+lib/f1ResearchSafeguards.js @cavinkarecia
 scripts/golden/ @cavinkarecia
 scripts/scoringFingerprint.json @cavinkarecia
 docs/SCORING_SPEC.md @cavinkarecia

@@ -1,5 +1,5 @@
 /**
- * Live scoring must match docs/SCORING_SPEC.md v4.4 (fixed 15 slots, INCOMPLETE,
+ * Live scoring must match docs/SCORING_SPEC.md v5.0 (fixed 17 slots, INCOMPLETE,
  * web-verified F1, no gram badge on INCOMPLETE, explainer not teaching WATCH-cap).
  */
 import assert from "node:assert/strict";
@@ -22,19 +22,22 @@ import { flattenProposition } from "../lib/logExport.js";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const howDoc = readFileSync(path.join(root, "../docs/HOW_THE_SCORE_WORKS.md"), "utf8");
 
-assert.equal(SCORING_RULESET_VERSION, "v4.4");
+assert.equal(SCORING_RULESET_VERSION, "v5.0");
 assert.equal(SCORE_DENOMINATOR_MODE, "fixed-slots");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(SCORE_CHECK_SLOTS_TOTAL, 15);
+assert.equal(SCORE_CHECK_SLOTS_TOTAL, 17);
 assert.equal(GONOGO_SCORE_BANDS.NOGO_MAX, 60);
 assert.equal(GONOGO_SCORE_BANDS.WATCH_MAX, 80);
 
+const F1_SLOTS = ["benchmark", "gap", "attributes", "derivation", "route", "argument"];
 const SLOT_TEXTS = {
   f1: [
-    "Attribute 1 declared",
-    "Benchmark verified: Brand",
+    "Benchmark relevant: Brand",
     "Declared gap 3.0 clears the 2.0 floor",
-    "Growth route \"penetration\" recorded, backed by researched category size",
+    "Evidence Source read and relevant",
+    "Gap derivation and parity entered",
+    "Growth route penetration selected",
+    "Growth argument entered",
   ],
   f2: [
     "MRP ₹99 · 50g",
@@ -49,7 +52,11 @@ function cleared(filterKey) {
   const texts = SLOT_TEXTS[filterKey] || [];
   return {
     checkLabel: "Cleared",
-    items: texts.map((text) => ({ status: "done", text })),
+    items: texts.map((text, i) =>
+      filterKey === "f1"
+        ? { status: "done", text, slot: F1_SLOTS[i], code: `F1_${F1_SLOTS[i].toUpperCase()}` }
+        : { status: "done", text }
+    ),
   };
 }
 
@@ -77,21 +84,25 @@ function cleared(filterKey) {
   );
 }
 
-// F1 typed inputs alone do not clear benchmark / growth
+// F1 typed inputs alone clear only the gap (≥2); benchmark/route/argument/evidence stay open
 {
   const f1 = checkF1(
     {
       declaredAttribute: "taste",
       benchmark: "Maaza mango fruit drink",
       declaredGap: 3,
+      gapDerivation: "Beat on taste",
+      parityExceptions: "none",
       growthRoute: "new-market",
       growthArgument: "new occasions",
+      evidenceSourceDate: "https://example.com/study",
     },
     {}
   );
-  assert.equal(f1.items.filter((i) => i.status === "done").length, 2);
-  assert.ok(f1.items.some((i) => i.status === "pending" && /web verification/i.test(i.text)));
-  assert.ok(f1.items.some((i) => i.status === "pending" && /web research/i.test(i.text)));
+  assert.equal(f1.items.filter((i) => i.status === "done").length, 1);
+  assert.ok(f1.items.some((i) => i.slot === "gap" && i.status === "done"));
+  assert.ok(f1.items.some((i) => i.slot === "benchmark" && i.status === "pending"));
+  assert.ok(f1.items.some((i) => i.slot === "route" && i.status === "pending"));
 }
 
 // Complete 100% → GO
@@ -119,7 +130,7 @@ function cleared(filterKey) {
 // INCOMPLETE: no gram badge (helper + export + local gate)
 {
   const doc = {
-    goNoGo: { classification: "INCOMPLETE", score: { pct: 40, done: 6, total: 15 } },
+    goNoGo: { classification: "INCOMPLETE", score: { pct: 35, done: 6, total: 17 } },
     f5: {},
   };
   assert.equal(ideaSizeForResult(doc), null);
@@ -147,4 +158,4 @@ function cleared(filterKey) {
   assert.equal(howDoc.replace(/\r\n/g, "\n").trim(), scoreExplainerMarkdown().trim());
 }
 
-console.log("PASS testScoringSpecAdherence — v4.4 live logic matches SCORING_SPEC");
+console.log("PASS testScoringSpecAdherence — v5.0 live logic matches SCORING_SPEC");

@@ -1,12 +1,12 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v4.4**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.0**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v4.4` |
+| `SCORING_RULESET_VERSION` | `v5.0` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `INCOMPLETE_VERDICT_MODE` | `incomplete` |
 | `SCORE_KEY_IGNORES_NAME_TYPOS` | `false` |
@@ -18,44 +18,37 @@ Generated from `lib/lockedConstants.js` (ruleset **v4.4**). Filters 5–6 stay v
 | `INVALID_INPUTS_BLOCK_SUBMIT` | `true` |
 | `AI_INPUT_REVIEW` | `true` |
 | `GST_STANDARD_RATES` | `0, 3, 5, 12, 18, 28, 40` |
+| `F1_EVIDENCE_CREDIT_MODE` | `read-and-relevant` |
+| `AI_SUGGESTED_TEXT_NEEDS_CONFIRMATION` | `true` |
+| `F1_PROMPT_VERSION` | `v1` |
+
+### What changed in v5.0
+
+Filter 1 has **six** checks (17 slots total). Category size no longer scores Filter 1. Benchmark credit needs a web relevance check with a returned source. Attributes need Evidence Source that was read and is relevant. Gap derivation, parity, growth route and growth argument are fact-checked; AI-written text earns nothing until a person confirms or edits it. Mark-down opens one check (~5.9 points); the only Filter 1 hard stop remains declared gap below 2.0. Ideas already screened keep their sealed number and show the older-release label until Screen again.
 
 ### What changed in v4.4
 
-Deterministic `reviewInputs` runs before Submit. Invalid inputs return HTTP 422, spend nothing, and seal no verdict (drafts still save). Path-to-GO items carry stable `ITEM_CODES` and instruction/why/gain copy from `lib/itemCopy.js` — never a neutral “Benchmark named: X”. Research prompts use a title-cased benchmark suggestion when capitals are odd; the typed value stays until the user accepts. Advisory AI input review (D14) may add notes only and never changes a score.
-
-### What changed in v4.3
-
-Team-provided Evidence Source (file or Primus Evidence library link) is read once on Submit. Quote-verified facts can clear F1 benchmark, category size, or attribute through the existing findings flags — bands, floors and the 15-slot table are unchanged. A stated-only benchmark and a ₹0 Cr / PASS-without-size category no longer count (`BENCHMARK_VERIFIED_NEEDS_EVIDENCE`, `CATEGORY_SIZE_NEEDS_SOURCED_FIGURE`). Evidence sha256 and the link (query stripped) join `gateInputKey` / `researchHashFor`.
-
-### What changed in v4.2
-
-Unfinished Filter 1–4 research (not yet run, research failed, or division pending) with **no** floor failure is classified **INCOMPLETE**, not a band. The percent and “X of 15 checks complete” still show. A **Below floor** check still forces **NO-GO**. Band edges, the WATCH cap for complete ideas, floors, margins and the 15-slot table are unchanged from v4.1.
+Deterministic `reviewInputs` runs before Submit. Invalid inputs return HTTP 422, spend nothing, and seal no verdict (drafts still save). Path-to-GO items carry stable `ITEM_CODES` and instruction/why/gain copy from `lib/itemCopy.js`.
 
 ## GO / NO-GO / WATCH / INCOMPLETE
 
 | Verdict | Rule |
 |---|---|
 | **INCOMPLETE** | No floor failure, and any of F1–F4 is unfinished (`INCOMPLETE_VERDICT_MODE=incomplete`) |
-| **NO-GO** | Floor failure, or (when complete) score &lt; 60% |
-| **WATCH** | Complete idea with 60% ≤ score ≤ 80% |
-| **GO** | Complete idea with score &gt; 80% |
+| **NO-GO** | Floor failure, or (when complete) score &lt; 60% (10 or fewer of 17) |
+| **WATCH** | Complete idea with 60% ≤ score ≤ 80% (about 11–13 of 17) |
+| **GO** | Complete idea with score &gt; 80% (about 14 of 17) |
 
-When `INCOMPLETE_VERDICT_MODE` is `"as-built"`, unfinished filters keep the v4.1 behaviour (band from percent; a raw GO promotes to WATCH).
-
-## Fixed check slots (15)
-
-Slots are matched by **name** (`expectedSlotKeys()`), not list position.
+## Fixed check slots (17)
 
 | Filter | Slots | Canonical checks |
 |---|---:|---|
-| F1 | 4 | Attribute declared · Benchmark named · Declared gap ≥ 2.0 (or first-mover in that slot) · Growth route + argument |
+| F1 | 6 | Benchmark relevant · Declared gap ≥ 2.0 (or verified first-mover) · Attributes + relevant evidence · Gap derivation + parity · Growth route · Growth argument |
 | F2 | 3 | MRP + grammage · Net margin vs locked division minimum · Quick-commerce terms |
 | F3 | 1 | Filter 2 MRP inside the safe ₹ range (± ₹0.5) |
 | F4 | 7 | Seven structural-obsolescence risk dimensions |
 
-**F1 scoring notes:** Attributes 2 and 3 are optional — leaving them blank never opens the attribute slot or lowers the percent. Entered benchmark / growth values are **not** accepted as correct until web research verifies them (`benchmarkVerified` / `categorySizeFound` true) or team Evidence Source clears the slot. Checklist and card copy must not echo form inputs as “Already on record / Still needed”; open slots ask for Submit / web verification or state the research failure.
-
-Finance sign-off is administrative and outside the slots. Blank or missing evidence keeps the slot **open** — the denominator stays 15 at every stage, so more evidence can only raise the percent.
+**Filter 1 owner rules:** typed benchmarks need a web relevance check citing a returned source. Gap ≥ 2.0 never mark-down; &lt; 2.0 is NO-GO. Gap 0 with no benchmark is first-mover (needs &lt; 2 competitors). Attributes need Evidence Source read and relevant. Claims mark down only on contradicted + quote + returned source. Route marks down only on high-confidence mismatch. AI-suggested text needs person confirm/edit.
 
 ## Declared gap floor
 

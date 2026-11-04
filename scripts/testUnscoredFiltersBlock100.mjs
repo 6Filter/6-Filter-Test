@@ -14,10 +14,12 @@ const clearedF1F2F3 = {
   f1: {
     checkLabel: "Cleared",
     items: [
-      { status: "done", text: "Attribute ok" },
-      { status: "done", text: "Benchmark verified" },
-      { status: "done", text: "Gap clears floor" },
-      { status: "done", text: "Growth recorded" },
+      { status: "done", text: "Benchmark relevant", slot: "benchmark" },
+      { status: "done", text: "Gap clears floor", slot: "gap" },
+      { status: "done", text: "Evidence ok", slot: "attributes" },
+      { status: "done", text: "Derivation ok", slot: "derivation" },
+      { status: "done", text: "Route ok", slot: "route" },
+      { status: "done", text: "Argument ok", slot: "argument" },
     ],
   },
   f2: {
@@ -40,9 +42,9 @@ assert.equal(filterIsUnscoredForAggregate(f4Empty), true);
 const noF4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f4: f4Empty });
 assert.ok(noF4.pct < 100, `cleared F1–F3 + unrun F4 must not be 100% (got ${noF4.pct})`);
 assert.equal(noF4.byFilter.f4.unscored, true);
-assert.equal(noF4.total, 15, "Part 128 fixed slots — denominator is always 15");
+assert.equal(noF4.total, 17, "Part 133 fixed slots — denominator is always 17");
 assert.equal(noF4.byFilter.f4.total, 7, "unrun F4 opens all 7 risk slots");
-// Fixed slots: 8/15 ≈ 53%; unfinished F4 → INCOMPLETE (Part 129), not a NO-GO band.
+// Fixed slots: 10/17 ≈ 59%; unfinished F4 → INCOMPLETE (Part 129), not a NO-GO band.
 assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "INCOMPLETE");
 
 const f3Empty = checkF3({ netMarginAtScale: 40 }, {});
@@ -51,7 +53,7 @@ assert.equal(filterCheckScore(f3Empty).total, 0);
 const noF3F4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f3: f3Empty, f4: f4Empty });
 assert.ok(noF3F4.pct < 100);
 assert.ok(noF3F4.pct < noF4.pct, "two unscored filters must weigh more than one");
-assert.equal(noF3F4.total, 15);
+assert.equal(noF3F4.total, 17);
 
 const formAdminOnlyF3 = {
   checkLabel: "Evidence missing",

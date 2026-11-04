@@ -45,7 +45,7 @@ assert.equal(computeGoNoGo(highPctF2Floor), "NO-GO");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {
-    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 4 - f1Done)) },
+    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 6 - f1Done)) },
     f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
     f3: {
       checkLabel: f3Done ? "Cleared" : "Evidence missing",
@@ -54,52 +54,89 @@ function slotChecks(f1Done, f2Done, f3Done, f4Done) {
     f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
   };
 }
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 2)), "WATCH"); // 10/15 ≈ 67%
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 4)), "WATCH"); // 12/15 = 80%
-assert.equal(computeGoNoGo(slotChecks(4, 3, 1, 6)), "GO"); // 14/15 ≈ 93%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 1)), "WATCH"); // 11/17 ≈ 65%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 3)), "WATCH"); // 13/17 ≈ 76%
+assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 4)), "GO"); // 14/17 ≈ 82%
 
 const namedOnly = checkF1(
-  { declaredAttribute: "cooling", benchmark: "5", declaredGap: 5, growthRoute: "penetration", growthArgument: "5" },
+  {
+    declaredAttribute: "cooling",
+    benchmark: "5",
+    declaredGap: 5,
+    gapDerivation: "beat on cooling",
+    parityExceptions: "none",
+    growthRoute: "penetration",
+    growthArgument: "5",
+  },
   {}
 );
 assert.equal(
-  namedOnly.items[1].status,
+  namedOnly.items.find((i) => i.slot === "benchmark").status,
   "pending",
-  "named benchmark needs web verification before it counts"
+  "named benchmark needs web check before it counts"
 );
-assert.match(namedOnly.items[1].text, /awaiting web verification/i);
+assert.match(namedOnly.items.find((i) => i.slot === "benchmark").text, /awaiting web check/i);
 assert.equal(
-  namedOnly.items[3].status,
+  namedOnly.items.find((i) => i.slot === "route").status,
   "pending",
-  "growth inputs need web category-size research before they count"
+  "growth route needs AI check before it counts"
 );
-assert.match(namedOnly.items[3].text, /awaiting web research/i);
+assert.match(namedOnly.items.find((i) => i.slot === "route").text, /awaiting AI check/i);
 
 const verified = checkF1(
-  { declaredAttribute: "cooling", benchmark: "Indulekha", declaredGap: 2.2, growthRoute: "penetration", growthArgument: "share take" },
-  { benchmarkVerified: true, categorySizeFound: true }
-);
-assert.equal(verified.items[1].status, "done");
-assert.equal(verified.items[3].status, "done");
-
-const unverified = checkF1(
-  { declaredAttribute: "cooling", benchmark: "Zzxq-not-a-real-brand-999", declaredGap: 2.2 },
-  { benchmarkVerified: false }
-);
-assert.equal(unverified.items[1].status, "pending");
-
-const sizeNotFound = checkF1(
   {
     declaredAttribute: "cooling",
     benchmark: "Indulekha",
     declaredGap: 2.2,
+    gapDerivation: "beat on cooling",
+    parityExceptions: "none",
+    growthRoute: "penetration",
+    growthArgument: "share take",
+    evidenceSourceDate: "https://example.com/study",
+  },
+  {
+    benchmarkCheck: { status: "relevant", source_url: "https://example.com/indulekha" },
+    claimChecks: {
+      gapDerivation: { verdict: "supported" },
+      parityExceptions: { verdict: "unverified" },
+      growthArgument: { verdict: "supported" },
+    },
+    routeCheck: { expected: "penetration", confidence: "high" },
+  },
+  {
+    evidenceRead: {
+      status: "ok",
+      relevant: true,
+      facts: [{ topic: "attribute", verified: true, quote: "cooling" }],
+    },
+  }
+);
+assert.equal(verified.items.find((i) => i.slot === "benchmark").status, "done");
+assert.equal(verified.items.find((i) => i.slot === "route").status, "done");
+
+const unverified = checkF1(
+  { declaredAttribute: "cooling", benchmark: "Zzxq-not-a-real-brand-999", declaredGap: 2.2 },
+  { benchmarkCheck: { status: "not-found", reason: "no listing" } }
+);
+assert.equal(unverified.items.find((i) => i.slot === "benchmark").status, "pending");
+
+const routeMismatch = checkF1(
+  {
+    declaredAttribute: "cooling",
+    benchmark: "Indulekha",
+    declaredGap: 2.2,
+    gapDerivation: "beat on cooling",
+    parityExceptions: "none",
     growthRoute: "penetration",
     growthArgument: "share take",
   },
-  { benchmarkVerified: true, categorySizeFound: false }
+  {
+    benchmarkCheck: { status: "relevant", source_url: "https://example.com/indulekha" },
+    routeCheck: { expected: "new-market", confidence: "high", reason: "audience is new" },
+  }
 );
-assert.equal(sizeNotFound.items[3].status, "pending");
-
+assert.equal(routeMismatch.items.find((i) => i.slot === "route").status, "pending");
+assert.match(routeMismatch.items.find((i) => i.slot === "route").text, /mismatch|expects/i);
 const range = { minMrpInr: 80, maxMrpInr: 120, minMarginPct: 12, maxMarginPct: 28 };
 assert.equal(checkF3({}, { marginElasticity: {} }).checkLabel, "Not yet run");
 assert.equal(
