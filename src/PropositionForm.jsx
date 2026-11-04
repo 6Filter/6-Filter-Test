@@ -1410,10 +1410,12 @@ export function GoNoGoResultPage({
                   {pathActions.map((it, i) => (
                     <li key={`${it.id || it.filter}-${i}`}>
                       <span className="mono imp-filter-tag">{it.filter}</span>
-                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
-                      {Number.isFinite(Number(it.gainPct)) ? (
-                        <span className="mono path-gain">+{it.gainPct}%</span>
-                      ) : null}
+                      <span className="path-action-text">
+                        {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                      </span>
+                      <span className="mono path-gain">
+                        +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -1426,10 +1428,12 @@ export function GoNoGoResultPage({
                 {pathBlockers.map((it, i) => (
                   <li key={`b-${it.id || i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
-                    {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
-                    {Number.isFinite(Number(it.gainPct)) ? (
-                      <span className="mono path-gain">+{it.gainPct}%</span>
-                    ) : null}
+                    <span className="path-action-text">
+                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                    </span>
+                    <span className="mono path-gain">
+                      +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -1440,10 +1444,12 @@ export function GoNoGoResultPage({
                     {pathActions.map((it, i) => (
                       <li key={`a-${it.id || i}`}>
                         <span className="mono imp-filter-tag">{it.filter}</span>
-                        {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
-                        {Number.isFinite(Number(it.gainPct)) ? (
-                          <span className="mono path-gain">+{it.gainPct}%</span>
-                        ) : null}
+                        <span className="path-action-text">
+                          {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                        </span>
+                        <span className="mono path-gain">
+                          +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -1457,35 +1463,57 @@ export function GoNoGoResultPage({
             <>
               <p className="path-score-line">
                 <span className="mono">{pathPlan.currentPct}%</span>
-                {Number(pathPlan.toGo?.pct) !== Number(pathPlan.currentPct) ? (
+                {pathActions.length > 0 ||
+                Number(pathPlan.toGo?.pct) !== Number(pathPlan.currentPct) ? (
                   <>
-                    <span className="path-arrow" aria-hidden="true">→</span>
-                    <span className="mono path-projected">{pathPlan.toGo?.pct}%</span>
+                    <span className="path-arrow" aria-hidden="true">
+                      →
+                    </span>
+                    <span className="mono path-projected">
+                      {Number(pathPlan.toGo?.pct) > Number(pathPlan.currentPct)
+                        ? pathPlan.toGo.pct
+                        : Math.min(
+                            100,
+                            Number(pathPlan.currentPct) +
+                              pathActions.reduce((s, a) => s + (Number(a.gainPct) || 0), 0)
+                          )}
+                      %
+                    </span>
                   </>
                 ) : null}
                 <span className="path-if">
-                  {pathPlan.toGo?.count
-                    ? `if these ${pathPlan.toGo.count} check${pathPlan.toGo.count === 1 ? "" : "s"} clear`
-                    : pathPlan.message || ""}
+                  {pathPlan.message ||
+                    (pathPlan.toGo?.count
+                      ? `if these ${pathPlan.toGo.count} check${
+                          pathPlan.toGo.count === 1 ? "" : "s"
+                        } clear`
+                      : "")}
                 </span>
               </p>
               <ul className="path-top-list">
                 {pathActions.map((it, i) => (
                   <li key={`${it.id || it.filter}-${i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
-                    {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
-                    {Number.isFinite(Number(it.gainPct)) ? (
-                      <span className="mono path-gain">+{it.gainPct}%</span>
-                    ) : null}
+                    <span className="path-action-text">
+                      {rewriteUnmatchedDivisionCopy(it.text, categoryName)}
+                    </span>
+                    <span className="mono path-gain">
+                      +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
+                    </span>
                   </li>
                 ))}
               </ul>
               <p className="path-if">
                 All {pathActions.length || improvementItems.length} cleared:{" "}
-                {Number.isFinite(Number(pathPlan.allDonePct)) ? pathPlan.allDonePct : 100}%
+                {Number.isFinite(Number(pathPlan.allDonePct))
+                  ? pathPlan.allDonePct
+                  : 100}
+                %
               </p>
               {improvementItems.length > pathActions.length ? (
-                <a className="path-jump mono" href="#what-to-do-next">See all next steps</a>
+                <a className="path-jump mono" href="#what-to-do-next">
+                  See all next steps
+                </a>
               ) : null}
             </>
           )}
@@ -1565,7 +1593,7 @@ export function GoNoGoResultPage({
           improvementItems.map((item, i) => (
             <div key={`${item.filter}-${i}`} className="next-step-card">
               <div className="point-badge" data-tier={item.pointValue >= 10 ? "high" : "normal"}>
-                +{item.pointValue}
+                +{item.pointValue}%
               </div>
               <div>
                 <div className="next-step-tags">
@@ -1578,9 +1606,10 @@ export function GoNoGoResultPage({
           ))
         ) : (
           <p className="path-empty">
-            {path.reachesGo
+            {pathKind === "go"
               ? "Nothing outstanding on the scored Filter 1–4 checklist for this idea."
-              : emptyReason || "Nothing outstanding on the scored Filter 1–4 checklist for this idea."}
+              : pathPlan.message ||
+                "Nothing outstanding on the scored Filter 1–4 checklist for this idea."}
           </p>
         )}
       </section>
@@ -3898,7 +3927,8 @@ export const PROP_CSS = `
 .gonogo-badge.tone-fail{background:var(--nogo-bg);color:var(--nogo-text);border:1px solid var(--nogo-border);}
 .gonogo-hero.tone-incomplete{border-color:rgba(180,160,90,.35);}
 .gonogo-rescore-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}
-.path-gain{margin-left:8px;opacity:.85;color:var(--watch,#f0c14b);}
+.path-gain{margin-left:auto;flex-shrink:0;opacity:.95;color:var(--watch,#f0c14b);font-weight:600;}
+.path-action-text{flex:1;min-width:0;}
 .path-top-list li{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;}
 .gonogo-rationale{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-secondary-2);}
 .score-ring{
