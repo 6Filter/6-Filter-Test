@@ -61,34 +61,58 @@ assert(above.checkLabel === "Below floor", "above max should be Below floor");
 assert(/above the safe ₹111 ceiling/.test(above.items[0].text), above.items[0].text);
 
 assert(!f3HasEnough({}), "empty f3 does not unlock");
-assert(!f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: null } }), "null max does not unlock");
-assert(f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }), "max set unlocks F3-enough");
+assert(
+  !f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: null } }),
+  "incomplete margin % without a ₹ band does not unlock"
+);
+assert(
+  f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }, 80),
+  "legacy %-only band unlocks once COGS can hydrate ₹ ends"
+);
+assert(
+  !f3HasEnough({ marginElasticity: { minMrpInr: 277 } }),
+  "only Min MRP does not unlock"
+);
+assert(
+  f3HasEnough({ marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } }),
+  "rupee band unlocks F3-enough without maxMarginPct"
+);
+assert(
+  f3HasEnough({
+    marginElasticity: {},
+    f3RangeOverride: { minMrpInr: 200, maxMrpInr: 300 },
+  }),
+  "manual MRP override unlocks F3-enough"
+);
+assert(
+  !f3HasEnough({
+    marginElasticity: { minMarginPct: 5, maxMarginPct: 10, minMrpInr: 5, maxMrpInr: 10 },
+  }),
+  "leftover %-as-₹ does not unlock"
+);
+
+const f1f2 = {
+  f1: {
+    declaredAttribute: "softness",
+    benchmark: "Indulekha",
+    declaredGap: 2,
+    growthRoute: "penetration",
+    growthArgument: "yes",
+  },
+  f2: { cogsAtScale: 30, netMarginAtScale: 40 },
+};
 
 const locked = isFilterUnlocked("f4", {
-  f1: {
-    declaredAttribute: "softness",
-    benchmark: "Indulekha",
-    declaredGap: 2,
-    growthRoute: "penetration",
-    growthArgument: "yes",
-  },
-  f2: { cogsAtScale: 30, netMarginAtScale: 40 },
+  ...f1f2,
   f3: { marginElasticity: { minMarginPct: 18 } },
 });
-assert(!locked, "F4 stays locked until maxMarginPct exists");
+assert(!locked, "F4 stays locked until a safe ₹ MRP band exists");
 
 const unlocked = isFilterUnlocked("f4", {
-  f1: {
-    declaredAttribute: "softness",
-    benchmark: "Indulekha",
-    declaredGap: 2,
-    growthRoute: "penetration",
-    growthArgument: "yes",
-  },
-  f2: { cogsAtScale: 30, netMarginAtScale: 40 },
-  f3: { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } },
+  ...f1f2,
+  f3: { marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } },
 });
-assert(unlocked, "F4 unlocks once the range has maxMarginPct");
+assert(unlocked, "F4 unlocks once Filter 3 has a rupee band — no Re-run required");
 
 const noElasticity = solveForVolumeLossCeiling({
   categoryAvgPrice: 80,
