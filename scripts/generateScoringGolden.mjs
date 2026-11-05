@@ -80,10 +80,8 @@ const clearedF1 = {
 const clearedF2 = {
   checkLabel: "Cleared",
   items: [
-    { status: "done", text: "MRP ok" },
-    { status: "done", text: "Net margin clears floor" },
-    { status: "done", text: "Qcom recorded" },
-    { status: "pending", text: "Finance unsigned", formAdmin: true },
+    { status: "done", text: "Net margin clears minimum", slot: "margin", credit: 1 },
+    { status: "pending", text: "Finance unsigned", formAdmin: true, credit: 0 },
   ],
 };
 const clearedF3 = { checkLabel: "Cleared", items: [{ status: "done", text: "in range" }] };
@@ -94,7 +92,7 @@ const clearedF4 = {
 const empty = { checkLabel: "Not yet run", items: [] };
 
 function checksForDone(done) {
-  // Build a complete F1–F4 checklist with exactly `done` of 17 slots cleared (Part 133).
+  // Build a complete F1–F4 checklist with exactly `done` of 15 slots cleared (Part 134 revised).
   const f1Slots = ["benchmark", "gap", "attributes", "derivation", "route", "argument"];
   const f1Texts = [
     "Benchmark relevant",
@@ -105,9 +103,9 @@ function checksForDone(done) {
     "Growth argument entered",
   ];
   const f1n = Math.min(6, done);
-  const f2n = Math.min(3, Math.max(0, done - 6));
-  const f3n = Math.min(1, Math.max(0, done - 9));
-  const f4n = Math.min(7, Math.max(0, done - 10));
+  const f2n = Math.min(1, Math.max(0, done - 6));
+  const f3n = Math.min(1, Math.max(0, done - 7));
+  const f4n = Math.min(7, Math.max(0, done - 8));
   const f1 = {
     checkLabel: f1n === 6 ? "Cleared" : f1n ? "Evidence missing" : "Not yet run",
     items:
@@ -120,24 +118,27 @@ function checksForDone(done) {
           })),
   };
   const f2 = {
-    checkLabel: f2n === 3 ? "Cleared" : f2n ? "Evidence missing" : "Not yet run",
+    checkLabel: f2n === 1 ? "Cleared" : f2n ? "Evidence missing" : "Not yet run",
     items:
       f2n === 0
         ? []
         : [
-            { status: f2n > 0 ? "done" : "pending", text: "MRP ok" },
-            { status: f2n > 1 ? "done" : "pending", text: "Net margin clears floor" },
-            { status: f2n > 2 ? "done" : "pending", text: "Qcom recorded" },
+            {
+              status: "done",
+              text: "Net margin clears minimum",
+              slot: "margin",
+              credit: 1,
+            },
           ],
   };
   const f3 =
     f3n === 1
       ? clearedF3
-      : done >= 9
+      : done >= 7
         ? { checkLabel: "Evidence missing", items: [{ status: "pending", text: "range open" }] }
         : empty;
   const f4 =
-    f4n === 0 && done < 10
+    f4n === 0 && done < 8
       ? empty
       : {
           checkLabel: f4n === 7 ? "Cleared" : "Evidence missing",
@@ -158,12 +159,12 @@ ideas.push(packChecks("stage-2", { f1: clearedF1, f2: clearedF2, f3: empty, f4: 
 ideas.push(packChecks("stage-3", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: empty }, "f1-f3"));
 ideas.push(packChecks("stage-4", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: clearedF4 }, "all cleared"));
 
-// Band edges (required) — 17 slots: 10/17=59 NO-GO, 11/17=65 WATCH, 13/17=76 WATCH, 14/17=82 GO
+// Band edges (required) — 15 slots: 8/15=53 NO-GO, 9/15=60 WATCH, 12/15=80 WATCH, 13/15=87 GO
 for (const [id, done] of [
-  ["band-59", 10],
-  ["band-60", 11],
-  ["band-80", 13],
-  ["band-81", 14],
+  ["band-59", 8],
+  ["band-60", 9],
+  ["band-80", 12],
+  ["band-81", 13],
 ]) {
   ideas.push(packChecks(id, checksForDone(done), `band edge ${id}`));
 }
@@ -425,14 +426,20 @@ async function main() {
       growthArgument: "Households still under-indexed in South India",
     },
     f2: {
-      cogsAtScale: 12,
+      // COGS chosen so deriveMrp(50.34, 40%, 18%) ≈ ₹99 shelf (launch for qcom plan)
+      cogsAtScale: 50.34,
       netMarginAtScale: 40,
       gstRatePct: 18,
-      grammage: "50g",
+      grammage: "50 g",
       mrpInr: 99,
-      qcomTrajectory: "stable",
+      qcomTrajectory: "optional notes — not scored",
     },
-    f3: { marginElasticity: { minMrpInr: 80, maxMrpInr: 120 } },
+    f3: {
+      marginElasticity: {
+        minMrpInr: 80,
+        maxMrpInr: 120,
+      },
+    },
     f4: f4Dims(Array(7).fill("Low")),
     researchFindings: {
       f1: {
@@ -464,14 +471,48 @@ async function main() {
     ...baseComplete,
     name: "MRP computed",
     f2: {
-      cogsAtScale: 20,
+      cogsAtScale: 50.34,
       netMarginAtScale: 40,
       gstRatePct: 18,
-      grammage: "70g",
-      // leave mrp blank — formula fills it
-      qcomTrajectory: "stable",
+      grammage: "70 g",
+      qcomTrajectory: "optional notes",
     },
   }, "computed MRP from COGS/margin/GST"));
+
+  // Part 134 revised — mark-down (not hard stop) + overridden MRP
+  ideas.push(
+    await packDoc(
+      "doc-margin-markdown",
+      {
+        ...baseComplete,
+        name: "Margin mark-down",
+        division: "Foods",
+        f2: { ...baseComplete.f2, netMarginAtScale: 20 },
+      },
+      "margin below Foods 35% → Marked down (not Below floor)"
+    )
+  );
+  ideas.push(
+    await packDoc(
+      "doc-mrp-override",
+      {
+        ...baseComplete,
+        name: "MRP override",
+        division: "Personal Care",
+        f2: {
+          cogsAtScale: 100,
+          netMarginAtScale: 60,
+          gstRatePct: 18,
+          grammage: "100 g",
+          mrpOverride: true,
+          mrpInr: 150,
+          qcomTrajectory: "notes",
+        },
+        f3: { marginElasticity: { minMrpInr: 100, maxMrpInr: 200 } },
+      },
+      "overridden MRP implies margin below Personal Care 50% → Marked down"
+    )
+  );
 
   ideas.push(await packDoc("f3-tolerance-edge", {
     ...baseComplete,

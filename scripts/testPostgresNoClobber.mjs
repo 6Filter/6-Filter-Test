@@ -513,7 +513,8 @@ assert.equal(Number(keptPrefill.f2.cogsAtScale), 40);
 assert.equal(Number(keptPrefill.f2.netMarginAtScale), 22);
 assert.equal(Number(keptPrefill.f2.gstRatePct), 18);
 assert.equal(keptPrefill.f2.grammage, "100g");
-assert.equal(Number(keptPrefill.f2.mrpInr), 80);
+// Part 134 — MRP is re-derived on save from COGS/margin/GST (not a typed lock).
+assert.equal(Number(keptPrefill.f2.mrpInr), 60.51);
 assert.equal(Number(keptPrefill.f3.f3RangeOverride.minMrpInr), 55);
 assert.equal(Number(keptPrefill.f3.marginElasticity.minMrpInr), 40);
 assert.equal(keptPrefill.f4.f4MitigationResponses.functionalCoreStability, "Signed contract Q1");

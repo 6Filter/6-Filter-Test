@@ -46,8 +46,8 @@ assert.equal(findingsA.f2.costEstimate.grammage, "50g");
 assert.equal(findingsA.f2.costEstimate.cogsAtScale, 42);
 assert.equal(
   findingsA.f2.costEstimate.netMarginAtScale,
-  38,
-  "AI cost estimate carries ideal net margin for autofill (user may override)"
+  null,
+  "Part 134 — cost step never fills net margin (proposer types it)"
 );
 assert.equal(findingsA.f2.costEstimate.gstRatePct, 18);
 
@@ -67,7 +67,7 @@ assert.equal(hasCachedCostEstimate({ researchFindings: { f1: {}, f3: {} }, sugge
 const sug = f2SuggestionsFromCostEstimate(findingsA.f2.costEstimate);
 assert.equal(sug.grammage, "50g");
 assert.equal(sug.cogsAtScale, 42);
-assert.equal(sug.netMarginAtScale, 38);
+assert.equal(sug.netMarginAtScale, undefined);
 assert.deepEqual(sug, f2SuggestionsFromCostEstimate(costEstimateFromResearch(costResearch)));
 
 const legacySugOnly = {

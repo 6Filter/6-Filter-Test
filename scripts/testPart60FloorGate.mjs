@@ -23,30 +23,32 @@ assert.equal(classifyGoNoGoFromScore(80), "WATCH");
 assert.equal(classifyGoNoGoFromScore(81), "GO");
 assert.equal(classifyGoNoGoFromScore(95), "GO");
 
-const highPctF2Floor = {
-  f1: { checkLabel: "Cleared", items: items(5, 0) },
+// Part 134 revised — F2 margin below minimum is a mark-down (WATCH cap), not a floor NO-GO.
+const highPctF2MarkDown = {
+  f1: { checkLabel: "Cleared", items: items(6, 0) },
   f2: {
-    checkLabel: "Below floor",
+    checkLabel: "Marked down",
+    markedDown: true,
     items: [
-      { status: "done", text: "MRP ₹121 · 100 ml" },
       {
         status: "pending",
-        text: "Net margin 5% is below the 18% floor (v4, non-negotiable)",
+        text: "Net margin 5% is below the 50% minimum for Personal Care",
+        code: "F2_MARGIN_BELOW_MINIMUM",
+        credit: 0,
       },
-      { status: "done", text: "Quick-commerce terms assumption recorded" },
     ],
   },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
   f4: { checkLabel: "Cleared", items: items(7, 0) },
 };
-assert.equal(scoreAdvisoryChecks(highPctF2Floor).pct >= 80, true);
-assert.equal(goNoGoIsFloorFailure(highPctF2Floor), true);
-assert.equal(computeGoNoGo(highPctF2Floor), "NO-GO");
+assert.equal(scoreAdvisoryChecks(highPctF2MarkDown).pct >= 80, true);
+assert.equal(goNoGoIsFloorFailure(highPctF2MarkDown), false);
+assert.equal(computeGoNoGo(highPctF2MarkDown), "WATCH");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {
     f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 6 - f1Done)) },
-    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
+    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 1 - f2Done)) },
     f3: {
       checkLabel: f3Done ? "Cleared" : "Evidence missing",
       items: items(f3Done, Math.max(0, 1 - f3Done)),
@@ -54,9 +56,9 @@ function slotChecks(f1Done, f2Done, f3Done, f4Done) {
     f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
   };
 }
-assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 1)), "WATCH"); // 11/17 ≈ 65%
-assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 3)), "WATCH"); // 13/17 ≈ 76%
-assert.equal(computeGoNoGo(slotChecks(6, 3, 1, 4)), "GO"); // 14/17 ≈ 82%
+assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 1)), "WATCH"); // 9/15 = 60%
+assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 3)), "WATCH"); // 11/15 ≈ 73%
+assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 5)), "GO"); // 13/15 ≈ 87%
 
 const namedOnly = checkF1(
   {
@@ -238,15 +240,21 @@ assert.notEqual(computeGoNoGo(preview), "GO");
 const afterSubmit = {
   ...preview,
   f2: {
-    checkLabel: "Below floor",
+    checkLabel: "Marked down",
+    markedDown: true,
     items: [
-      { status: "done", text: "MRP ₹5 · 5" },
-      { status: "pending", text: "Net margin 5% is below the 18% floor (v4, non-negotiable)" },
-      { status: "done", text: "Quick-commerce terms assumption recorded" },
+      {
+        status: "pending",
+        text: "Net margin 5% is below the 50% minimum for Personal Care",
+        code: "F2_MARGIN_BELOW_MINIMUM",
+        credit: 0,
+      },
     ],
   },
 };
-assert.equal(computeGoNoGo(afterSubmit), "NO-GO");
+// Part 134 revised — F2 mark-down is never a hard-stop NO-GO (WATCH cap when the band would be GO).
+assert.notEqual(computeGoNoGo(afterSubmit), "NO-GO");
+assert.equal(goNoGoIsFloorFailure(afterSubmit), false);
 
 const local = applyLocalGate({
   ...typedFive,

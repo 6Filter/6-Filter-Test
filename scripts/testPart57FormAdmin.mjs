@@ -43,19 +43,20 @@ const unsignedSame = previewAdvisoryChecks({
   },
 }).f2;
 assert.equal(filterCheckScore(signedSame).pct, filterCheckScore(unsignedSame).pct);
-// Quick-commerce is judged on Submit — preview never marks it done from presence alone.
-assert.equal(filterCheckScore(unsignedSame).pct, 67);
-assert.ok(
-  unsignedSame.items.some((it) => /assessed when you Submit|Quick-commerce/i.test(it.text) && it.slot === "qcom")
-);
+// Part 134 revised — margin is the only scored F2 check → 100% when it clears.
+assert.equal(filterCheckScore(unsignedSame).pct, 100);
+assert.ok(unsignedSame.items.some((it) => it.slot === "margin" && it.credit === 1));
 assert.ok(unsignedSame.items.some((it) => it.text === unsigned && it.formAdmin));
 
 const belowAndUnsigned = {
-  checkLabel: "Below floor",
+  checkLabel: "Marked down",
+  markedDown: true,
   items: [
     {
       status: "pending",
-      text: "Net margin 40% is below the 50% floor (v4, non-negotiable)",
+      text: "Net margin 40% is below the 50% minimum for Personal Care",
+      code: "F2_MARGIN_BELOW_MINIMUM",
+      credit: 0,
     },
     { status: "pending", text: unsigned, formAdmin: true },
     { status: "pending", text: "MRP and grammage not yet declared", formAdmin: true },
@@ -63,21 +64,21 @@ const belowAndUnsigned = {
 };
 const holding = analysisCheckItems(belowAndUnsigned.items).filter((i) => i.status === "pending");
 assert.equal(holding.length, 1);
-assert.match(holding[0].text, /below the 50% floor/);
+assert.match(holding[0].text, /below the 50% minimum/);
 assert.doesNotMatch(holding[0].text, /Finance/);
 
 const narrative = fallbackFilterNarrative(belowAndUnsigned);
-assert.match(narrative, /below the 50% floor/);
+assert.match(narrative, /below the 50% minimum|Marked down/i);
 assert.doesNotMatch(narrative, /Finance/);
 assert.doesNotMatch(narrative, /not yet declared/);
 
 const rationale = buildGateRationale({
-  classification: "NO-GO",
+  classification: "WATCH",
   score: { pct: 40 },
   checks: { f2: belowAndUnsigned },
   ideaName: "Cooling herbal hair oil",
 });
-assert.match(rationale, /below the 50% floor/);
+assert.match(rationale, /below the 50% minimum|raise the net margin/i);
 assert.doesNotMatch(rationale, /Finance/);
 assert.doesNotMatch(rationale, /not yet declared/);
 
@@ -96,7 +97,7 @@ const mixedScore = scoreAdvisoryChecks({
   f3: belowAndUnsigned,
   f4: { items: [] },
 });
-assert.ok(mixedScore.byFilter.f2.pct === 67, `f2 preview qcom is not done until assessed, got ${mixedScore.byFilter.f2.pct}`);
+assert.ok(mixedScore.byFilter.f2.pct === 100, `f2 margin-only score, got ${mixedScore.byFilter.f2.pct}`);
 assert.ok(mixedScore.byFilter.f3.pct === 0);
 assert.doesNotMatch(JSON.stringify(analysisCheckItems(unsignedSame.items)), /Finance/);
 

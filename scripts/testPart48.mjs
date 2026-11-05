@@ -1,54 +1,47 @@
 import assert from "node:assert/strict";
-import {
-  classifyProductGstKind,
-  composeProductIdeaText,
-  resolveGstRate,
-  snapGstSlab,
-} from "../lib/gstRate.js";
+import { composeProductIdeaText, resolveGst, resolveGstRate, snapGstSlab } from "../lib/gstRate.js";
+import { GST_STANDARD_RATES } from "../lib/lockedConstants.js";
 
 const snack = {
   name: "Masala millet namkeen",
   category: "Packaged snacks",
   ideaDescription: "Ready-to-eat extruded millet chips for quick-commerce.",
 };
-assert.equal(classifyProductGstKind(snack), "packaged-snack");
-assert.equal(resolveGstRate({ ...snack, aiRate: 12 }).gstRatePct, 18, "snacks must be 18% even if AI still quotes the old 12% slab");
-assert.match(resolveGstRate(snack).gstBasis, /packaged snack/i);
 
-const staple = {
-  name: "Fortified atta",
-  category: "Staples",
-  ideaDescription: "Whole-wheat atta for South India modern trade.",
-};
-assert.equal(classifyProductGstKind(staple), "staple-food");
-assert.equal(resolveGstRate(staple).gstRatePct, 5);
-assert.equal(resolveGstRate({ ...staple, aiRate: 12 }).gstRatePct, 5);
+// Part 134 — no keyword classifier. Uncited → plain placeholder (never "Analysed by AI").
+const snackDefault = resolveGst(snack);
+assert.equal(snackDefault.basis, "default");
+assert.equal(snackDefault.gstRatePct, 18);
+assert.doesNotMatch(snackDefault.note, /Analysed by AI/i);
+assert.match(snackDefault.note, /placeholder|not checked/i);
 
-const otherFood = {
-  name: "Mango pickle",
-  category: "Foods",
-  ideaDescription: "Regional pickle in glass jar.",
-};
-assert.equal(classifyProductGstKind(otherFood), "food");
-assert.equal(resolveGstRate({ ...otherFood, aiRate: 5 }).gstRatePct, 5);
-assert.equal(resolveGstRate({ ...otherFood, aiRate: 18 }).gstRatePct, 18);
-assert.equal(resolveGstRate({ ...otherFood, aiRate: 12 }).gstRatePct, 18, "food that is not 5 or 18 snaps to 18");
+const snackCited = resolveGst({
+  ...snack,
+  aiProposal: { gstRatePct: 18, source: "https://cbic.gov.in/gst", asOf: "2025-09-22" },
+});
+assert.equal(snackCited.basis, "ai-estimate");
+assert.equal(snackCited.gstRatePct, 18);
+assert.match(snackCited.note, /AI estimate from a web search/i);
+assert.match(snackCited.note, /override/i);
 
-const hairOil = {
-  name: "Cooling herbal hair oil",
-  category: "Hair oils",
-  ideaDescription: "100ml ayurvedic herbal hair oil vs Parachute Advansed.",
-};
-assert.equal(classifyProductGstKind(hairOil), "other");
-assert.equal(resolveGstRate(hairOil).gstRatePct, 18);
-assert.equal(resolveGstRate({ ...hairOil, aiRate: 18 }).gstRatePct, 18);
+const snackFinance = resolveGst({
+  ...snack,
+  table: [{ categoryKeywords: ["namkeen", "snack"], rate: 5, effectiveFrom: "2025-09-22", source: "Finance" }],
+});
+assert.equal(snackFinance.basis, "finance-table");
+assert.equal(snackFinance.gstRatePct, 5);
+assert.equal(snackFinance.needsConfirmation, false);
 
-assert.equal(snapGstSlab(17.6), 18);
-assert.equal(snapGstSlab(5.2), 5);
+// Legacy resolveGstRate wrapper still returns gstBasis / gstKind.
+const legacy = resolveGstRate({ ...snack, aiRate: 12, aiBasis: "old note without URL" });
+assert.equal(legacy.gstKind, "default");
+assert.doesNotMatch(legacy.gstBasis, /Analysed by AI/i);
 
-const composed = composeProductIdeaText(snack);
-assert.match(composed, /Masala millet namkeen/);
-assert.match(composed, /Packaged snacks/);
-assert.match(composed, /extruded millet chips/);
+assert.ok(GST_STANDARD_RATES.includes(0));
+assert.ok(GST_STANDARD_RATES.includes(18));
+assert.equal(snapGstSlab(17), 18);
 
-console.log("PASS GST food 5/18 and packaged-snack 18 from top-of-page product");
+assert.match(composeProductIdeaText(snack), /Masala millet namkeen/);
+assert.match(composeProductIdeaText(snack), /Packaged snacks/);
+
+console.log("PASS Part 48 GST honesty (finance → cited AI → placeholder)");

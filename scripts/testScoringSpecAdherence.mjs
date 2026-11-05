@@ -1,5 +1,5 @@
 /**
- * Live scoring must match docs/SCORING_SPEC.md v5.0 (fixed 17 slots, INCOMPLETE,
+ * Live scoring must match docs/SCORING_SPEC.md v5.2 (fixed 15 slots, INCOMPLETE,
  * web-verified F1, no gram badge on INCOMPLETE, explainer not teaching WATCH-cap).
  */
 import assert from "node:assert/strict";
@@ -22,10 +22,10 @@ import { flattenProposition } from "../lib/logExport.js";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const howDoc = readFileSync(path.join(root, "../docs/HOW_THE_SCORE_WORKS.md"), "utf8");
 
-assert.equal(SCORING_RULESET_VERSION, "v5.0");
+assert.equal(SCORING_RULESET_VERSION, "v5.2");
 assert.equal(SCORE_DENOMINATOR_MODE, "fixed-slots");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(SCORE_CHECK_SLOTS_TOTAL, 17);
+assert.equal(SCORE_CHECK_SLOTS_TOTAL, 15);
 assert.equal(GONOGO_SCORE_BANDS.NOGO_MAX, 60);
 assert.equal(GONOGO_SCORE_BANDS.WATCH_MAX, 80);
 
@@ -39,11 +39,7 @@ const SLOT_TEXTS = {
     "Growth route penetration selected",
     "Growth argument entered",
   ],
-  f2: [
-    "MRP ₹99 · 50g",
-    "Net margin 55% clears the division floor",
-    "Quick-commerce terms assumption recorded",
-  ],
+  f2: ["Net margin 55% clears the division minimum"],
   f3: ["Filter 2 MRP sits within the safe range"],
   f4: Array.from({ length: 7 }, (_, i) => `Dim ${i} Low risk`),
 };
@@ -130,7 +126,7 @@ function cleared(filterKey) {
 // INCOMPLETE: no gram badge (helper + export + local gate)
 {
   const doc = {
-    goNoGo: { classification: "INCOMPLETE", score: { pct: 35, done: 6, total: 17 } },
+    goNoGo: { classification: "INCOMPLETE", score: { pct: 40, done: 6, total: 15 } },
     f5: {},
   };
   assert.equal(ideaSizeForResult(doc), null);
@@ -158,4 +154,4 @@ function cleared(filterKey) {
   assert.equal(howDoc.replace(/\r\n/g, "\n").trim(), scoreExplainerMarkdown().trim());
 }
 
-console.log("PASS testScoringSpecAdherence — v5.0 live logic matches SCORING_SPEC");
+console.log("PASS testScoringSpecAdherence — v5.2 live logic matches SCORING_SPEC");

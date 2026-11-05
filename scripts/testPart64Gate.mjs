@@ -73,7 +73,10 @@ assert.equal(classifyGoNoGoFromScore(81), "GO");
 assert.equal(classifyGoNoGoFromScore(80), "WATCH");
 assert.equal(classifyGoNoGoFromScore(59), "NO-GO");
 assert.equal(computeGoNoGo({ f1: { checkLabel: "Below floor", items: [] } }), "NO-GO");
-assert.equal(goNoGoIsFloorFailure({ f2: { checkLabel: "Below floor" } }), true);
+// Part 134 revised — Filter 2 never hard-stops on "Below floor" (margin is a mark-down).
+assert.equal(goNoGoIsFloorFailure({ f2: { checkLabel: "Below floor" } }), false);
+assert.equal(goNoGoIsFloorFailure({ f2: { checkLabel: "Marked down" } }), false);
+assert.equal(goNoGoIsFloorFailure({ f1: { checkLabel: "Below floor" } }), true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /runGoNoGoRead/);

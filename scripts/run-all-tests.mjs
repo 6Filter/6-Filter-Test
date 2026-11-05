@@ -66,20 +66,29 @@ if (!files.length) {
 }
 
 /**
- * Part 133 — owner fixtures still assert the old 15-slot / 4-check F1 shape.
- * Leave the owner originals untouched; report them as expected until the owner
- * supplies updated versions. Wrappers that re-import those originals count too.
+ * Part 134 revised — owner fixtures that still assert F2 hard-stop / 3 F2 checks /
+ * old totals / pinned ruleset versions. Leave untouched; report as expected until
+ * the owner updates them. Reasons (when they fail):
+ * - testEvidenceReading / testScoringRules: pin SCORING_RULESET_VERSION to v4.4
+ * - testFilter1Scoring / testScoringLockCoverage: pin version to v5.0
+ * - testLockedMinimumMargins: expects F2 "Below floor" hard-stop (now "Marked down")
+ * - testPathCopy: expects screenshot action worth 5/15 under the old F2 slot layout
+ * - testPathToGoActionCopy: Path-to-GO gainPct still assumes pre-v5.2 slot weights
+ * - testPathToGo: may assert old totals / F2 check counts when re-pinned by owner
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
   "testPathToGo.mjs",
   "testPathToGoActionCopy.mjs",
   "testScoringRules.mjs",
+  "testScoringLockCoverage.mjs",
+  "testLockedMinimumMargins.mjs",
   "owner-tests/testPathCopy.mjs",
   "owner-tests/testEvidenceReading.mjs",
   "owner-tests/testPathToGo.mjs",
   "owner-tests/testScoringRules.mjs",
   "owner-tests/testFilter1Scoring.mjs",
+  "owner-tests/testLockedMinimumMargins.mjs",
 ]);
 
 const failures = [];
@@ -100,7 +109,7 @@ for (const file of files) {
 }
 
 if (expectedOwnerFailures.length) {
-  console.error(`\n${expectedOwnerFailures.length} owner test(s) failed as expected under Part 133 (old 15-slot / 4-check F1):`);
+  console.error(`\n${expectedOwnerFailures.length} owner test(s) failed as expected under Part 134 revised (old F2 hard-stop / slot counts):`);
   for (const file of expectedOwnerFailures) console.error(`  ${file}`);
 }
 

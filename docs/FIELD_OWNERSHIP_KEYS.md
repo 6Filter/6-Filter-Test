@@ -28,12 +28,13 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 | `growthRoute` | F1 | Chosen by a person. |
 | `growthArgument` | F1 | Typed by a person. |
 | `pureCommodity` | F1 | Chosen by a person. |
-| `cogsAtScale` | F2 | AI may prefill it. A person may override it. |
-| `netMarginAtScale` | F2 | AI may prefill it. A person may override it. |
-| `gstRatePct` | F2 | AI may prefill it. A person may override it. |
+| `cogsAtScale` | F2 | AI may prefill it (with low/mid/high range). A person may override or confirm it. |
+| `netMarginAtScale` | F2 | Typed by a person. Never AI-filled. |
+| `gstRatePct` | F2 | Finance table, cited AI estimate, or placeholder. A person may override it. |
 | `grammage` | F2 | AI may prefill it. A person may override it. |
-| `mrpInr` | F2 | Formula may prefill it. A person may override it. |
-| `qcomTrajectory` | F2 | AI may prefill it. A person may override it. |
+| `mrpInr` | F2 | Computed from COGS, net margin and GST. A person may override (`mrpOverride`). |
+| `mrpOverride` | F2 | Chosen by a person — use typed MRP instead of the computed one. |
+| `qcomTrajectory` | F2 | Optional free-text notes. Not scored. |
 | `financeSigned` | F2 | Chosen by a person. |
 | `f3RangeOverride` | F3 | The min and max MRP a person typed. Research stays on `marginElasticity`. |
 | `f4MitigationResponses` | F4 | The written response per dimension. Ratings stay on `techShiftRisk`. |

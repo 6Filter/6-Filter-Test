@@ -34,13 +34,25 @@ const idea = {
   },
   f2: {
     mrpInr: 20,
-    grammage: "250ml",
+    grammage: "250 ml",
     netMarginAtScale: 30,
     qcomTrajectory: "flat",
+    qcomPlan: [
+      { year: 1, mrpInr: 20 },
+      { year: 2, mrpInr: 20 },
+      { year: 3, mrpInr: 21 },
+    ],
     cogsAtScale: 8,
     gstRatePct: 12,
   },
-  f3: { marginElasticity: { minMrpInr: 15, maxMrpInr: 40 } },
+  f3: {
+    marginElasticity: {
+      minMrpInr: 10,
+      maxMrpInr: 40,
+      liftPct: 25,
+      volumeLossPriceIncreasePct: 25,
+    },
+  },
   f4: {
     techShiftRisk: {
       dimensions: {
@@ -70,7 +82,7 @@ const saved = await updateProposition(
   },
   { writer: "server" }
 );
-assert.equal(saved.f3.marginElasticity.minMrpInr, 15);
+assert.equal(saved.f3.marginElasticity.minMrpInr, 10);
 
 const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(saved));
 const withoutRange = scoreAdvisoryChecks(
@@ -108,7 +120,7 @@ assert.equal(body.goNoGo.score.done, full.done);
 assert.equal(body.goNoGo.score.total, full.total);
 
 const stored = await getPropositionById(created.id);
-assert.equal(stored.f3.marginElasticity.minMrpInr, 15);
+assert.equal(stored.f3.marginElasticity.minMrpInr, 10);
 assert.equal(stored.goNoGo.score.pct, full.pct);
 assert.equal(stored.category, "Iced tea");
 

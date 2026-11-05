@@ -25,9 +25,7 @@ const clearedF1F2F3 = {
   f2: {
     checkLabel: "Cleared",
     items: [
-      { status: "done", text: "MRP ok" },
-      { status: "done", text: "Net margin clears floor" },
-      { status: "done", text: "Qcom recorded" },
+      { status: "done", text: "Net margin clears minimum", slot: "margin" },
       { status: "pending", text: "Finance unsigned", formAdmin: true },
     ],
   },
@@ -42,9 +40,8 @@ assert.equal(filterIsUnscoredForAggregate(f4Empty), true);
 const noF4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f4: f4Empty });
 assert.ok(noF4.pct < 100, `cleared F1–F3 + unrun F4 must not be 100% (got ${noF4.pct})`);
 assert.equal(noF4.byFilter.f4.unscored, true);
-assert.equal(noF4.total, 17, "Part 133 fixed slots — denominator is always 17");
+assert.equal(noF4.total, 15, "Part 134 revised — denominator is always 15");
 assert.equal(noF4.byFilter.f4.total, 7, "unrun F4 opens all 7 risk slots");
-// Fixed slots: 10/17 ≈ 59%; unfinished F4 → INCOMPLETE (Part 129), not a NO-GO band.
 assert.equal(computeGoNoGo({ ...clearedF1F2F3, f4: f4Empty }), "INCOMPLETE");
 
 const f3Empty = checkF3({ netMarginAtScale: 40 }, {});
@@ -53,7 +50,7 @@ assert.equal(filterCheckScore(f3Empty).total, 0);
 const noF3F4 = scoreAdvisoryChecks({ ...clearedF1F2F3, f3: f3Empty, f4: f4Empty });
 assert.ok(noF3F4.pct < 100);
 assert.ok(noF3F4.pct < noF4.pct, "two unscored filters must weigh more than one");
-assert.equal(noF3F4.total, 17);
+assert.equal(noF3F4.total, 15);
 
 const formAdminOnlyF3 = {
   checkLabel: "Evidence missing",

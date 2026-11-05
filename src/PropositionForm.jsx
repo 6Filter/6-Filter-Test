@@ -61,7 +61,8 @@ import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult }
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
-import { computeMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
+import { DIVISION_MIN_NET_MARGIN_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
 import {
@@ -512,6 +513,7 @@ function FieldControl({
   onRestoreAi,
   canRestoreAi = false,
   onConfirmAi,
+  onMrpOverrideChange,
 }) {
   const fileRef = useRef(null);
   if (field.type === "mitigation-map" || field.type === "range-override") return null;
@@ -640,6 +642,91 @@ function FieldControl({
       {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
+      </div>
+    );
+  }
+
+  if (field.type === "derived-mrp") {
+    const f2 = ideaDoc?.f2 || {};
+    const overrideOn = f2.mrpOverride === true;
+    const priced = resolveF2Price(f2);
+    const computed = deriveMrp({
+      cogsAtScale: f2.cogsAtScale,
+      netMarginAtScale: f2.netMarginAtScale,
+      gstRatePct: f2.gstRatePct,
+    });
+    const div = String(ideaDoc?.division || "").trim();
+    const floor = Number(DIVISION_MIN_NET_MARGIN_PCT[div]);
+    const eff = priced.ok ? priced.effectiveMargin : null;
+    const below =
+      Number.isFinite(floor) && Number.isFinite(eff) && eff < floor
+        ? `Your MRP implies a net margin of ${eff}%, which is below the ${floor}% minimum for ${div}`
+        : null;
+    return (
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}`} title={lockTitle} data-f2-mrp="derived">
+        <div className="prop-label">{field.label}</div>
+        {helper ? <p className="prop-helper">{helper}</p> : null}
+        <label className="prop-check" style={{ marginBottom: 8 }}>
+          <input
+            type="checkbox"
+            checked={overrideOn}
+            disabled={locked}
+            onChange={(e) => {
+              if (typeof onMrpOverrideChange === "function") onMrpOverrideChange(e.target.checked);
+            }}
+          />
+          <span>Use my own MRP</span>
+        </label>
+        {overrideOn ? (
+          <input
+            data-field={fieldPath || undefined}
+            type="number"
+            step="any"
+            value={value ?? ""}
+            placeholder={field.placeholder || "Enter shelf MRP ₹"}
+            disabled={locked}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        ) : priced?.ok || computed?.ok ? (
+          <div className="mrp-range-display">
+            <strong className="mono">₹{Number((priced.ok ? priced : computed).mrp).toFixed(2)}</strong>
+            {(priced.ok ? priced : computed).mrpRounded !== (priced.ok ? priced : computed).mrp ? (
+              <span className="derived-note" style={{ marginLeft: 8 }}>
+                (rounds to ₹{(priced.ok ? priced : computed).mrpRounded} for reference)
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="derived-note">
+            {computed?.reason === "NEEDS_COGS" || priced?.reason === "NEEDS_COGS"
+              ? "Enter COGS to derive MRP"
+              : computed?.reason === "NEEDS_MARGIN"
+                ? "Enter net margin to derive MRP"
+                : computed?.reason === "NEEDS_GST" || priced?.reason === "NEEDS_GST"
+                  ? "Enter GST to derive MRP"
+                  : "MRP is calculated from COGS, net margin and GST"}
+          </p>
+        )}
+        {priced?.ok ? (
+          <>
+            <p className="derived-note">Price before tax ₹{Number(priced.preTaxMrp).toFixed(2)}</p>
+            <p className="derived-note">
+              GST {priced.gstRatePct}% ₹{Number(priced.gstAmount).toFixed(2)}
+            </p>
+            <p className="derived-note">MRP after tax ₹{Number(priced.mrp).toFixed(2)} (shelf price)</p>
+          </>
+        ) : null}
+        {overrideOn && below ? <p className="derived-note error">{below}</p> : null}
+        {overrideOn ? (
+          <button
+            type="button"
+            className="ghost"
+            disabled={locked}
+            onClick={() => typeof onMrpOverrideChange === "function" && onMrpOverrideChange(false)}
+          >
+            Switch back to computed MRP
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -833,6 +920,16 @@ function FieldControl({
       />
       {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
       {helper ? <span className="prop-helper">{helper}</span> : null}
+      {fieldPath === "f2.cogsAtScale" && (ideaDoc?.f2?.cogsLowInr != null || ideaDoc?.f2?.cogsHighInr != null) ? (
+        <p className="derived-note">
+          AI estimate range ₹{ideaDoc.f2.cogsLowInr ?? "—"}–₹{ideaDoc.f2.cogsHighInr ?? "—"}
+          {ideaDoc.f2.cogsConfidenceNote ? ` — ${ideaDoc.f2.cogsConfidenceNote}` : ""}
+          {ideaDoc.f2.cogsBasis ? `. ${ideaDoc.f2.cogsBasis}` : ""}
+        </p>
+      ) : null}
+      {fieldPath === "f2.gstRatePct" && ideaDoc?.f2?.gstBasis ? (
+        <p className="derived-note">{ideaDoc.f2.gstBasis}</p>
+      ) : null}
       {taxNotes}
       {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
       {!taxNotes && liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
@@ -2070,46 +2167,36 @@ export default function PropositionForm({
   const f2Margin = doc.f2?.netMarginAtScale;
   const f2Gst = doc.f2?.gstRatePct;
 
+  const f2Override = doc.f2?.mrpOverride === true;
   useEffect(() => {
-    const result = computeMrp({
-      cogsAtScale: f2Cogs,
-      netMarginAtScale: f2Margin,
-      gstRatePct: f2Gst,
+    setDoc((prev) => {
+      const nextF2 = applyDerivedMrpToF2(prev.f2 || {});
+      const priced = resolveF2Price(nextF2);
+      setMrpBaseInr(priced?.ok ? priced.preTaxMrp : null);
+      setMrpFinalInr(priced?.ok ? priced.mrp : null);
+      if (
+        String(prev.f2?.mrpInr ?? "") === String(nextF2.mrpInr ?? "") &&
+        String(prev.f2?.mrpPreTaxInr ?? "") === String(nextF2.mrpPreTaxInr ?? "") &&
+        String(prev.f2?.gstAmountInr ?? "") === String(nextF2.gstAmountInr ?? "") &&
+        Boolean(prev.f2?.mrpOverride) === Boolean(nextF2.mrpOverride)
+      ) {
+        return prev;
+      }
+      return { ...prev, f2: nextF2 };
     });
-    setMrpBaseInr(result?.baseMrp ?? null);
-    setMrpFinalInr(result?.finalMrp ?? null);
-    if (mrpTouchedByHuman.current) return;
-    if (result?.finalMrp != null) {
-      const nextVal = result.finalMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
+    if (!f2Override) {
+      const derived = deriveMrp({
+        cogsAtScale: f2Cogs,
+        netMarginAtScale: f2Margin,
+        gstRatePct: f2Gst,
       });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else if (result?.baseMrp != null) {
-      const nextVal = result.baseMrp.toFixed(2);
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === nextVal) return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: nextVal } };
-      });
-      setAiSourced((prev) =>
-        prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
-      );
-    } else {
-      setDoc((prev) => {
-        if (String(prev.f2?.mrpInr ?? "") === "") return prev;
-        return { ...prev, f2: { ...(prev.f2 || {}), mrpInr: "" } };
-      });
-      setAiSourced((prev) => {
-        if (prev[sourcedPath("f2", "mrpInr")] === false || prev[sourcedPath("f2", "mrpInr")] == null) {
-          return prev;
-        }
-        return { ...prev, [sourcedPath("f2", "mrpInr")]: false };
-      });
+      if (derived?.ok) {
+        setAiSourced((prev) =>
+          prev[sourcedPath("f2", "mrpInr")] === true ? prev : { ...prev, [sourcedPath("f2", "mrpInr")]: true }
+        );
+      }
     }
-  }, [f2Cogs, f2Margin, f2Gst]);
+  }, [f2Cogs, f2Margin, f2Gst, f2Override, doc.f2?.mrpInr]);
 
   const f3SuggestedRange = aiSuggestions?.f3?.marginElasticity;
   useEffect(() => {
@@ -3712,6 +3799,20 @@ export default function PropositionForm({
                       onRangeOverride={
                         spec.key === "f3" && field.key === "marginElasticity"
                           ? (next) => setFilter("f3", "f3RangeOverride", next)
+                          : undefined
+                      }
+                      onMrpOverrideChange={
+                        spec.key === "f2" && field.key === "mrpInr"
+                          ? (on) => {
+                              setFilter("f2", "mrpOverride", on);
+                              if (!on) {
+                                // Switching back recomputes from COGS / margin / GST.
+                                setDoc((prev) => ({
+                                  ...prev,
+                                  f2: applyDerivedMrpToF2({ ...(prev.f2 || {}), mrpOverride: false }),
+                                }));
+                              }
+                            }
                           : undefined
                       }
                       onRefresh={

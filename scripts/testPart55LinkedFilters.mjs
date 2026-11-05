@@ -140,7 +140,7 @@ assert.ok(tooLow.recommendedMrpInr >= 200);
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /mrpAdjustmentNote/);
 assert.match(formSrc, /f2Cogs, f2Margin, f2Gst/);
-assert.match(formSrc, /result\.finalMrp\.toFixed\(2\)/);
+assert.match(formSrc, /deriveMrp|applyDerivedMrpToF2|derived\.mrp/);
 assert.match(formSrc, /recastMarginElasticityLive/);
 assert.match(formSrc, /f2Cogs, f2Margin, f2Gst, f3SuggestedRange/);
 

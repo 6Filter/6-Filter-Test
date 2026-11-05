@@ -27,9 +27,17 @@ assert.equal(propositionStatus(cleared), "CLEARED");
 const stoppedScore = { classification: "NO-GO" };
 assert.equal(propositionStatus(stoppedScore), "STOPPED");
 
+// Part 134 revised — F2 mark-down / legacy "Below floor" is not a hard stop on the Log.
+const f2MarkDown = {
+  classification: "WATCH",
+  advisoryChecks: { f2: { checkLabel: "Marked down" } },
+};
+assert.equal(hasAnyFloorFailure(f2MarkDown), false);
+assert.equal(propositionStatus(f2MarkDown), "OPEN");
+
 const stoppedFloor = {
   classification: "WATCH",
-  advisoryChecks: { f2: { checkLabel: "Below floor" } },
+  advisoryChecks: { f1: { checkLabel: "Below floor" } },
 };
 assert.equal(hasAnyFloorFailure(stoppedFloor), true);
 assert.equal(propositionStatus(stoppedFloor), "STOPPED");
@@ -51,14 +59,25 @@ assert.equal(
 
 const realChecks = {
   f1: { checkLabel: "Cleared", items: [{ status: "done", text: "gap holds" }] },
-  f2: { checkLabel: "Below floor", items: [{ status: "pending", text: "margin 12% vs 35%" }] },
+  f2: { checkLabel: "Marked down", items: [{ status: "pending", text: "margin 12% vs 35%" }] },
   f3: { checkLabel: "Evidence missing" },
   f4: { checkLabel: "Cleared" },
   f5: { checkLabel: "Locked" },
   f6: { checkLabel: "Awaiting panels" },
 };
-assert.deepEqual(filterSegments({}, realChecks), ["pass", "fail", "review", "pass", "none", "none"]);
-assert.equal(filterStageLabel({ advisoryChecks: realChecks }, realChecks), "Stopped at F2 — margin below floor");
+assert.deepEqual(filterSegments({}, realChecks), ["pass", "review", "review", "pass", "none", "none"]);
+assert.equal(filterStageLabel({ advisoryChecks: realChecks }, realChecks), "F2 in review");
+
+const f1FloorChecks = {
+  f1: { checkLabel: "Below floor", items: [{ status: "pending", text: "gap 1.5" }] },
+  f2: { checkLabel: "Cleared" },
+  f3: { checkLabel: "Cleared" },
+  f4: { checkLabel: "Cleared" },
+  f5: { checkLabel: "Locked" },
+  f6: { checkLabel: "Awaiting panels" },
+};
+assert.deepEqual(filterSegments({}, f1FloorChecks), ["fail", "pass", "pass", "pass", "none", "none"]);
+assert.equal(filterStageLabel({ advisoryChecks: f1FloorChecks }, f1FloorChecks), "Stopped at F1 — gap below floor");
 
 const f3Review = {
   f1: { checkLabel: "Cleared" },
