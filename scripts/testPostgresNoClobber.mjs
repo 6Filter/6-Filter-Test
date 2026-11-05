@@ -70,6 +70,7 @@ function sample(field) {
   if (field.key === "benchmark") return "Dove Scalp Serum 100 ml";
   if (field.key === "declaredAttribute") return "hair growth";
   if (field.key === "growthArgument") return "households growing in hair care with CMI numbers";
+  if (field.key === "plannedAnnualIncreasePct" || field.type === "price-resilience") return 5;
   if (field.key === "priceResilienceNote" || field.type === "readonly-note") return null;
   if (field.key === "marginElasticity" || field.type === "computed-range") return { minMrpInr: 40, maxMrpInr: 90 };
   if (field.key === "techShiftRisk" || field.type === "computed-risk") {
@@ -109,7 +110,9 @@ for (const field of roundFields) {
   const saved = await updateProposition(created.id, input, { handler: "round-trip", allowFilterReset: true });
   const got = field.filterKey ? saved?.[field.filterKey]?.[field.key] : saved?.[field.key];
   const kept =
-    field.key === "priceResilienceNote" || field.type === "readonly-note"
+    field.key === "plannedAnnualIncreasePct" || field.type === "price-resilience"
+      ? Number(got) === 5
+      : field.key === "priceResilienceNote" || field.type === "readonly-note"
       ? got == null
       : field.key === "marginElasticity" || field.type === "computed-range"
       ? Number(got?.minMrpInr) === 40 && Number(got?.maxMrpInr) === 90

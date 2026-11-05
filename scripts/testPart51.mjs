@@ -6,8 +6,8 @@ import { checkF3 } from "../lib/filterChecks.js";
 
 const f3 = SIX_FILTERS_FORM.find((f) => f.key === "f3");
 assert.equal(f3.fields.length, 1);
-assert.equal(f3.fields[0].key, "priceResilienceNote");
-assert.equal(f3.fields[0].type, "readonly-note");
+assert.equal(f3.fields[0].key, "plannedAnnualIncreasePct");
+assert.equal(f3.fields[0].type, "price-resilience");
 assert.match(f3.subtitle, /10% volume-loss/i);
 assert.ok(!f3.fields.some((f) => f.key === "marginElasticity" || f.key === "f3RangeOverride"));
 
@@ -40,7 +40,8 @@ assert.equal(withoutPercentSign("capped at 10% volume loss after 5.5% inflation"
 assert.equal(marginPctFromMrp(50, 62.5), 20);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /priceResilienceNote|10% volume-loss/);
+assert.match(formSrc, /price-resilience|data-f3-resilience/);
+assert.match(formSrc, /plannedAnnualIncreasePct|10% volume-loss/);
 assert.match(formSrc, /spec\.key === "f3"/);
 
 console.log("PASS Part 51 F3 cliff note on form; legacy ₹ helpers still hydrate old ideas");

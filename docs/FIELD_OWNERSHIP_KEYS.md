@@ -35,7 +35,7 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 | `mrpOverride` | F2 | Chosen by a person — use typed MRP instead of the computed one. |
 | `qcomTrajectory` | F2 | Optional free-text notes. Not scored. |
 | `financeSigned` | F2 | Chosen by a person. |
-| `priceResilienceNote` | F3 | Read-only cliff-rule copy on the form; not stored as scored input. |
+| `plannedAnnualIncreasePct` | F3 | Human preview of annual inflation-cover %; Submit still researches cited cover + cliff volume loss. |
 | `f4MitigationResponses` | F4 | The written response per dimension. Ratings stay on `techShiftRisk`. |
 | `householdsReachedY3Mn` | F5 | Typed by a person. |
 | `trialRatePct` | F5 | Typed by a person. |

@@ -58,10 +58,15 @@ assert.equal(
       growthRoute: "penetration",
       growthArgument: "share",
     },
-    f2: { cogsAtScale: 10, netMarginAtScale: 20 },
-    f3: { marginElasticity: { maxMarginPct: 30, minMrpInr: 80, maxMrpInr: 120 } },
+    f2: { cogsAtScale: 10, netMarginAtScale: 20, gstRatePct: 18 },
+    f3: { plannedAnnualIncreasePct: 5 },
   }).label,
-  "AI"
+  "1/1"
+);
+assert.equal(
+  filterSidebarCount("f4", { f4: { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } } })
+    .label,
+  "1/7"
 );
 
 assert.match(ownershipBanner("BM"), /You own/);

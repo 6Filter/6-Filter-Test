@@ -8,7 +8,8 @@ function assert(cond, msg) {
 }
 
 const f3Fields = SIX_FILTERS_FORM.find((f) => f.key === "f3")?.fields || [];
-assert(f3Fields[0]?.key === "priceResilienceNote", "F3 form field is the cliff note");
+assert(f3Fields[0]?.key === "plannedAnnualIncreasePct", "F3 form field is the inflation-cover input");
+assert(f3Fields[0]?.type === "price-resilience", "F3 field is the interactive cliff preview");
 assert(
   !f3Fields.some((f) => f.key === "marginElasticity" || f.key === "f3RangeOverride"),
   "safe-range fields removed from the schema"

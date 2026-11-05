@@ -211,7 +211,7 @@ assert.doesNotMatch(researchSrc, /competitorPackSize \|\| grammage/);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /recastMarginElasticityLive|marginElasticity/);
-assert.match(formSrc, /priceResilienceNote|10% volume-loss/);
+assert.match(formSrc, /price-resilience|plannedAnnualIncreasePct|10% volume-loss/);
 
 console.log("PASS Part 54 max MRP never displays below min; pack price is normalized to grammage");
 console.log(

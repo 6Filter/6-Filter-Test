@@ -62,9 +62,10 @@ import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
-import { DIVISION_MIN_NET_MARGIN_PCT } from "../lib/lockedConstants.js";
+import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
 import { resolveGstRate } from "../lib/gstRate.js";
+import { priceCrossings } from "../lib/priceResilience.js";
 import {
   DIMENSION_LABELS,
   TECH_SHIFT_DIMENSIONS,
@@ -538,7 +539,14 @@ function FieldControl({
   else if (fieldHelper(field)) helperParts.push(fieldHelper(field));
   if (ownerHint) helperParts.push(ownerHint);
   const helper = helperParts.join(" ");
-  const full = field.type === "textarea" || field.type === "checkbox" || field.type === "computed" || field.type === "computed-range" || field.type === "computed-risk";
+  const full =
+    field.type === "textarea" ||
+    field.type === "checkbox" ||
+    field.type === "computed" ||
+    field.type === "computed-range" ||
+    field.type === "computed-risk" ||
+    field.type === "price-resilience" ||
+    field.type === "readonly-note";
   const locked = inactive;
   const lockTitle = inactive ? inactiveHint || "Name a benchmark to declare a gap." : undefined;
   const showChip = suggestion != null;
@@ -789,11 +797,31 @@ function FieldControl({
     );
   }
 
-  if (field.type === "readonly-note") {
+  if (field.type === "price-resilience" || field.type === "readonly-note") {
     const priced = resolveF2Price(ideaDoc?.f2 || {});
     const pe = ideaDoc?.researchFindings?.f3?.priceEvents;
+    const typed = value === "" || value == null ? null : Number(value);
+    const annual =
+      typed != null && Number.isFinite(typed)
+        ? typed
+        : pe?.annualIncreasePct != null && Number.isFinite(Number(pe.annualIncreasePct))
+          ? Number(pe.annualIncreasePct)
+          : null;
+    const crossed =
+      priced.ok && annual != null
+        ? priceCrossings({
+            launchPrice: priced.mrp,
+            annualIncreasePct: annual,
+            horizonYears: F3_HORIZON_YEARS,
+          })
+        : null;
+    const inputVal = value === "" || value == null ? "" : String(value);
     return (
-      <div className={`prop-field span-2${locked ? " is-locked" : ""}`} title={lockTitle}>
+      <div
+        className={`prop-field span-2${locked ? " is-locked" : ""}`}
+        title={lockTitle}
+        data-f3-resilience="cliff"
+      >
         <div className="prop-label">{field.label}{wand}</div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <p className="derived-note">
@@ -801,15 +829,56 @@ function FieldControl({
             ? `Price tested: Filter 2 MRP ₹${Number(priced.mrp).toFixed(2)} (change it on Filter 2).`
             : "Enter COGS, net margin and GST on Filter 2 so there is an MRP to test."}
         </p>
+        <label className="f3-inflation-label">
+          Planned annual inflation-cover increase (%)
+          <input
+            data-field={fieldPath || undefined}
+            type="number"
+            step="any"
+            min="0"
+            placeholder={field.placeholder || "e.g. 5"}
+            value={inputVal}
+            disabled={locked}
+            title={lockTitle}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </label>
         {pe?.annualIncreasePct != null ? (
           <p className="derived-note">
-            Inflation-covering increase {pe.annualIncreasePct}%/yr
+            Research inflation cover {pe.annualIncreasePct}%/yr
             {pe.inflation_source_url ? ` — ${pe.inflation_source_url}` : ""}
             {pe.inflation_quote ? `. “${pe.inflation_quote}”` : ""}
           </p>
         ) : (
-          <p className="derived-note">Inflation cover and comparable price events are assessed when you Submit.</p>
+          <p className="derived-note">
+            Submit still researches a cited inflation-cover rate and comparable cliff volume loss (ceiling{" "}
+            {VOLUME_LOSS_CEILING_PCT}%).
+          </p>
         )}
+        {crossed?.ok ? (
+          crossed.crossings?.length ? (
+            <div className="f3-cliff-preview">
+              <p className="prop-helper">
+                At {annual}%/yr over {F3_HORIZON_YEARS} years this MRP would cross:
+              </p>
+              <ul className="f3-cliff-list">
+                {crossed.crossings.map((c) => (
+                  <li key={`${c.point}-${c.year}`}>
+                    ₹{c.point} in year {c.year}
+                    {c.toPrice != null ? ` (price ≈ ₹${Number(c.toPrice).toFixed(2)})` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="derived-note">
+              At {annual}%/yr over {F3_HORIZON_YEARS} years, no fixed price point is crossed — smooth inflation rises
+              cost no volume under the cliff rule.
+            </p>
+          )
+        ) : priced.ok ? (
+          <p className="derived-note">Enter an annual % above to preview which cliffs this MRP would hit.</p>
+        ) : null}
         {Array.isArray(pe?.events) && pe.events.length ? (
           <ul className="price-events-register">
             {pe.events.slice(0, 8).map((ev, i) => (
@@ -823,6 +892,7 @@ function FieldControl({
             ))}
           </ul>
         ) : null}
+        {chip}
       </div>
     );
   }
@@ -4446,11 +4516,19 @@ export const PROP_CSS = `
 .me-loading .spin{flex-shrink:0;margin-top:2px;}
 .spin{animation:sp 1s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
+.f3-inflation-label{display:flex;flex-direction:column;gap:6px;margin:10px 0 8px;font-family:var(--fm);
+  font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.72);font-weight:600;}
+.f3-inflation-label input{font-weight:500;letter-spacing:0;}
+.f3-cliff-preview{margin:8px 0 4px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(232,181,99,.28);background:rgba(232,181,99,.08);}
+.f3-cliff-list{margin:6px 0 0;padding:0 0 0 18px;font-size:13px;line-height:1.45;color:rgba(243,234,248,.85);}
+.f3-cliff-list li+li{margin-top:4px;}
+.price-events-register{margin:8px 0 0;padding:0 0 0 18px;font-size:12.5px;line-height:1.45;color:rgba(243,234,248,.78);}
 .f4-dimension-editor{display:flex;flex-direction:column;gap:12px;margin:8px 0 12px;}
-.f4-dimension-row{display:grid;grid-template-columns:minmax(140px,1fr) 140px;gap:8px 12px;align-items:start;
+.f4-dimension-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(120px,160px);gap:8px 12px;align-items:start;
   padding:10px 12px;border:1px solid rgba(243,234,248,.12);border-radius:10px;background:rgba(0,0,0,.18);}
 .f4-dimension-row .dimension-response-label{grid-column:1 / -1;font-size:13px;font-weight:600;color:rgba(243,234,248,.9);}
-.f4-dimension-row select{width:100%;}
+.f4-dimension-row select{width:100%;min-height:42px;}
 .f4-dimension-row textarea{grid-column:1 / -1;width:100%;min-height:52px;}
 .f4-dimension-row .dimension-finding{grid-column:1 / -1;}
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}

@@ -24,6 +24,9 @@ assert.match(
   /Rate all seven points/,
   "F4 tells the person to rate dimensions by hand"
 );
+assert.match(form, /data-f3-resilience="cliff"/);
+assert.match(form, /Planned annual inflation-cover increase/);
+assert.match(form, /priceCrossings/);
 
 assert.equal(isFilterUnlocked("f4", {}), true);
 assert.equal(isFilterUnlocked("f3", {}), true);

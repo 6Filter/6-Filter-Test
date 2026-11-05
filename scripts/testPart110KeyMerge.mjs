@@ -16,7 +16,7 @@ for (const spec of SIX_FILTERS_FORM) {
 }
 assert.deepEqual(server, ["techShiftRisk", "computedRevenue"]);
 assert.ok(human.includes("cogsAtScale"));
-assert.ok(human.includes("priceResilienceNote"));
+assert.ok(human.includes("plannedAnnualIncreasePct"));
 assert.ok(human.includes("f4MitigationResponses"));
 assert.match(doc, /forumVerdict/);
 assert.match(doc, /marginElasticity/);

@@ -58,7 +58,7 @@ assert.ok(Math.abs(percentsOnly.maxMrpInr - 133.333) < 0.01);
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /seedMarginElasticityFromAi/);
 assert.match(formSrc, /isMarginElasticityUnfilled/);
-assert.match(formSrc, /priceResilienceNote|10% volume-loss/);
+assert.match(formSrc, /price-resilience|plannedAnnualIncreasePct|10% volume-loss/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /fillF3MrpIfNeeded/);
