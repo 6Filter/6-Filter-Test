@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Send, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
 import {
@@ -68,9 +68,14 @@ import { resolveGstRate } from "../lib/gstRate.js";
 import {
   DIMENSION_LABELS,
   TECH_SHIFT_DIMENSIONS,
+  blankTechShiftRisk,
   effectiveOverallRisk,
   isTechShiftRiskUnfilled,
+  normalizeRiskLevel,
   normalizeTechShiftRisk,
+  aggregateTechShiftRisk,
+  aggregateTechShiftRiskWithResponses,
+  hasReassessedDimension,
 } from "../lib/techShiftRisk.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
@@ -550,16 +555,46 @@ function FieldControl({
   const wand = aiSourced ? <AiWandMark /> : null;
 
   if (field.type === "computed-risk") {
-    const risk = value && typeof value === "object" ? value : {};
-    const overall = effectiveOverallRisk(risk);
-    const dimensions = risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : {};
-    const hasBeenScored = Boolean(risk.dimensions) && Object.keys(dimensions).length > 0;
-    const respondable = Object.entries(dimensions).filter(
-      ([, d]) => d && (d.risk === "Medium" || d.risk === "High")
-    );
-    const hasResponseText = respondable.some(([key, d]) =>
-      String((mitigationResponses && mitigationResponses[key]) || d?.userResponse || "").trim()
-    );
+    const risk = value && typeof value === "object" ? value : blankTechShiftRisk();
+    const baseDims =
+      risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : blankTechShiftRisk().dimensions;
+    const dimensions = { ...blankTechShiftRisk().dimensions, ...baseDims };
+    const rated = TECH_SHIFT_DIMENSIONS.filter((k) => normalizeRiskLevel(dimensions[k]?.risk));
+    const overall =
+      rated.length === TECH_SHIFT_DIMENSIONS.length
+        ? hasReassessedDimension(dimensions)
+          ? aggregateTechShiftRiskWithResponses(dimensions)
+          : aggregateTechShiftRisk(dimensions) || effectiveOverallRisk(risk)
+        : "";
+    const respondable = TECH_SHIFT_DIMENSIONS.filter((key) => {
+      const d = dimensions[key];
+      const level = normalizeRiskLevel(d?.reassessedRisk) || normalizeRiskLevel(d?.risk);
+      return level === "Medium" || level === "High";
+    });
+    const hasResponseText = respondable.some((key) => {
+      const d = dimensions[key];
+      return String((mitigationResponses && mitigationResponses[key]) || d?.userResponse || "").trim();
+    });
+    const patchDimension = (key, patch) => {
+      const nextDims = { ...dimensions };
+      nextDims[key] = { ...(nextDims[key] || { risk: "", reason: "" }), ...patch };
+      const anyRated = TECH_SHIFT_DIMENSIONS.some((k) => normalizeRiskLevel(nextDims[k]?.risk));
+      if (!anyRated) {
+        if (typeof onChange === "function") onChange(null);
+        return;
+      }
+      const nextOverall = TECH_SHIFT_DIMENSIONS.every((k) => normalizeRiskLevel(nextDims[k]?.risk))
+        ? aggregateTechShiftRisk(nextDims)
+        : "";
+      if (typeof onChange === "function") {
+        onChange({
+          dimensions: nextDims,
+          overallRisk: nextOverall,
+          sources: Array.isArray(risk.sources) ? risk.sources : [],
+          aiSourced: false,
+        });
+      }
+    };
     const patchDimensionResponse = (key, userResponse) => {
       if (typeof onMitigationChange === "function") onMitigationChange(key, userResponse);
     };
@@ -568,7 +603,7 @@ function FieldControl({
         className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`}
         title={lockTitle}
         data-f4-risk="tech-shift"
-        data-f4-state={hasBeenScored ? "scored" : "unscored"}
+        data-f4-state={rated.length === TECH_SHIFT_DIMENSIONS.length ? "scored" : "editable"}
       >
         <div className="prop-label">
           {field.label}
@@ -576,78 +611,93 @@ function FieldControl({
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
-        {!hasBeenScored ? (
-          <div className="f4-unscored-state">
-            <div className="dimension-pills-inert">
-              {TECH_SHIFT_DIMENSIONS.map((key) => (
-                <span key={key} className="pill-inert">
-                  {DIMENSION_LABELS[key]}
-                </span>
-              ))}
-            </div>
-            <p className="f4-cta">
-              Submit the idea to run AI research across these seven points — response fields for any Medium or High
-              finding will appear here afterward.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p className="prop-helper">Points scored</p>
-            <ul className="f4-eval-points">
-              {TECH_SHIFT_DIMENSIONS.map((key) => (
-                <li key={key}>{DIMENSION_LABELS[key]}</li>
-              ))}
-            </ul>
-            {overall ? <p className="derived-note">Current overall: {overall}</p> : null}
-            {respondable.length ? (
-              <div className="f4-response-list">
-                {respondable.map(([key, d]) => (
-                  <div key={key} className="dimension-response">
-                    <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                    <div className="dimension-finding original">
-                      Original: {d.risk} risk — {d.reason}
-                    </div>
-                    {d.reassessedRisk ? (
-                      <div className="dimension-finding reassessed">
-                        After response: {d.reassessedRisk} risk — {d.reassessedReason}
-                      </div>
-                    ) : null}
-                    <textarea
-                      data-field={fieldPath || undefined}
-                      rows={3}
-                      placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
-                      value={(mitigationResponses && mitigationResponses[key]) || d.userResponse || ""}
-                      disabled={locked || reassessing}
-                      title={lockTitle}
-                      onChange={(e) => patchDimensionResponse(key, e.target.value)}
-                    />
+        <p className="prop-helper">
+          Rate all seven points (Low / Medium / High). Optional: use Re-run this estimate for an AI draft.
+        </p>
+        {overall ? <p className="derived-note">Current overall: {overall}</p> : null}
+        <div className="f4-dimension-editor">
+          {TECH_SHIFT_DIMENSIONS.map((key) => {
+            const d = dimensions[key] || { risk: "", reason: "" };
+            const riskVal = normalizeRiskLevel(d.risk) || "";
+            return (
+              <div key={key} className="f4-dimension-row" data-dimension={key}>
+                <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
+                <select
+                  data-field={fieldPath || undefined}
+                  value={riskVal}
+                  disabled={locked || reassessing}
+                  title={lockTitle}
+                  onChange={(e) => patchDimension(key, { risk: e.target.value })}
+                >
+                  <option value="">Select risk</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+                <textarea
+                  data-field={fieldPath || undefined}
+                  rows={2}
+                  placeholder="Why this rating (optional for Low; required evidence for Medium/High mitigation below)"
+                  value={d.reason || ""}
+                  disabled={locked || reassessing}
+                  title={lockTitle}
+                  onChange={(e) => patchDimension(key, { reason: e.target.value })}
+                />
+                {d.reassessedRisk ? (
+                  <div className="dimension-finding reassessed">
+                    After response: {d.reassessedRisk} risk — {d.reassessedReason}
                   </div>
-                ))}
-                {typeof onReassess === "function" ? (
-                  <button
-                    type="button"
-                    className="ghost f4-reassess"
-                    disabled={locked || reassessing || !hasResponseText}
-                    onClick={onReassess}
-                  >
-                    {reassessing ? <Loader2 size={15} className="spin" /> : null}
-                    {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
-                  </button>
                 ) : null}
               </div>
+            );
+          })}
+        </div>
+        {respondable.length ? (
+          <div className="f4-response-list">
+            <p className="prop-helper">Respond on Medium / High points to clear them</p>
+            {respondable.map((key) => {
+              const d = dimensions[key];
+              return (
+                <div key={key} className="dimension-response">
+                  <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
+                  <div className="dimension-finding original">
+                    Original: {normalizeRiskLevel(d.risk) || d.risk} risk — {d.reason || "no reason yet"}
+                  </div>
+                  <textarea
+                    data-field={fieldPath || undefined}
+                    rows={3}
+                    placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
+                    value={(mitigationResponses && mitigationResponses[key]) || d.userResponse || ""}
+                    disabled={locked || reassessing}
+                    title={lockTitle}
+                    onChange={(e) => patchDimensionResponse(key, e.target.value)}
+                  />
+                </div>
+              );
+            })}
+            {typeof onReassess === "function" ? (
+              <button
+                type="button"
+                className="ghost f4-reassess"
+                disabled={locked || reassessing || !hasResponseText}
+                onClick={onReassess}
+              >
+                {reassessing ? <Loader2 size={15} className="spin" /> : null}
+                {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
+              </button>
             ) : null}
-          </>
-        )}
+          </div>
+        ) : null}
         <AutofillProvenance
-        fieldPath={fieldPath}
-        doc={ideaDoc}
-        aiSourced={aiSourced}
-        editedName={editedName}
-        onRestore={onRestoreAi}
-        canRestore={canRestoreAi}
-        onConfirmAi={onConfirmAi}
-      />
-      {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
+          fieldPath={fieldPath}
+          doc={ideaDoc}
+          aiSourced={aiSourced}
+          editedName={editedName}
+          onRestore={onRestoreAi}
+          canRestore={canRestoreAi}
+          onConfirmAi={onConfirmAi}
+        />
+        {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
         {liveNote ? <p className="derived-note">{liveNote}</p> : null}
         {chip}
       </div>
@@ -2374,11 +2424,6 @@ export default function PropositionForm({
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
   const [evidenceFileError, setEvidenceFileError] = useState("");
-  const [managerOpen, setManagerOpen] = useState(false);
-  const [managerLoading, setManagerLoading] = useState(false);
-  const [managerText, setManagerText] = useState("");
-  const [managerSubject, setManagerSubject] = useState("");
-  const [managerCopied, setManagerCopied] = useState(false);
   const [managerBusy, setManagerBusy] = useState(false);
   const [managerComment, setManagerComment] = useState("");
   const [managerRejectReason, setManagerRejectReason] = useState("");
@@ -2650,7 +2695,6 @@ export default function PropositionForm({
   // All filters stay open — missing values are listed on the output, not locked away.
   const mayUploadProof = true;
   const f5Unlocked = true;
-  const sendManagerReady = isFilterUnlocked("send-manager", liveDoc);
   const unlockHint = nextLockedHint(liveDoc);
   const unlockedFilterKeys = new Set(SIX_FILTERS_FORM.map((s) => s.key));
   const f3Unlocked = true;
@@ -3419,45 +3463,6 @@ export default function PropositionForm({
     }
   }
 
-  async function openSendToManagerModal() {
-    if (!sendManagerReady || !propositionId || managerLoading) return;
-    setManagerOpen(true);
-    setManagerLoading(true);
-    setManagerText("");
-    setManagerCopied(false);
-    try {
-      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/manager-draft`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proposition: doc, provider: llmProvider }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not draft the message.");
-      setManagerSubject(data.subject || `6 Filter Test — ${doc.name || "proposition"}`);
-      setManagerText(data.message || "");
-    } catch (e) {
-      setManagerText(e.message || "Couldn't draft the message — try again.");
-    } finally {
-      setManagerLoading(false);
-    }
-  }
-
-  function copyManagerMsg() {
-    const ta = document.createElement("textarea");
-    ta.value = managerText;
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-    } catch {
-      /* ignore */
-    }
-    document.body.removeChild(ta);
-    setManagerCopied(true);
-    window.setTimeout(() => setManagerCopied(false), 1600);
-  }
-
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
     if (!hasSubmitterIdentity(doc)) {
@@ -3717,13 +3722,6 @@ export default function PropositionForm({
             onClick={() => setCurrentView("goNoGoResult")}
           >
             View GO/NO-GO output
-          </button>
-        </div>
-      ) : outputEvalState === "incomplete" || outputEvalState === "not-evaluated" ? (
-        <div className="prop-output-return" role="region" aria-label="Evaluation status">
-          <p>Research is not fully evaluated yet. Open the evaluation page to see missing steps and run Evaluate.</p>
-          <button type="button" className="prop-save run" onClick={() => setCurrentView("goNoGoResult")}>
-            Open evaluation page
           </button>
         </div>
       ) : null}
@@ -4323,51 +4321,7 @@ export default function PropositionForm({
                   ? "Calculating MRP range…"
                   : "Submit for verdict"}
         </button>
-        {sendManagerReady ? (
-          <button type="button" className="ghost send-mgr" onClick={openSendToManagerModal}>
-            <Send size={15} /> Send to Manager
-          </button>
-        ) : null}
       </div>
-
-      {managerOpen ? (
-        <div className="modal-bg" onClick={() => setManagerOpen(false)}>
-          <div className="modal prop-mgr-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-h">
-              <span>
-                <Send size={15} /> Send to Manager
-              </span>
-              <button type="button" className="ghost sq" onClick={() => setManagerOpen(false)}>
-                <X size={16} />
-              </button>
-            </div>
-            {managerLoading ? (
-              <div className="modal-loading">
-                <Loader2 size={20} className="spin" /> Drafting…
-              </div>
-            ) : (
-              <>
-                <textarea className="msg-area" readOnly value={managerText} rows={8} />
-                <div className="prop-actions">
-                  <button type="button" className="prop-save run" onClick={copyManagerMsg}>
-                    {managerCopied ? <Check size={15} /> : <Copy size={15} />}
-                    {managerCopied ? "Copied" : "Copy"}
-                  </button>
-                  <a
-                    className="ghost send-mgr"
-                    href={`mailto:?subject=${encodeURIComponent(managerSubject)}&body=${encodeURIComponent(managerText)}`}
-                  >
-                    Open in Mail
-                  </a>
-                </div>
-                <p className="modal-foot">
-                  Review before sending — this platform won&apos;t message anyone for you.
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }
@@ -4492,6 +4446,13 @@ export const PROP_CSS = `
 .me-loading .spin{flex-shrink:0;margin-top:2px;}
 .spin{animation:sp 1s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
+.f4-dimension-editor{display:flex;flex-direction:column;gap:12px;margin:8px 0 12px;}
+.f4-dimension-row{display:grid;grid-template-columns:minmax(140px,1fr) 140px;gap:8px 12px;align-items:start;
+  padding:10px 12px;border:1px solid rgba(243,234,248,.12);border-radius:10px;background:rgba(0,0,0,.18);}
+.f4-dimension-row .dimension-response-label{grid-column:1 / -1;font-size:13px;font-weight:600;color:rgba(243,234,248,.9);}
+.f4-dimension-row select{width:100%;}
+.f4-dimension-row textarea{grid-column:1 / -1;width:100%;min-height:52px;}
+.f4-dimension-row .dimension-finding{grid-column:1 / -1;}
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
 .f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
   border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}

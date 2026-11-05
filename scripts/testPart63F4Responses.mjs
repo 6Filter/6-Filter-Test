@@ -153,12 +153,12 @@ assert.equal(batch.overallRisk, "Medium");
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /className="dimension-response"/);
-assert.match(formSrc, /d\.risk === "Medium" \|\| d\.risk === "High"/);
-assert.match(formSrc, /Original: \{d\.risk\} risk/);
+assert.match(formSrc, /level === "Medium" \|\| level === "High"/);
+assert.match(formSrc, /Original: \{normalizeRiskLevel\(d\.risk\) \|\| d\.risk\} risk/);
 assert.match(formSrc, /After response: \{d\.reassessedRisk\} risk/);
 assert.match(formSrc, /Re-assess Filter 4 with responses/);
 assert.match(formSrc, /\/reassess-f4/);
-assert.doesNotMatch(formSrc, /d\.risk === "Low"/);
+assert.match(formSrc, /f4-dimension-editor/);
 
 const judgeSrc = readFileSync(new URL("../lib/filters/reassessTechShift.js", import.meta.url), "utf8");
 assert.doesNotMatch(judgeSrc, /researchCache|runFilter4|saveResearchCache|getResearchCache/);

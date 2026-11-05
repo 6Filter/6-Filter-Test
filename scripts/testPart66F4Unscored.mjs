@@ -8,14 +8,14 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /import \{ runFilter4 \} from "\.\/filters\/filter4TechShift\.js"/);
 
-assert.match(formSrc, /data-f4-state=\{hasBeenScored \? "scored" : "unscored"\}/);
-assert.match(formSrc, /className="f4-unscored-state"/);
-assert.match(formSrc, /className="pill-inert"/);
+assert.match(formSrc, /data-f4-state=\{rated\.length === TECH_SHIFT_DIMENSIONS\.length \? "scored" : "editable"\}/);
+assert.match(formSrc, /className="f4-dimension-editor"/);
+assert.match(formSrc, /Select risk/);
 assert.match(
   formSrc,
-  /Submit the idea to run AI research across these seven points — response fields for any Medium or High/
+  /Rate all seven points \(Low \/ Medium \/ High\)\. Optional: use Re-run this estimate for an AI draft/
 );
-assert.match(formSrc, /d\.risk === "Medium" \|\| d\.risk === "High"/);
+assert.match(formSrc, /level === "Medium" \|\| level === "High"/);
 assert.match(formSrc, /className="dimension-response"/);
 
 const empty = checkF4({});
