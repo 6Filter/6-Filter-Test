@@ -5,6 +5,8 @@ import {
   hasGoClassification,
   hasManagerApproval,
   isFilterUnlocked,
+  listMissingFormInputs,
+  nextLockedHint,
 } from "../lib/filterUnlock.js";
 import { computeGoNoGo, classifyGoNoGoFromScore, goNoGoIsFloorFailure } from "../lib/goNoGo.js";
 
@@ -21,9 +23,11 @@ const f4Ready = {
   f4: { techShiftRisk: { dimensions: { format: { risk: "Low" } } } },
 };
 
-assert.equal(isFilterUnlocked("proof-gate", f4Ready), true, "F4 complete still opens the analysis/proof gate");
-assert.equal(isFilterUnlocked("f5", f4Ready), false, "F5 stays locked until GO (or approved WATCH) plus proof");
-assert.equal(isFilterUnlocked("f6", f4Ready), false);
+for (const key of ["f1", "f2", "f3", "f4", "f5", "f6", "proof-gate", "send-manager"]) {
+  assert.equal(isFilterUnlocked(key, f4Ready), true, `${key} stays editable (progressive unlock retired)`);
+}
+assert.equal(nextLockedHint(f4Ready), null);
+assert.ok(listMissingFormInputs({}).length > 0, "empty doc lists missing inputs for the output");
 
 assert.equal(canProceedToProofUpload({ goNoGo: { classification: "GO" } }), true);
 assert.equal(canProceedToProofUpload({ goNoGo: { classification: "WATCH" } }), false);
@@ -51,23 +55,17 @@ const goDoc = {
   marketResearchProof: { name: "ua.pdf", data: "x" },
 };
 assert.equal(hasGoClassification(goDoc), true);
-assert.equal(isFilterUnlocked("f5", goDoc), true, "GO + proof unlocks F5");
-assert.equal(isFilterUnlocked("f6", goDoc), true);
 
 const watchDoc = {
   ...f4Ready,
   goNoGo: { classification: "WATCH" },
   marketResearchProof: { name: "ua.pdf", data: "x" },
 };
-assert.equal(isFilterUnlocked("f5", watchDoc), false, "WATCH + proof without approval does not open F5");
-
 const approvedWatch = {
   ...watchDoc,
   managerReview: { comment: "Approved after reviewing the WATCH gaps." },
 };
 assert.equal(hasManagerApproval(approvedWatch), true);
-assert.equal(isFilterUnlocked("f5", approvedWatch), true, "approved WATCH + proof unlocks F5");
-assert.equal(isFilterUnlocked("f6", approvedWatch), true);
 
 assert.equal(classifyGoNoGoFromScore(81), "GO");
 assert.equal(classifyGoNoGoFromScore(80), "WATCH");
@@ -83,4 +81,4 @@ assert.match(formSrc, /runGoNoGoRead/);
 assert.match(formSrc, /Submit for verdict/);
 assert.match(formSrc, /canProceedToProofUpload/);
 
-console.log("PASS Part 64 F4→F5 analysis gate + GO/WATCH/NO-GO unlock");
+console.log("PASS Part 64 proof-upload gate + retired progressive filter unlock");

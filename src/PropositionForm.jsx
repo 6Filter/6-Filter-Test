@@ -15,9 +15,9 @@ import {
 import { managerReviewRequestedOn } from "../lib/logStatus.js";
 import { patchIgnoredKeys } from "../lib/ignoredKeyRefresh.js";
 import {
-  canProceedToProofUpload,
   hasManagerApproval,
   isFilterUnlocked,
+  listMissingFormInputs,
   nextLockedHint,
 } from "../lib/filterUnlock.js";
 import {
@@ -1417,6 +1417,7 @@ function ManagerReviewPanel({
 function EvaluationPendingPage({
   evaluationState,
   evaluationMissing = [],
+  missingFormInputs = [],
   doc,
   ideaName,
   category,
@@ -1435,6 +1436,10 @@ function EvaluationPendingPage({
   const progress =
     progressLabel ||
     (required ? `${doneCount} of ${required} steps done` : "");
+  const formGaps =
+    Array.isArray(missingFormInputs) && missingFormInputs.length
+      ? missingFormInputs
+      : listMissingFormInputs(doc || {});
 
   return (
     <div className="gonogo-result-page evaluation-pending-page">
@@ -1455,6 +1460,16 @@ function EvaluationPendingPage({
             filter cards are shown.
           </p>
           {progress ? <p className="gonogo-blocked-note">{progress}</p> : null}
+          {formGaps.length ? (
+            <div className="missing-inputs-block" role="status">
+              <h3>Values still to enter</h3>
+              <ul className="evaluation-missing-list">
+                {formGaps.map((entry) => (
+                  <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {evaluationMissing.length ? (
             <ul className="evaluation-missing-list">
               {evaluationMissing.map((entry) => (
@@ -1531,6 +1546,7 @@ export function GoNoGoResultPage({
   submitLabel = "Submit",
   allowPdfExport = true,
   sealedOutput = null,
+  missingFormInputs = null,
 }) {
   const pageRef = useRef(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -1682,6 +1698,23 @@ export function GoNoGoResultPage({
             {scoreStatusBanner}
           </p>
         ) : null}
+        {(() => {
+          const gaps =
+            Array.isArray(missingFormInputs) && missingFormInputs.length
+              ? missingFormInputs
+              : listMissingFormInputs(doc || {});
+          if (!gaps.length) return null;
+          return (
+            <div className="missing-inputs-block" role="status">
+              <h3>Values you have not entered yet</h3>
+              <ul className="evaluation-missing-list">
+                {gaps.map((entry) => (
+                  <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
         <section className={`gonogo-hero tone-${tone}`} data-tone={tone}>
           <div className="gonogo-hero-copy">
             {idea ? <h1 className="gonogo-idea">{idea}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}
@@ -1945,29 +1978,14 @@ export function GoNoGoResultPage({
       {!hideFilterCards ? (
       <div className="filter-grid">
         {SIX_FILTERS_FORM.map((spec) => {
-          const f5f6Locked =
-            (spec.key === "f5" || spec.key === "f6") &&
-            !isFilterUnlocked(spec.key, doc || {}) &&
-            hasAnyRealInput(doc?.[spec.key] || {});
           const sealedFilter = sealedOutput?.filters?.[spec.key];
-          const check = f5f6Locked
-            ? {
-                checkLabel: spec.key === "f6" ? "Awaiting panels" : "Locked",
-                items: [],
-                infoLine:
-                  spec.key === "f6"
-                    ? "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist."
-                    : undefined,
-              }
-            : {
-                ...(checks[spec.key] || {}),
-                ...(sealedFilter?.label ? { checkLabel: sealedFilter.label } : {}),
-              };
-          const stored = f5f6Locked
-            ? ""
-            : stripFormAdminNarrative(
-                String(sealedFilter?.narrative || result.filterNarratives?.[spec.key] || "").trim()
-              );
+          const check = {
+            ...(checks[spec.key] || {}),
+            ...(sealedFilter?.label ? { checkLabel: sealedFilter.label } : {}),
+          };
+          const stored = stripFormAdminNarrative(
+            String(sealedFilter?.narrative || result.filterNarratives?.[spec.key] || "").trim()
+          );
           const awaiting = spec.key === "f6" && (check.checkLabel === "Awaiting panels" || check.infoLine);
           const narrative = rewriteUnmatchedDivisionCopy(
             awaiting
@@ -2573,15 +2591,14 @@ export default function PropositionForm({
   }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
   const livePreviewChecks = previewAdvisoryChecks(liveDoc);
-  const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
-  const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
-  const f5Unlocked = isFilterUnlocked("f5", liveDoc);
+  // All filters stay open — missing values are listed on the output, not locked away.
+  const mayUploadProof = true;
+  const f5Unlocked = true;
   const sendManagerReady = isFilterUnlocked("send-manager", liveDoc);
   const unlockHint = nextLockedHint(liveDoc);
-  const unlockedFilterKeys = new Set(
-    SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, liveDoc))
-  );
-  const f3Unlocked = unlockedFilterKeys.has("f3");
+  const unlockedFilterKeys = new Set(SIX_FILTERS_FORM.map((s) => s.key));
+  const f3Unlocked = true;
+  const missingFormInputs = listMissingFormInputs(liveDoc);
   // Part 135 — F3 is cliff research on Submit; no live band auto-fill spinner.
   const marginElasticityLoading = false;
 
@@ -3540,6 +3557,7 @@ export default function PropositionForm({
           <EvaluationPendingPage
             evaluationState={outputEvalState}
             evaluationMissing={evaluationMissingList}
+            missingFormInputs={listMissingFormInputs(doc)}
             doc={doc}
             ideaName={formIdeaLabel(doc)}
             category={formCategoryLabel(doc)}
@@ -3572,6 +3590,7 @@ export default function PropositionForm({
             result={displayGo}
             advisoryChecks={displayChecks}
             sealedOutput={sealedOutput}
+            missingFormInputs={listMissingFormInputs(doc)}
             category={formCategoryLabel(doc) || displayGo.category}
             ideaName={formIdeaLabel(doc) || displayGo.ideaName}
             doc={doc}
@@ -3849,31 +3868,6 @@ export default function PropositionForm({
       {SIX_FILTERS_FORM.map((spec) => {
         const researchPlan = planResearch(doc);
         const missingStep = researchPlan.researchState === "incomplete" && researchPlan.steps.includes(spec.key.toUpperCase());
-        const unlocked = unlockedFilterKeys.has(spec.key);
-        if (!unlocked && (spec.key === "f5" || spec.key === "f6")) {
-          return (
-            <FilterTeaserCard
-              key={spec.key}
-              spec={spec}
-              checkLabel="Not yet run"
-              sub={
-                spec.key === "f5"
-                  ? "Opens once the idea reads GO and proof is uploaded."
-                  : "Opens together with Filter 5 after proof is uploaded."
-              }
-            />
-          );
-        }
-        if (!unlocked && (spec.key === "f3" || spec.key === "f4") && !missingStep) {
-          return (
-            <FilterTeaserCard
-              key={spec.key}
-              spec={spec}
-              checkLabel="Not yet run"
-              sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
-            />
-          );
-        }
         const values = doc[spec.key] || {};
         const check =
           spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
@@ -4162,7 +4156,17 @@ export default function PropositionForm({
         );
       })}
 
-      {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
+      {missingFormInputs.length && !justSubmitted ? (
+        <div className="unlock-hint" role="status">
+          <strong>Still to enter before a full score:</strong>
+          <ul>
+            {missingFormInputs.map((m) => (
+              <li key={`${m.filter}.${m.field}`}>{m.label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {unlockHint && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
       {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
         <ManagerReviewPanel

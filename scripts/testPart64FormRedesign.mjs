@@ -24,7 +24,8 @@ assert.match(formSrc, /submit-bar/);
 assert.match(formSrc, /Submit for verdict/);
 assert.match(formSrc, /inline-floor-fail/);
 assert.match(formSrc, /teaser-card/);
-assert.match(formSrc, /Opens once the idea reads GO and proof is uploaded\./);
+assert.match(formSrc, /Still to enter before a full score:/);
+assert.match(formSrc, /listMissingFormInputs/);
 assert.doesNotMatch(formSrc, /Open anyway/);
 assert.doesNotMatch(formSrc, /Run research & pre-fill/);
 assert.doesNotMatch(formSrc, /Upload PDF, Word, or image/);
@@ -47,7 +48,7 @@ assert.equal(submitProgress(filled).requiredLeft, 0);
 assert.equal(submitProgress(filled).pct, 100);
 assert.equal(heroFieldCount(filled).label, "3/3");
 
-assert.equal(filterSidebarCount("f3", {}).label, "—");
+assert.equal(filterSidebarCount("f3", {}).label, "0/1", "F3 sidebar counts inputs even when f3 is not enough");
 assert.equal(
   filterSidebarCount("f3", {
     f1: {

@@ -43,18 +43,18 @@ const cleared = checkF3(
 );
 assert(cleared.checkLabel === "Cleared", `no crossing should clear, got ${cleared.checkLabel}`);
 
-assert(!f3HasEnough({}), "empty f3 without F2 price does not unlock");
+assert(!f3HasEnough({}), "empty f3 without F2 price is not f3-enough");
 assert(
   f3HasEnough({}, { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 }),
-  "resolvable F2 MRP unlocks F3-enough"
+  "resolvable F2 MRP counts as f3-enough"
 );
 assert(
   f3HasEnough({ marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } }),
-  "legacy rupee band still unlocks F3-enough"
+  "legacy rupee band still counts as f3-enough"
 );
 assert(
   !f3HasEnough({ marginElasticity: { minMrpInr: 277 } }),
-  "only Min MRP does not unlock"
+  "only Min MRP is not f3-enough"
 );
 
 const doc = {
@@ -68,8 +68,8 @@ const doc = {
   f2: { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 },
   f3: {},
 };
-assert(isFilterUnlocked("f3", doc), "F3 unlocks once F2 has COGS+margin");
-assert(isFilterUnlocked("f4", doc), "F4 unlocks once F2 MRP is resolvable");
+assert(isFilterUnlocked("f3", {}), "F3 is always editable");
+assert(isFilterUnlocked("f4", doc), "F4 is always editable");
 
 const ceiling = solveForVolumeLossCeiling({
   categoryAvgPrice: 100,
@@ -79,4 +79,4 @@ const ceiling = solveForVolumeLossCeiling({
 });
 assert(ceiling.priceCeiling != null, "legacy solver still available for research helpers");
 
-console.log("PASS Part 46 F3 cliff form + unlock");
+console.log("PASS Part 46 F3 cliff form + f3HasEnough (no progressive unlock)");

@@ -103,8 +103,8 @@ const labels = compactAdvisoryForLog(
   { goNoGo: { classification: "WATCH" } },
   { f1: { checkLabel: "Cleared" }, f2: { checkLabel: "Evidence missing" } }
 );
-assert.equal(labels.f5.checkLabel, "Locked");
-assert.equal(labels.f6.checkLabel, "Awaiting panels");
+assert.equal(labels.f5.checkLabel, "Evidence missing");
+assert.equal(labels.f6.checkLabel, "Evidence missing");
 assert.deepEqual(advisoryChecksFromLabels({ f1: "Cleared", f2: "Below floor" }).f2, { checkLabel: "Below floor" });
 
 const now = Date.parse("2026-09-15T12:00:00.000Z");

@@ -40,11 +40,15 @@ const confirmed = ideaSizeForResult({
 });
 assert.equal(confirmed.provisional, false);
 
-const mergedLocked = mergeProposition({
+const mergedWatch = mergeProposition({
   goNoGo: { classification: "WATCH" },
   f5: deoF5,
 });
-assert.equal(mergedLocked.f5.computedRevenue, null);
+assert.equal(
+  typeof mergedWatch.f5.computedRevenue,
+  "number",
+  "F5 revenue derives when fields are filled — progressive unlock no longer blocks merge"
+);
 
 const mergedGo = mergeProposition({
   goNoGo: { classification: "GO" },
