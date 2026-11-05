@@ -79,6 +79,7 @@ assert.equal(goNoGoIsFloorFailure({ f1: { checkLabel: "Below floor" } }), true);
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /runGoNoGoRead/);
 assert.match(formSrc, /Submit for verdict/);
-assert.match(formSrc, /canProceedToProofUpload/);
+assert.match(formSrc, /listMissingFormInputs/);
+assert.match(formSrc, /Values you have not entered yet|Still to enter before a full score/);
 
 console.log("PASS Part 64 proof-upload gate + retired progressive filter unlock");
