@@ -95,6 +95,16 @@ for (const field of roundFields) {
   const input = emptyPropositionDoc(created.id);
   if (field.filterKey) input[field.filterKey] = { [field.key]: value };
   else input[field.key] = value;
+  // Part 134 — MRP without override is always recomputed; pin override (+ COGS/GST) for the typed shelf price.
+  if (field.key === "mrpInr" || field.type === "derived-mrp") {
+    input.f2 = {
+      ...(input.f2 || {}),
+      mrpOverride: true,
+      mrpInr: value,
+      cogsAtScale: 80,
+      gstRatePct: 18,
+    };
+  }
   const saved = await updateProposition(created.id, input, { handler: "round-trip", allowFilterReset: true });
   const got = field.filterKey ? saved?.[field.filterKey]?.[field.key] : saved?.[field.key];
   const kept =
@@ -106,7 +116,9 @@ for (const field of roundFields) {
           ? got === true
           : field.type === "computed"
             ? got === 12 || got == null || Number.isFinite(Number(got))
-            : got === value;
+            : field.key === "mrpInr" || field.type === "derived-mrp"
+              ? Number(got) === Number(value)
+              : got === value;
   if (kept) roundTrip += 1;
   else broken.push(`${field.filterKey || "top"}.${field.key}`);
 }
