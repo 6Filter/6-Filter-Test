@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "v5.4",
+  "rulesetVersion": "v5.5",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {
@@ -7305,7 +7305,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -7351,7 +7351,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -7363,7 +7363,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -7576,7 +7576,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -7622,7 +7622,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -7634,7 +7634,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -7848,7 +7848,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -7894,7 +7894,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -7906,7 +7906,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -8121,7 +8121,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -8167,7 +8167,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -8179,7 +8179,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -8393,7 +8393,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -8439,7 +8439,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -8451,7 +8451,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -8708,7 +8708,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -8720,7 +8720,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -8934,7 +8934,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -8980,7 +8980,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -8992,7 +8992,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -9206,7 +9206,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -9252,7 +9252,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -9264,7 +9264,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -9478,7 +9478,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -9524,7 +9524,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -9536,7 +9536,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -9750,7 +9750,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -9796,7 +9796,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -9808,7 +9808,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -10022,7 +10022,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -10068,7 +10068,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -10080,7 +10080,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -10294,7 +10294,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -10340,7 +10340,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -10352,7 +10352,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -10566,7 +10566,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -10612,7 +10612,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -10624,7 +10624,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -10838,7 +10838,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -10884,7 +10884,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -10896,7 +10896,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -11110,7 +11110,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -11156,7 +11156,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -11168,7 +11168,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -11382,7 +11382,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -11428,7 +11428,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -11440,7 +11440,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -11654,7 +11654,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -11700,7 +11700,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -11712,7 +11712,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -11926,7 +11926,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -11972,7 +11972,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -11984,7 +11984,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -12198,7 +12198,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -12244,7 +12244,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -12256,7 +12256,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -12470,7 +12470,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -12516,7 +12516,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -12528,7 +12528,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -12742,7 +12742,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -12788,7 +12788,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -12800,7 +12800,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -13014,7 +13014,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -13060,7 +13060,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -13072,7 +13072,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -13286,7 +13286,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -13332,7 +13332,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -13344,7 +13344,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -13558,7 +13558,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -13604,7 +13604,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -13616,7 +13616,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -13830,7 +13830,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -13876,7 +13876,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -13888,7 +13888,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -14102,7 +14102,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -14148,7 +14148,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -14160,7 +14160,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -14374,7 +14374,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -14420,7 +14420,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -14432,7 +14432,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -14646,7 +14646,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -14692,7 +14692,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -14704,7 +14704,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -14918,7 +14918,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -14964,7 +14964,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -14976,7 +14976,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -15190,7 +15190,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -15236,7 +15236,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -15248,7 +15248,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -15462,7 +15462,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -15508,7 +15508,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -15520,7 +15520,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -15734,7 +15734,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -15780,7 +15780,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -15792,7 +15792,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -16006,7 +16006,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -16052,7 +16052,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -16064,7 +16064,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -16278,7 +16278,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -16324,7 +16324,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -16336,7 +16336,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -16550,7 +16550,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -16596,7 +16596,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -16608,7 +16608,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -16822,7 +16822,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -16868,7 +16868,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -16880,7 +16880,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -17063,7 +17063,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -17109,7 +17109,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -17121,7 +17121,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -17306,7 +17306,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -17352,7 +17352,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -17364,7 +17364,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",
@@ -17579,7 +17579,7 @@
           "items": [
             {
               "status": "pending",
-              "text": "Named benchmark awaiting web check — assessed when you Submit",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
               "slot": "benchmark",
               "code": "F1_BENCHMARK_NOT_ASSESSED",
               "level": "none",
@@ -17625,7 +17625,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth route awaiting AI check on Submit",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
               "slot": "route",
               "code": "F1_ROUTE_NOT_ASSESSED",
               "level": "none",
@@ -17637,7 +17637,7 @@
             },
             {
               "status": "pending",
-              "text": "Growth argument awaiting fact-check on Submit",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
               "slot": "argument",
               "code": "F1_ARGUMENT_NOT_ASSESSED",
               "level": "none",

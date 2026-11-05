@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { planResearch, refuseModelCall, submitWithRunners } from "../lib/researchProgress.js";
+import { planResearch, refuseModelCall } from "../lib/researchProgress.js";
+import { submitWithRunners } from "./submitWithRunners.mjs";
 import { backupDir, formatPlan, loadRestoredRows, readCallLedger } from "./planResubmit.mjs";
 
 const rootEarly = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");

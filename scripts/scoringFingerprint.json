@@ -1,8 +1,8 @@
 {
-  "rulesetVersion": "v5.4",
-  "fingerprint": "d4204d0a910bc8f3c843ff6185b2087f305b47f54d0626fec37571b3e03747d7",
+  "rulesetVersion": "v5.5",
+  "fingerprint": "2c8b49882b0ec436e45c97d5f4ab2fdd89f40005f73914ba161273dee9f30cc7",
   "files": {
-    "lib/lockedConstants.js": "348488d48f94511359983055b58f4d75153a4833c7a621f964d8b167756877fb",
+    "lib/lockedConstants.js": "5eee53ca6616015980dc8032fd33916eca7269bbf2a84a9ee8ae3f94cb8ca364",
     "lib/goNoGo.js": "a59b166a466d12691a1c41b3b8b6d332241f46edbcbf773f4a94c2d910d3e71c",
     "lib/filterChecks.js": "9c8d5274baf87606cd6275566accab3e0130d97be0118707a3c528c4e7141145",
     "lib/propositionScoring.js": "c40ded42694987979da20a2555db987c6e34c54044c6c2f8a76fdee6c37c75ce",
@@ -15,14 +15,17 @@
     "lib/filter2Check.js": "444abc11b8d483d9f9a1ec2f48d4d8d32f1b23bfad86c05c697ca50c095ef5ed",
     "lib/priceResilience.js": "039846e95fd0ecd400de7f86bb396b85ff6e731aa92de3789fff565fe7734807",
     "lib/divisionMargin.js": "bcd6276deb69b804771ae8ccaf9456110e732c3d128915b1e9f5f405222b155f",
-    "lib/improvementPoints.js": "8d204909805cfc85172e56915296a8e2beafe25ed25c3290f340c4029e12a35a",
+    "lib/improvementPoints.js": "d7894dde4e7314f2d82d42adbf6184fba9558660003e7536aeef3e8add534230",
     "lib/propositionGateApi.js": "692e73b25d97a8c4e59f981c235239dd691f99b2add9c910e6f8847e7dcf3650",
     "lib/inputReview.js": "cf85a9130ebbba8d0a5cfd9c629e48219c076040034102812c4e49cb7468702c",
-    "lib/itemCopy.js": "50be95346af64c7e0c16cb81d284d5ff5cc49647db39ea4afe97865ded42e049",
-    "lib/filter1Check.js": "4cfe6d09b986e46089c51c0f046c92ed2b49f8cbadd417e461ce1a5e1a89469d",
+    "lib/itemCopy.js": "54023cb5029eb0a17f0c153544f2f88ec8f6cab732d3b89b5dddc510bba1992a",
+    "lib/filter1Check.js": "3356d2c42a05598c8a77e71de9d5535effd0fcafa592e737512f5e15454004df",
     "lib/f1ResearchSafeguards.js": "5ba28ddae74293b25f464b695eda7cdf63d6745c743b0bd633a36c86c55ae0d2",
     "lib/relevanceGrade.js": "b251183c3a848bafc278bfb21236fc9f44513cfa80a8870ee5e6d0a614322af8",
-    "lib/evaluationStatus.js": "944c34bae76c10a7d94499471fe3b33481304b85824c7174ae4858061bee9896",
-    "lib/filterNarrativeText.js": "154000680d8cf41d97079e58b3607b9d0923897e732790dce2bc9f7e324c3e21"
+    "lib/evaluationStatus.js": "24dc3e0c0e4736e8a368dc636fe835ee36e1ef0a574f279dbec78eb29e600bf8",
+    "lib/filterNarrativeText.js": "154000680d8cf41d97079e58b3607b9d0923897e732790dce2bc9f7e324c3e21",
+    "lib/assessmentResult.js": "2d1599cf5aad5a7f3e4ce2dab7a8d9aff6941a57b4ce98527b5ef95addf070cb",
+    "lib/inputCoverage.js": "92a23de1c22e3e598c3a1cda07ab7269fdc1568ab0c6a56fd711793015b094a6",
+    "lib/researchProgress.js": "c318ccdf19461da8c3350e57c7414877782a4dbf52d3c2b21e43dddafe93c3df"
   }
 }

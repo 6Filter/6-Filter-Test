@@ -14,9 +14,9 @@ import {
   planResearch,
   researchPassFinished,
   shouldRunStep,
-  submitWithRunners,
   uiResearchState,
 } from "../lib/researchProgress.js";
+import { submitWithRunners } from "./submitWithRunners.mjs";
 import { loadRestoredRows } from "./planResubmit.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");

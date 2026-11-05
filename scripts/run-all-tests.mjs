@@ -79,6 +79,8 @@ if (!files.length) {
  * - tests expecting F3 "Below floor" / safe MRP band (same fixtures as above)
  * Part 136 additions:
  * - tests expecting live advisoryChecks on GET / old card wording (owner will re-pin)
+ * Part 137 additions:
+ * - testPathToGoActionCopy may still expect "Submit so web search…" Path-to-GO copy
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",

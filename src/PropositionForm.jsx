@@ -43,6 +43,7 @@ import { scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { hasAnyRealInput } from "../lib/filterChecks.js";
 import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.js";
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
+import { inputCoverage } from "../lib/inputCoverage.js";
 import { isGoScore, INVALID_INPUTS_BLOCK_SUBMIT } from "../lib/lockedConstants.js";
 import { reviewInputs, titleCaseName } from "../lib/inputReview.js";
 import {
@@ -1414,6 +1415,15 @@ function ManagerReviewPanel({
   );
 }
 
+const COVERAGE_MARK = {
+  assessed: "✓",
+  pending: "○",
+  failed: "!",
+  "needs-confirmation": "?",
+  rule: "·",
+  "not-scored": "–",
+};
+
 function EvaluationPendingPage({
   evaluationState,
   evaluationMissing = [],
@@ -1424,8 +1434,9 @@ function EvaluationPendingPage({
   saving,
   onBack,
   onEvaluate,
-  onRunMissingSteps,
   onRetryStep,
+  onConfirmField,
+  onEditField,
   progressLabel = "",
 }) {
   const heading =
@@ -1440,6 +1451,7 @@ function EvaluationPendingPage({
     Array.isArray(missingFormInputs) && missingFormInputs.length
       ? missingFormInputs
       : listMissingFormInputs(doc || {});
+  const coverage = inputCoverage(doc || {});
 
   return (
     <div className="gonogo-result-page evaluation-pending-page">
@@ -1466,6 +1478,57 @@ function EvaluationPendingPage({
               <ul className="evaluation-missing-list">
                 {formGaps.map((entry) => (
                   <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {coverage.length ? (
+            <div className="what-was-assessed" data-testid="what-was-assessed">
+              <h3>What was assessed</h3>
+              <ul className="evaluation-missing-list coverage-list">
+                {coverage.map((entry) => (
+                  <li key={entry.field} data-coverage-status={entry.status} data-field={entry.field}>
+                    <span className="coverage-mark" aria-hidden="true">
+                      {COVERAGE_MARK[entry.status] || "·"}
+                    </span>
+                    <span>
+                      {entry.label}
+                      {entry.status !== "assessed" && entry.reason ? ` — ${entry.reason}` : ""}
+                      {entry.status === "assessed" ? " — assessed" : ""}
+                      {entry.status === "rule" ? " — fixed rule" : ""}
+                      {entry.status === "not-scored" && !entry.reason ? " — used, not scored" : ""}
+                    </span>
+                    {entry.status === "failed" ? (
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={saving}
+                        onClick={() => onEvaluate?.()}
+                      >
+                        Retry
+                      </button>
+                    ) : null}
+                    {entry.status === "needs-confirmation" ? (
+                      <>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={saving}
+                          onClick={() => onConfirmField?.(entry.field)}
+                        >
+                          Use as written
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={saving}
+                          onClick={() => onEditField?.(entry.field)}
+                        >
+                          Edit
+                        </button>
+                      </>
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -1501,16 +1564,6 @@ function EvaluationPendingPage({
           {saving ? <Loader2 size={15} className="spin" /> : null}
           Evaluate
         </button>
-        {evaluationState === "incomplete" ? (
-          <button
-            type="button"
-            className="output-btn-secondary"
-            disabled={saving}
-            onClick={onRunMissingSteps}
-          >
-            Run missing steps
-          </button>
-        ) : null}
         <button type="button" className="output-btn-secondary" onClick={onBack}>
           <ArrowLeft size={15} /> View entered inputs
         </button>
@@ -1760,7 +1813,8 @@ export function GoNoGoResultPage({
               scoreStatus === "edited-since-screening" ||
               scoreStatus === "edited-since-evaluation") &&
             doc?.id &&
-            typeof onEvidenceRescore === "function" ? (
+            typeof onEvidenceRescore === "function" &&
+            String(currentUser?.role || "").trim() === "ADMIN" ? (
               <div className="gonogo-rescore-row pdf-hide">
                 <button
                   type="button"
@@ -1771,14 +1825,14 @@ export function GoNoGoResultPage({
                     try {
                       await onEvidenceRescore(doc.id);
                     } catch (e) {
-                      window.alert(e?.message || "Could not recompute from saved evidence.");
+                      window.alert(e?.message || "Could not recompute without AI.");
                     } finally {
                       setRescoreBusy(false);
                     }
                   }}
                 >
                   {rescoreBusy ? <Loader2 size={14} className="spin" /> : null}
-                  Recompute from saved evidence
+                  Recompute without AI (admin)
                 </button>
                 <span className="mono" style={{ opacity: 0.7 }}>
                   No AI call — re-seals under the current rules from stored checks
@@ -1809,7 +1863,9 @@ export function GoNoGoResultPage({
           {pathKind === "recompute" ? (
             <>
               <p className="path-empty">{pathPlan.message}</p>
-              {doc?.id && typeof onEvidenceRescore === "function" ? (
+              {doc?.id &&
+              typeof onEvidenceRescore === "function" &&
+              String(currentUser?.role || "").trim() === "ADMIN" ? (
                 <button
                   type="button"
                   className="prop-save pdf-hide"
@@ -1819,14 +1875,14 @@ export function GoNoGoResultPage({
                     try {
                       await onEvidenceRescore(doc.id);
                     } catch (e) {
-                      window.alert(e?.message || "Could not recompute from saved evidence.");
+                      window.alert(e?.message || "Could not recompute without AI.");
                     } finally {
                       setRescoreBusy(false);
                     }
                   }}
                 >
                   {rescoreBusy ? <Loader2 size={14} className="spin" /> : null}
-                  Recompute from saved evidence
+                  Recompute without AI (admin)
                 </button>
               ) : (
                 <p className="path-if">Screen again to update under the current rules.</p>
@@ -3565,8 +3621,12 @@ export default function PropositionForm({
             progressLabel={evalProgressLabel}
             onBack={() => setCurrentView("propositionForm")}
             onEvaluate={() => handleSubmit()}
-            onRunMissingSteps={handleRunMissingSteps}
             onRetryStep={(entry) => handleRetryFilter(evaluationStepFilterKey(entry?.step))}
+            onConfirmField={(fieldPath) => {
+              const [filterKey, fieldKey] = String(fieldPath || "").split(".");
+              if (filterKey && fieldKey) confirmAiField(filterKey, fieldKey);
+            }}
+            onEditField={() => setCurrentView("propositionForm")}
           />
         </main>
       );
@@ -3979,10 +4039,10 @@ export default function PropositionForm({
                     <button
                       type="button"
                       className="ghost"
-                      onClick={handleRunMissingSteps}
+                      onClick={() => handleSubmit()}
                       disabled={Boolean(refreshingField) || saving}
                     >
-                      {refreshingField === "missing" ? "Running…" : "Run missing steps"}
+                      {saving ? "Evaluating…" : "Evaluate"}
                     </button>
                   </>
                 ) : null}
