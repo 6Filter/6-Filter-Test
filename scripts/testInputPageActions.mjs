@@ -30,6 +30,12 @@ assert.match(form, /priceCrossings/);
 
 assert.equal(isFilterUnlocked("f4", {}), true);
 assert.equal(isFilterUnlocked("f3", {}), true);
+assert.equal(isFilterUnlocked("f1", {}), true);
+assert.equal(isFilterUnlocked("f2", {}), true);
+assert.equal(isFilterUnlocked("f5", {}), false, "F5 locked until GO + proof");
+assert.equal(isFilterUnlocked("f6", {}), false, "F6 locked until GO + proof");
+assert.match(form, /FilterTeaserCard/);
+assert.match(form, /Opens once the idea reads GO and proof is uploaded/);
 // blankTechShiftRisk is display-only; dimensions object exists so treat as shape for UI.
 assert.equal(isTechShiftRiskUnfilled(null), true);
 assert.equal(isTechShiftRiskUnfilled({}), true);

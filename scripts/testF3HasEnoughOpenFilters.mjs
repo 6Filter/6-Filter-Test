@@ -1,6 +1,6 @@
 /**
- * f3HasEnough still gates research / MRP readiness; progressive filter unlock is retired —
- * isFilterUnlocked is always true regardless of f3 state.
+ * f3HasEnough still gates research / MRP readiness; Filters 1–4 stay open
+ * regardless of f3 state. Filters 5–6 stay locked until GO + proof.
  */
 import assert from "node:assert/strict";
 import { f3HasEnough, isFilterUnlocked, nextLockedHint } from "../lib/filterUnlock.js";
@@ -42,6 +42,8 @@ const sparseDoc = {
 };
 assert.equal(isFilterUnlocked("f4", sparseDoc), true, "F4 form stays open even when f3 is not enough");
 assert.equal(isFilterUnlocked("f4", { ...base, f3: {} }), true);
-assert.equal(nextLockedHint(sparseDoc), null);
+assert.equal(isFilterUnlocked("f3", sparseDoc), true);
+assert.equal(isFilterUnlocked("f5", sparseDoc), false);
+assert.match(String(nextLockedHint(sparseDoc) || ""), /Filters 5/i);
 
 console.log("PASS testF3HasEnoughOpenFilters");

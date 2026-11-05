@@ -23,10 +23,16 @@ const f4Ready = {
   f4: { techShiftRisk: { dimensions: { format: { risk: "Low" } } } },
 };
 
-for (const key of ["f1", "f2", "f3", "f4", "f5", "f6", "proof-gate", "send-manager"]) {
-  assert.equal(isFilterUnlocked(key, f4Ready), true, `${key} stays editable (progressive unlock retired)`);
+for (const key of ["f1", "f2", "f3", "f4", "proof-gate"]) {
+  assert.equal(isFilterUnlocked(key, f4Ready), true, `${key} stays editable`);
 }
-assert.equal(nextLockedHint(f4Ready), null);
+assert.equal(isFilterUnlocked("f5", f4Ready), false, "F5 stays locked until GO + proof");
+assert.equal(isFilterUnlocked("f6", f4Ready), false, "F6 stays locked until GO + proof");
+assert.match(
+  String(nextLockedHint(f4Ready) || ""),
+  /GO|manager|Filters 5/i,
+  "hint points at Filters 5–6 gate"
+);
 assert.ok(listMissingFormInputs({}).length > 0, "empty doc lists missing inputs for the output");
 
 assert.equal(canProceedToProofUpload({ goNoGo: { classification: "GO" } }), true);
@@ -55,6 +61,8 @@ const goDoc = {
   marketResearchProof: { name: "ua.pdf", data: "x" },
 };
 assert.equal(hasGoClassification(goDoc), true);
+assert.equal(isFilterUnlocked("f5", goDoc), true, "GO + proof unlocks F5");
+assert.equal(isFilterUnlocked("f6", goDoc), true, "GO + proof unlocks F6");
 
 const watchDoc = {
   ...f4Ready,
@@ -66,6 +74,7 @@ const approvedWatch = {
   managerReview: { comment: "Approved after reviewing the WATCH gaps." },
 };
 assert.equal(hasManagerApproval(approvedWatch), true);
+assert.equal(isFilterUnlocked("f5", approvedWatch), true, "manager-approved WATCH + proof unlocks F5");
 
 assert.equal(classifyGoNoGoFromScore(81), "GO");
 assert.equal(classifyGoNoGoFromScore(80), "WATCH");
@@ -81,5 +90,7 @@ assert.match(formSrc, /runGoNoGoRead/);
 assert.match(formSrc, /Submit for verdict/);
 assert.match(formSrc, /listMissingFormInputs/);
 assert.match(formSrc, /Values you have not entered yet|Still to enter before a full score/);
+assert.match(formSrc, /FilterTeaserCard/);
+assert.match(formSrc, /Opens once the idea reads GO and proof is uploaded/);
 
-console.log("PASS Part 64 proof-upload gate + retired progressive filter unlock");
+console.log("PASS Part 64 proof-upload gate + F5/F6-only lock");

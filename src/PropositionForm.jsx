@@ -15,6 +15,7 @@ import {
 import { managerReviewRequestedOn } from "../lib/logStatus.js";
 import { patchIgnoredKeys } from "../lib/ignoredKeyRefresh.js";
 import {
+  canProceedToProofUpload,
   hasManagerApproval,
   isFilterUnlocked,
   listMissingFormInputs,
@@ -2762,12 +2763,15 @@ export default function PropositionForm({
   }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
   const livePreviewChecks = previewAdvisoryChecks(liveDoc);
-  // All filters stay open — missing values are listed on the output, not locked away.
-  const mayUploadProof = true;
-  const f5Unlocked = true;
+  // Filters 1–4 stay open; Filters 5–6 need GO/manager + proof.
+  const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
+  const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
+  const f5Unlocked = isFilterUnlocked("f5", liveDoc);
   const unlockHint = nextLockedHint(liveDoc);
-  const unlockedFilterKeys = new Set(SIX_FILTERS_FORM.map((s) => s.key));
-  const f3Unlocked = true;
+  const unlockedFilterKeys = new Set(
+    SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, liveDoc))
+  );
+  const f3Unlocked = unlockedFilterKeys.has("f3");
   const missingFormInputs = listMissingFormInputs(liveDoc);
   // Part 135 — F3 is cliff research on Submit; no live band auto-fill spinner.
   const marginElasticityLoading = false;
@@ -3996,6 +4000,21 @@ export default function PropositionForm({
       {SIX_FILTERS_FORM.map((spec) => {
         const researchPlan = planResearch(doc);
         const missingStep = researchPlan.researchState === "incomplete" && researchPlan.steps.includes(spec.key.toUpperCase());
+        const unlocked = unlockedFilterKeys.has(spec.key);
+        if (!unlocked && (spec.key === "f5" || spec.key === "f6")) {
+          return (
+            <FilterTeaserCard
+              key={spec.key}
+              spec={spec}
+              checkLabel="Not yet run"
+              sub={
+                spec.key === "f5"
+                  ? "Opens once the idea reads GO and proof is uploaded."
+                  : "Opens together with Filter 5 after proof is uploaded."
+              }
+            />
+          );
+        }
         const values = doc[spec.key] || {};
         const check =
           spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
@@ -4294,7 +4313,7 @@ export default function PropositionForm({
           </ul>
         </div>
       ) : null}
-      {unlockHint && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
+      {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
       {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
         <ManagerReviewPanel
