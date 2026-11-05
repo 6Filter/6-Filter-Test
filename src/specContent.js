@@ -37,7 +37,7 @@ export const DATA_SPINE = [
   },
   {
     fn: "BH forum / CKR",
-    provides: "Verdicts. Binary, filter by filter. Escalations to CKR per v4",
+    provides: "Verdicts. Binary, filter by filter. Escalations to CKR",
   },
 ];
 
@@ -67,7 +67,7 @@ export const SCOREBOARD_KPIS = [
   },
   {
     kpi: "Escalation rate and outcome",
-    def: "Escalations to CKR per v4, and how often the escalation reversed the verdict",
+    def: "Escalations to CKR, and how often the escalation reversed the verdict",
     from: "Escalation log",
   },
   {
@@ -93,7 +93,7 @@ export const SIX_FILTERS_SPEC = [
     accentBg: "#301A4F",
     accentFg: "#C9AEEF",
     v4Test:
-      "the proposition declares the attribute (one of the top three consumers use to decide to buy), the benchmark (the named competitor), the gap (what we beat and by how much), parity or better on all remaining attributes — and the growth logic holds either as a low-penetration category that will grow, or as a recognisable advantage strong enough to take share in a mature category. Owned by Marketing (v4).",
+      "the proposition declares the attribute (one of the top three consumers use to decide to buy), the benchmark (the named competitor), the gap (what we beat and by how much), parity or better on all remaining attributes — and the growth logic holds either as a low-penetration category that will grow, or as a recognisable advantage strong enough to take share in a mature category. Owned by Marketing.",
     howToThink:
       "Filter 1 is an argument built on consumer evidence — not a computation. The question is salience and differentiation: do consumers actually decide on this attribute, and can we visibly own it against the one strongest competitor? The data can prove the attribute matters; only reasoning can prove the advantage is winnable. So the steps below separate what CMI measures from what the Brand Manager must argue.",
     modelAndAi: [
@@ -116,7 +116,7 @@ export const SIX_FILTERS_SPEC = [
         step: "Declare the attribute",
         input: "The chosen attribute from step 1.1, phrased in consumer language",
         by: "BM declares attributes 1–3 in rank order; CMI confirms against U&A / track",
-        validation: "Attribute 1 required; attributes must be among the top-3 purchase drivers (v4)",
+        validation: "Attribute 1 required; attributes must be among the top-3 purchase drivers",
         output:
           "Declared attributes 1–3 → KPI: primary attribute in top-3; phrasing tested for consumer comprehension Y/N",
       },
@@ -136,7 +136,7 @@ export const SIX_FILTERS_SPEC = [
         step: "Declare the gap",
         input: "Rating spread on the attribute across top brands; erosion history of past advantages in the category",
         by: "CMI provides distributions; BM declares the gap with its derivation",
-        validation: "Floor is 2 points on the 10-point scale (v4); derivation reviewed by CMI for arithmetic",
+        validation: "Floor is 2 points on the 10-point scale; derivation reviewed by CMI for arithmetic",
         output: "Declared gap → KPI: gap ≥ 2.0; derivation attached Y/N",
       },
       {
@@ -156,7 +156,7 @@ export const SIX_FILTERS_SPEC = [
           "Route A: penetration %, household base, frequency and growth from the CMI sizing model. Route B: share-movement precedent — cases where a comparable advantage moved share in a comparable category",
         by: "CMI sizing model + analog database; BM writes the argument",
         validation:
-          "CMI signs the model inputs; the forum judges the argument — this step is argued, not computed (v4)",
+          "CMI signs the model inputs; the forum judges the argument — this step is argued, not computed",
         output:
           "One-page growth logic → KPI: every quantitative claim in the argument traceable to a CMI source (target 100%)",
       },
@@ -164,10 +164,10 @@ export const SIX_FILTERS_SPEC = [
         n: "1.7",
         step: "Commodity exception check",
         input:
-          "Whether the product is a pure commodity where no value can be added (v4: toned milk, pure saffron)",
+          "Whether the product is a pure commodity where no value can be added (e.g. toned milk, pure saffron)",
         by: "BM declares; R&D confirms no formulation/mixing/functional differentiation",
         validation:
-          "Forum confirms. The moment differentiation enters, commodity status ends (v4)",
+          "Forum confirms. The moment differentiation enters, commodity status ends",
         output: "Exception flag on the record → KPI: exception rate across the funnel (monitored, no target)",
       },
       {
@@ -175,7 +175,7 @@ export const SIX_FILTERS_SPEC = [
         step: "Filter 1 verdict",
         input: "Steps 1.1–1.7 complete",
         by: "BH forum",
-        validation: "Binary. Missing evidence = FAIL (v4)",
+        validation: "Binary. Missing evidence = FAIL",
         output: "F1 PASS/FAIL in the registry → KPI: verdict within 10 working days of submission",
       },
     ],
@@ -187,11 +187,11 @@ export const SIX_FILTERS_SPEC = [
     accentBg: "#1A3E2D",
     accentFg: "#7EDCA8",
     v4Test:
-      "a clear and visible path to the division net margin floor, demonstrated at launch phase — the path visible at launch, the margin itself need not be delivered at launch — and the path must survive quick-commerce and emerging-channel terms as they will be in three years, not today's rate card. Division floors per the v4 table (Professional Care 60%, Personal Care 50%, Foods 35%, and so on).",
+      "a clear and visible path to the division net margin floor, demonstrated at launch phase — the path visible at launch, the margin itself need not be delivered at launch — and the path must survive quick-commerce and emerging-channel terms as they will be in three years, not today's rate card. Division floors per the division table (Professional Care 60%, Personal Care 50%, Foods 35%, and so on).",
     howToThink:
       "Filter 2 is deterministic arithmetic on disciplined assumptions. Nothing here is a matter of opinion once the inputs are signed — the whole quality of the filter lives in who signs each input and how honestly the sensitivities are shown. The thinking is: every line of cost has an owner, every margin has a source, and the one judgment call (the quick-commerce trajectory) is written down as an assumption, never buried.",
     modelAndAi: [
-      "Finance model — the margin waterfall: MRP → channel margins → net realisation → COGS at pilot and scale volume → net margin vs the v4 division floor, with sensitivity on the [to set] largest assumptions (tornado view: which single assumption breaks the floor first).",
+      "Finance model — the margin waterfall: MRP → channel margins → net realisation → COGS at pilot and scale volume → net margin vs the division floor, with sensitivity on the [to set] largest assumptions (tornado view: which single assumption breaks the floor first).",
       "AI use — assumption completeness check: AI compares the cost build against the cost structures of past propositions in the same category and flags missing lines (wastage, returns, trade load) before Finance signs. It checks completeness, never the numbers themselves.",
     ],
     steps: [
@@ -226,7 +226,7 @@ export const SIX_FILTERS_SPEC = [
         n: "2.4",
         step: "Stress the quick-commerce trajectory",
         input:
-          "Current q-com take rates and terms, and a stated three-year trajectory assumption (v4 requires three years out, not today's rate card)",
+          "Current q-com take rates and terms, and a stated three-year trajectory assumption (requires three years out, not today's rate card)",
         by: "e-com KAM proposes trajectory; CMI corroborates with market evidence where available",
         validation: "The assumption is written down and signed — it cannot be implicit",
         output: "Q-com 3-year scenario → KPI: trajectory assumption documented with basis Y/N",
@@ -239,14 +239,14 @@ export const SIX_FILTERS_SPEC = [
         validation:
           "Finance controller signs the computation; forum challenges the path's credibility, not the arithmetic",
         output:
-          "Margin path vs division floor (v4 table) → KPI: scale-volume net margin ≥ division floor; sensitivity range reported",
+          "Margin path vs division floor (division table) → KPI: scale-volume net margin ≥ division floor; sensitivity range reported",
       },
       {
         n: "2.6",
         step: "Filter 2 verdict",
         input: "The margin path statement",
         by: "BH forum",
-        validation: "Binary. The threshold is non-negotiable at this stage (v4)",
+        validation: "Binary. The threshold is required at this stage",
         output:
           "F2 PASS/FAIL → KPI: % of propositions where the launch-phase path later matched actuals (tracked from pilots, feeds back into Finance norms)",
       },
@@ -280,7 +280,7 @@ export const SIX_FILTERS_SPEC = [
         step: "Fixed price point exposure",
         input: "Whether any pack sits on Re1/2/5/10; the share of category volume at those points",
         by: "BM declares; CMI provides the price-point volume distribution",
-        validation: 'Forum sees the exposure explicitly — v4 calls fixed points "big drainers"',
+        validation: 'Forum sees the exposure explicitly — fixed points are called "big drainers"',
         output: "Exposure statement → KPI: % of our intended volume on fixed price points",
       },
       {
@@ -290,25 +290,25 @@ export const SIX_FILTERS_SPEC = [
           "Volume response to past price moves: category evidence from retail audit history, or our own brand's past increases in the category",
         by: "CMI — this is a CMI model deliverable; where no history exists, CMI states so and the Filter 6 consumer panel carries a price-sensitivity module [design to be agreed with CMI]",
         validation:
-          "Source documented; an elasticity number without provenance is treated as missing evidence (= FAIL, v4)",
+          "Source documented; an elasticity number without provenance is treated as missing evidence (= FAIL)",
         output: "Elasticity estimate with source → KPI: provenance documented Y/N; base of evidence reported",
       },
       {
         n: "3.4",
         step: "Model the resilience",
         input:
-          "Steps 3.1–3.3: modelled volume loss at an inflation-covering increase; where a fixed point is crossed, modelled loss vs the 10% cap (v4)",
+          "Steps 3.1–3.3: modelled volume loss at an inflation-covering increase; where a fixed point is crossed, modelled loss vs the 10% cap",
         by: "CMI models; FINANCE cross-checks against the Filter 2 price",
         validation: "The same price must appear in Filters 2 and 3 — one price, one story",
         output:
-          "Resilience statement → KPI: modelled loss ≤ 10% on fixed-point crossings (v4); F2/F3 price identical Y/N",
+          "Resilience statement → KPI: modelled loss ≤ 10% on fixed-point crossings; F2/F3 price identical Y/N",
       },
       {
         n: "3.5",
         step: "Filter 3 verdict",
         input: "The resilience statement",
         by: "BH forum",
-        validation: "Binary (v4)",
+        validation: "Binary",
         output:
           "F3 PASS/FAIL → KPI: post-launch price increases tracked against the modelled loss (feeds the elasticity bank)",
       },
@@ -321,7 +321,7 @@ export const SIX_FILTERS_SPEC = [
     accentBg: "#1C2C4D",
     accentFg: "#8FB8E8",
     v4Test:
-      "the format must be on the rising side of the shift, not the declining side; at entry there must be no visible downward spiral or emerging threat that could make the format irrelevant within five to ten years. Examples in v4: bar losing to liquid, liquid to pods; physical retail losing to e-commerce and quick commerce; conventional losing to natural and clean-label.",
+      "the format must be on the rising side of the shift, not the declining side; at entry there must be no visible downward spiral or emerging threat that could make the format irrelevant within five to ten years. Examples: bar losing to liquid, liquid to pods; physical retail losing to e-commerce and quick commerce; conventional losing to natural and clean-label.",
     howToThink:
       "Filter 4 is about direction of travel, not current size — a format can be large and dying. The thinking is detection: the evidence is trend lines and early signals, and the judgment is whether a visible signal today becomes irrelevance within ten years. This is the filter where AI adds the most, because the early signals live in unstructured data no analyst reads exhaustively.",
     modelAndAi: [
@@ -337,7 +337,7 @@ export const SIX_FILTERS_SPEC = [
         validation:
           "CMI certifies series and source; trend direction stated (rising / flat / declining), not implied",
         output:
-          "Trajectory chart + direction call → KPI: format direction = rising or flat (v4: we do not enter a form losing to its successor)",
+          "Trajectory chart + direction call → KPI: format direction = rising or flat (e.g. we do not enter a form losing to its successor)",
       },
       {
         n: "4.2",
@@ -378,7 +378,7 @@ export const SIX_FILTERS_SPEC = [
     accentBg: "#1E2A4B",
     accentFg: "#F0A8C8",
     v4Test:
-      "a credible pathway to the division revenue target (v4 table: e.g. Personal Care ₹25 Cr all channels / ₹12 Cr e-com-MT; Foods ₹12 Cr) in the third full year. The test is credibility of the number, nothing more — capex, plant, supply chain and sales infrastructure are not screening questions and are not to be declared here (v4).",
+      "a credible pathway to the division revenue target (division table: e.g. Personal Care ₹25 Cr all channels / ₹12 Cr e-com-MT; Foods ₹12 Cr) in the third full year. The test is credibility of the number, nothing more — capex, plant, supply chain and sales infrastructure are not screening questions and are not to be declared here.",
     howToThink:
       "Filter 5 is a decomposition exercise: a revenue number is credible when it decomposes into consumer quantities that can each be checked — how many households, buying how often, at what price — and each quantity sits inside what comparable launches have actually achieved. The CMI consumer sizing model is the machine for this filter; the Brand Manager's job is to choose defensible values inside it, and the forum's job is to attack the weakest quantity, not the total.",
     modelAndAi: [
@@ -418,17 +418,17 @@ export const SIX_FILTERS_SPEC = [
       {
         n: "5.4",
         step: "State the target coverage",
-        input: "The Y3 build against the v4 division target for the declared channel scope",
+        input: "The Y3 build against the division target for the declared channel scope",
         by: "BM",
-        validation: "The v4 target is quoted next to the build. No infrastructure discussion at this table (v4)",
-        output: "Coverage statement → KPI: Y3 build ≥ division target (v4, non-negotiable at this stage)",
+        validation: "The division target is quoted next to the build. No infrastructure discussion at this table",
+        output: "Coverage statement → KPI: Y3 build ≥ division target at this stage",
       },
       {
         n: "5.5",
         step: "Filter 5 verdict",
         input: "Steps 5.1–5.4",
         by: "BH forum",
-        validation: "Binary (v4)",
+        validation: "Binary",
         output:
           "F5 PASS/FAIL → KPI: for launched products, Y3 actuals vs the build, tracked — the calibration loop for the sizing model",
       },
@@ -445,7 +445,7 @@ export const SIX_FILTERS_SPEC = [
     howToThink:
       "Filter 6 is measurement science: the only filter where the evidence is generated, not retrieved. The thinking shifts from arguing to controlling — blind codes, fixed question order, declared occasions, panels that mirror the launch consumer. The enemy here is not a wrong opinion but a contaminated measurement, so every step below is a control on how the number is produced.",
     modelAndAi: [
-      "CMI model — panel design and counting: the panel specification (benchmark users, geography, town class, NCCS, buyer/user), the fixed interview order, and the count against the 18-of-30 standard. The statistical layer (what confidence a count carries) is the separate mathematics annexe, to be adopted when prioritisation is built — the v4 standard itself is applied as written.",
+      "CMI model — panel design and counting: the panel specification (benchmark users, geography, town class, NCCS, buyer/user), the fixed interview order, and the count against the 18-of-30 standard. The statistical layer (what confidence a count carries) is the separate mathematics annexe, to be adopted when prioritisation is built — the standard itself is applied as written.",
       "AI use 1 — verbatim coding: AI codes the open responses (why better, why not, availability asks) against the declared attribute, consistently across every panel — the same code frame, never re-invented per study.",
       "AI use 2 — integrity checks: attendance-log completeness, geo-tag plausibility of interviews, duplicate-respondent detection across panels, and screener-answer consistency. Flags go to the CMI field manager before the verdict is read.",
     ],
@@ -456,9 +456,9 @@ export const SIX_FILTERS_SPEC = [
         input: "Stable prototype batch + benchmark market samples bought at retail, batch/expiry logged",
         by: "R&D (prototype) · R&D procures benchmark samples · 30-member internal panel",
         validation:
-          "Blind coding; randomised order; declared attribute scored on the 10-point scale; R&D declares, Marketing validates (v4)",
+          "Blind coding; randomised order; declared attribute scored on the 10-point scale; R&D declares, Marketing validates",
         output:
-          'Lab verdict, margin to one decimal (v4) → KPI: gap ≥ 2.0; margin reported to 0.1, never "pass"',
+          'Lab verdict, margin to one decimal → KPI: gap ≥ 2.0; margin reported to 0.1, never "pass"',
       },
       {
         n: "6.2",
@@ -467,7 +467,7 @@ export const SIX_FILTERS_SPEC = [
           "Panel definition: 30 benchmark users (MOUB 3+ months, normal cycle), launch geography, town-class / urban-rural mix per launch plan, NCCS, buyer vs user; the declared occasion and duration",
         by: "CMI writes the spec; BM signs the occasion declaration",
         validation:
-          "Spec locked BEFORE recruitment (v4: occasion declared before the panel is recruited). An occasion chosen for convenience invalidates the result (v4)",
+          "Spec locked BEFORE recruitment (e.g. occasion declared before the panel is recruited). An occasion chosen for convenience invalidates the result",
         output:
           "Locked panel spec → KPI: spec locked before first recruit Y/N; 100% of members verified benchmark users",
       },
@@ -475,12 +475,12 @@ export const SIX_FILTERS_SPEC = [
         n: "6.3",
         step: "Consumer panel field (6B field)",
         input:
-          "Monadic placement — benchmark never shown or named (v4); interview: our product and her own brand rated from memory in one interview, fixed question order; ease of use judged in use; availability asks logged unprompted",
-        by: "CMI fields; the Innovation Marketing BM attends all 30 interviews and signs the log per interview (v4)",
+          "Monadic placement — benchmark never shown or named; interview: our product and her own brand rated from memory in one interview, fixed question order; ease of use judged in use; availability asks logged unprompted",
+        by: "CMI fields; the Innovation Marketing BM attends all 30 interviews and signs the log per interview",
         validation:
-          "Report invalid without the complete attendance log (v4); AI integrity checks run before the verdict",
+          "Report invalid without the complete attendance log; AI integrity checks run before the verdict",
         output:
-          "Count of two-point beaters out of 30 → KPI: THE GATE — 18 of 30 (v4; 17 is a fail); attendance 30/30; availability count reported never gated (8 of 30 marks strength, v4)",
+          "Count of two-point beaters out of 30 → KPI: THE GATE — 18 of 30 (17 is a fail); attendance 30/30; availability count reported never gated (8 of 30 marks strength)",
       },
       {
         n: "6.4",
@@ -489,9 +489,9 @@ export const SIX_FILTERS_SPEC = [
           "Mock-up + top three competitor packs bought at retail, current artwork; separate 30-member panel, shelf display at retail conditions",
         by: "PKG (packs) · CMI (panel)",
         validation:
-          "Measured vs the strongest of the top three (v4); shelf position rotated; Packaging declares, Marketing validates (v4)",
+          "Measured vs the strongest of the top three; shelf position rotated; Packaging declares, Marketing validates",
         output:
-          "Standout verdict + quality parity → KPI: standout two-point beater (v4, mandatory); perceived quality parity or better; ease of use NOT tested here (v4)",
+          "Standout verdict + quality parity → KPI: standout two-point beater (mandatory); perceived quality parity or better; ease of use NOT tested here",
       },
       {
         n: "6.5",
@@ -499,7 +499,7 @@ export const SIX_FILTERS_SPEC = [
         input: "All three verdicts",
         by: "CMI convenes; declaring functions sign",
         validation:
-          "Whichever track finishes later opens the gate; no provisional entry on one verdict (v4). Fail routing per v4: lab fail → formulation; consumer fail → new formulation, full cycle; pack fail → pack only",
+          "Whichever track finishes later opens the gate; no provisional entry on one verdict. Fail routing: lab fail → formulation; consumer fail → new formulation, full cycle; pack fail → pack only",
         output:
           "Gate open/closed in the registry → KPI: all three verdicts filed same day; cycle time from prototype-ready to gate decision",
       },

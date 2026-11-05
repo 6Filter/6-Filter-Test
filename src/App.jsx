@@ -104,7 +104,16 @@ async function fetchPropositionList(limit = 100) {
 function attachAdvisory(data) {
   const p = data.proposition;
   if (!p) return p;
-  return { ...p, advisoryChecks: data.advisoryChecks, suggestions: data.suggestions ?? null };
+  return {
+    ...p,
+    evaluationState: data.evaluationState ?? p.evaluationState,
+    evaluationMissing: data.evaluationMissing ?? p.evaluationMissing,
+    output: data.output ?? p.output ?? p.goNoGo?.output ?? null,
+    sealedChecks: data.sealedChecks ?? p.sealedChecks ?? data.proposition?.sealedChecks ?? null,
+    goNoGo: data.goNoGo !== undefined ? data.goNoGo : p.goNoGo,
+    ...(data.advisoryChecks ? { advisoryChecks: data.advisoryChecks } : {}),
+    suggestions: data.suggestions ?? null,
+  };
 }
 
 async function createPropositionRecord() {
@@ -951,16 +960,19 @@ export default function App() {
     try {
       const full = await fetchPropositionById(row.id, { signal: ac.signal });
       if (token !== navTokenRef.current || ac.signal.aborted) return;
-      // Prefer GET (withAdvisory returns the sealed snapshot). Fall back to Log row.
-      const fullSeal = full?.goNoGo?.classification ? full.goNoGo : null;
-      const rowSeal = row.goNoGo?.classification ? row.goNoGo : null;
-      const sealed = fullSeal || rowSeal || full?.goNoGo || null;
+      const evalState = String(full?.evaluationState || "").trim();
+      const sealed = full?.goNoGo || null;
       setProposition({
         ...full,
         goNoGo: sealed,
         classification: sealed?.classification || full?.classification || row.classification || "",
         _openFromLog: from === "log",
-        _preferOutput: Boolean(sealed?.classification),
+        _preferOutput:
+          from === "log" ||
+          evalState === "evaluated" ||
+          evalState === "legacy" ||
+          evalState === "incomplete" ||
+          evalState === "not-evaluated",
       });
       setSavedFlash(false);
       setReturnView(from);
@@ -1011,9 +1023,11 @@ export default function App() {
           finalSummary: saved.finalSummary || null,
           classification: saved.goNoGo?.classification || saved.classification || "",
           goNoGo: saved.goNoGo || null,
+          evaluationState: saved.evaluationState,
+          evaluationMissing: saved.evaluationMissing,
+          legacy: saved.legacy,
           managerReview: saved.managerReview || null,
           managerReviewRequested: Boolean(saved.managerReview?.requestedAt),
-          advisoryChecks: saved.advisoryChecks || {},
           researchRunAt: saved.researchRunAt || null,
           version: saved.version,
           createdAt: saved.createdAt,
@@ -1061,9 +1075,11 @@ export default function App() {
             finalSummary: saved.finalSummary || null,
             classification: saved.goNoGo?.classification || saved.classification || "",
             goNoGo: saved.goNoGo || null,
+            evaluationState: saved.evaluationState,
+            evaluationMissing: saved.evaluationMissing,
+            legacy: saved.legacy,
             managerReview: saved.managerReview || null,
             managerReviewRequested: Boolean(saved.managerReview?.requestedAt),
-            advisoryChecks: saved.advisoryChecks || {},
             researchRunAt: saved.researchRunAt || null,
             version: saved.version,
             createdAt: saved.createdAt,

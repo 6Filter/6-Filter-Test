@@ -77,13 +77,14 @@ if (!files.length) {
  * - testPathToGo: may assert old totals / F2 check counts when re-pinned by owner
  * Part 135 additions:
  * - tests expecting F3 "Below floor" / safe MRP band (same fixtures as above)
+ * Part 136 additions:
+ * - tests expecting live advisoryChecks on GET / old card wording (owner will re-pin)
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
   "testPathToGo.mjs",
   "testPathToGoActionCopy.mjs",
   "testScoringRules.mjs",
-  "testScoringLockCoverage.mjs",
   "testLockedMinimumMargins.mjs",
   "owner-tests/testPathCopy.mjs",
   "owner-tests/testEvidenceReading.mjs",
@@ -112,8 +113,8 @@ for (const file of files) {
 
 if (expectedOwnerFailures.length) {
   console.error(
-    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–135 ` +
-      `(old F2 hard-stop / F3 band / slot counts / Below floor):`
+    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–136 ` +
+      `(old F2 hard-stop / F3 band / slot counts / Below floor / live advisoryChecks):`
   );
   for (const file of expectedOwnerFailures) console.error(`  ${file}`);
 }

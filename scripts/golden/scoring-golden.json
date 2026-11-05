@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "v5.3",
+  "rulesetVersion": "v5.4",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {
@@ -7119,7 +7119,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -7394,7 +7394,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -7665,7 +7665,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -7937,7 +7937,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -8210,7 +8210,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -8482,7 +8482,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -8751,7 +8751,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -9023,7 +9023,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -9295,7 +9295,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -9567,7 +9567,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -9839,7 +9839,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -10111,7 +10111,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -10383,7 +10383,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -10655,7 +10655,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -10927,7 +10927,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -11199,7 +11199,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -11471,7 +11471,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -11743,7 +11743,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -12015,7 +12015,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -12287,7 +12287,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -12559,7 +12559,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -12831,7 +12831,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -13103,7 +13103,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -13375,7 +13375,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -13647,7 +13647,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -13919,7 +13919,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -14191,7 +14191,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -14463,7 +14463,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -14735,7 +14735,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -15007,7 +15007,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -15279,7 +15279,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -15551,7 +15551,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -15823,7 +15823,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -16095,7 +16095,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -16367,7 +16367,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -16639,7 +16639,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -16911,7 +16911,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -17152,7 +17152,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -17395,7 +17395,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",
@@ -17668,7 +17668,7 @@
             },
             {
               "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence, per v4's rule that unconfirmed figures are treated as a gap",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
               "slot": "finance",
               "code": "F2_FINANCE_SIGN",
               "level": "none",

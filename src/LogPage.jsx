@@ -19,12 +19,16 @@ import {
   propositionStatus,
   databaseUnavailableMessage,
   researchWasUsed,
+  rowCanExportOutputPdf,
+  rowEvaluationPill,
+  rowEvaluationState,
   rowPerson,
   rowTeam,
   submittedParts,
   uniqueLogValues,
   uniqueMonthKeys,
 } from "../lib/logStatus.js";
+/* Part 136 — evaluationState drives Log pills (via rowEvaluationState). */
 import { LOG_UNLOCK_OPTIONS, isMasterUnlock } from "../lib/departmentAuthConstants.js";
 import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
@@ -209,8 +213,11 @@ export default function LogPage({
     };
     for (const row of scopedRows) {
       if (researchWasUsed(row)) base["ai-used"] += 1;
-      const cls = classificationOf(row);
-      if (cls === "GO" || cls === "NO-GO" || cls === "WATCH" || cls === "INCOMPLETE") base[cls] += 1;
+      const evalState = rowEvaluationState(row);
+      if (evalState === "evaluated" || evalState === "legacy") {
+        const cls = classificationOf(row);
+        if (cls === "GO" || cls === "NO-GO" || cls === "WATCH" || cls === "INCOMPLETE") base[cls] += 1;
+      }
       if (isWaitingForBusinessHead(row)) base["bh-waiting"] += 1;
     }
     return base;
@@ -252,7 +259,7 @@ export default function LogPage({
   }
 
   function rowIsScreened(row) {
-    return Boolean(row?.goNoGo?.classification || row?.classification);
+    return rowCanExportOutputPdf(row);
   }
 
   async function handleExportInputsPdfRow(row) {
@@ -276,8 +283,13 @@ export default function LogPage({
 
   async function handleExportOutputPdfRow(row) {
     if (!row?.id || exporting || exportingPdfId || exportingMonthPdf) return;
-    if (!rowIsScreened(row)) {
-      setExportError("Run the Go/No-Go screen first — Output PDF needs a verdict.");
+    const rowState = rowEvaluationState(row);
+    if (!rowCanExportOutputPdf(row)) {
+      setExportError(
+        rowState === "incomplete"
+          ? "Evaluation is incomplete — finish Evaluate before exporting Output PDF."
+          : "Not evaluated yet — run Evaluate before exporting Output PDF."
+      );
       return;
     }
     if (!onFetchFull) {
@@ -288,8 +300,13 @@ export default function LogPage({
     setExportingPdfId(row.id);
     try {
       const full = await onFetchFull(row.id);
-      if (!full?.goNoGo?.classification && !full?.classification) {
-        throw new Error("This idea has no Go/No-Go output yet. Run the screen first.");
+      const fullState = rowEvaluationState(full);
+      if (fullState !== "evaluated" && fullState !== "legacy") {
+        throw new Error(
+          fullState === "incomplete"
+            ? "Evaluation is incomplete — finish Evaluate before exporting Output PDF."
+            : "Not evaluated yet — run Evaluate before exporting Output PDF."
+        );
       }
       const doc = full.goNoGo?.classification
         ? full
@@ -872,9 +889,10 @@ export default function LogPage({
                     deletingAll ||
                     deletingUntouched ||
                     exporting;
-                  const screened = Boolean(h.goNoGo?.classification || h.classification);
-                  const lockedVerdict = classificationOf(h);
-                  const lockedPct = Number(h.goNoGo?.score?.pct);
+                  const evalPill = rowEvaluationPill(h);
+                  const screened = rowCanExportOutputPdf(h);
+                  const lockedVerdict = evalPill.verdict;
+                  const lockedPct = evalPill.pct;
                   const sizeTier = screened ? ideaSizeForResult(h) : null;
                   const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
                   const categoryGroup = rowCategoryGroup(h);
@@ -891,26 +909,42 @@ export default function LogPage({
                             <span className={`log-chip ${chip.cls}`}>
                               {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
                             </span>
-                            {lockedVerdict ? (
+                            {evalPill.label ? (
                               <span
-                                className={`research-badge ${lockedVerdict === "INCOMPLETE" ? "incomplete" : "used"}`}
-                                title="Stored gate verdict"
+                                className={`research-badge ${
+                                  evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
+                                    ? "incomplete"
+                                    : lockedVerdict === "INCOMPLETE"
+                                      ? "incomplete"
+                                      : "used"
+                                }`}
+                                title={
+                                  evalPill.state === "not-evaluated"
+                                    ? "Research steps not finished — Evaluate to score"
+                                    : evalPill.state === "incomplete"
+                                      ? "Some evaluation steps still missing"
+                                      : "Stored gate verdict"
+                                }
                               >
-                                {lockedVerdict}
+                                {evalPill.label}
                                 {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
-                                {lockedVerdict === "INCOMPLETE" && Number.isFinite(Number(h.goNoGo?.score?.done))
-                                  ? ` · ${h.goNoGo.score.done} of ${h.goNoGo.score.total || 15}`
+                                {lockedVerdict === "INCOMPLETE" &&
+                                Number.isFinite(Number(h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done))
+                                  ? ` · ${h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done} of ${
+                                      h.goNoGo?.score?.total ?? h.goNoGo?.output?.score?.total ?? 15
+                                    }`
                                   : ""}
                               </span>
                             ) : null}
-                            {h.goNoGo?.scoreStatus === "edited-since-screening" ? (
-                              <span className="research-badge incomplete" title="Inputs changed since screening">
-                                edited since screening
-                              </span>
-                            ) : null}
-                            {h.goNoGo?.scoreStatus === "older-ruleset" ? (
+                            {evalPill.legacy ? (
                               <span className="research-badge incomplete" title="Scored under an older release">
                                 older release
+                              </span>
+                            ) : null}
+                            {h.goNoGo?.scoreStatus === "edited-since-evaluation" ||
+                            h.goNoGo?.scoreStatus === "edited-since-screening" ? (
+                              <span className="research-badge incomplete" title="Inputs changed since evaluation">
+                                edited since evaluation
                               </span>
                             ) : null}
                           </div>
@@ -994,7 +1028,9 @@ export default function LogPage({
                             title={
                               screened
                                 ? "Export Go/No-Go output page as PDF"
-                                : "Available after the idea is screened"
+                                : evalPill.state === "incomplete"
+                                  ? "Evaluation incomplete — finish Evaluate first"
+                                  : "Not evaluated yet — run Evaluate first"
                             }
                             disabled={rowBusy || !screened}
                             onClick={() => handleExportOutputPdfRow(h)}

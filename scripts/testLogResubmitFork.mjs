@@ -56,14 +56,16 @@ assert.match(apiSrc, /shouldForkLogResubmit/);
 assert.match(apiSrc, /const asNew = Boolean\(body\?\.asNew\)/);
 assert.match(apiSrc, /forkedFrom = opened\.id/);
 assert.match(apiSrc, /id: _openedId/);
-assert.match(apiSrc, /let outProposition = \{ \.\.\.advisory\.proposition, id: targetId \}/);
-assert.match(apiSrc, /withAdvisory\(derivedProposition, \{ attachGate: true \}\)/);
+assert.match(apiSrc, /let outProposition = annotateEvaluationOnProposition\(\{/);
+assert.match(apiSrc, /\.\.\.advisory\.proposition,\s*id: targetId/);
+assert.match(apiSrc, /withAdvisory\(derivedProposition, \{\s*attachGate: true/s);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /shouldForkLogResubmit\(sourceDocRef\.current, doc\)/);
 assert.match(formSrc, /asNew,/);
 assert.match(formSrc, /isScoredProposition\(sourceDocRef\.current\)/);
-assert.match(formSrc, /if \(nextGo\.classification\) setCurrentView\("goNoGoResult"\)/);
+assert.match(formSrc, /evalState === "evaluated" \|\| evalState === "legacy"/);
+assert.match(formSrc, /setCurrentView\("goNoGoResult"\)/);
 
 const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 assert.match(appSrc, /asNew: Boolean\(asNew\)/);

@@ -57,7 +57,10 @@ assert.ok(mergedGo.f5.computedRevenue > 12);
 assert.equal(checkF1({}).checkLabel, "Not yet run");
 assert.equal(fallbackFilterNarrative({ checkLabel: "Locked", items: [] }), fallbackFilterNarrative({ checkLabel: "Locked", items: [] }));
 assert.match(fallbackFilterNarrative({ checkLabel: "Locked", items: [] }), /Filter 5 unlocks/);
-assert.match(fallbackFilterNarrative({ checkLabel: "Not yet run", items: [] }), /not been run yet/i);
+assert.match(
+  fallbackFilterNarrative({ checkLabel: "Not yet run", items: [] }),
+  /no scored evidence for this idea yet/i
+);
 assert.doesNotMatch(fallbackFilterNarrative({ checkLabel: "Locked", items: [] }), /cleared/i);
 
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");

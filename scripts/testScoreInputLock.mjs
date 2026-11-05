@@ -16,12 +16,13 @@ const {
   scoreInputKey,
   scoreInputsMatch,
   lockedScoreFromPrior,
+  resolveHardLockedGoNoGo,
 } = await import("../lib/analysisStability.js");
 const { resolveOutputScore } = await import("../lib/improvementPoints.js");
 const { scoreAdvisoryChecks, computeGoNoGo } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
-const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+const { handlePropositionGoNogo, propositionForScore } = await import("../lib/propositionGateApi.js");
 
 const idea = {
   name: "Score lock fixture",
@@ -165,10 +166,23 @@ assert.equal(stored.goNoGo.score.pct, firstScore.pct);
 // Persist real input edits on the server row, then gate — client-only blanks must not
 // drop protected fields (same rule as score-stability follow-up reads).
 await updateProposition(created.id, edited, { writer: "server" });
-const third = await runGate(edited);
-assert.notEqual(third.goNoGo.score.pct, firstScore.pct, "gate must recompute after input change");
-assert.notEqual(third.goNoGo.scoreInputKey, key);
+const storedEdited = await getPropositionById(created.id);
+const scoredEdited = propositionForScore(storedEdited, edited);
+const checksEdited = await computeAllAdvisoryChecks(scoredEdited);
+const third = resolveHardLockedGoNoGo({
+  doc: scoredEdited,
+  prev: goNoGo,
+  advisoryChecks: checksEdited,
+  computeClassification: computeGoNoGo,
+  computeScore: scoreAdvisoryChecks,
+});
+assert.notEqual(third.score.pct, firstScore.pct, "resolve must recompute after input change");
+assert.notEqual(third.scoreInputKey, key);
+
+// Part 136 — go-nogo alone keeps legacy prev until Evaluate seals.
+const gateAfterEdit = await runGate(edited);
+assert.equal(gateAfterEdit.goNoGo.score.pct, firstScore.pct);
 
 console.log(
-  `PASS score lock holds at ${firstScore.pct}% until inputs change (then ${third.goNoGo.score.pct}%)`
+  `PASS score lock holds at ${firstScore.pct}% until inputs change (then ${third.score.pct}%)`
 );

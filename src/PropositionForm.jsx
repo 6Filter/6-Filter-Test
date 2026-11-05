@@ -31,7 +31,6 @@ import {
   applyLocalGate,
   buildGateRationale,
   computeGoNoGo,
-  filterCheckScore,
   goNoGoIsFloorFailure,
   goNoGoTone,
   scoreAdvisoryChecks,
@@ -74,6 +73,8 @@ import {
 } from "../lib/techShiftRisk.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
+import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
+import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
 
 const LAST_TEAM_KEY = "primus.lastIdeaTeam";
 
@@ -87,6 +88,12 @@ function rememberedIdeaTeam(accountTeam) {
   return String(accountTeam || "").trim();
 }
 
+function formatRiskLevel(level) {
+  const s = String(level ?? "").trim();
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
     return division
@@ -95,8 +102,8 @@ function filterSubtitle(spec, division) {
   }
   if (spec.key === "f5") {
     return division
-      ? `credible year-3 path for ${division} (v4)`
-      : "division not yet determined — no revenue target until matched (v4)";
+      ? `credible year-3 path for ${division}`
+      : "division not yet determined — no revenue target until matched";
   }
   return spec.subtitle || "";
 }
@@ -1088,6 +1095,64 @@ function toneFor(label) {
   return "watch";
 }
 
+const FORM_SCORED_CHECK_LABELS = new Set(["Cleared", "Marked down", "Below floor", "Exempt"]);
+
+function formShowsCheckLabel(label) {
+  const text = String(label || "").trim();
+  if (!text || text === "Not yet run" || text === "Evidence missing") return false;
+  if (FORM_SCORED_CHECK_LABELS.has(text)) return false;
+  return true;
+}
+
+function evaluationStepFilterKey(step) {
+  const s = String(step || "").trim();
+  if (s === "filter4") return "f4";
+  if (s === "cogsGst" || s === "priceEvents") return "f2";
+  return "f1";
+}
+
+function propositionEvalState(doc = {}) {
+  const fromApi = String(doc?.evaluationState || "").trim();
+  if (fromApi) return fromApi;
+  if (doc?.goNoGo?.output?.sealedAt) return "evaluated";
+  const go = doc?.goNoGo;
+  if (Boolean(String(go?.classification || "").trim()) && Number(go?.score?.total) > 0) return "legacy";
+  return computeEvaluationStatus(doc).state;
+}
+
+function sealedChecksForDoc(doc = {}) {
+  if (doc?.sealedChecks && typeof doc.sealedChecks === "object") return doc.sealedChecks;
+  const fromOutput = advisoryChecksFromOutput(doc?.output || doc?.goNoGo?.output);
+  return fromOutput && typeof fromOutput === "object" ? fromOutput : {};
+}
+
+function goNoGoFromSealed(doc = {}, goNoGo = null) {
+  const output = doc?.output || goNoGo?.output;
+  if (output?.sealedAt) {
+    return {
+      ...(goNoGo && typeof goNoGo === "object" ? goNoGo : {}),
+      classification: output.classification || goNoGo?.classification,
+      rationale: output.rationale || goNoGo?.rationale,
+      score: output.score || goNoGo?.score,
+      scoreInputKey: output.scoreInputKey || goNoGo?.scoreInputKey,
+      at: output.sealedAt || goNoGo?.at,
+      filterNarratives: {
+        f1: output.filters?.f1?.narrative,
+        f2: output.filters?.f2?.narrative,
+        f3: output.filters?.f3?.narrative,
+        f4: output.filters?.f4?.narrative,
+      },
+      checkLabels: {
+        f1: output.filters?.f1?.label,
+        f2: output.filters?.f2?.label,
+        f3: output.filters?.f3?.label,
+        f4: output.filters?.f4?.label,
+      },
+    };
+  }
+  return goNoGo;
+}
+
 function filterCardTone(check, specKey) {
   const label = check?.checkLabel || "";
   if (specKey === "f6" && (label === "Awaiting panels" || !analysisCheckItems(check?.items).length)) {
@@ -1160,7 +1225,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
             <li key={`${spec.key}-dim-${i}`} data-status={it.status} data-level={it.level || ""}>
               {it.level ? (
                 <span className="mono" style={{ opacity: 0.75, marginRight: 6 }}>
-                  {String(it.level).toUpperCase()}
+                  {formatRiskLevel(it.level)}
                 </span>
               ) : null}
               {it.text}
@@ -1349,6 +1414,96 @@ function ManagerReviewPanel({
   );
 }
 
+function EvaluationPendingPage({
+  evaluationState,
+  evaluationMissing = [],
+  doc,
+  ideaName,
+  category,
+  saving,
+  onBack,
+  onEvaluate,
+  onRunMissingSteps,
+  onRetryStep,
+  progressLabel = "",
+}) {
+  const heading =
+    evaluationState === "incomplete" ? "Evaluation incomplete" : "Not evaluated yet";
+  const status = computeEvaluationStatus(doc || {});
+  const required = status.required.length || evaluationMissing.length + status.done.length;
+  const doneCount = status.done.length;
+  const progress =
+    progressLabel ||
+    (required ? `${doneCount} of ${required} steps done` : "");
+
+  return (
+    <div className="gonogo-result-page evaluation-pending-page">
+      <header className="output-meta">
+        <span className="mono">IDEA · 6-FILTER RULESET</span>
+      </header>
+      <section className="gonogo-hero tone-idle" data-tone="idle">
+        <div className="gonogo-hero-copy">
+          {ideaName ? <h1 className="gonogo-idea">{ideaName}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}
+          {category ? (
+            <div className="gonogo-chips">
+              <span className="mono badge-chip">{category}</span>
+            </div>
+          ) : null}
+          <h2 className="gonogo-pending-title">{heading}</h2>
+          <p className="gonogo-rationale">
+            Finish the research steps below, then Evaluate to seal the GO/NO-GO output. Until then, no score or
+            filter cards are shown.
+          </p>
+          {progress ? <p className="gonogo-blocked-note">{progress}</p> : null}
+          {evaluationMissing.length ? (
+            <ul className="evaluation-missing-list">
+              {evaluationMissing.map((entry) => (
+                <li key={entry.step || entry.label}>
+                  <span>{entry.label || entry.step}</span>
+                  {entry.failed ? (
+                    <>
+                      <span className="gonogo-blocked-note">
+                        Failed: {entry.reason || "Try again"}
+                      </span>
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={saving}
+                        onClick={() => onRetryStep?.(entry)}
+                      >
+                        Retry
+                      </button>
+                    </>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </section>
+      <div className="output-actions pdf-hide">
+        <button type="button" className="output-btn-primary" disabled={saving} onClick={onEvaluate}>
+          {saving ? <Loader2 size={15} className="spin" /> : null}
+          Evaluate
+        </button>
+        {evaluationState === "incomplete" ? (
+          <button
+            type="button"
+            className="output-btn-secondary"
+            disabled={saving}
+            onClick={onRunMissingSteps}
+          >
+            Run missing steps
+          </button>
+        ) : null}
+        <button type="button" className="output-btn-secondary" onClick={onBack}>
+          <ArrowLeft size={15} /> View entered inputs
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function GoNoGoResultPage({
   result,
   advisoryChecks,
@@ -1371,6 +1526,11 @@ export function GoNoGoResultPage({
   reviewAnnounce = "",
   pdfMode = false,
   onEvidenceRescore = null,
+  legacyView = false,
+  hideFilterCards = false,
+  submitLabel = "Submit",
+  allowPdfExport = true,
+  sealedOutput = null,
 }) {
   const pageRef = useRef(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -1378,7 +1538,10 @@ export function GoNoGoResultPage({
   const [rescoreBusy, setRescoreBusy] = useState(false);
 
   async function handleDownloadPdf() {
-    if (pdfBusy || !pageRef.current) return;
+    if (pdfBusy || !pageRef.current || !allowPdfExport) {
+      if (!allowPdfExport) setPdfError("Not evaluated yet — run Evaluate before exporting PDF.");
+      return;
+    }
     setPdfError("");
     setPdfBusy(true);
     try {
@@ -1394,7 +1557,16 @@ export function GoNoGoResultPage({
   }
 
   if (!result?.classification) return null;
-  const checks = advisoryChecks && typeof advisoryChecks === "object" ? advisoryChecks : {};
+  const checksFromSeal =
+    sealedOutput?.filters && typeof sealedOutput.filters === "object"
+      ? advisoryChecksFromOutput(sealedOutput) || {}
+      : null;
+  const checks =
+    checksFromSeal && Object.keys(checksFromSeal).length
+      ? checksFromSeal
+      : advisoryChecks && typeof advisoryChecks === "object"
+        ? advisoryChecks
+        : {};
   // Single resolver: screened ideas always show the sealed snapshot (Part 128).
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
@@ -1417,11 +1589,13 @@ export function GoNoGoResultPage({
       })
     : "";
   const scoreStatusBanner =
-    scoreStatus === "edited-since-screening"
-      ? `Inputs changed since this score. This is the score from ${screenedLabel || "the last screen"}. Screen again to update it.`
-      : scoreStatus === "older-ruleset"
-        ? "Scored under an older release. Screen again to update under the current rules."
-        : "";
+    scoreStatus === "edited-since-evaluation"
+      ? "Edited since evaluation — re-evaluate to refresh"
+      : scoreStatus === "edited-since-screening"
+        ? `Inputs changed since this score. This is the score from ${screenedLabel || "the last screen"}. Screen again to update it.`
+        : scoreStatus === "older-ruleset" || legacyView
+          ? "Scored under an older release"
+          : "";
   const categoryName = String(category || result.category || "").trim();
   const divisionName = String(doc?.division || "").trim();
   const idea = String(ideaName || result.ideaName || "").trim();
@@ -1494,7 +1668,7 @@ export function GoNoGoResultPage({
     <div className="gonogo-result-page" ref={pageRef}>
       <header className="output-meta">
         <span className="mono">
-          IDEA · v4 RULESET{dated ? ` · ${dated}` : ""}
+          IDEA · 6-FILTER RULESET{dated ? ` · ${dated}` : ""}
         </span>
         <span className="mono">
           {screened ? `Screened in ${screened} · ` : ""}
@@ -1549,7 +1723,9 @@ export function GoNoGoResultPage({
             {storedVerdictWithoutInputs(savedDoc || doc) ? (
               <p className="gonogo-blocked-note">Stored verdict; inputs for this idea are missing</p>
             ) : null}
-            {(scoreStatus === "older-ruleset" || scoreStatus === "edited-since-screening") &&
+            {(scoreStatus === "older-ruleset" ||
+              scoreStatus === "edited-since-screening" ||
+              scoreStatus === "edited-since-evaluation") &&
             doc?.id &&
             typeof onEvidenceRescore === "function" ? (
               <div className="gonogo-rescore-row pdf-hide">
@@ -1766,12 +1942,14 @@ export function GoNoGoResultPage({
         ))}
       </section>
 
+      {!hideFilterCards ? (
       <div className="filter-grid">
         {SIX_FILTERS_FORM.map((spec) => {
           const f5f6Locked =
             (spec.key === "f5" || spec.key === "f6") &&
             !isFilterUnlocked(spec.key, doc || {}) &&
             hasAnyRealInput(doc?.[spec.key] || {});
+          const sealedFilter = sealedOutput?.filters?.[spec.key];
           const check = f5f6Locked
             ? {
                 checkLabel: spec.key === "f6" ? "Awaiting panels" : "Locked",
@@ -1781,15 +1959,20 @@ export function GoNoGoResultPage({
                     ? "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist."
                     : undefined,
               }
-            : checks[spec.key] || {};
+            : {
+                ...(checks[spec.key] || {}),
+                ...(sealedFilter?.label ? { checkLabel: sealedFilter.label } : {}),
+              };
           const stored = f5f6Locked
             ? ""
-            : stripFormAdminNarrative(String(result.filterNarratives?.[spec.key] || "").trim());
+            : stripFormAdminNarrative(
+                String(sealedFilter?.narrative || result.filterNarratives?.[spec.key] || "").trim()
+              );
           const awaiting = spec.key === "f6" && (check.checkLabel === "Awaiting panels" || check.infoLine);
           const narrative = rewriteUnmatchedDivisionCopy(
             awaiting
               ? (check.infoLine || "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist.")
-              : stored || fallbackFilterNarrative(check),
+              : stored || (sealedFilter?.narrative ? sealedFilter.narrative : fallbackFilterNarrative(check)),
             categoryName
           );
           let compare = null;
@@ -1812,6 +1995,7 @@ export function GoNoGoResultPage({
           );
         })}
       </div>
+      ) : null}
 
       {doc?.researchFindings?.evidenceRead &&
       doc.researchFindings.evidenceRead.status &&
@@ -1940,14 +2124,18 @@ export function GoNoGoResultPage({
             onClick={onSubmit}
           >
             {saving ? <Loader2 size={15} className="spin" /> : null}
-            Submit
+            {submitLabel}
           </button>
           <button
             type="button"
             className="output-btn-secondary"
-            disabled={pdfBusy}
+            disabled={pdfBusy || !allowPdfExport}
             onClick={handleDownloadPdf}
-            title="Download this output page as PDF"
+            title={
+              allowPdfExport
+                ? "Download this output page as PDF"
+                : "Not evaluated yet — run Evaluate before exporting PDF"
+            }
           >
             {pdfBusy ? <Loader2 size={15} className="spin" /> : <Download size={15} />}
             {pdfBusy ? "Preparing PDF…" : "Download PDF"}
@@ -2039,7 +2227,9 @@ function researchInputKey(doc) {
 }
 
 function preferOutputView(doc = null) {
-  return Boolean(doc?._preferOutput || doc?.goNoGo?.classification);
+  if (doc?._preferOutput) return true;
+  const state = propositionEvalState(doc);
+  return state === "evaluated" || state === "legacy";
 }
 
 export default function PropositionForm({
@@ -2167,7 +2357,14 @@ export default function PropositionForm({
     setAiSourced(filled.sourced);
     setAiSuggestions(initial?.suggestions || null);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
-    setGoNoGo(initial?.goNoGo || null);
+    const evalState = propositionEvalState(initial);
+    if (evalState === "evaluated" || evalState === "legacy") {
+      setGoNoGo(goNoGoFromSealed(initial, initial?.goNoGo || null));
+    } else {
+      setGoNoGo(null);
+    }
+    if (initial?.sealedChecks) setSummaryChecks(initial.sealedChecks);
+    else if (evalState === "evaluated") setSummaryChecks(sealedChecksForDoc(initial));
     setConceptCardName(String(initial?.f1?.conceptCardName || "").trim());
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
     sourceDocRef.current = filled.doc;
@@ -2189,7 +2386,12 @@ export default function PropositionForm({
     setJustSubmitted(false);
     setSummaryStale(false);
     setSummaryChecks(null);
-    setGoNoGo(initial?.goNoGo || null);
+    const evalState = propositionEvalState(initial);
+    if (evalState === "evaluated" || evalState === "legacy") {
+      setGoNoGo(goNoGoFromSealed(initial, initial?.goNoGo || null));
+    } else {
+      setGoNoGo(null);
+    }
     setCurrentView(preferOutputView(initial) ? "goNoGoResult" : "propositionForm");
     setManagerOpen(false);
     setMrpBaseInr(null);
@@ -2737,10 +2939,18 @@ export default function PropositionForm({
         setLocalError(data.error || "Could not run the missing steps.");
         return;
       }
-      if (data.proposition) setDoc((prev) => ({ ...prev, ...data.proposition }));
+      if (data.proposition) {
+        setDoc((prev) => {
+          const merged = { ...prev, ...data.proposition };
+          return {
+            ...merged,
+            evaluationState: data.proposition.evaluationState ?? merged.evaluationState,
+            evaluationMissing: data.proposition.evaluationMissing ?? computeEvaluationStatus(merged).missing,
+          };
+        });
+      }
       if (data.advisoryChecks) {
         setAdvisoryChecks(data.advisoryChecks);
-        setSummaryChecks(data.advisoryChecks);
       }
     } catch (e) {
       setLocalError(e.message || "Could not run the missing steps.");
@@ -3210,20 +3420,6 @@ export default function PropositionForm({
     const repairing =
       repairPlan.researchState === "incomplete" && !ideaChanged && !asNew && !submitOpts.forceResearch;
     if (repairing && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
-    if (!goNoGo?.classification) {
-      const preview = applyLocalGate(doc);
-      setAdvisoryChecks(preview.checks);
-      setSummaryChecks(preview.checks);
-      setGoNoGo({
-        classification: preview.classification,
-        rationale: preview.rationale,
-        score: preview.score,
-        ideaScale: preview.ideaScale,
-        ideaName: preview.ideaName,
-        category: preview.category,
-        at: new Date().toISOString(),
-      });
-    }
     setJustSubmitted(true);
     setSummaryStale(false);
     const persistDuration = Boolean(
@@ -3263,53 +3459,50 @@ export default function PropositionForm({
     const nextDoc = result.suggestions
       ? { ...filled, suggestions: result.suggestions }
       : filled;
-    setDoc(nextDoc);
     if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
+    const mergedProp = {
+      ...nextDoc,
+      evaluationState: result.proposition.evaluationState,
+      evaluationMissing: result.proposition.evaluationMissing,
+      output: result.proposition.output ?? result.output ?? nextDoc.output,
+      sealedChecks: result.proposition.sealedChecks ?? result.sealedChecks ?? nextDoc.sealedChecks,
+      goNoGo: result.proposition.goNoGo ?? null,
+    };
+    setDoc(mergedProp);
     const checks =
+      mergedProp.sealedChecks ||
+      result.sealedChecks ||
       result.advisoryChecks ||
       result.proposition.advisoryChecks ||
-      nextDoc.advisoryChecks ||
       null;
-    if (checks) setAdvisoryChecks(checks);
+    if (result.advisoryChecks || result.proposition.advisoryChecks) {
+      setAdvisoryChecks(result.advisoryChecks || result.proposition.advisoryChecks);
+    }
     setSummaryChecks(checks);
-    const savedGo = result.proposition.goNoGo && typeof result.proposition.goNoGo === "object"
-      ? result.proposition.goNoGo
-      : null;
-    // Server goNoGo is authoritative when present — never let a client recompute override it.
-    const ideaName = formIdeaLabel(nextDoc);
-    const category = formCategoryLabel(nextDoc);
-    const nextScore = savedGo?.score || (checks ? scoreAdvisoryChecks(checks) : { pct: 0, done: 0, total: 0 });
-    const classification =
-      savedGo?.classification || (checks ? computeGoNoGo(checks) : "");
-    const nextGo = {
-      classification,
-      rationale:
-        savedGo?.rationale ||
-        buildGateRationale({
-          classification,
-          score: nextScore,
-          checks: checks || {},
-          ideaName,
-          category,
-        }),
-      score: nextScore,
-      scoreInputKey: savedGo?.scoreInputKey,
-      ...(classification === "INCOMPLETE"
-        ? {}
-        : { ideaScale: savedGo?.ideaScale || ideaScaleFromDoc(nextDoc) }),
-      ideaName,
-      category,
-      at: savedGo?.at || new Date().toISOString(),
-      ...(savedGo?.filterNarratives ? { filterNarratives: savedGo.filterNarratives } : {}),
-      ...(savedGo?.checkLabels ? { checkLabels: savedGo.checkLabels } : {}),
-    };
-    setGoNoGo(nextGo);
+    const evalState = propositionEvalState(mergedProp);
+    const savedGo =
+      mergedProp.goNoGo && typeof mergedProp.goNoGo === "object" ? mergedProp.goNoGo : null;
+    const ideaName = formIdeaLabel(mergedProp);
+    const category = formCategoryLabel(mergedProp);
+    if (evalState === "evaluated" || evalState === "legacy") {
+      const nextGo = goNoGoFromSealed(mergedProp, savedGo) || savedGo;
+      setGoNoGo(
+        nextGo
+          ? {
+              ...nextGo,
+              ideaName: nextGo.ideaName || ideaName,
+              category: nextGo.category || category,
+            }
+          : null
+      );
+      setCurrentView("goNoGoResult");
+    } else {
+      setGoNoGo(null);
+      setCurrentView("goNoGoResult");
+    }
     setJustSubmitted(true);
     setSummaryStale(false);
-    sourceDocRef.current = nextDoc;
-    if (nextGo.classification) setCurrentView("goNoGoResult");
-
-    await runGoNoGoRead({ ...doc, ...result.proposition, ...nextDoc }, provider);
+    sourceDocRef.current = mergedProp;
     } finally {
       const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
@@ -3326,63 +3519,113 @@ export default function PropositionForm({
     }
   }
 
-  if (currentView === "goNoGoResult" && goNoGo?.classification) {
-    return (
-      <main className="prop-page output-page" data-view="goNoGoResult">
-        <style>{PROP_CSS}</style>
-        <GoNoGoResultPage
-          key={goNoGo.at || goNoGo.classification}
-          result={goNoGo}
-          advisoryChecks={summaryChecks || advisoryChecks || {}}
-          category={formCategoryLabel(doc) || goNoGo.category}
-          ideaName={formIdeaLabel(doc) || goNoGo.ideaName}
-          doc={doc}
-          savedDoc={initial}
-          saving={saving || readingGoNoGo}
-          onBack={() => setCurrentView("propositionForm")}
-          onSubmit={() => handleSubmit()}
-          currentUser={currentUser}
-          onRequestReview={handleRequestManagerReview}
-          onApproveReview={handleApproveManagerReview}
-          onRejectReview={handleRejectManagerReview}
-          managerBusy={managerBusy}
-          managerComment={managerComment}
-          onManagerComment={setManagerComment}
-          managerRejectReason={managerRejectReason}
-          onManagerRejectReason={setManagerRejectReason}
-          reviewAnnounce={reviewAnnounce}
-          onEvidenceRescore={async (id) => {
-            const res = await fetch(
-              `/api/propositions/${encodeURIComponent(id)}/rescore-from-evidence`,
-              {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: "{}",
+  const outputEvalState = propositionEvalState(doc);
+  const evaluationMissingList =
+    (Array.isArray(doc.evaluationMissing) && doc.evaluationMissing.length
+      ? doc.evaluationMissing
+      : computeEvaluationStatus(doc).missing) || [];
+  const evalProgressStatus = computeEvaluationStatus(doc);
+  const evalProgressLabel =
+    evalProgressStatus.required.length
+      ? `${evalProgressStatus.done.length} of ${evalProgressStatus.required.length} steps done`
+      : saving
+        ? "Running evaluation…"
+        : "";
+
+  if (currentView === "goNoGoResult") {
+    if (outputEvalState === "not-evaluated" || outputEvalState === "incomplete") {
+      return (
+        <main className="prop-page output-page" data-view="goNoGoResult">
+          <style>{PROP_CSS}</style>
+          <EvaluationPendingPage
+            evaluationState={outputEvalState}
+            evaluationMissing={evaluationMissingList}
+            doc={doc}
+            ideaName={formIdeaLabel(doc)}
+            category={formCategoryLabel(doc)}
+            saving={saving || readingGoNoGo || Boolean(refreshingField)}
+            progressLabel={evalProgressLabel}
+            onBack={() => setCurrentView("propositionForm")}
+            onEvaluate={() => handleSubmit()}
+            onRunMissingSteps={handleRunMissingSteps}
+            onRetryStep={(entry) => handleRetryFilter(evaluationStepFilterKey(entry?.step))}
+          />
+        </main>
+      );
+    }
+    if (goNoGo?.classification || outputEvalState === "legacy" || outputEvalState === "evaluated") {
+      const sealedOutput = doc.output || doc.goNoGo?.output || null;
+      const displayGo =
+        goNoGoFromSealed(doc, goNoGo) ||
+        goNoGo || {
+          classification: sealedOutput?.classification,
+          rationale: sealedOutput?.rationale,
+          score: sealedOutput?.score,
+          at: sealedOutput?.sealedAt,
+        };
+      const displayChecks = summaryChecks || sealedChecksForDoc(doc) || {};
+      return (
+        <main className="prop-page output-page" data-view="goNoGoResult">
+          <style>{PROP_CSS}</style>
+          <GoNoGoResultPage
+            key={displayGo.at || displayGo.classification}
+            result={displayGo}
+            advisoryChecks={displayChecks}
+            sealedOutput={sealedOutput}
+            category={formCategoryLabel(doc) || displayGo.category}
+            ideaName={formIdeaLabel(doc) || displayGo.ideaName}
+            doc={doc}
+            savedDoc={initial}
+            saving={saving || readingGoNoGo}
+            onBack={() => setCurrentView("propositionForm")}
+            onSubmit={() => handleSubmit()}
+            submitLabel={outputEvalState === "legacy" ? "Evaluate" : "Submit"}
+            legacyView={outputEvalState === "legacy"}
+            hideFilterCards={outputEvalState === "legacy"}
+            allowPdfExport={outputEvalState === "evaluated" || outputEvalState === "legacy"}
+            currentUser={currentUser}
+            onRequestReview={handleRequestManagerReview}
+            onApproveReview={handleApproveManagerReview}
+            onRejectReview={handleRejectManagerReview}
+            managerBusy={managerBusy}
+            managerComment={managerComment}
+            onManagerComment={setManagerComment}
+            managerRejectReason={managerRejectReason}
+            onManagerRejectReason={setManagerRejectReason}
+            reviewAnnounce={reviewAnnounce}
+            onEvidenceRescore={async (id) => {
+              const res = await fetch(
+                `/api/propositions/${encodeURIComponent(id)}/rescore-from-evidence`,
+                {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: "{}",
+                }
+              );
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) throw new Error(data.error || "Recompute failed.");
+              if (data.goNoGo) {
+                setGoNoGo(data.goNoGo);
+                setDoc((prev) => ({
+                  ...prev,
+                  ...(data.proposition || {}),
+                  goNoGo: data.goNoGo,
+                  classification: data.goNoGo.classification,
+                }));
               }
-            );
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || "Recompute failed.");
-            if (data.goNoGo) {
-              setGoNoGo(data.goNoGo);
-              setDoc((prev) => ({
-                ...prev,
-                ...(data.proposition || {}),
-                goNoGo: data.goNoGo,
-                classification: data.goNoGo.classification,
-              }));
-            }
-          }}
-        />
-      </main>
-    );
+            }}
+          />
+        </main>
+      );
+    }
   }
 
   return (
     <main className="prop-page prop-form-page" data-view="propositionForm">
       <style>{PROP_CSS}</style>
 
-      {goNoGo?.classification ? (
+      {outputEvalState === "evaluated" || outputEvalState === "legacy" ? (
         <div className="prop-output-return" role="region" aria-label="Saved output">
           <p>
             {openedFromLog
@@ -3395,6 +3638,13 @@ export default function PropositionForm({
             onClick={() => setCurrentView("goNoGoResult")}
           >
             View GO/NO-GO output
+          </button>
+        </div>
+      ) : outputEvalState === "incomplete" || outputEvalState === "not-evaluated" ? (
+        <div className="prop-output-return" role="region" aria-label="Evaluation status">
+          <p>Research is not fully evaluated yet. Open the evaluation page to see missing steps and run Evaluate.</p>
+          <button type="button" className="prop-save run" onClick={() => setCurrentView("goNoGoResult")}>
+            Open evaluation page
           </button>
         </div>
       ) : null}
@@ -3605,9 +3855,7 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
-              checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
-              }
+              checkLabel="Not yet run"
               sub={
                 spec.key === "f5"
                   ? "Opens once the idea reads GO and proof is uploaded."
@@ -3621,9 +3869,7 @@ export default function PropositionForm({
             <FilterTeaserCard
               key={spec.key}
               spec={spec}
-              checkLabel={
-                (livePreviewChecks[spec.key] || advisoryChecks?.[spec.key] || {}).checkLabel || "Not yet run"
-              }
+              checkLabel="Not yet run"
               sub={spec.key === "f3" ? "Enter COGS and net margin to unlock Filter 3." : "Complete Filter 3 to unlock Filter 4."}
             />
           );
@@ -3634,8 +3880,8 @@ export default function PropositionForm({
             ? livePreviewChecks[spec.key]
             : advisoryChecks?.[spec.key] || livePreviewChecks[spec.key] || { checkLabel: "Not yet run", items: [] };
         const f3CheckPending = spec.key === "f3" && marginElasticityLoading;
-        const checkLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
-        const filterScore = filterCheckScore(check);
+        const rawCheckLabel = f3CheckPending ? "Calculating…" : check.checkLabel;
+        const checkLabel = formShowsCheckLabel(rawCheckLabel) ? rawCheckLabel : "";
         const visibleItems = f3CheckPending ? [] : analysisCheckItems(check.items);
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
@@ -3726,14 +3972,11 @@ export default function PropositionForm({
                 ) : null}
               </div>
               <div className="prop-status-wrap">
-                {filterScore.total ? (
-                  <span className="filter-score">
-                    {spec.key === "f3" || spec.key === "f4"
-                      ? `${filterScore.done}/${filterScore.total}`
-                      : `${filterScore.done}/${filterScore.total} · ${filterScore.pct}%`}
+                {checkLabel ? (
+                  <span className="check-pill" data-tone={toneFor(checkLabel)}>
+                    Check: {checkLabel}
                   </span>
                 ) : null}
-                <span className="check-pill" data-tone={toneFor(checkLabel)}>Check: {checkLabel}</span>
                 {missingStep ? (
                   <>
                     <span className="check-pill" data-tone="watch">
@@ -4448,6 +4691,9 @@ export const PROP_CSS = `
 .output-btn-primary{background:var(--btn-primary);color:#efe8fb;border:0;font-weight:600;}
 .output-btn-primary:disabled{opacity:.6;cursor:not-allowed;}
 .output-btn-secondary{background:var(--btn-secondary-bg);color:var(--ink);border:1px solid var(--btn-secondary-border);}
+.evaluation-pending-page .gonogo-pending-title{margin:12px 0 8px;font-size:20px;font-weight:700;color:var(--ink);}
+.evaluation-missing-list{margin:16px 0 0;padding-left:20px;color:var(--ink-muted-85);}
+.evaluation-missing-list li{margin:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 @media (max-width:900px){
   .output-hero-row,.filter-grid{grid-template-columns:1fr;}
 }

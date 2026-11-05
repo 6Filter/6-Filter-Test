@@ -26,7 +26,7 @@ const {
   updateProposition,
   listPropositions,
 } = await import("../lib/db.js");
-const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+const { handlePropositionGoNogo, propositionForScore } = await import("../lib/propositionGateApi.js");
 const { classificationOf } = await import("../lib/logStatus.js");
 
 const idea = {
@@ -182,40 +182,57 @@ assert.equal(classificationOf(row), classA);
 assert.equal(row.goNoGo.score.pct, scoreA.pct);
 assert.equal(row.classification, classA);
 
-// Condition: changing scoring inputs unlocks and reseals.
+// Condition: changing scoring inputs unlocks in the resolve path (full Evaluate uses this).
 const edited = {
   ...idea,
   f1: { ...idea.f1, declaredAttribute: "", benchmark: "", declaredGap: null, growthArgument: "" },
   f2: { ...idea.f2, netMarginAtScale: 5, cogsAtScale: 95 },
 };
 await updateProposition(created.id, edited, { writer: "server" });
+const storedAfterEdit = await getPropositionById(created.id);
+const scoredEdited = propositionForScore(storedAfterEdit, edited);
+const checksEdited = await computeAllAdvisoryChecks(scoredEdited);
+const resealed = resolveHardLockedGoNoGo({
+  doc: scoredEdited,
+  prev: afterForge.goNoGo,
+  advisoryChecks: checksEdited,
+  computeClassification: computeGoNoGo,
+  computeScore: scoreAdvisoryChecks,
+  buildRationale: buildGateRationale,
+  ideaName: idea.name,
+  category: idea.category,
+});
+assert.notEqual(resealed.scoreInputKey, keyA);
+assert.notEqual(resealed.score.pct, scoreA.pct);
+
+// Part 136 — lightweight go-nogo keeps legacy prev until Submit/Evaluate seals output.
 const g3 = await runGate(edited);
-assert.notEqual(g3.goNoGo.scoreInputKey, keyA);
-assert.notEqual(g3.goNoGo.score.pct, scoreA.pct);
+assert.equal(g3.goNoGo.scoreInputKey, keyA);
+assert.equal(g3.goNoGo.score.pct, scoreA.pct);
+await updateProposition(created.id, { goNoGo: resealed }, { writer: "server", handler: "test-reseal" });
 const listed2 = await listPropositions(50);
 const row2 = listed2.find((r) => r.id === created.id);
-assert.equal(classificationOf(row2), g3.goNoGo.classification);
-assert.equal(row2.goNoGo.score.pct, g3.goNoGo.score.pct);
+assert.equal(classificationOf(row2), resealed.classification);
+assert.equal(row2.goNoGo.score.pct, resealed.score.pct);
 
-// Condition: second gate after edit still pins the new seal.
 const g4 = await runGate({ ...edited, researchFindings: {} });
-assert.equal(g4.goNoGo.score.pct, g3.goNoGo.score.pct);
-assert.equal(g4.goNoGo.classification, g3.goNoGo.classification);
+assert.equal(g4.goNoGo.score.pct, resealed.score.pct);
+assert.equal(g4.goNoGo.classification, resealed.classification);
 
-const storedAfterEdit = await getPropositionById(created.id);
+const storedResealed = await getPropositionById(created.id);
 assert.equal(
-  lockedScoreFromPrior(storedAfterEdit, storedAfterEdit.goNoGo)?.score.pct,
-  storedAfterEdit.goNoGo.score.pct
+  lockedScoreFromPrior(storedResealed, storedResealed.goNoGo)?.score.pct,
+  storedResealed.goNoGo.score.pct
 );
 assert.equal(
-  lockedScoreFromPrior(edited, g3.goNoGo)?.score.pct,
-  g3.goNoGo.score.pct,
+  lockedScoreFromPrior(edited, resealed)?.score.pct,
+  resealed.score.pct,
   "sparse edited draft must share the sealed fingerprint"
 );
 
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /lockedVerdict/);
-assert.match(logSrc, /goNoGo\?\.score\?\.pct/);
+assert.match(logSrc, /goNoGo\?\.score\?\.done|goNoGo\?\.output\?\.score/);
 assert.match(logSrc, /Stored gate verdict/);
 
 const stabilitySrc = readFileSync(new URL("../lib/analysisStability.js", import.meta.url), "utf8");
@@ -229,5 +246,5 @@ const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 assert.match(dbSrc, /hardLockGoNoGo/);
 
 console.log(
-  `PASS hard score lock: ${classA} ${scoreA.pct}% stays sealed until inputs change (then ${g3.goNoGo.classification} ${g3.goNoGo.score.pct}%)`
+  `PASS hard score lock: ${classA} ${scoreA.pct}% stays sealed until inputs change (then ${resealed.classification} ${resealed.score.pct}%)`
 );

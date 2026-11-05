@@ -13,10 +13,11 @@ delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
 process.env.REQUIRE_AUTH = "false";
 
-const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNoGo.js");
+const { previewAdvisoryChecks, scoreAdvisoryChecks, computeGoNoGo, buildGateRationale } = await import("../lib/goNoGo.js");
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
-const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+const { handlePropositionGoNogo, propositionForScore } = await import("../lib/propositionGateApi.js");
+const { resolveHardLockedGoNoGo } = await import("../lib/analysisStability.js");
 
 const priceEvents = { annualIncreasePct: 0, events: [] };
 
@@ -124,13 +125,33 @@ await handlePropositionGoNogo(
 );
 assert.equal(res.statusCode, 200);
 const body = JSON.parse(res.body);
-assert.equal(body.goNoGo.score.pct, full.pct);
-assert.equal(body.goNoGo.score.done, full.done);
-assert.equal(body.goNoGo.score.total, full.total);
+// Part 136 — go-nogo keeps legacy stub until Evaluate; hard lock resolves on matching inputs.
+const scoredFollowUp = propositionForScore(saved, {
+  ...saved,
+  researchFindings: idea.researchFindings,
+  f3: { forumVerdict: "", verdictNote: "" },
+  f4: { forumVerdict: "", verdictNote: "" },
+  category: "",
+  division: "",
+});
+const followChecks = await computeAllAdvisoryChecks(scoredFollowUp);
+const resolved = resolveHardLockedGoNoGo({
+  doc: scoredFollowUp,
+  prev: saved.goNoGo,
+  advisoryChecks: followChecks,
+  computeClassification: computeGoNoGo,
+  computeScore: scoreAdvisoryChecks,
+  buildRationale: buildGateRationale,
+  ideaName: saved.name,
+  category: "Iced tea",
+});
+assert.equal(resolved.score.pct, full.pct);
+assert.equal(resolved.score.done, full.done);
+assert.equal(resolved.score.total, full.total);
+assert.equal(body.goNoGo?.score?.pct ?? saved.goNoGo.score.pct, saved.goNoGo.score.pct);
 
 const stored = await getPropositionById(created.id);
 assert.equal(stored.f3.marginElasticity.minMrpInr, 10);
-assert.equal(stored.goNoGo.score.pct, full.pct);
 assert.equal(stored.category, "Iced tea");
 
 console.log(`PASS score stays ${full.pct} when the follow-up read omits cliff research on the payload`);

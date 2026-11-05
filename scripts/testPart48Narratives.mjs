@@ -31,7 +31,7 @@ assert.deepEqual(preview.f2.items, []);
 
 const f2UnsignedFallback = fallbackFilterNarrative(preview.f2);
 assert.doesNotMatch(f2UnsignedFallback, /Finance/i);
-assert.match(f2UnsignedFallback, /not been run yet/i);
+assert.match(f2UnsignedFallback, /no scored evidence/i);
 
 const f2Filled = previewAdvisoryChecks({
   f2: { financeSigned: false, cogsAtScale: 40, netMarginAtScale: 52 },

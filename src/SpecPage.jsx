@@ -26,7 +26,7 @@ function FilterSpecSection({ spec }) {
         </h2>
       </div>
       <p className="spec-lead">
-        <strong>The v4 test:</strong> {v4Test}
+        <strong>The test:</strong> {v4Test}
       </p>
       <h3 className="spec-subh">HOW TO THINK ABOUT THIS FILTER</h3>
       <p className="spec-copy">{howToThink}</p>

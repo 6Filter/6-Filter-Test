@@ -1,26 +1,28 @@
 {
-  "rulesetVersion": "v5.3",
-  "fingerprint": "4582f1fbd823ea902ae282a7cf856b7730bc258804147b4425156732bbaafd64",
+  "rulesetVersion": "v5.4",
+  "fingerprint": "d4204d0a910bc8f3c843ff6185b2087f305b47f54d0626fec37571b3e03747d7",
   "files": {
-    "lib/lockedConstants.js": "2dc9c1d5a7ae1bdcdff7c651753a4ba6ea7ddc3366730fdddf92a9862013e40d",
-    "lib/goNoGo.js": "04fbba1c210b3d407a0ebfcc74428daf03ccc9b42426c02b4b58d324014a94d6",
-    "lib/filterChecks.js": "38998dff982f1f9b015a2ac4582df6c528a7d45a223118a2085ff8ccd77e3904",
+    "lib/lockedConstants.js": "348488d48f94511359983055b58f4d75153a4833c7a621f964d8b167756877fb",
+    "lib/goNoGo.js": "a59b166a466d12691a1c41b3b8b6d332241f46edbcbf773f4a94c2d910d3e71c",
+    "lib/filterChecks.js": "9c8d5274baf87606cd6275566accab3e0130d97be0118707a3c528c4e7141145",
     "lib/propositionScoring.js": "c40ded42694987979da20a2555db987c6e34c54044c6c2f8a76fdee6c37c75ce",
-    "lib/analysisStability.js": "54e62f74a649d83a54a2e9d9a0dd06f7d50bd7a5ab926c9947eeadff26f96d12",
+    "lib/analysisStability.js": "1d536763515fa470d340cfc5cb5710f86da04ff0fd6dfa2175a9b62c3eb0d313",
     "lib/techShiftRisk.js": "becea8c9a53d397f371532bdcfcedfe3445c09b35710b45d856afdc0aede73d1",
     "lib/scoreSlots.js": "be8b08e22f2644c827d5dcb1fcd0a4bce4d63e11723e364c69e00574b21514cb",
     "lib/mrpFormula.js": "ddc98cae158e31f122d236b50796c20601ea2840605d2e65aafb02c38a80bbea",
     "lib/packSize.js": "bc9145ee0c352e617e51ab546ab42dac257f610f01aab4394a11600f4af2a9b7",
     "lib/gstRate.js": "5c8f3254685d204bc2ff51a8e0539f6155c7c4c4c1459a7a620c69e87944d6df",
-    "lib/filter2Check.js": "02093428d4ed27994f75c48bbb22a8617e37cc95f338a6c0167f2f6513b41c2a",
+    "lib/filter2Check.js": "444abc11b8d483d9f9a1ec2f48d4d8d32f1b23bfad86c05c697ca50c095ef5ed",
     "lib/priceResilience.js": "039846e95fd0ecd400de7f86bb396b85ff6e731aa92de3789fff565fe7734807",
     "lib/divisionMargin.js": "bcd6276deb69b804771ae8ccaf9456110e732c3d128915b1e9f5f405222b155f",
     "lib/improvementPoints.js": "8d204909805cfc85172e56915296a8e2beafe25ed25c3290f340c4029e12a35a",
-    "lib/propositionGateApi.js": "837c3c4ac40f22731dba9f83609d2168ac539c6cc749684f17ba2fae440ccb5a",
+    "lib/propositionGateApi.js": "692e73b25d97a8c4e59f981c235239dd691f99b2add9c910e6f8847e7dcf3650",
     "lib/inputReview.js": "cf85a9130ebbba8d0a5cfd9c629e48219c076040034102812c4e49cb7468702c",
     "lib/itemCopy.js": "50be95346af64c7e0c16cb81d284d5ff5cc49647db39ea4afe97865ded42e049",
     "lib/filter1Check.js": "4cfe6d09b986e46089c51c0f046c92ed2b49f8cbadd417e461ce1a5e1a89469d",
     "lib/f1ResearchSafeguards.js": "5ba28ddae74293b25f464b695eda7cdf63d6745c743b0bd633a36c86c55ae0d2",
-    "lib/relevanceGrade.js": "b251183c3a848bafc278bfb21236fc9f44513cfa80a8870ee5e6d0a614322af8"
+    "lib/relevanceGrade.js": "b251183c3a848bafc278bfb21236fc9f44513cfa80a8870ee5e6d0a614322af8",
+    "lib/evaluationStatus.js": "944c34bae76c10a7d94499471fe3b33481304b85824c7174ae4858061bee9896",
+    "lib/filterNarrativeText.js": "154000680d8cf41d97079e58b3607b9d0923897e732790dce2bc9f7e324c3e21"
   }
 }

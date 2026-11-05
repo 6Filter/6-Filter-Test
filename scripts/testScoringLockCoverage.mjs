@@ -26,10 +26,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const golden = JSON.parse(readFileSync(join(root, "scripts/golden/scoring-golden.json"), "utf8"));
 const fpJson = JSON.parse(readFileSync(join(root, "scripts/scoringFingerprint.json"), "utf8"));
 
-assert.equal(SCORING_RULESET_VERSION, "v5.0");
+assert.equal(SCORING_RULESET_VERSION, "v5.4");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(golden.rulesetVersion, "v5.0");
-assert.equal(fpJson.rulesetVersion, "v5.0");
+assert.equal(golden.rulesetVersion, "v5.4");
+assert.equal(fpJson.rulesetVersion, "v5.4");
 
 const requiredFiles = [
   "lib/mrpFormula.js",
@@ -46,7 +46,7 @@ assert.equal(fpJson.fingerprint, computeScoringFingerprint());
 
 const slots = expectedSlotKeys();
 assert.equal(slots.f1.length, 6);
-assert.equal(slots.f2.length, 3);
+assert.equal(slots.f2.length, 1);
 assert.equal(slots.f3.length, 1);
 assert.equal(slots.f4.length, 7);
 assert.equal(
@@ -76,13 +76,13 @@ for (const id of requiredIds) {
 }
 
 assert.equal(byId["band-59"].expected.classification, "NO-GO");
-assert.equal(byId["band-59"].expected.pct, 59); // 10/17
+assert.equal(byId["band-59"].expected.pct, 53); // 8/15 fixed slots
 assert.equal(byId["band-60"].expected.classification, "WATCH");
-assert.equal(byId["band-60"].expected.pct, 65); // 11/17 — closest achievable ≥60
+assert.equal(byId["band-60"].expected.pct, 60); // 9/15
 assert.equal(byId["band-80"].expected.classification, "WATCH");
-assert.equal(byId["band-80"].expected.pct, 76); // 13/17 — closest achievable ≤80
+assert.equal(byId["band-80"].expected.pct, 80); // 12/15
 assert.equal(byId["band-81"].expected.classification, "GO");
-assert.ok(byId["band-81"].expected.pct > GONOGO_SCORE_BANDS.WATCH_MAX); // 14/17 = 82
+assert.ok(byId["band-81"].expected.pct > GONOGO_SCORE_BANDS.WATCH_MAX); // 13/15 = 87
 
 assert.equal(byId["cap-not-run"].expected.classification, "INCOMPLETE");
 assert.equal(byId["cap-research-failed"].expected.classification, "INCOMPLETE");

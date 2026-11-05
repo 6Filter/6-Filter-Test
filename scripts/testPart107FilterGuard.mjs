@@ -146,7 +146,8 @@ for (const call of calls) {
 const gateCall = calls.find((call) => call.handler === "go-nogo");
 assert.ok(gateCall);
 assert.equal(gateCall.payload.f1, undefined);
-assert.ok(gateCall.payload.goNoGo);
+// Part 136 — go-nogo may leave goNoGo null until a full Evaluate seals output.
+assert.ok(gateCall.payload.goNoGo == null || gateCall.payload.goNoGo?.classification);
 
 const after = await getPropositionById(created.id);
 assert.equal(after.f1.declaredAttribute, "strength");

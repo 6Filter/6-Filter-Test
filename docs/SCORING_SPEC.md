@@ -1,12 +1,12 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v5.3**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.4**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v5.3` |
+| `SCORING_RULESET_VERSION` | `v5.4` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `SCORING_MODEL` | `relevance` |
 | `RELEVANCE_SHADOW_MODE` | `true` |
@@ -16,6 +16,10 @@ Generated from `lib/lockedConstants.js` (ruleset **v5.3**). Filters 5–6 stay v
 | `FIXED_PRICE_POINTS` | `1, 2, 5, 10, 20, 50, 100` |
 | `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
+
+### What changed in v5.4 (output only when evaluated)
+
+An idea has an **output** only when every required AI step has finished (`evaluationStatus`). The sealed snapshot (`goNoGo.output`) holds the verdict, score, rationale and each filter's label, narrative and items. Opening an idea never recomputes live `advisoryChecks` for display. Incomplete / not-evaluated ideas show no verdict, percent or cards. Legacy ideas (screened before sealed outputs) keep their stored score labelled "Scored under an older release" with no cards. A failed AI step blocks sealing and offers Retry; a documented "found nothing" is a finished result.
 
 ### What changed in v5.3 (Filter 3 cliff rule)
 

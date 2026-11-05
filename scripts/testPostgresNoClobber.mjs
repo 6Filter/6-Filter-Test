@@ -364,9 +364,9 @@ console.log(
   `e2e-submit status=${e2eRes.statusCode} stubCalls=${stubCalls} columns=${e2eKeys.length} changed=${e2eChanged.join(",") || "-"}`
 );
 assert.ok(stubCalls > 0, "stubbed model was not called");
-// Part 135 — research may skip re-stamping division / research_run_at when already set;
-// require the scoring/findings columns that always move on a successful Submit.
-for (const col of ["f4_json", "go_nogo_json", "research_findings_json", "updated_at", "version"]) {
+// Part 136 — go_nogo_json is written only when every required evaluation step finishes
+// (sealed output). Incomplete Submit still updates findings / F4 / version.
+for (const col of ["f4_json", "research_findings_json", "updated_at", "version"]) {
   assert.ok(e2eChanged.includes(col), `e2e-submit must change ${col}`);
 }
 assert.ok(

@@ -208,13 +208,18 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 assert.doesNotMatch(formSrc, /shouldReuseAnalysis/);
 assert.match(formSrc, /result\.researchRan/);
 assert.match(formSrc, /!initial\?\.researchRunAt/);
-assert.match(formSrc, /if \(!goNoGo\?\.classification\) \{\s*const preview = applyLocalGate/);
+assert.match(formSrc, /previewAdvisoryChecks\(liveDoc\)/);
+assert.match(formSrc, /advisoryChecksFromOutput/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /skipDerivedAutoFill/);
 assert.match(apiSrc, /researchRan: Boolean\(shouldRunResearch\)/);
 assert.match(apiSrc, /goNoGo: _clientStoredResult/);
-assert.match(apiSrc, /computeAllAdvisoryChecks\(enriched\)/);
+assert.match(apiSrc, /buildPropositionReadResponse/);
+assert.match(apiSrc, /Part 136 — compute checks only when sealing \(attachGate\)/);
+assert.match(apiSrc, /if \(!attachGate\)[\s\S]*buildPropositionReadResponse\(enriched/);
+assert.match(apiSrc, /const advisoryChecks = await computeAllAdvisoryChecks\(enriched\)/);
+assert.match(apiSrc, /withAdvisory\(derivedProposition, \{\s*attachGate: true/);
 
 const gateSrc = readFileSync(new URL("../lib/propositionGateApi.js", import.meta.url), "utf8");
 assert.doesNotMatch(gateSrc, /shouldReuseAnalysis/);
