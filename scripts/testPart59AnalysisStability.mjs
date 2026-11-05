@@ -41,18 +41,29 @@ assert.equal(
   "10g"
 );
 
-const range = { minMrpInr: 80, maxMrpInr: 120, minMarginPct: 12, maxMarginPct: 28 };
+const pePass = { annualIncreasePct: 0, events: [] };
+const peFail = {
+  annualIncreasePct: 8,
+  events: [
+    { verified: true, crossed_point: 10, volume_change_pct: -20, quote: "20%", source_url: "https://a" },
+    { verified: true, crossed_point: 10, volume_change_pct: -18, quote: "18%", source_url: "https://b" },
+    { verified: true, crossed_point: 10, volume_change_pct: -22, quote: "22%", source_url: "https://c" },
+  ],
+};
 const f3At70 = checkF3(
-  { cogsAtScale: 70, netMarginAtScale: 20, gstRatePct: 18 },
-  { marginElasticity: range }
+  { cogsAtScale: 70, netMarginAtScale: 55, gstRatePct: 18 },
+  {},
+  { priceEvents: pePass }
 );
 const f3At40 = checkF3(
-  { cogsAtScale: 40, netMarginAtScale: 20, gstRatePct: 18 },
-  { marginElasticity: range }
+  { cogsAtScale: 40, netMarginAtScale: 20, gstRatePct: 18, mrpOverride: true, mrpInr: 9 },
+  {},
+  { priceEvents: peFail }
 );
 assert.equal(f3At70.checkLabel, "Cleared");
-assert.equal(f3At40.checkLabel, "Below floor");
-// Fill all fixed slots so F3 floor failure alone flips the verdict.
+assert.equal(f3At40.checkLabel, "Marked down");
+assert.notEqual(f3At40.checkLabel, "Below floor");
+// Fill all fixed slots — F3 mark-down caps GO at WATCH, never NO-GO.
 const restCleared = {
   f1: {
     checkLabel: "Cleared",
@@ -180,8 +191,8 @@ try {
   logResearchCacheLookup("abc123", { ok: true });
   logResearchCacheLookup("abc123", null);
   await computeAllAdvisoryChecks({
-    f2: { cogsAtScale: 70, netMarginAtScale: 22 },
-    f3: { marginElasticity: range },
+    f2: { cogsAtScale: 70, netMarginAtScale: 22, gstRatePct: 18 },
+    researchFindings: { f3: { priceEvents: pePass } },
   });
 } finally {
   console.log = origLog;

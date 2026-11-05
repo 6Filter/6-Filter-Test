@@ -24,7 +24,7 @@ const incomplete = {
   id: "fixture-incomplete",
   researchRunAt: "2026-10-04T02:53:14.075Z",
   f1: { declaredAttribute: "a", benchmark: "b", declaredGap: 3, growthRoute: "penetration", growthArgument: "c" },
-  f2: { cogsAtScale: 40, netMarginAtScale: 20, grammage: "100g" },
+  f2: { cogsAtScale: 40, netMarginAtScale: 20, gstRatePct: 18, grammage: "100g" },
   f3: {},
   f4: {},
   f5: {
@@ -85,7 +85,7 @@ assert.equal(
   planResearch({
     researchRunAt: "2026-10-01T00:00:00.000Z",
     f1: { declaredAttribute: "a" },
-    f2: { cogsAtScale: 1 },
+    f2: { cogsAtScale: 1, netMarginAtScale: 20, gstRatePct: 18 },
     f3: {},
     f4: { techShiftRisk: { dimensions: { pack: { rating: "low" } } } },
     researchFindings: { f3: { researchFailed: true } },

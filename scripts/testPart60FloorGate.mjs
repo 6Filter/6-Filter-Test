@@ -163,13 +163,22 @@ const routeMismatch = checkF1(
 assert.equal(routeMismatch.items.find((i) => i.slot === "route").status, "pending");
 assert.match(routeMismatch.items.find((i) => i.slot === "route").text, /mismatch|expects/i);
 const range = { minMrpInr: 80, maxMrpInr: 120, minMarginPct: 12, maxMarginPct: 28 };
-assert.equal(checkF3({}, { marginElasticity: {} }).checkLabel, "Not yet run");
+// Part 135 — Filter 3 is cliff research; without priceEvents preview/research it is Not yet run or Marked down.
+assert.equal(checkF3({}, {}).checkLabel, "Not yet run");
 assert.equal(
-  checkF3({ cogsAtScale: 70, netMarginAtScale: 20, gstRatePct: 18 }, { marginElasticity: range }).checkLabel,
+  checkF3(
+    { cogsAtScale: 70, netMarginAtScale: 55, gstRatePct: 18 },
+    {},
+    { priceEvents: { annualIncreasePct: 0, events: [] } }
+  ).checkLabel,
   "Cleared"
 );
-assert.equal(
-  checkF3({ cogsAtScale: 40, netMarginAtScale: 20, gstRatePct: 18 }, { marginElasticity: range }).checkLabel,
+assert.notEqual(
+  checkF3(
+    { cogsAtScale: 40, netMarginAtScale: 20, gstRatePct: 18 },
+    { marginElasticity: range },
+    { priceEvents: { annualIncreasePct: 0, events: [] } }
+  ).checkLabel,
   "Below floor"
 );
 
@@ -267,8 +276,9 @@ const local = applyLocalGate({
     },
   },
 });
-assert.equal(local.checks.f3.checkLabel, "Below floor");
-assert.equal(local.classification, "NO-GO");
+// Part 135 — browser preview never invents a Filter 3 cliff verdict / Below floor.
+assert.notEqual(local.checks.f3.checkLabel, "Below floor");
+assert.notEqual(local.classification, "GO");
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 const heroStart = formSrc.indexOf("<section className={`gonogo-hero");

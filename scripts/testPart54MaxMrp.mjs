@@ -117,8 +117,12 @@ assert.equal(hydrated.maxMrpInr, null);
 assert.equal(hydrated.rangeError, INVALID_MRP_RANGE_COPY);
 assert.equal(isMarginElasticityUnfilled({ minMrpInr: 200, maxMrpInr: 81.675 }), true);
 
-const checked = checkF3({ netMarginAtScale: 80 }, { marginElasticity: inverted });
-assert.match(checked.items[0].text, /invalid result/);
+const checked = checkF3(
+  { cogsAtScale: 100, netMarginAtScale: 80, gstRatePct: 18 },
+  { marginElasticity: inverted }
+);
+assert.equal(checked.checkLabel, "Marked down", "invalid legacy band does not score — missing cliff research is mark-down");
+assert.notEqual(checked.checkLabel, "Below floor");
 
 assert.equal(screenshot.inflationRatePct, 18.5);
 assert.equal(screenshot.volumeLossPct, 18.5);
@@ -206,9 +210,8 @@ assert.match(researchSrc, /will not assume product grammage/);
 assert.doesNotMatch(researchSrc, /competitorPackSize \|\| grammage/);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /range\?\.rangeError/);
-assert.match(formSrc, /derived-note error/);
-assert.match(formSrc, /recastMarginElasticityLive/);
+assert.match(formSrc, /recastMarginElasticityLive|marginElasticity/);
+assert.match(formSrc, /priceResilienceNote|10% volume-loss/);
 
 console.log("PASS Part 54 max MRP never displays below min; pack price is normalized to grammage");
 console.log(

@@ -90,7 +90,7 @@ function rememberedIdeaTeam(accountTeam) {
 function filterSubtitle(spec, division) {
   if (spec.key === "f2") {
     return division
-      ? `Locked minimum for ${division} — you may raise net margin; price test is Filter 3 (MRP must sit in the safe range). International Business uses INR at group level via the respective division.`
+      ? `Locked minimum for ${division} — you may raise net margin; Filter 3 tests this MRP on the 10% volume-loss cliff rule. International Business uses INR at group level via the respective division.`
       : "Pending: division not determined — Filter 2 stays unfinished until ADMIN assigns a locked division";
   }
   if (spec.key === "f5") {
@@ -106,7 +106,7 @@ function fieldHelper(field) {
   if (field.helper) parts.push(field.helper);
   if (typeof field.helperFromDivision === "function") {
     parts.push(
-      "Minimum net margin is assigned from the locked division table. You may enter a higher value; below the minimum reads Below floor. With the minimum assigned, Filter 3 tests that MRP sits inside the safe range."
+      "Minimum net margin is assigned from the locked division table. You may enter a higher value; below the minimum is a mark-down. Filter 3 tests the Filter 2 MRP on the 10% volume-loss cliff rule."
     );
   }
   return parts.join(" ");
@@ -726,6 +726,44 @@ function FieldControl({
           >
             Switch back to computed MRP
           </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (field.type === "readonly-note") {
+    const priced = resolveF2Price(ideaDoc?.f2 || {});
+    const pe = ideaDoc?.researchFindings?.f3?.priceEvents;
+    return (
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}`} title={lockTitle}>
+        <div className="prop-label">{field.label}{wand}</div>
+        {helper ? <p className="prop-helper">{helper}</p> : null}
+        <p className="derived-note">
+          {priced.ok
+            ? `Price tested: Filter 2 MRP ₹${Number(priced.mrp).toFixed(2)} (change it on Filter 2).`
+            : "Enter COGS, net margin and GST on Filter 2 so there is an MRP to test."}
+        </p>
+        {pe?.annualIncreasePct != null ? (
+          <p className="derived-note">
+            Inflation-covering increase {pe.annualIncreasePct}%/yr
+            {pe.inflation_source_url ? ` — ${pe.inflation_source_url}` : ""}
+            {pe.inflation_quote ? `. “${pe.inflation_quote}”` : ""}
+          </p>
+        ) : (
+          <p className="derived-note">Inflation cover and comparable price events are assessed when you Submit.</p>
+        )}
+        {Array.isArray(pe?.events) && pe.events.length ? (
+          <ul className="price-events-register">
+            {pe.events.slice(0, 8).map((ev, i) => (
+              <li key={i}>
+                {ev.brand || "Brand"}: ₹{ev.from_price_inr}→₹{ev.to_price_inr}
+                {ev.crossed_point != null ? ` (₹${ev.crossed_point})` : ""}
+                {ev.volume_change_pct != null ? `, volume ${ev.volume_change_pct}%` : ""}
+                {ev.verified ? " · verified" : " · unverified"}
+                {ev.source_url ? ` — ${ev.source_url}` : ""}
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
     );
@@ -2342,10 +2380,12 @@ export default function PropositionForm({
     SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, liveDoc))
   );
   const f3Unlocked = unlockedFilterKeys.has("f3");
-  const f3RangeEmpty = isMarginElasticityUnfilled(doc.f3?.marginElasticity);
-  const marginElasticityLoading = Boolean(f3Filling || (saving && f3RangeEmpty && f3Unlocked));
+  // Part 135 — F3 is cliff research on Submit; no live band auto-fill spinner.
+  const marginElasticityLoading = false;
 
   useEffect(() => {
+    // Part 135 — do not auto-fill the retired safe-MRP band.
+    if (true) return undefined;
     if (initial?.researchRunAt || docRef.current?.researchRunAt) return undefined;
     if (!propositionId || !f3Unlocked || saving) return undefined;
     if (f3RangeTouchedByHuman.current) return undefined;

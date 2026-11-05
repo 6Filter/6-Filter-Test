@@ -96,7 +96,7 @@ const checksSrc = readFileSync(new URL("../lib/filterChecks.js", import.meta.url
 assert.match(checksSrc, /export function hasAnyRealInput/);
 assert.match(checksSrc, /export function checkFilter/);
 assert.match(checksSrc, /checkF1Six|return checkF1Six/);
-assert.match(checksSrc, /return checkFilter\(f3/);
+assert.match(checksSrc, /applyFilter3Rules/);
 assert.match(checksSrc, /return checkFilter\(f4/);
 assert.match(checksSrc, /return checkFilter\(f6/);
 

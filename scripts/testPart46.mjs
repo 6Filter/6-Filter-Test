@@ -1,7 +1,6 @@
 import { checkF3 } from "../lib/filterChecks.js";
 import { f3HasEnough, isFilterUnlocked } from "../lib/filterUnlock.js";
 import { SIX_FILTERS_FORM } from "../lib/propositionFields.js";
-import { buildSuggestions } from "../lib/propositionAiFirstPass.js";
 import { solveForVolumeLossCeiling } from "../lib/filters/runMarginElasticityResearch.js";
 
 function assert(cond, msg) {
@@ -9,8 +8,11 @@ function assert(cond, msg) {
 }
 
 const f3Fields = SIX_FILTERS_FORM.find((f) => f.key === "f3")?.fields || [];
-assert(f3Fields[0]?.key === "marginElasticity", "F3 research field must stay marginElasticity");
-assert(f3Fields.some((f) => f.key === "f3RangeOverride"), "F3 override must be its own field");
+assert(f3Fields[0]?.key === "priceResilienceNote", "F3 form field is the cliff note");
+assert(
+  !f3Fields.some((f) => f.key === "marginElasticity" || f.key === "f3RangeOverride"),
+  "safe-range fields removed from the schema"
+);
 assert(
   !f3Fields.some((f) =>
     ["priceIndexVsBenchmark", "fixedPricePointExposure", "elasticityEstimate", "elasticitySource", "modelledVolumeLoss"].includes(f.key)
@@ -21,124 +23,60 @@ assert(
 const f1Growth = SIX_FILTERS_FORM.find((f) => f.key === "f1")?.fields.find((f) => f.key === "growthRoute");
 assert(f1Growth?.label === "Growth Route", `growthRoute label should be Growth Route, got ${f1Growth?.label}`);
 
-const missing = checkF3({ netMarginAtScale: 40 }, {});
-assert(missing.checkLabel === "Not yet run", "empty F3 must not read as Cleared");
+// Part 135 — without a resolvable Filter 2 MRP, Filter 3 is Not yet run.
+const missing = checkF3({}, {});
+assert(missing.checkLabel === "Not yet run", "empty F2 must not read as Cleared");
 assert(missing.items.length === 0, "blank F3 has no check items yet");
 
-const pctOnly = checkF3(
-  { netMarginAtScale: 40 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }
-);
-assert(pctOnly.checkLabel === "Evidence missing", "a %-only band with empty MRP must not Clear");
-
-const noMargin = checkF3(
+const noEvents = checkF3(
+  { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 },
   {},
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
+  {}
 );
-assert(noMargin.checkLabel === "Cleared", "missing F2 margin is a form-admin gap, not a scored miss");
-assert(/isn't entered yet/i.test(noMargin.items[0].text), noMargin.items[0].text);
-assert(noMargin.items[0].formAdmin === true, "empty F2 margin against a range must be form-admin");
+assert(noEvents.checkLabel === "Marked down", "price without research is mark-down");
+assert(noEvents.checkLabel !== "Below floor", "never Below floor");
 
 const cleared = checkF3(
-  { netMarginAtScale: 40, mrpInr: 80 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
+  { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 },
+  {},
+  { priceEvents: { annualIncreasePct: 0, events: [] } }
 );
-assert(cleared.checkLabel === "Cleared", `inside band should clear, got ${cleared.checkLabel}`);
-assert(/safe ₹61–₹111 range/.test(cleared.items[0].text), cleared.items[0].text);
+assert(cleared.checkLabel === "Cleared", `no crossing should clear, got ${cleared.checkLabel}`);
 
-const below = checkF3(
-  { netMarginAtScale: 10, mrpInr: 50 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
-);
-assert(below.checkLabel === "Below floor", "below min should be Below floor");
-assert(/below the safe ₹61 floor/.test(below.items[0].text), below.items[0].text);
-
-const above = checkF3(
-  { netMarginAtScale: 70, mrpInr: 200 },
-  { marginElasticity: { minMarginPct: 18, maxMarginPct: 55, minMrpInr: 61, maxMrpInr: 111 } }
-);
-assert(above.checkLabel === "Below floor", "above max should be Below floor");
-assert(/above the safe ₹111 ceiling/.test(above.items[0].text), above.items[0].text);
-
-assert(!f3HasEnough({}), "empty f3 does not unlock");
+assert(!f3HasEnough({}), "empty f3 without F2 price does not unlock");
 assert(
-  !f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: null } }),
-  "incomplete margin % without a ₹ band does not unlock"
+  f3HasEnough({}, { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 }),
+  "resolvable F2 MRP unlocks F3-enough"
 );
 assert(
-  f3HasEnough({ marginElasticity: { minMarginPct: 18, maxMarginPct: 55 } }, 80),
-  "legacy %-only band unlocks once COGS can hydrate ₹ ends"
+  f3HasEnough({ marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } }),
+  "legacy rupee band still unlocks F3-enough"
 );
 assert(
   !f3HasEnough({ marginElasticity: { minMrpInr: 277 } }),
   "only Min MRP does not unlock"
 );
-assert(
-  f3HasEnough({ marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } }),
-  "rupee band unlocks F3-enough without maxMarginPct"
-);
-assert(
-  f3HasEnough({
-    marginElasticity: {},
-    f3RangeOverride: { minMrpInr: 200, maxMrpInr: 300 },
-  }),
-  "manual MRP override unlocks F3-enough"
-);
-assert(
-  !f3HasEnough({
-    marginElasticity: { minMarginPct: 5, maxMarginPct: 10, minMrpInr: 5, maxMrpInr: 10 },
-  }),
-  "leftover %-as-₹ does not unlock"
-);
 
-const f1f2 = {
+const doc = {
   f1: {
-    declaredAttribute: "softness",
+    declaredAttribute: "cooling",
     benchmark: "Indulekha",
-    declaredGap: 2,
+    declaredGap: 3,
     growthRoute: "penetration",
-    growthArgument: "yes",
+    growthArgument: "summer ritual",
   },
-  f2: { cogsAtScale: 30, netMarginAtScale: 40 },
+  f2: { cogsAtScale: 40, netMarginAtScale: 50, gstRatePct: 18 },
+  f3: {},
 };
-
-const locked = isFilterUnlocked("f4", {
-  ...f1f2,
-  f3: { marginElasticity: { minMarginPct: 18 } },
-});
-assert(!locked, "F4 stays locked until a safe ₹ MRP band exists");
-
-const unlocked = isFilterUnlocked("f4", {
-  ...f1f2,
-  f3: { marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } },
-});
-assert(unlocked, "F4 unlocks once Filter 3 has a rupee band — no Re-run required");
-
-const noElasticity = solveForVolumeLossCeiling({
-  categoryAvgPrice: 80,
-  inflationRatePct: 5,
-  volumeLossAtInflationPct: null,
-});
-assert(noElasticity.priceCeiling == null, "missing elasticity must not fabricate a ceiling");
-assert(/elast/i.test(noElasticity.reason), noElasticity.reason);
+assert(isFilterUnlocked("f3", doc), "F3 unlocks once F2 has COGS+margin");
+assert(isFilterUnlocked("f4", doc), "F4 unlocks once F2 MRP is resolvable");
 
 const ceiling = solveForVolumeLossCeiling({
   categoryAvgPrice: 100,
-  inflationRatePct: 5,
-  volumeLossAtInflationPct: 10,
+  inflationRatePct: 6,
+  volumeLossAtInflationPct: 6,
   targetVolumeLossPct: 10,
 });
-assert(Math.abs(ceiling.priceCeiling - 105) < 1e-9, `expected 105, got ${ceiling.priceCeiling}`);
+assert(ceiling.priceCeiling != null, "legacy solver still available for research helpers");
 
-const suggestions = buildSuggestions({}, {}, null, null, null, {
-  minMarginPct: 18,
-  maxMarginPct: 52.4,
-  basis: "Min from the Personal Care division floor. Max from modelled category pricing.",
-  sources: [],
-  aiSourced: true,
-});
-assert(suggestions.f3.marginElasticity?.maxMarginPct === 52.4, "suggestions should carry marginElasticity");
-assert(suggestions.f3.priceIndexVsBenchmark == null, "old price index must not be suggested");
-assert(suggestions.f3.modelledVolumeLoss == null, "old volume-loss field must not be suggested");
-
-console.log("part46 ok");
+console.log("PASS Part 46 F3 cliff form + unlock");

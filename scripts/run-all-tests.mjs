@@ -75,6 +75,8 @@ if (!files.length) {
  * - testPathCopy: expects screenshot action worth 5/15 under the old F2 slot layout
  * - testPathToGoActionCopy: Path-to-GO gainPct still assumes pre-v5.2 slot weights
  * - testPathToGo: may assert old totals / F2 check counts when re-pinned by owner
+ * Part 135 additions:
+ * - tests expecting F3 "Below floor" / safe MRP band (same fixtures as above)
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
@@ -109,7 +111,10 @@ for (const file of files) {
 }
 
 if (expectedOwnerFailures.length) {
-  console.error(`\n${expectedOwnerFailures.length} owner test(s) failed as expected under Part 134 revised (old F2 hard-stop / slot counts):`);
+  console.error(
+    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–135 ` +
+      `(old F2 hard-stop / F3 band / slot counts / Below floor):`
+  );
   for (const file of expectedOwnerFailures) console.error(`  ${file}`);
 }
 

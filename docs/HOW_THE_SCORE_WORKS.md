@@ -2,11 +2,11 @@
 
 ## What the percent is
 
-The percent is points out of 17 Filter 1–4 checks. Judged checks earn none, weak (1/3), adequate (2/3) or strong (1) from relevance assessments — never because a field is filled in. Filters 5 and 6 are not in the percent. Filter 6 is validation only.
+The percent is points out of 15 Filter 1–4 checks (Filter 1 six, Filter 2 one, Filter 3 one, Filter 4 seven). Judged checks earn none, weak (1/3), adequate (2/3) or strong (1) from relevance assessments — never because a field is filled in. Filter 3 is the 10% volume-loss cliff rule on the Filter 2 MRP. Filters 5 and 6 are not in the percent. Filter 6 is validation only.
 
 ## Hard stops
 
-A hard stop is applied first. A filter below a non-negotiable floor forces NO-GO, whatever the percent. A filter that has not run, or whose research failed, keeps the idea INCOMPLETE (not a GO/WATCH/NO-GO band) until Filter 1–4 finish — unless a floor failure already forced NO-GO.
+A hard stop is applied first. Filter 1's declared-gap floor and Filter 4 overall High force NO-GO. Filter 2 margin below the division minimum and Filter 3 cliff fail/cannot-assess are mark-downs (they cap GO at WATCH, never NO-GO). A filter that has not run, or whose research failed, keeps the idea INCOMPLETE until Filter 1–4 finish — unless a floor failure already forced NO-GO.
 
 ## Bands
 

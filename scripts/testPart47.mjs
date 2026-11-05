@@ -22,34 +22,37 @@ assert(Math.abs(ceiling.priceCeiling - 105) < 1e-9, `price ceiling expected 105,
 
 const projectedCogs5yr = cogs * Math.pow(1 + inflation / 100, 5);
 const maxMrpInr = ceiling.priceCeiling;
-const maxMarginPct = ((maxMrpInr - projectedCogs5yr) / maxMrpInr) * 100;
-const minMrpIfSameCogsAsMax = mrpFromMarginPct(projectedCogs5yr, minMarginPct);
 
 assert(minMrpInr !== maxMrpInr, "min MRP (today's COGS) must not equal the 5-year price ceiling");
 assert(
-  Math.abs((minMrpIfSameCogsAsMax || 0) - minMrpInr) > 1,
+  Math.abs(mrpFromMarginPct(projectedCogs5yr, minMarginPct) - minMrpInr) > 1,
   "min MRP must use today's COGS, not the 5-year inflated COGS used for max margin"
 );
 
-const range = {
-  minMrpInr,
-  maxMrpInr,
-  minMarginPct,
-  maxMarginPct,
-};
-const declared = { cogsAtScale: cogs, netMarginAtScale: 30 };
-const before = checkF3(declared, { marginElasticity: range });
-assert(before.checkLabel === "Cleared", `30% should sit in ${minMarginPct}–${maxMarginPct.toFixed(1)}, got ${before.checkLabel}`);
-assert(/₹63–₹105|₹62–₹105/.test(before.items[0].text), before.items[0].text);
+const f2 = { cogsAtScale: cogs, netMarginAtScale: 30, gstRatePct: 18 };
+assert(checkF3({}, {}).checkLabel === "Not yet run", "no F2 price → Not yet run");
+
+const noResearch = checkF3(f2, {}, {});
+assert(noResearch.checkLabel === "Marked down", `MRP without priceEvents is mark-down, got ${noResearch.checkLabel}`);
+assert(noResearch.checkLabel !== "Below floor", "Filter 3 never Below floor");
+
+const cleared = checkF3(f2, {}, { priceEvents: { annualIncreasePct: 0, events: [] } });
+assert(cleared.checkLabel === "Cleared", `smooth inflation with no crossing clears, got ${cleared.checkLabel}`);
 
 const overriddenMax = 70;
 const syncedMaxPct = marginPctFromMrp(cogs, overriddenMax);
 assert(syncedMaxPct != null && syncedMaxPct < 30, `overriding max MRP to 70 should pull max margin below 30, got ${syncedMaxPct}`);
-const after = checkF3(declared, {
-  marginElasticity: { ...range, maxMrpInr: overriddenMax, maxMarginPct: syncedMaxPct },
+
+// Legacy marginElasticity on f3 no longer scores — only F2 MRP + priceEvents matter.
+const bandIgnored = checkF3(f2, {
+  marginElasticity: {
+    minMrpInr,
+    maxMrpInr: overriddenMax,
+    minMarginPct,
+    maxMarginPct: syncedMaxPct,
+  },
 });
-assert(after.checkLabel === "Below floor", `should flip to Below floor after max MRP override, got ${after.checkLabel}`);
-assert(/₹70 ceiling/.test(after.items[0].text), after.items[0].text);
+assert(bandIgnored.checkLabel === "Marked down", "stored band does not override missing research");
 
 console.log("part47 ok");
 console.log(`minMrp (today COGS)=${minMrpInr.toFixed(2)} maxMrp (5yr ceiling)=${maxMrpInr.toFixed(2)} projectedCogs5yr=${projectedCogs5yr.toFixed(2)}`);

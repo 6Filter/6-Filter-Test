@@ -14,11 +14,12 @@ for (const spec of SIX_FILTERS_FORM) {
     else human.push(field.key);
   }
 }
-assert.deepEqual(server, ["marginElasticity", "techShiftRisk", "computedRevenue"]);
+assert.deepEqual(server, ["techShiftRisk", "computedRevenue"]);
 assert.ok(human.includes("cogsAtScale"));
-assert.ok(human.includes("f3RangeOverride"));
+assert.ok(human.includes("priceResilienceNote"));
 assert.ok(human.includes("f4MitigationResponses"));
 assert.match(doc, /forumVerdict/);
+assert.match(doc, /marginElasticity/);
 
 const kept = mergeFilterObject(
   { benchmark: "Brand", declaredAttribute: "strength" },
@@ -42,17 +43,17 @@ assert.equal(Number(stale.value.cogsAtScale), 40);
 assert.deepEqual(stale.blockedKeys, ["cogsAtScale"]);
 
 const serverKey = mergeFilterObject(
-  { marginElasticity: { minMrpInr: 40, maxMrpInr: 90 } },
-  { marginElasticity: { minMrpInr: 1, maxMrpInr: 2 } }
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low", reason: "stable" } } } },
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", reason: "shift" } } } }
 );
-assert.equal(serverKey.value.marginElasticity.minMrpInr, 40);
+assert.equal(serverKey.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
 
 const explicit = mergeFilterObject(
-  { marginElasticity: { minMrpInr: 40 } },
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } },
   {},
-  { clearKeys: ["marginElasticity"] }
+  { clearKeys: ["techShiftRisk"] }
 );
-assert.equal(explicit.value.marginElasticity, undefined);
+assert.equal(explicit.value.techShiftRisk, undefined);
 
 const lifted = liftStoredMitigations({
   techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", userResponse: "Signed contract Q1" } } },

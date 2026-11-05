@@ -1,18 +1,25 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v5.2**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.3**). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v5.2` |
+| `SCORING_RULESET_VERSION` | `v5.3` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `SCORING_MODEL` | `relevance` |
 | `RELEVANCE_SHADOW_MODE` | `true` |
 | `INCOMPLETE_VERDICT_MODE` | `incomplete` |
-| `F3_MRP_RANGE_TOLERANCE_INR` | `0.5` |
+| `F3_HORIZON_YEARS` | `5` |
+| `F3_LOSS_STATISTIC` | `median` |
+| `FIXED_PRICE_POINTS` | `1, 2, 5, 10, 20, 50, 100` |
+| `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
+
+### What changed in v5.3 (Filter 3 cliff rule)
+
+Filter 3 has **one** scored check: price resilience on the 10% volume-loss cliff rule. The price tested is the Filter 2 MRP (`resolveF2Price`). Smooth inflation-covering rises that never meet a fixed price point pass with full credit and no volume evidence. A crossing is judged from verified comparable events (source among returned search URLs; quote contains the figure; `crossed_point` recomputed). Exactly 10% passes; above fails; no evidence cannot-assess. Fail / cannot-assess / weak pass are mark-downs that cap GO at WATCH — never "Below floor", never NO-GO. The old min/max MRP band no longer scores.
 
 ### What changed in v5.2 (Filter 2 revised)
 
@@ -27,9 +34,9 @@ Filter 1 has **six** checks. Credit is **none / weak / adequate / strong** from 
 | Verdict | Rule |
 |---|---|
 | **INCOMPLETE** | No floor failure, and any of F1–F4 is unfinished |
-| **NO-GO** | Floor failure (F1 gap &lt; 2.0, or F4 overall High / other remaining floors — not Filter 2 margin), or (when complete) score &lt; 60% |
-| **WATCH** | Complete idea with 60% ≤ score ≤ 80%, or a mark-down that would otherwise read GO |
-| **GO** | Complete idea with score &gt; 80% and no mark-down |
+| **NO-GO** | Floor failure (F1 gap &lt; 2.0, or F4 overall High — not Filter 2 margin or Filter 3 cliff), or (when complete) score &lt; 60% |
+| **WATCH** | Complete idea with 60% ≤ score ≤ 80%, or a mark-down / weak evidence that would otherwise read GO |
+| **GO** | Complete idea with score &gt; 80% and no mark-down / weak-evidence cap |
 
 ## Fixed check slots (15)
 
@@ -37,7 +44,7 @@ Filter 1 has **six** checks. Credit is **none / weak / adequate / strong** from 
 |---|---:|---|
 | F1 | 6 | Benchmark · Declared gap ≥ 2.0 · Attributes + evidence · Gap derivation + parity · Growth route · Growth argument |
 | F2 | 1 | Net margin vs locked division minimum (mark-down if below) |
-| F3 | 1 | Filter 2 MRP inside the safe ₹ range (± ₹0.5) |
+| F3 | 1 | Price resilience — 10% volume-loss cliff at fixed price points (mark-down if fail / cannot-assess) |
 | F4 | 7 | Seven structural-obsolescence risk dimensions |
 
 ## Division minimum net margins (locked)

@@ -261,7 +261,7 @@ export const SIX_FILTERS_SPEC = [
     v4Test:
       "the power to raise price to cover inflation continuously without volume loss; where a steep increase crosses a fixed price point (Re 1, Rs 2, 5, 10), volume loss cannot exceed 10%.",
     howToThink:
-      "Filter 3 is econometrics: elasticity is estimated from behaviour, never asserted from conviction. The thinking is that the category's own price history is the best witness — how volume actually moved when prices moved — and that fixed price points behave discontinuously (v4 calls them big drainers), so they are modelled as cliffs, not slopes.",
+      "Filter 3 is the 10% volume-loss cliff rule (Part 135): smooth inflation-covering rises cost no volume; where a steep increase crosses a fixed price point (₹1, 2, 5, 10, 20, 50, 100), verified comparable volume loss cannot exceed 10%. Cliffs, not slopes. The price tested is the Filter 2 MRP — one price, one story. Fail or cannot-assess is a mark-down, never NO-GO.",
     modelAndAi: [
       "CMI model — category price elasticity: estimated from retail-audit time series (volume response to observed price moves of our brands and the benchmark, by pack). Where the category has no usable history, CMI states so and a survey-based price module rides on the Filter 6 consumer panel [module design to be agreed with CMI]. Fixed price points carry a separate cliff term, not the smooth elasticity.",
       "AI use — price-event harvesting: AI scans audit data and trade news to build the register of past price events in the category (who moved, when, by how much, what happened to volume) — the raw material for the elasticity estimate and the forum's reference cases.",

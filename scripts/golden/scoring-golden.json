@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "v5.2",
+  "rulesetVersion": "v5.3",
   "denominatorMode": "fixed-slots",
   "incompleteVerdictMode": "incomplete",
   "slots": {
@@ -1604,7 +1604,7 @@
         "pct": 93,
         "done": 14,
         "total": 15,
-        "classification": "NO-GO",
+        "classification": "GO",
         "byFilter": {
           "f1": {
             "done": 6,
@@ -1728,7 +1728,7 @@
         "pct": 93,
         "done": 14,
         "total": 15,
-        "classification": "NO-GO",
+        "classification": "GO",
         "byFilter": {
           "f1": {
             "done": 6,
@@ -7013,10 +7013,10 @@
         }
       },
       "expected": {
-        "pct": 100,
-        "done": 15,
+        "pct": 93,
+        "done": 14,
         "total": 15,
-        "classification": "GO",
+        "classification": "WATCH",
         "byFilter": {
           "f1": {
             "done": 6,
@@ -7027,7 +7027,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -7132,11 +7132,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -7266,8 +7276,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -7280,7 +7290,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -7397,11 +7407,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -7527,8 +7547,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -7541,7 +7561,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -7658,11 +7678,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -7789,10 +7819,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -7803,7 +7833,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -7920,11 +7950,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -8052,10 +8092,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -8066,7 +8106,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -8183,11 +8223,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹100–₹200 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -8314,8 +8364,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -8328,7 +8378,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -8445,11 +8495,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -8571,10 +8631,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 0,
@@ -8585,7 +8645,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -8704,11 +8764,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -8835,10 +8905,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -8849,7 +8919,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -8966,11 +9036,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -9097,8 +9177,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -9111,7 +9191,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -9228,11 +9308,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -9359,8 +9449,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -9373,7 +9463,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -9490,11 +9580,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -9621,10 +9721,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -9635,7 +9735,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -9752,11 +9852,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -9883,8 +9993,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -9897,7 +10007,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -10014,11 +10124,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -10145,8 +10265,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -10159,7 +10279,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -10276,11 +10396,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -10407,10 +10537,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -10421,7 +10551,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -10538,11 +10668,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -10669,8 +10809,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -10683,7 +10823,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -10800,11 +10940,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -10931,8 +11081,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -10945,7 +11095,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -11062,11 +11212,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -11193,10 +11353,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -11207,7 +11367,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -11324,11 +11484,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -11455,8 +11625,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -11469,7 +11639,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -11586,11 +11756,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -11717,8 +11897,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -11731,7 +11911,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -11848,11 +12028,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -11979,10 +12169,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -11993,7 +12183,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -12110,11 +12300,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -12241,8 +12441,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -12255,7 +12455,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -12372,11 +12572,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -12503,8 +12713,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -12517,7 +12727,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -12634,11 +12844,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -12765,10 +12985,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -12779,7 +12999,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -12896,11 +13116,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -13027,8 +13257,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -13041,7 +13271,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -13158,11 +13388,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -13289,8 +13529,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -13303,7 +13543,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -13420,11 +13660,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -13551,10 +13801,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -13565,7 +13815,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -13682,11 +13932,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -13813,8 +14073,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -13827,7 +14087,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -13944,11 +14204,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -14075,8 +14345,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -14089,7 +14359,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -14206,11 +14476,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -14337,10 +14617,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -14351,7 +14631,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -14468,11 +14748,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -14599,8 +14889,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -14613,7 +14903,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -14730,11 +15020,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -14861,8 +15161,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -14875,7 +15175,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -14992,11 +15292,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -15123,10 +15433,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -15137,7 +15447,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -15254,11 +15564,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -15385,8 +15705,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -15399,7 +15719,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -15516,11 +15836,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -15647,8 +15977,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -15661,7 +15991,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -15778,11 +16108,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -15909,10 +16249,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -15923,7 +16263,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -16040,11 +16380,21 @@
           "markedDown": true
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -16171,8 +16521,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -16185,7 +16535,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -16302,11 +16652,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -16433,8 +16793,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -16447,7 +16807,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -16564,11 +16924,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -16664,8 +17034,8 @@
         }
       },
       "expected": {
-        "pct": 20,
-        "done": 3,
+        "pct": 13,
+        "done": 2,
         "total": 15,
         "classification": "INCOMPLETE",
         "byFilter": {
@@ -16678,7 +17048,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -16795,11 +17165,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -16897,10 +17277,10 @@
         }
       },
       "expected": {
-        "pct": 60,
-        "done": 9,
+        "pct": 53,
+        "done": 8,
         "total": 15,
-        "classification": "WATCH",
+        "classification": "NO-GO",
         "byFilter": {
           "f1": {
             "done": 1,
@@ -16911,7 +17291,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -17028,11 +17408,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },
@@ -17160,8 +17550,8 @@
         }
       },
       "expected": {
-        "pct": 67,
-        "done": 10,
+        "pct": 60,
+        "done": 9,
         "total": 15,
         "classification": "WATCH",
         "byFilter": {
@@ -17174,7 +17564,7 @@
             "total": 1
           },
           "f3": {
-            "done": 1,
+            "done": 0,
             "total": 1
           },
           "f4": {
@@ -17291,11 +17681,21 @@
           "markedDown": false
         },
         "f3": {
-          "checkLabel": "Cleared",
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
           "items": [
             {
-              "status": "done",
-              "text": "Filter 2 MRP sits within the safe ₹80–₹120 range"
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 7
             }
           ]
         },

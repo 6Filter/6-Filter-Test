@@ -25,23 +25,21 @@ assert.equal(guarded.maxMrpInr, null);
 assert.equal(formatRupeeInr(guarded.maxMrpInr), "—");
 assert.equal(formatRupeeInr(guarded.minMrpInr), "₹200");
 
-const f3NullMax = checkF3(
-  { cogsAtScale: 100, netMarginAtScale: 80, mrpInr: 590 },
-  {
-    marginElasticity: {
-      minMrpInr: 200,
-      maxMrpInr: null,
-      minMarginPct: 50,
-      maxMarginPct: null,
-      rangeError: INVALID_MRP_RANGE_COPY,
-    },
-  }
-);
-assert.equal(f3NullMax.checkLabel, "Evidence missing");
+const f2Priced = { cogsAtScale: 100, netMarginAtScale: 80, gstRatePct: 18, mrpInr: 590, mrpOverride: true };
+const f3NullMax = checkF3(f2Priced, {
+  marginElasticity: {
+    minMrpInr: 200,
+    maxMrpInr: null,
+    minMarginPct: 50,
+    maxMarginPct: null,
+    rangeError: INVALID_MRP_RANGE_COPY,
+  },
+});
+assert.equal(f3NullMax.checkLabel, "Marked down");
 assert.doesNotMatch(JSON.stringify(f3NullMax), /toFixed/);
 
-const f3Missing = checkF3({ cogsAtScale: 100, netMarginAtScale: 80 }, {});
-assert.equal(f3Missing.checkLabel, "Not yet run");
+const f3Missing = checkF3({ cogsAtScale: 100, netMarginAtScale: 80, gstRatePct: 18 }, {});
+assert.equal(f3Missing.checkLabel, "Marked down");
 
 const f4Missing = checkF4({});
 assert.equal(f4Missing.checkLabel, "Not yet run");

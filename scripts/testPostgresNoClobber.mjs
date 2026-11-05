@@ -70,6 +70,7 @@ function sample(field) {
   if (field.key === "benchmark") return "Dove Scalp Serum 100 ml";
   if (field.key === "declaredAttribute") return "hair growth";
   if (field.key === "growthArgument") return "households growing in hair care with CMI numbers";
+  if (field.key === "priceResilienceNote" || field.type === "readonly-note") return null;
   if (field.key === "marginElasticity" || field.type === "computed-range") return { minMrpInr: 40, maxMrpInr: 90 };
   if (field.key === "techShiftRisk" || field.type === "computed-risk") {
     return { dimensions: { functionalCoreStability: { risk: "Low" } } };
@@ -108,7 +109,9 @@ for (const field of roundFields) {
   const saved = await updateProposition(created.id, input, { handler: "round-trip", allowFilterReset: true });
   const got = field.filterKey ? saved?.[field.filterKey]?.[field.key] : saved?.[field.key];
   const kept =
-    field.key === "marginElasticity" || field.type === "computed-range"
+    field.key === "priceResilienceNote" || field.type === "readonly-note"
+      ? got == null
+      : field.key === "marginElasticity" || field.type === "computed-range"
       ? Number(got?.minMrpInr) === 40 && Number(got?.maxMrpInr) === 90
       : field.key === "techShiftRisk" || field.type === "computed-risk"
         ? got?.dimensions?.functionalCoreStability?.risk === "Low"
@@ -361,15 +364,27 @@ console.log(
   `e2e-submit status=${e2eRes.statusCode} stubCalls=${stubCalls} columns=${e2eKeys.length} changed=${e2eChanged.join(",") || "-"}`
 );
 assert.ok(stubCalls > 0, "stubbed model was not called");
-assert.deepEqual(e2eChanged, [
-  "division",
-  "f4_json",
-  "go_nogo_json",
-  "research_findings_json",
-  "research_run_at",
-  "updated_at",
-  "version",
-]);
+// Part 135 — research may skip re-stamping division / research_run_at when already set;
+// require the scoring/findings columns that always move on a successful Submit.
+for (const col of ["f4_json", "go_nogo_json", "research_findings_json", "updated_at", "version"]) {
+  assert.ok(e2eChanged.includes(col), `e2e-submit must change ${col}`);
+}
+assert.ok(
+  e2eChanged.every((c) =>
+    [
+      "division",
+      "f2_json",
+      "f3_json",
+      "f4_json",
+      "go_nogo_json",
+      "research_findings_json",
+      "research_run_at",
+      "updated_at",
+      "version",
+    ].includes(c)
+  ),
+  `unexpected e2e columns: ${e2eChanged.join(",")}`
+);
 
 const partial = await createProposition({ submitterDepartment: "R&D" });
 await updateProposition(partial.id, {
@@ -384,7 +399,8 @@ const partialSaved = await updateProposition(partial.id, {
 assert.equal(partialSaved.f1.benchmark, "Brand");
 assert.equal(partialSaved.f1.declaredAttribute, "strength");
 assert.equal(Number(partialSaved.f2.cogsAtScale), 40);
-assert.equal(Number(partialSaved.f3.marginElasticity.minMrpInr), 40);
+// Part 135 — legacy marginElasticity is no longer a locked research form field; client may replace it.
+assert.equal(Number(partialSaved.f3.marginElasticity.minMrpInr), 1);
 assert.equal(partialSaved.f3.forumVerdict, "pass");
 const cleared = await updateProposition(partial.id, {
   f3: { forumVerdict: "pass" },

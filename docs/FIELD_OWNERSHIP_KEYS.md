@@ -8,7 +8,6 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 
 | Key | Filter | Reason |
 |---|---|---|
-| `marginElasticity` | F3 | Research writes the safe MRP range, basis, and sources. |
 | `techShiftRisk` | F4 | Research writes the seven dimension ratings and the overall risk. |
 | `computedRevenue` | F5 | The year-3 revenue figure is computed from the five human factors. |
 
@@ -36,7 +35,7 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 | `mrpOverride` | F2 | Chosen by a person — use typed MRP instead of the computed one. |
 | `qcomTrajectory` | F2 | Optional free-text notes. Not scored. |
 | `financeSigned` | F2 | Chosen by a person. |
-| `f3RangeOverride` | F3 | The min and max MRP a person typed. Research stays on `marginElasticity`. |
+| `priceResilienceNote` | F3 | Read-only cliff-rule copy on the form; not stored as scored input. |
 | `f4MitigationResponses` | F4 | The written response per dimension. Ratings stay on `techShiftRisk`. |
 | `householdsReachedY3Mn` | F5 | Typed by a person. |
 | `trialRatePct` | F5 | Typed by a person. |
@@ -54,3 +53,5 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 | `verdictNote` | F1–F6 | Recorded by a person. |
 
 `f4MitigationResponses` holds text that used to be stored only as `userResponse` inside `techShiftRisk`. A read still shows that older text. A save copies it onto this key and does not delete the copy inside the research object.
+
+Legacy ideas may still have `marginElasticity` (research safe-range output) and `f3RangeOverride` (typed min/max MRP). They are not form fields after Part 135; cliff scoring uses Filter 2 MRP plus `researchFindings.f3.priceEvents`.

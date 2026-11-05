@@ -1,6 +1,6 @@
 /**
  * The same saved idea must keep one percent.
- * A follow-up read that sends an empty safe-MRP range must not drop that line.
+ * A follow-up read that drops cliff research must not drop that line.
  * The browser preview must count the same category line the server counts.
  */
 import assert from "node:assert/strict";
@@ -17,6 +17,8 @@ const { previewAdvisoryChecks, scoreAdvisoryChecks } = await import("../lib/goNo
 const { computeAllAdvisoryChecks } = await import("../lib/propositionScoring.js");
 const { createProposition, getPropositionById, updateProposition } = await import("../lib/db.js");
 const { handlePropositionGoNogo } = await import("../lib/propositionGateApi.js");
+
+const priceEvents = { annualIncreasePct: 0, events: [] };
 
 const idea = {
   name: "Score stability fixture",
@@ -63,20 +65,23 @@ const idea = {
   },
   researchFindings: {
     f1: { benchmarkVerified: false, categorySizeFound: false, benchmarkEvidence: "not found" },
+    f3: { priceEvents },
   },
 };
 
-const preview = scoreAdvisoryChecks(previewAdvisoryChecks(idea));
-const server = scoreAdvisoryChecks(await computeAllAdvisoryChecks(idea));
-assert.equal(preview.done, server.done);
-assert.equal(preview.total, server.total);
-assert.equal(preview.pct, server.pct);
+const previewChecks = previewAdvisoryChecks(idea);
+const serverChecks = await computeAllAdvisoryChecks(idea);
+assert.equal(previewChecks.f3.checkLabel, "Evidence missing", "browser preview must not invent F3 cliff credit");
+assert.equal(serverChecks.f3.checkLabel, "Cleared");
+const server = scoreAdvisoryChecks(serverChecks);
+assert.equal(server.total, scoreAdvisoryChecks(previewChecks).total);
 
 const created = await createProposition({ submitterDepartment: "R&D" });
 const saved = await updateProposition(
   created.id,
   {
     ...idea,
+    researchFindings: idea.researchFindings,
     researchRunAt: new Date().toISOString(),
     goNoGo: { classification: "NO-GO", score: { pct: 1, done: 1, total: 1 } },
   },
@@ -84,11 +89,14 @@ const saved = await updateProposition(
 );
 assert.equal(saved.f3.marginElasticity.minMrpInr, 10);
 
-const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks(saved));
-const withoutRange = scoreAdvisoryChecks(
-  await computeAllAdvisoryChecks({ ...saved, f3: { forumVerdict: "", verdictNote: "" } })
+const full = scoreAdvisoryChecks(await computeAllAdvisoryChecks({ ...saved, researchFindings: idea.researchFindings }));
+const withoutCliffResearch = scoreAdvisoryChecks(
+  await computeAllAdvisoryChecks({
+    ...saved,
+    researchFindings: { ...idea.researchFindings, f3: {} },
+  })
 );
-assert.notEqual(full.pct, withoutRange.pct, "dropping the safe MRP range must be able to move the percent");
+assert.notEqual(full.pct, withoutCliffResearch.pct, "dropping priceEvents must move the percent");
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -102,6 +110,7 @@ await handlePropositionGoNogo(
     body: {
       proposition: {
         ...saved,
+        researchFindings: idea.researchFindings,
         f3: { forumVerdict: "", verdictNote: "" },
         f4: { forumVerdict: "", verdictNote: "" },
         category: "",
@@ -124,4 +133,4 @@ assert.equal(stored.f3.marginElasticity.minMrpInr, 10);
 assert.equal(stored.goNoGo.score.pct, full.pct);
 assert.equal(stored.category, "Iced tea");
 
-console.log(`PASS score stays ${full.pct} when the follow-up read omits the safe MRP range`);
+console.log(`PASS score stays ${full.pct} when the follow-up read omits cliff research on the payload`);

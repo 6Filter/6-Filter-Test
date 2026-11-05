@@ -37,7 +37,8 @@ const checks = {
     ],
   },
   f3: {
-    checkLabel: "Below floor",
+    checkLabel: "Marked down",
+    markedDown: true,
     items: [
       {
         status: "pending",
@@ -119,12 +120,15 @@ const pair = f2ActualVsFloor(
 );
 assert.deepEqual(pair, { actual: 40, floor: 50, unit: "%" });
 
-const f3 = f3ActualVsCeiling({
-  f2: { mrpInr: 199 },
-  f3: { marginElasticity: { maxMrpInr: 120 } },
-});
-assert.deepEqual(f3, { actual: 199, ceiling: 120, unit: "₹" });
-assert.equal(f3ActualVsCeiling({ f2: { mrpInr: 199 } }), null, "must not invent a ceiling");
+assert.equal(
+  f3ActualVsCeiling({
+    f2: { mrpInr: 199 },
+    f3: { marginElasticity: { maxMrpInr: 120 } },
+  }),
+  null,
+  "Part 135 — legacy safe band no longer drives MRP vs ceiling on the output page"
+);
+assert.equal(f3ActualVsCeiling({ f2: { mrpInr: 199 } }), null);
 
 const coverage = countFiltersWithEvidence({
   f1: { declaredAttribute: "cooling" },

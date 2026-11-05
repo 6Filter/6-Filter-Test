@@ -89,7 +89,7 @@ const checks = {
   },
   f3: {
     checkLabel: "Cleared",
-    items: [{ status: "done", text: "Filter 2 MRP sits within the safe ₹15–₹40 range" }],
+    items: [{ status: "done", text: "No fixed price-point crossing above 10% volume loss over five years" }],
   },
 };
 const bad = validateNarrativeParagraph("Maggi leads the category at ₹99.", {

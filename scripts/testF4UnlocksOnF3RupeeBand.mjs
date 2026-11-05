@@ -1,6 +1,6 @@
 /**
- * F4 must unlock as soon as Filter 3 has a safe ₹ MRP band.
- * Requiring maxMarginPct forced users to click "Re-run this estimate".
+ * F4 must unlock once Filter 3 is "enough" — resolvable Filter 2 MRP (Part 135)
+ * or a legacy stored safe ₹ MRP band on old ideas.
  */
 import assert from "node:assert/strict";
 import { f3HasEnough, isFilterUnlocked } from "../lib/filterUnlock.js";
@@ -23,29 +23,35 @@ assert.equal(
     f3: { marginElasticity: { minMrpInr: 277, maxMrpInr: 361 } },
   }),
   true,
-  "rupee-only F3 unlocks F4"
+  "legacy rupee-only F3 unlocks F4"
 );
 
 assert.equal(
   isFilterUnlocked("f4", {
     ...base,
-    f3: {
-      marginElasticity: { minMrpInr: null, maxMrpInr: null },
-      f3RangeOverride: { minMrpInr: 200, maxMrpInr: 280 },
-    },
+    f2: { cogsAtScale: 40, netMarginAtScale: 55, gstRatePct: 18 },
+    f3: {},
   }),
   true,
-  "typed Min/Max MRP override unlocks F4"
+  "resolvable Filter 2 MRP unlocks F4 without a stored band"
 );
 
 assert.equal(
   isFilterUnlocked("f4", {
     ...base,
-    f2: { cogsAtScale: 40, netMarginAtScale: 55 },
+    f3: { marginElasticity: { minMarginPct: 20, maxMarginPct: 38 } },
+  }),
+  false,
+  "legacy %-only band without a resolvable F2 price does not unlock F4"
+);
+assert.equal(
+  isFilterUnlocked("f4", {
+    ...base,
+    f2: { cogsAtScale: 40, netMarginAtScale: 55, gstRatePct: 18 },
     f3: { marginElasticity: { minMarginPct: 20, maxMarginPct: 38 } },
   }),
   true,
-  "legacy %-only band still unlocks once COGS hydrates ₹ ends"
+  "resolvable F2 MRP unlocks F4 even when only a legacy % band is stored"
 );
 assert.equal(
   isFilterUnlocked("f4", {

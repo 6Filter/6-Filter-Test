@@ -61,13 +61,17 @@ assert.equal(f4done.checkLabel, "Cleared");
 assert.equal(f4done.items.length, 7);
 
 const floorChecks = {
-  f1: { checkLabel: "Cleared", items: [{ status: "done", text: "Benchmark named: Parachute Advansed" }] },
+  f1: {
+    checkLabel: "Below floor",
+    items: [{ status: "pending", text: "Declared gap 1.0 is below the 2.0 floor (v4, non-negotiable)" }],
+  },
   f2: {
     checkLabel: "Evidence missing",
     items: [{ status: "pending", text: financeSignatureCopy(false) }],
   },
   f3: {
-    checkLabel: "Below floor",
+    checkLabel: "Marked down",
+    markedDown: true,
     items: [
       {
         status: "pending",
@@ -96,11 +100,10 @@ assert.equal(
 
 const f3Fallback = fallbackFilterNarrative(floorChecks.f3);
 assert.match(f3Fallback, /₹70 ceiling/);
-assert.match(f3Fallback, /analytical floor failure/);
 assert.doesNotMatch(f3Fallback, /^This filter is cleared/);
 
 const clearedFallback = fallbackFilterNarrative(floorChecks.f1);
-assert.match(clearedFallback, /Nothing outstanding/);
+assert.match(clearedFallback, /floor failure|below the 2.0 floor/i);
 
 const contradicting = reconcileNarratives(
   {
@@ -112,8 +115,8 @@ const contradicting = reconcileNarratives(
   floorChecks
 );
 assert.equal(computeGoNoGo(floorChecks), classification, "reconcile must not mutate scoring");
-assert.equal(floorChecks.f3.checkLabel, "Below floor");
-assert.match(contradicting.f3, /analytical floor failure|₹70 ceiling/);
+assert.equal(floorChecks.f3.checkLabel, "Marked down");
+assert.match(contradicting.f3, /₹70 ceiling/);
 assert.doesNotMatch(contradicting.f3, /Filter 3 is cleared/);
 assert.doesNotMatch(contradicting.f2, /Finance/i);
 
@@ -129,7 +132,7 @@ const generated = await generateFilterNarratives({
 });
 assert.equal(computeGoNoGo(floorChecks), "NO-GO");
 assert.equal(goNoGoIsFloorFailure(floorChecks), true);
-assert.match(generated.f3, /₹70 ceiling|analytical floor failure/);
+assert.match(generated.f3, /₹70 ceiling/);
 assert.doesNotMatch(generated.f3, /This filter is cleared/);
 assert.doesNotMatch(generated.f2, /Finance/i);
 
