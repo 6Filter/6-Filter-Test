@@ -1876,6 +1876,22 @@ function ProofUploadPanel({ proof, onPick, onClear, fileRef, error, disabled }) 
   );
 }
 
+function ideaHasUserContent(doc = {}) {
+  const f1 = doc.f1 && typeof doc.f1 === "object" ? doc.f1 : {};
+  const f2 = doc.f2 && typeof doc.f2 === "object" ? doc.f2 : {};
+  return Boolean(
+    String(doc.name || "").trim() ||
+      String(doc.category || "").trim() ||
+      String(doc.ideaDescription || "").trim() ||
+      String(doc.submitterName || "").trim() ||
+      String(f1.evidenceSourceFile?.name || "").trim() ||
+      String(f1.conceptCardName || "").trim() ||
+      String(f2.cogsAtScale ?? "").trim() ||
+      String(f2.mrpInr ?? "").trim() ||
+      String(f2.grammage || "").trim()
+  );
+}
+
 function formatSavedAt(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -2008,7 +2024,9 @@ export default function PropositionForm({
   const [conceptCardName, setConceptCardName] = useState(() =>
     String(initial?.f1?.conceptCardName || "").trim()
   );
-  const [draftSaveState, setDraftSaveState] = useState("");
+  const [draftSaveState, setDraftSaveState] = useState(() =>
+    ideaHasUserContent(initial) ? "Draft saved" : ""
+  );
   const conceptCardRef = useRef(null);
   const skipDraftRef = useRef(true);
   const draftDirtyRef = useRef(false);
@@ -2041,6 +2059,7 @@ export default function PropositionForm({
     f3AutoFillRequested.current = false;
     skipDraftRef.current = true;
     draftDirtyRef.current = false;
+    setDraftSaveState(ideaHasUserContent(initial) ? "Draft saved" : "");
   }, [initial?.id]);
 
   useEffect(() => {
@@ -2307,6 +2326,7 @@ export default function PropositionForm({
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
     if (isScoredProposition(sourceDocRef.current)) return undefined;
     draftDirtyRef.current = true;
+    setDraftSaveState("Saving…");
     const t = window.setTimeout(() => {
       const snap = docRef.current;
       if (!snap?.id) return;
@@ -2314,6 +2334,9 @@ export default function PropositionForm({
         .then((saved) => {
           if (!saved) {
             setDraftSaveState("Draft not saved");
+            return;
+          }
+          if (docRef.current !== snap && draftDirtyRef.current) {
             return;
           }
           draftDirtyRef.current = false;
@@ -2333,15 +2356,24 @@ export default function PropositionForm({
   }, [doc, propositionId, saving]);
 
   useEffect(() => {
-    return () => {
+    function flushDraft(keepalive) {
       if (
-        draftDirtyRef.current &&
-        typeof onSaveDraftRef.current === "function" &&
-        docRef.current?.id &&
-        !isScoredProposition(sourceDocRef.current)
+        !draftDirtyRef.current ||
+        typeof onSaveDraftRef.current !== "function" ||
+        !docRef.current?.id ||
+        isScoredProposition(sourceDocRef.current)
       ) {
-        Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
+        return;
       }
+      Promise.resolve(onSaveDraftRef.current(docRef.current, { keepalive: Boolean(keepalive) })).catch(() => {});
+    }
+    function onPageHide() {
+      flushDraft(true);
+    }
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      flushDraft(true);
     };
   }, []);
 
@@ -2645,7 +2677,29 @@ export default function PropositionForm({
         return;
       }
       if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.proposition) {
+        setDoc((prev) => {
+          const saved = data.proposition;
+          return mergeProposition({
+            ...saved,
+            ...prev,
+            id: prev.id || saved.id,
+            version: saved.version ?? prev.version,
+            updatedAt: saved.updatedAt || prev.updatedAt,
+            f1: {
+              ...(saved.f1 || {}),
+              ...(prev.f1 || {}),
+              conceptCardName:
+                data.conceptCardName || saved.f1?.conceptCardName || prev.f1?.conceptCardName || "",
+            },
+            f2: { ...(saved.f2 || {}), ...(prev.f2 || {}) },
+            f3: { ...(saved.f3 || {}), ...(prev.f3 || {}) },
+            f4: { ...(saved.f4 || {}), ...(prev.f4 || {}) },
+            f5: { ...(saved.f5 || {}), ...(prev.f5 || {}) },
+            f6: { ...(saved.f6 || {}), ...(prev.f6 || {}) },
+          });
+        });
+      }
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -3284,9 +3338,9 @@ export default function PropositionForm({
           ))}
         </nav>
         <p className="draft-saved mono">
-          {Number(doc.version) > 1 || doc.updatedAt
+          {draftSaveState === "Draft saved"
             ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
-            : "Not yet saved for the team"}
+            : draftSaveState || "Not yet saved for the team"}
         </p>
       </aside>
 
@@ -3843,7 +3897,7 @@ export default function PropositionForm({
           </span>
         ) : null}
         <span className="save-state">
-          v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
+          v{doc.version || 1} · {draftSaveState === "Draft saved" ? "Draft saved" : draftSaveState || "not yet saved for the team"}
         </span>
         <button
           type="button"

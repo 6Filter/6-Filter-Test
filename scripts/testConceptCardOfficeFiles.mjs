@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
 import { classifyAttachment, prepareIdeaInput } from "../lib/extractAttachment.js";
+import { statedFieldsFromConceptText } from "../lib/filters/extractConceptCard.js";
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /handleConceptCardFile/);
@@ -52,5 +53,14 @@ await assert.rejects(
   () => prepareIdeaInput("", { name: "notes.txt", data: Buffer.from("hello").toString("base64") }),
   /PDF, Word \(.doc \/ .docx\), Excel/
 );
+
+const stated = statedFieldsFromConceptText(
+  "Category,Hair oils\nBenchmark,Parachute Advansed\nDeclared attribute,cooling sensation\nDeclared gap,2\n"
+);
+assert.equal(stated.category, "Hair oils");
+assert.equal(stated.benchmark, "Parachute Advansed");
+assert.equal(stated.declaredAttribute, "cooling sensation");
+assert.equal(stated.declaredGap, 2);
+assert.equal(statedFieldsFromConceptText("a cooling oil for summer").category, undefined);
 
 console.log("PASS concept card accepts PDF, Word, and Excel");
