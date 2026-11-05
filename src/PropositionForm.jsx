@@ -2583,7 +2583,6 @@ export default function PropositionForm({
       setGoNoGo(null);
     }
     setCurrentView(preferOutputView(initial) ? "goNoGoResult" : "propositionForm");
-    setManagerOpen(false);
     setMrpBaseInr(null);
     setMrpFinalInr(null);
     mrpTouchedByHuman.current = false;

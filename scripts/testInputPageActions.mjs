@@ -16,6 +16,7 @@ assert.ok(
   !/Send to Manager/.test(form),
   "Send to Manager removed from input page"
 );
+assert.ok(!/setManagerOpen/.test(form), "orphaned setManagerOpen must not remain after Send to Manager removal");
 assert.match(form, /Submit for verdict/);
 assert.match(form, /f4-dimension-editor/);
 assert.match(form, /Select risk/);
