@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { checkF4 } from "../lib/filterChecks.js";
+import { supportedF4Findings } from "./f4TestHelpers.mjs";
 import { previewAdvisoryChecks } from "../lib/goNoGo.js";
 import { TECH_SHIFT_DIMENSIONS } from "../lib/techShiftRisk.js";
 
@@ -29,7 +30,7 @@ assert.equal(emptyDims.checkLabel, "Not yet run");
 const allLow = Object.fromEntries(
   TECH_SHIFT_DIMENSIONS.map((key) => [key, { risk: "Low", reason: `${key} stable` }])
 );
-const scoredLow = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } });
+const scoredLow = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } }, supportedF4Findings(allLow));
 assert.equal(scoredLow.checkLabel, "Cleared");
 
 const oneHigh = {

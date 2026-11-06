@@ -19,6 +19,7 @@ import {
 } from "../lib/narrativeCheck.js";
 import { scoreExplainerMarkdown, scoreExplainerSections } from "../lib/scoreExplainer.js";
 import { generateFilterNarratives } from "../lib/filterNarratives.js";
+import { narrativeGuardMode } from "../lib/narrativeGuard.js";
 import { selectExportTables } from "../lib/backupPlan.js";
 
 const nielsen = [
@@ -112,7 +113,10 @@ const kept = validateNarrativeParagraph(fallback, { checks, check: checks.f1, co
 assert.equal(kept.ok, true);
 assert.match(fallback, /Lipton/);
 
+// Part 138 H — the default is now "enforce"; shadow mode must be asked for explicitly.
 delete process.env.NARRATIVE_GUARD;
+assert.equal(narrativeGuardMode(), "enforce");
+process.env.NARRATIVE_GUARD = "shadow";
 const shadowLogs = [];
 const originalLog = console.log;
 console.log = (...args) => shadowLogs.push(args.join(" "));

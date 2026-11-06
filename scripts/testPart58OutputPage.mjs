@@ -55,7 +55,7 @@ const checks = {
 const scored = scoreAdvisoryChecks(checks);
 const items = computeImprovementPointValues(checks);
 assert.ok(items.length >= 2, "floor gaps must appear as next steps");
-assert.ok(items.every((it) => it.pointValue === Math.round(100 / 15)), "fixed-slot +N%");
+assert.ok(items.every((it) => it.pointValue === Math.round(100 / 18)), "fixed-slot +N% (Part 138: 18 slots)");
 assert.doesNotMatch(JSON.stringify(items), /Finance/);
 assert.ok(items.some((it) => it.filter === "F2"));
 assert.ok(items.some((it) => /Net margin|50%/i.test(it.text)));
@@ -75,7 +75,8 @@ const chipsLike = {
       { status: "done", text: "Benchmark relevant: Lay's", slot: "benchmark" },
       { status: "done", text: "Declared gap 3 clears the 2.0 floor", slot: "gap" },
       { status: "pending", text: notCoreCopy, slot: "attributes" },
-      { status: "done", text: "Gap derivation and parity entered", slot: "derivation" },
+      { status: "done", text: "Gap derivation entered", slot: "derivation" },
+      { status: "done", text: "Parity exceptions entered", slot: "parity" },
       { status: "done", text: "Growth route penetration selected", slot: "route" },
       { status: "done", text: "Growth argument entered", slot: "argument" },
     ],
@@ -83,6 +84,8 @@ const chipsLike = {
   f2: {
     items: [
       { status: "done", text: "Net margin 40% clears the 30% minimum", slot: "margin", credit: 1 },
+      { status: "done", text: "Pack size 50 g entered with a unit", slot: "packSize", credit: 1 },
+      { status: "done", text: "GST rate 18% entered", slot: "gst", credit: 1 },
     ],
   },
   f3: { items: [{ status: "done", text: "Filter 2 MRP sits within the safe ₹46–₹53 range", credit: 1 }] },
@@ -99,10 +102,10 @@ const chipsLike = {
   },
 };
 const chipsScore = scoreAdvisoryChecks(chipsLike);
-// Part 134 revised — 15 slots: F1 5 + F2 1 + F3 1 + F4 3 = 10 → 67%
-assert.equal(chipsScore.total, 15);
-assert.equal(chipsScore.done, 10);
-assert.equal(chipsScore.pct, 67);
+// Part 138 — 18 slots: F1 6 + F2 3 + F3 1 + F4 3 = 13 → 72%
+assert.equal(chipsScore.total, 18);
+assert.equal(chipsScore.done, 13);
+assert.equal(chipsScore.pct, 72);
 const chipsItems = computeImprovementPointValues(chipsLike);
 const path = closestPathToGo(chipsLike, chipsItems);
 assert.ok(path.items.length >= 2, "path lists checks that clear GO");

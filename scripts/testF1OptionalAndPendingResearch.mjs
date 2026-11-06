@@ -15,9 +15,9 @@ function fullRest(f1Check) {
     f2: {
       checkLabel: "Cleared",
       items: [
-        { status: "done", text: "MRP ₹99 · 50g", credit: 1 },
-        { status: "done", text: "Net margin 55% clears the division floor", credit: 1 },
-        { status: "done", text: "Quick-commerce terms assumption recorded", credit: 1, slot: "qcom" },
+        { status: "done", text: "Net margin 55% clears the division floor", credit: 1, slot: "margin" },
+        { status: "done", text: "Pack size 50 g entered with a unit", credit: 1, slot: "packSize" },
+        { status: "done", text: "GST rate 18% entered", credit: 1, slot: "gst" },
       ],
     },
     f3: { checkLabel: "Cleared", items: [{ status: "done", text: "Filter 2 MRP sits within the safe range", credit: 1 }] },
@@ -54,6 +54,17 @@ const clearedFindings = {
         supported: true,
         source_url: SRC,
         quote: "freshness leads purchase",
+      },
+      returnedSources: [SRC],
+    },
+    // Part 138 D51 — parity exceptions have their own assessment slot.
+    parity: {
+      raw: {
+        relevance: "strong",
+        specific: true,
+        supported: true,
+        source_url: SRC,
+        quote: "no parity exceptions",
       },
       returnedSources: [SRC],
     },
@@ -135,12 +146,20 @@ const clearedCtx = {
   assert.equal(badBench.items.find((i) => i.slot === "benchmark").status, "pending");
   assert.match(badBench.items.find((i) => i.slot === "benchmark").text, /not found/i);
 
+  // Part 138 D50 — attributes no longer require an evidence file or link.
   const noEvidence = checkF1(
     { ...base, evidenceSourceDate: "" },
     { ...clearedFindings }
   );
-  assert.equal(noEvidence.items.find((i) => i.slot === "attributes").status, "pending");
-  assert.match(noEvidence.items.find((i) => i.slot === "attributes").text, /Evidence Source|Upload/i);
+  assert.equal(noEvidence.items.find((i) => i.slot === "attributes").status, "done");
+  assert.doesNotMatch(noEvidence.items.find((i) => i.slot === "attributes").text, /Evidence Source|Upload/i);
+
+  // A failed/absent attribute plan assessment still keeps the slot open.
+  const noPlan = checkF1(
+    { ...base, evidenceSourceDate: "" },
+    { assessments: { ...clearedFindings.assessments, attributes: undefined } }
+  );
+  assert.equal(noPlan.items.find((i) => i.slot === "attributes").status, "pending");
 }
 
 // Path asks for Submit / web check — never "Benchmark named: …"

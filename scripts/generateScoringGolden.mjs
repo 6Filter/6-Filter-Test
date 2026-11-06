@@ -71,8 +71,9 @@ const clearedF1 = {
   items: [
     { status: "done", text: "Benchmark relevant: X", slot: "benchmark" },
     { status: "done", text: "Declared gap 3 clears the 2.0 floor", slot: "gap" },
-    { status: "done", text: "Evidence Source read and relevant", slot: "attributes" },
-    { status: "done", text: "Gap derivation and parity entered", slot: "derivation" },
+    { status: "done", text: "Attribute claim read as strong on the web check", slot: "attributes" },
+    { status: "done", text: "Gap derivation entered", slot: "derivation" },
+    { status: "done", text: "Parity exceptions entered", slot: "parity" },
     { status: "done", text: "Growth route penetration selected", slot: "route" },
     { status: "done", text: "Growth argument entered", slot: "argument" },
   ],
@@ -81,6 +82,8 @@ const clearedF2 = {
   checkLabel: "Cleared",
   items: [
     { status: "done", text: "Net margin clears minimum", slot: "margin", credit: 1 },
+    { status: "done", text: "Pack size 50 g entered with a unit", slot: "packSize", credit: 1 },
+    { status: "done", text: "GST rate 18% entered", slot: "gst", credit: 1 },
     { status: "pending", text: "Finance unsigned", formAdmin: true, credit: 0 },
   ],
 };
@@ -92,22 +95,23 @@ const clearedF4 = {
 const empty = { checkLabel: "Not yet run", items: [] };
 
 function checksForDone(done) {
-  // Build a complete F1–F4 checklist with exactly `done` of 15 slots cleared (Part 134 revised).
-  const f1Slots = ["benchmark", "gap", "attributes", "derivation", "route", "argument"];
+  // Build a complete F1–F4 checklist with exactly `done` of 18 slots cleared (Part 138: 7+3+1+7).
+  const f1Slots = ["benchmark", "gap", "attributes", "derivation", "parity", "route", "argument"];
   const f1Texts = [
     "Benchmark relevant",
     "Declared gap 3 clears the 2.0 floor",
     "Evidence Source read and relevant",
-    "Gap derivation and parity entered",
+    "Gap derivation entered",
+    "Parity exceptions entered",
     "Growth route selected",
     "Growth argument entered",
   ];
-  const f1n = Math.min(6, done);
-  const f2n = Math.min(1, Math.max(0, done - 6));
-  const f3n = Math.min(1, Math.max(0, done - 7));
-  const f4n = Math.min(7, Math.max(0, done - 8));
+  const f1n = Math.min(7, done);
+  const f2n = Math.min(3, Math.max(0, done - 7));
+  const f3n = Math.min(1, Math.max(0, done - 10));
+  const f4n = Math.min(7, Math.max(0, done - 11));
   const f1 = {
-    checkLabel: f1n === 6 ? "Cleared" : f1n ? "Evidence missing" : "Not yet run",
+    checkLabel: f1n === 7 ? "Cleared" : f1n ? "Evidence missing" : "Not yet run",
     items:
       f1n === 0
         ? []
@@ -118,27 +122,28 @@ function checksForDone(done) {
           })),
   };
   const f2 = {
-    checkLabel: f2n === 1 ? "Cleared" : f2n ? "Evidence missing" : "Not yet run",
+    checkLabel: f2n === 3 ? "Cleared" : f2n ? "Evidence missing" : "Not yet run",
     items:
       f2n === 0
         ? []
         : [
-            {
-              status: "done",
-              text: "Net margin clears minimum",
-              slot: "margin",
-              credit: 1,
-            },
+            { status: "done", text: "Net margin clears minimum", slot: "margin", credit: 1 },
+            f2n >= 2
+              ? { status: "done", text: "Pack size 50 g entered with a unit", slot: "packSize", credit: 1 }
+              : { status: "pending", text: "Pack size not entered", slot: "packSize", credit: 0 },
+            f2n >= 3
+              ? { status: "done", text: "GST rate 18% entered", slot: "gst", credit: 1 }
+              : { status: "pending", text: "GST rate not entered", slot: "gst", credit: 0 },
           ],
   };
   const f3 =
     f3n === 1
       ? clearedF3
-      : done >= 7
+      : done >= 10
         ? { checkLabel: "Evidence missing", items: [{ status: "pending", text: "range open" }] }
         : empty;
   const f4 =
-    f4n === 0 && done < 8
+    f4n === 0 && done < 10
       ? empty
       : {
           checkLabel: f4n === 7 ? "Cleared" : "Evidence missing",
@@ -159,12 +164,12 @@ ideas.push(packChecks("stage-2", { f1: clearedF1, f2: clearedF2, f3: empty, f4: 
 ideas.push(packChecks("stage-3", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: empty }, "f1-f3"));
 ideas.push(packChecks("stage-4", { f1: clearedF1, f2: clearedF2, f3: clearedF3, f4: clearedF4 }, "all cleared"));
 
-// Band edges (required) — 15 slots: 8/15=53 NO-GO, 9/15=60 WATCH, 12/15=80 WATCH, 13/15=87 GO
+// Band edges (required) — 18 slots: 10/18=56 NO-GO, 11/18=61 WATCH, 14/18=78 WATCH, 15/18=83 GO
 for (const [id, done] of [
-  ["band-59", 8],
-  ["band-60", 9],
-  ["band-80", 12],
-  ["band-81", 13],
+  ["band-59", 10],
+  ["band-60", 11],
+  ["band-80", 14],
+  ["band-81", 15],
 ]) {
   ideas.push(packChecks(id, checksForDone(done), `band edge ${id}`));
 }
@@ -409,7 +414,7 @@ for (const [div, floor] of Object.entries(DIVISION_MIN_NET_MARGIN_PCT)) {
 
 // Extra WATCH pads (≥8 WATCH total)
 for (let i = 0; i < 6; i++) {
-  ideas.push(packChecks(`watch-pad-${i}`, checksForDone(10), `WATCH pad ${i}`));
+  ideas.push(packChecks(`watch-pad-${i}`, checksForDone(13), `WATCH pad ${i}`));
 }
 
 async function main() {

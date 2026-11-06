@@ -175,7 +175,7 @@ const firstMover = checkF1(novelF1, {
 const gapDone = firstMover.items.find((it) => it.slot === "gap" && /first-mover/i.test(it.text));
 assert.ok(gapDone);
 assert.equal(gapDone.status, "done");
-assert.notEqual(firstMover.checkLabel, "Below floor");
+assert.notEqual(firstMover.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 assert.doesNotMatch(gapDone.text, /Below floor|below the 2\.0 floor/i);
 
 const oneWeakFindings = {
@@ -187,7 +187,7 @@ const oneWeakFindings = {
 assert.equal(evaluateDeclaredGap(novelF1, oneWeakFindings).status, "done");
 assert.match(evaluateDeclaredGap(novelF1, oneWeakFindings).text, /first-mover/);
 const oneWeak = checkF1(novelF1, oneWeakFindings);
-assert.notEqual(oneWeak.checkLabel, "Below floor");
+assert.notEqual(oneWeak.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 
 const crowded = checkF1(novelF1, {
   noCompetitorCheck: {
@@ -195,7 +195,7 @@ const crowded = checkF1(novelF1, {
     searchSummary: "ready-to-cook dal kits already on shelf",
   },
 });
-assert.equal(crowded.checkLabel, "Below floor");
+assert.equal(crowded.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 const crowdedGap = crowded.items.find((it) => it.slot === "gap");
 assert.equal(crowdedGap.status, "pending");
 assert.match(crowdedGap.text, /MTR/);
@@ -213,7 +213,7 @@ assert.equal(isClaimingNoCompetitor(shortGap), false);
 const short = checkF1(shortGap, {
   noCompetitorCheck: { majorCompetitorsFound: [], searchSummary: "should be ignored" },
 });
-assert.equal(short.checkLabel, "Below floor");
+assert.equal(short.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 const shortItem = short.items.find((it) => /1\.5/.test(it.text));
 assert.equal(shortItem.status, "pending");
 assert.match(shortItem.text, /below the 2(?:\.0)? floor/);

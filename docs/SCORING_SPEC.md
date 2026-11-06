@@ -1,12 +1,12 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v5.5**). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.6**, Part 138). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v5.5` |
+| `SCORING_RULESET_VERSION` | `v5.6` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `SCORING_MODEL` | `relevance` |
 | `RELEVANCE_SHADOW_MODE` | `true` |
@@ -16,6 +16,20 @@ Generated from `lib/lockedConstants.js` (ruleset **v5.5**). Filters 5–6 stay v
 | `FIXED_PRICE_POINTS` | `1, 2, 5, 10, 20, 50, 100` |
 | `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
+
+### What changed in v5.6 (Part 138 — 18 checks)
+
+The fixed denominator is now **18 slots: F1 = 7, F2 = 3, F3 = 1, F4 = 7**.
+
+- **Filter 1 — seven checks.** Gap derivation and parity exceptions are two separate items, each graded from its own entered text (`derivation` and `parity` slots).
+- **Filter 1 gap below 2.0 is a mark-down, not a hard stop.** The gap item earns no credit, the label reads "Marked down" (never "Below floor"), and GO is capped at WATCH. F1 is removed from the floor failures; the only remaining hard stop for floors is **F4 overall High**.
+- **Attributes need no evidence file.** Credit comes from the person-confirmed attribute text plus the web plan check. An Evidence Source upload or link is no longer required for the attributes slot.
+- **New market waives an empty benchmark.** When the growth route is "new market" and no benchmark is entered, the benchmark slot reads "not applicable" and is cleared (there is no incumbent to name).
+- **Filter 2 — three checks:** net margin vs the locked division minimum, pack size, and GST rate. Margin below the minimum stays a mark-down. COGS, MRP and Quick-commerce notes are still never scored.
+  - **Pack size** needs a number *and* a unit (g, kg, ml or L). Blank is pending; a value without a unit is marked down. It is person-entered.
+  - **GST** is **person-entered**. A blank GST is pending (the MRP cannot be priced). The AI no longer fills GST, and the 18% "default" is a research-display placeholder that is never saved (`gstRateForSave`, `clearPlaceholderGst`). A web assessment that contradicts the entered rate marks the check down.
+- **Narrative guard defaults to `enforce`.** A paragraph that names a number, date, brand or regulation not found in the inputs or returned sources is rejected and the deterministic fallback text is used. `NARRATIVE_GUARD=shadow` or `off` remain available.
+- **Division minimum net margins are unchanged** (see the table below).
 
 ### What changed in v5.5 (every value entered is assessed)
 
@@ -31,27 +45,27 @@ Filter 3 has **one** scored check: price resilience on the 10% volume-loss cliff
 
 ### What changed in v5.2 (Filter 2 revised)
 
-Filter 2 has **one** scored check (15 slots total): net margin vs the locked division minimum. Below the minimum is a **mark-down** (label "Marked down", never "Below floor", never NO-GO); GO is capped at WATCH. MRP is computed from COGS ÷ (1 − margin) × (1 + GST) and may be overridden; an override is checked through the margin that MRP implies. COGS, GST, pack size, MRP and Quick-commerce notes are never scored. The 10% volume-loss / three-year price plan logic is not part of Filter 2 (Filter 3 owns price resilience).
+Filter 2 had **one** scored check at v5.2 (superseded by v5.6, which has three): net margin vs the locked division minimum. Below the minimum is a **mark-down** (label "Marked down", never "Below floor", never NO-GO); GO is capped at WATCH. MRP is computed from COGS ÷ (1 − margin) × (1 + GST) and may be overridden; an override is checked through the margin that MRP implies. COGS, MRP and Quick-commerce notes are never scored. The 10% volume-loss / three-year price plan logic is not part of Filter 2 (Filter 3 owns price resilience).
 
 ### What changed in v5.0 (relevance)
 
-Filter 1 has **six** checks. Credit is **none / weak / adequate / strong** from stored AI assessments — never from a field being non-empty.
+Filter 1 had **six** checks at v5.0 (seven since v5.6). Credit is **none / weak / adequate / strong** from stored AI assessments — never from a field being non-empty.
 
 ## GO / NO-GO / WATCH / INCOMPLETE
 
 | Verdict | Rule |
 |---|---|
 | **INCOMPLETE** | No floor failure, and any of F1–F4 is unfinished |
-| **NO-GO** | Floor failure (F1 gap &lt; 2.0, or F4 overall High — not Filter 2 margin or Filter 3 cliff), or (when complete) score &lt; 60% |
-| **WATCH** | Complete idea with 60% ≤ score ≤ 80%, or a mark-down / weak evidence that would otherwise read GO |
+| **NO-GO** | Floor failure (**F4 overall High only** — not the F1 gap, Filter 2 margin or Filter 3 cliff), or (when complete) score &lt; 60% |
+| **WATCH** | Complete idea with 60% ≤ score ≤ 80%, or a mark-down (including an F1 gap below 2.0) / weak evidence that would otherwise read GO |
 | **GO** | Complete idea with score &gt; 80% and no mark-down / weak-evidence cap |
 
-## Fixed check slots (15)
+## Fixed check slots (18)
 
 | Filter | Slots | Canonical checks |
 |---|---:|---|
-| F1 | 6 | Benchmark · Declared gap ≥ 2.0 · Attributes + evidence · Gap derivation + parity · Growth route · Growth argument |
-| F2 | 1 | Net margin vs locked division minimum (mark-down if below) |
+| F1 | 7 | Benchmark (not applicable for a new market) · Declared gap ≥ 2.0 (mark-down if below) · Attributes (no evidence file) · Gap derivation · Parity exceptions · Growth route · Growth argument |
+| F2 | 3 | Net margin vs locked division minimum (mark-down if below) · Pack size (number + unit) · GST rate (person-entered) |
 | F3 | 1 | Price resilience — 10% volume-loss cliff at fixed price points (mark-down if fail / cannot-assess) |
 | F4 | 7 | Seven structural-obsolescence risk dimensions |
 

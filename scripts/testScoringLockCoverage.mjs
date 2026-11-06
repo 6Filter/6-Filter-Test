@@ -26,10 +26,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const golden = JSON.parse(readFileSync(join(root, "scripts/golden/scoring-golden.json"), "utf8"));
 const fpJson = JSON.parse(readFileSync(join(root, "scripts/scoringFingerprint.json"), "utf8"));
 
-assert.equal(SCORING_RULESET_VERSION, "v5.5");
+assert.equal(SCORING_RULESET_VERSION, "v5.6");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(golden.rulesetVersion, "v5.5");
-assert.equal(fpJson.rulesetVersion, "v5.5");
+assert.equal(golden.rulesetVersion, "v5.6");
+assert.equal(fpJson.rulesetVersion, "v5.6");
 
 const requiredFiles = [
   "lib/mrpFormula.js",
@@ -45,8 +45,8 @@ for (const f of requiredFiles) {
 assert.equal(fpJson.fingerprint, computeScoringFingerprint());
 
 const slots = expectedSlotKeys();
-assert.equal(slots.f1.length, 6);
-assert.equal(slots.f2.length, 1);
+assert.equal(slots.f1.length, 7);
+assert.equal(slots.f2.length, 3);
 assert.equal(slots.f3.length, 1);
 assert.equal(slots.f4.length, 7);
 assert.equal(
@@ -76,13 +76,13 @@ for (const id of requiredIds) {
 }
 
 assert.equal(byId["band-59"].expected.classification, "NO-GO");
-assert.equal(byId["band-59"].expected.pct, 53); // 8/15 fixed slots
+assert.equal(byId["band-59"].expected.pct, 56); // 10/18 fixed slots
 assert.equal(byId["band-60"].expected.classification, "WATCH");
-assert.equal(byId["band-60"].expected.pct, 60); // 9/15
+assert.equal(byId["band-60"].expected.pct, 61); // 11/18
 assert.equal(byId["band-80"].expected.classification, "WATCH");
-assert.equal(byId["band-80"].expected.pct, 80); // 12/15
+assert.equal(byId["band-80"].expected.pct, 78); // 14/18
 assert.equal(byId["band-81"].expected.classification, "GO");
-assert.ok(byId["band-81"].expected.pct > GONOGO_SCORE_BANDS.WATCH_MAX); // 13/15 = 87
+assert.ok(byId["band-81"].expected.pct > GONOGO_SCORE_BANDS.WATCH_MAX); // 15/18 = 83
 
 assert.equal(byId["cap-not-run"].expected.classification, "INCOMPLETE");
 assert.equal(byId["cap-research-failed"].expected.classification, "INCOMPLETE");
@@ -125,7 +125,8 @@ for (const [div, floor] of Object.entries(DIVISION_MIN_NET_MARGIN_PCT)) {
 }
 
 function goNoGoIsFloorFailureSafe(checks) {
-  return ["f1", "f2", "f3", "f4"].some((k) => checks[k]?.checkLabel === "Below floor");
+  // Part 138 D49 — only F4 overall High is a hard stop; F1/F2/F3 never emit "Below floor" as a stop.
+  return ["f4"].some((k) => checks[k]?.checkLabel === "Below floor");
 }
 
 // Named slots: reordering items must not change done count

@@ -20,7 +20,7 @@ assert(goNoGoTone(missing) === "incomplete", "incomplete should use incomplete t
 assert(!goNoGoIsFloorFailure({}), "empty checks are incompleteness, not a floor failure");
 
 const go = computeGoNoGo({
-  f1: { checkLabel: "Cleared", items: items(6, 0) },
+  f1: { checkLabel: "Cleared", items: items(7, 0) },
   f2: { checkLabel: "Cleared", items: items(3, 0) },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
   f4: { checkLabel: "Cleared", items: items(7, 0) },
@@ -34,7 +34,7 @@ assert(classifyGoNoGoFromScore(60) === "WATCH", "60 is WATCH");
 assert(classifyGoNoGoFromScore(59) === "NO-GO", "59 is NO-GO");
 
 const lowBand = computeGoNoGo({
-  f1: { checkLabel: "Evidence missing", items: items(0, 6) },
+  f1: { checkLabel: "Evidence missing", items: items(0, 7) },
   f2: { checkLabel: "Cleared", items: items(1, 1) },
   f3: { checkLabel: "Cleared", items: items(2, 0) },
   f4: { checkLabel: "Cleared", items: items(2, 0) },
@@ -52,21 +52,30 @@ assert(
 );
 
 const notRun = computeGoNoGo({
-  f1: { checkLabel: "Cleared", items: items(6, 0) },
+  f1: { checkLabel: "Cleared", items: items(7, 0) },
   f2: { checkLabel: "Cleared", items: items(3, 0) },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
   f4: { checkLabel: "Not yet run", items: [] },
 });
 assert(notRun === "INCOMPLETE", "F4 not yet run with floors passing is INCOMPLETE");
 
+// Part 138 D49 — only F4 overall High remains a hard stop; F1 gap below floor is a mark-down.
 const floorChecks = {
-  f1: { checkLabel: "Below floor" },
+  f1: { checkLabel: "Cleared" },
   f2: { checkLabel: "Cleared" },
   f3: { checkLabel: "Cleared" },
-  f4: { checkLabel: "Cleared" },
+  f4: { checkLabel: "Below floor" },
 };
-assert(computeGoNoGo(floorChecks) === "NO-GO", "Below floor should be NO-GO");
-assert(goNoGoIsFloorFailure(floorChecks), "Below floor should count as a floor failure");
+assert(computeGoNoGo(floorChecks) === "NO-GO", "F4 Below floor should be NO-GO");
+assert(goNoGoIsFloorFailure(floorChecks), "F4 Below floor should count as a floor failure");
+assert(
+  !goNoGoIsFloorFailure({ ...floorChecks, f1: { checkLabel: "Marked down" }, f4: { checkLabel: "Cleared" } }),
+  "F1 Marked down is not a floor failure"
+);
+assert(
+  !goNoGoIsFloorFailure({ ...floorChecks, f1: { checkLabel: "Below floor" }, f4: { checkLabel: "Cleared" } }),
+  "F1 is no longer in the floor-failure list"
+);
 
 let warned = 0;
 const origWarn = console.warn;

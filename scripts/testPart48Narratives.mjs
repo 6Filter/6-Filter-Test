@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 process.env.NARRATIVE_GUARD = "enforce";
 import { checkF4 } from "../lib/filterChecks.js";
+import { supportedF4Findings } from "./f4TestHelpers.mjs";
 import {
   computeGoNoGo,
   financeSignatureCopy,
@@ -43,9 +44,7 @@ assert.equal(f2Filled.items.at(-1).formAdmin, true);
 const f4pending = checkF4({});
 assert.equal(f4pending.checkLabel, "Not yet run");
 assert.deepEqual(f4pending.items, []);
-const f4done = checkF4({
-  techShiftRisk: {
-    dimensions: {
+const f4doneDims = {
       functionalCoreStability: { risk: "Low", reason: "Function survives a form change" },
       consumptionContextStability: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       manufacturingDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
@@ -53,17 +52,17 @@ const f4done = checkF4({
       adjacentSubstitutionThreat: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       purchaseFrequencyShift: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       regulatoryDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
-    },
-    overallRisk: "Low",
-  },
-});
+};
+const f4done = checkF4({ techShiftRisk: { dimensions: f4doneDims, overallRisk: "Low" } }, supportedF4Findings(f4doneDims));
 assert.equal(f4done.checkLabel, "Cleared");
 assert.equal(f4done.items.length, 7);
 
 const floorChecks = {
+  // Part 138 D49 — F1 gap below the floor is a mark-down; the F4 overall-High floor is the hard stop.
   f1: {
-    checkLabel: "Below floor",
-    items: [{ status: "pending", text: "Declared gap 1.0 is below the 2.0 floor (v4, non-negotiable)" }],
+    checkLabel: "Marked down",
+    markedDown: true,
+    items: [{ status: "pending", text: "Declared gap 1.0 is marked down (below the 2.0 floor)" }],
   },
   f2: {
     checkLabel: "Evidence missing",
@@ -79,7 +78,10 @@ const floorChecks = {
       },
     ],
   },
-  f4: { checkLabel: "Cleared", items: [{ status: "done", text: "Functional core stability: Low risk — function survives a form change" }] },
+  f4: {
+    checkLabel: "Below floor",
+    items: [{ status: "pending", text: "Overall structural-obsolescence risk is High — below the floor" }],
+  },
 };
 
 const classification = computeGoNoGo(floorChecks);
@@ -103,7 +105,7 @@ assert.match(f3Fallback, /₹70 ceiling/);
 assert.doesNotMatch(f3Fallback, /^This filter is cleared/);
 
 const clearedFallback = fallbackFilterNarrative(floorChecks.f1);
-assert.match(clearedFallback, /floor failure|below the 2.0 floor/i);
+assert.match(clearedFallback, /floor failure|below the 2.0 floor|marked down/i);
 
 const contradicting = reconcileNarratives(
   {

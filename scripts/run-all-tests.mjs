@@ -81,6 +81,19 @@ if (!files.length) {
  * - tests expecting live advisoryChecks on GET / old card wording (owner will re-pin)
  * Part 137 additions:
  * - testPathToGoActionCopy may still expect "Submit so web search…" Path-to-GO copy
+ * Part 138 additions (v5.6, 18 slots: F1=7 F2=3 F3=1 F4=7). Owner fixtures under scripts/owner-tests/
+ * are NOT edited; these fail solely because of Part 138 and stay expected until the owner re-pins them:
+ * - testPathToGo: pins total 15 → now 18 slots
+ * - testScoringRules / testEvidenceReading / testFilter1Scoring: pin SCORING_RULESET_VERSION (v4.4 / v5.0 → v5.6)
+ * - testLockedMinimumMargins: still expects F2 "Below floor" (now "Marked down")
+ * - testPathCopy: screenshot action worth 5 of 15 → 18-slot weights
+ * - owner-tests/testRelevanceScoring, owner-tests/testFilter3Scoring: assert fixed denominator 15 (now 18)
+ * - owner-tests/testFilter2Scoring: expects one F2 scored item (now three: margin, pack size, GST)
+ * - owner-tests/testFilter2CogsGstPlan: sums F2 credit expecting 1 (margin only); pack size and GST now add
+ *   scored credit, and GST is person-entered (the AI no longer supplies it)
+ * - owner-tests/testInputCoverage: expects a stored answer to read "assessed"; v5.6 requires searchUsed:true
+ *   (web-checked) for benchmark/attributes/derivation/parity/route/argument/GST/F4 dimensions, else "pending"
+ * - testPathToGoActionCopy (wrapper): Path-to-GO now says "Evaluate to assess this" for unassessed items
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
@@ -94,6 +107,12 @@ const EXPECTED_OWNER_FAILURES = new Set([
   "owner-tests/testScoringRules.mjs",
   "owner-tests/testFilter1Scoring.mjs",
   "owner-tests/testLockedMinimumMargins.mjs",
+  // Part 138 (v5.6) — fixed 18 slots, F2 three checks, F1 gap mark-down, web-checked input coverage.
+  "owner-tests/testRelevanceScoring.mjs",
+  "owner-tests/testFilter3Scoring.mjs",
+  "owner-tests/testFilter2Scoring.mjs",
+  "owner-tests/testFilter2CogsGstPlan.mjs",
+  "owner-tests/testInputCoverage.mjs",
 ]);
 
 const failures = [];
@@ -115,8 +134,8 @@ for (const file of files) {
 
 if (expectedOwnerFailures.length) {
   console.error(
-    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–136 ` +
-      `(old F2 hard-stop / F3 band / slot counts / Below floor / live advisoryChecks):`
+    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–138 ` +
+      `(old F2 hard-stop / F3 band / 15-slot totals / pinned versions / Below floor / not-web-checked coverage):`
   );
   for (const file of expectedOwnerFailures) console.error(`  ${file}`);
 }

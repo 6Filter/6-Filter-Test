@@ -16,7 +16,7 @@ assert.match(six, /validate the 3 stated USPs/i);
 
 assert.match(RESEARCH_SCHEMA_VERSION, /f1-benchmark/);
 
-// Part 133 — attributes earn credit only with Evidence Source read + relevant (not category-key validation).
+// Part 138 D50 — attributes earn credit from the confirmed text + web plan check; no Evidence Source is required.
 const missingEvidence = checkF1(
   {
     declaredAttribute: "Sparkle finish",
@@ -30,7 +30,20 @@ const missingEvidence = checkF1(
 );
 const attrMissing = missingEvidence.items.find((i) => i.slot === "attributes");
 assert.equal(attrMissing.status, "pending");
-assert.match(attrMissing.text, /Evidence Source|Upload/i);
+assert.match(attrMissing.text, /awaiting|assessed when you Submit/i);
+assert.doesNotMatch(attrMissing.text, /Evidence Source|Upload/i);
+
+const attrNoFile = checkF1(
+  {
+    declaredAttribute: "Sparkle finish",
+    benchmark: "Indulekha",
+    declaredGap: 2.2,
+    growthRoute: "penetration",
+    growthArgument: "share take",
+  },
+  { assessments: { attributes: { raw: { relevance: "strong", specific: true }, returnedSources: [] } } }
+);
+assert.equal(attrNoFile.items.find((i) => i.slot === "attributes").status, "done", "no evidence file needed");
 
 const evidenceOk = checkF1(
   {

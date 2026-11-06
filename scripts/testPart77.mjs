@@ -22,7 +22,7 @@ assert.equal(isClaimingNoCompetitor(patchF1, {}), false);
 const patchCheck = checkF1(patchF1, {
   benchmarkCheck: { status: "not-found", reason: "placeholder not a named product" },
 });
-assert.equal(patchCheck.checkLabel, "Below floor");
+assert.equal(patchCheck.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 const patchGap = patchCheck.items.find((it) => it.slot === "gap");
 assert.equal(patchGap.status, "pending");
 assert.match(patchGap.text, /below the 2\.0 floor/);
@@ -51,7 +51,7 @@ const crowded = checkF1(novelF1, {
     searchSummary: "ready-to-cook dal kits already on shelf",
   },
 });
-assert.equal(crowded.checkLabel, "Below floor");
+assert.equal(crowded.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 assert.match(crowded.items.find((it) => /competitors/i.test(it.text)).text, /MTR/);
 
 const shortGap = {
@@ -64,7 +64,7 @@ assert.equal(isClaimingNoCompetitor(shortGap, { benchmarkVerified: false }), fal
 const short = checkF1(shortGap, {
   noCompetitorCheck: { majorCompetitorsFound: [], searchSummary: "should be ignored" },
 });
-assert.equal(short.checkLabel, "Below floor");
+assert.equal(short.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 assert.match(short.items.find((it) => /1\.5/.test(it.text)).text, /below the 2\.0 floor/);
 assert.doesNotMatch(short.items.find((it) => /1\.5/.test(it.text)).text, /first-mover/);
 
@@ -87,7 +87,7 @@ const verifiedCheck = checkF1(verifiedZero, {
     searchSummary: "must be ignored because a verified competitor already exists",
   },
 });
-assert.equal(verifiedCheck.checkLabel, "Below floor");
+assert.equal(verifiedCheck.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 const verifiedGap = verifiedCheck.items.find((it) => it.slot === "gap");
 assert.equal(verifiedGap.status, "pending");
 assert.match(verifiedGap.text, /below the 2\.0 floor/);
@@ -105,7 +105,7 @@ const firstMoverOk = checkF1(emptyBenchZero, {
     searchSummary: "no established competitor",
   },
 });
-assert.notEqual(firstMoverOk.checkLabel, "Below floor");
+assert.notEqual(firstMoverOk.checkLabel, "Marked down"); // Part 138 D49: F1 gap below floor is a mark-down
 assert.equal(firstMoverOk.items.find((it) => it.slot === "gap").status, "done");
 
 const triggerSrc = readFileSync(new URL("../lib/propositionAiFirstPass.js", import.meta.url), "utf8");

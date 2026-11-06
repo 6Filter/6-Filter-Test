@@ -11,11 +11,12 @@ assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(40)));
 assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(70)));
 assert.ok(bandVerdicts.has(classifyGoNoGoFromScore(90)));
 
+// Part 138 D49 — the F4 overall-High floor is the only hard stop left.
 const floorFail = computeGoNoGo({
-  f1: { checkLabel: "Below floor", items: [] },
+  f1: { checkLabel: "Evidence complete", items: [] },
   f2: { checkLabel: "Evidence complete", items: [] },
   f3: { checkLabel: "Evidence complete", items: [] },
-  f4: { checkLabel: "Evidence complete", items: [] },
+  f4: { checkLabel: "Below floor", items: [] },
 });
 assert.equal(floorFail, "NO-GO");
 

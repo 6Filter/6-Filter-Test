@@ -28,6 +28,7 @@ const signedSame = previewAdvisoryChecks({
     mrpInr: 120,
     grammage: "100 ml",
     netMarginAtScale: 55,
+    gstRatePct: 18,
     qcomTrajectory: "3-year terms held",
     financeSigned: true,
   },
@@ -38,13 +39,20 @@ const unsignedSame = previewAdvisoryChecks({
     mrpInr: 120,
     grammage: "100 ml",
     netMarginAtScale: 55,
+    gstRatePct: 18,
     qcomTrajectory: "3-year terms held",
     financeSigned: false,
   },
 }).f2;
 assert.equal(filterCheckScore(signedSame).pct, filterCheckScore(unsignedSame).pct);
-// Part 134 revised — margin is the only scored F2 check → 100% when it clears.
+// Part 138 — F2 scores margin, pack size and GST → 100% when all three clear (Finance sign-off never scores).
 assert.equal(filterCheckScore(unsignedSame).pct, 100);
+// GST is person-entered: with no GST the F2 slot stays open (2 of 3).
+const noGst = previewAdvisoryChecks({
+  division: "Personal Care",
+  f2: { mrpInr: 120, grammage: "100 ml", netMarginAtScale: 55, financeSigned: false },
+}).f2;
+assert.equal(filterCheckScore(noGst).pct, 67);
 assert.ok(unsignedSame.items.some((it) => it.slot === "margin" && it.credit === 1));
 assert.ok(unsignedSame.items.some((it) => it.text === unsigned && it.formAdmin));
 

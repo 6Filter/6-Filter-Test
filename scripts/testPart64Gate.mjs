@@ -79,11 +79,14 @@ assert.equal(isFilterUnlocked("f5", approvedWatch), true, "manager-approved WATC
 assert.equal(classifyGoNoGoFromScore(81), "GO");
 assert.equal(classifyGoNoGoFromScore(80), "WATCH");
 assert.equal(classifyGoNoGoFromScore(59), "NO-GO");
-assert.equal(computeGoNoGo({ f1: { checkLabel: "Below floor", items: [] } }), "NO-GO");
+// Part 138 D49 — F4 overall High is the only hard stop left among the floors.
+assert.equal(computeGoNoGo({ f4: { checkLabel: "Below floor", items: [] } }), "NO-GO");
 // Part 134 revised — Filter 2 never hard-stops on "Below floor" (margin is a mark-down).
 assert.equal(goNoGoIsFloorFailure({ f2: { checkLabel: "Below floor" } }), false);
 assert.equal(goNoGoIsFloorFailure({ f2: { checkLabel: "Marked down" } }), false);
-assert.equal(goNoGoIsFloorFailure({ f1: { checkLabel: "Below floor" } }), true);
+assert.equal(goNoGoIsFloorFailure({ f1: { checkLabel: "Marked down" } }), false);
+assert.equal(goNoGoIsFloorFailure({ f1: { checkLabel: "Below floor" } }), false, "F1 gap is a mark-down, not a hard stop");
+assert.equal(goNoGoIsFloorFailure({ f4: { checkLabel: "Below floor" } }), true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /runGoNoGoRead/);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { checkF4 } from "../lib/filterChecks.js";
+import { supportedF4Findings } from "./f4TestHelpers.mjs";
 import { f4HasEnough, isFilterUnlocked } from "../lib/filterUnlock.js";
 import { SIX_FILTERS_FORM } from "../lib/propositionFields.js";
 import { buildSuggestions } from "../lib/propositionAiFirstPass.js";
@@ -65,7 +66,10 @@ assert.ok(highCheck.items.every((it) => it.text.includes("risk — ")));
 const mediumCheck = checkF4({ techShiftRisk: { dimensions: oneHigh, overallRisk: "Medium" } });
 assert.equal(mediumCheck.checkLabel, "Evidence missing");
 
-const lowCheck = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } });
+// Part 138 F: a Low rating only clears with a stored web check that supports it.
+const lowCheck = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } }, supportedF4Findings(allLow));
+const lowUnchecked = checkF4({ techShiftRisk: { dimensions: allLow, overallRisk: "Low" } });
+assert.equal(lowUnchecked.checkLabel, "Evidence missing", "hand-rated Low with no web check does not clear");
 assert.equal(lowCheck.checkLabel, "Cleared");
 assert.ok(lowCheck.items.every((it) => it.status === "done"));
 

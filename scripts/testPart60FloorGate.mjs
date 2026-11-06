@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { checkF1, checkF3, checkF4 } from "../lib/filterChecks.js";
+import { supportedF4Findings } from "./f4TestHelpers.mjs";
 import {
   applyLocalGate,
   classifyGoNoGoFromScore,
@@ -25,7 +26,7 @@ assert.equal(classifyGoNoGoFromScore(95), "GO");
 
 // Part 134 revised — F2 margin below minimum is a mark-down (WATCH cap), not a floor NO-GO.
 const highPctF2MarkDown = {
-  f1: { checkLabel: "Cleared", items: items(6, 0) },
+  f1: { checkLabel: "Cleared", items: items(7, 0) },
   f2: {
     checkLabel: "Marked down",
     markedDown: true,
@@ -36,6 +37,8 @@ const highPctF2MarkDown = {
         code: "F2_MARGIN_BELOW_MINIMUM",
         credit: 0,
       },
+      { status: "done", text: "Pack size 50 g entered with a unit", slot: "packSize", credit: 1 },
+      { status: "done", text: "GST rate 18% entered", slot: "gst", credit: 1 },
     ],
   },
   f3: { checkLabel: "Cleared", items: items(1, 0) },
@@ -47,8 +50,8 @@ assert.equal(computeGoNoGo(highPctF2MarkDown), "WATCH");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {
-    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 6 - f1Done)) },
-    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 1 - f2Done)) },
+    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 7 - f1Done)) },
+    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
     f3: {
       checkLabel: f3Done ? "Cleared" : "Evidence missing",
       items: items(f3Done, Math.max(0, 1 - f3Done)),
@@ -56,9 +59,10 @@ function slotChecks(f1Done, f2Done, f3Done, f4Done) {
     f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
   };
 }
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 1)), "WATCH"); // 9/15 = 60%
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 3)), "WATCH"); // 11/15 ≈ 73%
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 5)), "GO"); // 13/15 ≈ 87%
+// Part 138 — 18 slots (7+3+1+7)
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 1)), "WATCH"); // 12/18 ≈ 67%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 3)), "WATCH"); // 14/18 ≈ 78%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 5)), "GO"); // 16/18 ≈ 89%
 
 const namedOnly = checkF1(
   {
@@ -193,9 +197,7 @@ assert.equal(f4Placeholder.items[0].status, "pending");
 assert.match(f4Placeholder.items[0].text, /no research rating recorded/);
 assert.equal(f4Placeholder.checkLabel, "Evidence missing");
 
-const f4Low = checkF4({
-  techShiftRisk: {
-    dimensions: {
+const f4LowDims = {
       functionalCoreStability: { risk: "Low", reason: "Function survives a form change" },
       consumptionContextStability: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       manufacturingDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
@@ -203,10 +205,8 @@ const f4Low = checkF4({
       adjacentSubstitutionThreat: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       purchaseFrequencyShift: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
       regulatoryDisruptionRisk: { risk: "Low", reason: "Low risk — no destabilizing signal found" },
-    },
-    overallRisk: "Low",
-  },
-});
+};
+const f4Low = checkF4({ techShiftRisk: { dimensions: f4LowDims, overallRisk: "Low" } }, supportedF4Findings(f4LowDims));
 assert.equal(f4Low.checkLabel, "Cleared");
 assert.ok(f4Low.items.every((it) => it.status === "done"));
 

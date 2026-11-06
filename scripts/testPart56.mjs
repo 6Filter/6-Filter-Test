@@ -36,8 +36,8 @@ assert.equal(goNoGoTone("INCOMPLETE"), "incomplete");
 
 function slotChecks(f1Done, f2Done, f3Done, f4Done) {
   return {
-    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 6 - f1Done)) },
-    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 1 - f2Done)) },
+    f1: { checkLabel: "Cleared", items: items(f1Done, Math.max(0, 7 - f1Done)) },
+    f2: { checkLabel: "Cleared", items: items(f2Done, Math.max(0, 3 - f2Done)) },
     f3: {
       checkLabel: f3Done ? "Cleared" : "Evidence missing",
       items: items(f3Done, Math.max(0, 1 - f3Done)),
@@ -45,11 +45,13 @@ function slotChecks(f1Done, f2Done, f3Done, f4Done) {
     f4: { checkLabel: "Cleared", items: items(f4Done, Math.max(0, 7 - f4Done)) },
   };
 }
-// Part 134 revised — 15 slots (6+1+1+7). GO ≥ 81%.
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 1)), "WATCH"); // 9/15 = 60%
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 3)), "WATCH"); // 11/15 ≈ 73%
-assert.equal(computeGoNoGo(slotChecks(6, 1, 0, 4)), "WATCH"); // 11/15 ≈ 73%
-assert.equal(computeGoNoGo(slotChecks(6, 1, 1, 5)), "GO"); // 13/15 ≈ 87%
+// Part 138 — 18 slots (7+3+1+7). GO ≥ 81%.
+assert.equal(computeGoNoGo(slotChecks(7, 0, 0, 3)), "NO-GO"); // 10/18 ≈ 56%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 1)), "WATCH"); // 12/18 ≈ 67%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 3)), "WATCH"); // 14/18 ≈ 78%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 0, 4)), "WATCH"); // 14/18 ≈ 78%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 4)), "GO"); // 15/18 ≈ 83%
+assert.equal(computeGoNoGo(slotChecks(7, 3, 1, 5)), "GO"); // 16/18 ≈ 89%
 
 assert.equal(ideaScaleLabel(0), "10g");
 assert.equal(ideaScaleLabel(1), "10g");

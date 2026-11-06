@@ -65,7 +65,12 @@ import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
-import { resolveGstRate } from "../lib/gstRate.js";
+import {
+  DIVISION_MINIMUM_SOURCE,
+  NET_MARGIN_STATUS_PATH,
+  applyDivisionMinimumMargin,
+  divisionMinimumStatusEntry,
+} from "../lib/netMarginDefault.js";
 import { priceCrossings } from "../lib/priceResilience.js";
 import {
   DIMENSION_LABELS,
@@ -79,6 +84,7 @@ import {
   aggregateTechShiftRiskWithResponses,
   hasReassessedDimension,
 } from "../lib/techShiftRisk.js";
+import { f4DimensionVerification } from "../lib/f4Assessment.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
@@ -144,10 +150,18 @@ const AI_AUTO_SKIP = new Set([
   "pureCommodity",
   "mrpInr",
   "evidenceSourceFile",
+  // Part 138 D52 — GST and pack size are typed by a person; the AI never pre-fills them.
+  "gstRatePct",
+  "gstBasis",
+  "grammage",
 ]);
 
 function sourcedPath(filterKey, fieldKey) {
   return filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
+}
+
+function isBlankValue(value) {
+  return value == null || String(value).trim() === "";
 }
 
 function isUnfilledValue(value) {
@@ -511,6 +525,8 @@ function FieldControl({
   inactiveHint = "",
   onReassess,
   reassessing = false,
+  onVerifyDimension,
+  verifyingDimension = "",
   mitigationResponses = null,
   onMitigationChange,
   rangeOverride = null,
@@ -595,15 +611,23 @@ function FieldControl({
       const nextOverall = TECH_SHIFT_DIMENSIONS.every((k) => normalizeRiskLevel(nextDims[k]?.risk))
         ? aggregateTechShiftRisk(nextDims)
         : "";
-      if (typeof onChange === "function") {
-        onChange({
-          dimensions: nextDims,
-          overallRisk: nextOverall,
-          sources: Array.isArray(risk.sources) ? risk.sources : [],
-          aiSourced: false,
-        });
+      const nextRisk = {
+        dimensions: nextDims,
+        overallRisk: nextOverall,
+        sources: Array.isArray(risk.sources) ? risk.sources : [],
+        aiSourced: false,
+      };
+      if (typeof onChange === "function") onChange(nextRisk);
+      // Part 138 F (D56) — a hand-entered rating is web-checked; until that check supports it, it earns nothing.
+      if (
+        Object.prototype.hasOwnProperty.call(patch, "risk") &&
+        normalizeRiskLevel(patch.risk) &&
+        typeof onVerifyDimension === "function"
+      ) {
+        onVerifyDimension(key, nextRisk);
       }
     };
+    const f4Assessments = ideaDoc?.researchFindings?.f4?.assessments || {};
     const patchDimensionResponse = (key, userResponse) => {
       if (typeof onMitigationChange === "function") onMitigationChange(key, userResponse);
     };
@@ -652,6 +676,27 @@ function FieldControl({
                   title={lockTitle}
                   onChange={(e) => patchDimension(key, { reason: e.target.value })}
                 />
+                {riskVal
+                  ? (() => {
+                      if (verifyingDimension === key) {
+                        return <div className="dimension-finding original">Web-checking this rating…</div>;
+                      }
+                      const v = f4DimensionVerification({ risk: riskVal }, f4Assessments[key]);
+                      const note =
+                        v.state === "supported"
+                          ? "Web check supports this rating — it earns its point"
+                          : v.state === "contradicted"
+                            ? "Web check contradicts this rating — marked down"
+                            : v.state === "failed"
+                              ? `Web check did not complete (${v.assessment?.error || "no answer"}) — earns nothing until it does`
+                              : "Not web-checked yet — earns nothing until a web check supports it";
+                      return (
+                        <div className="dimension-finding original" data-f4-verification={v.state}>
+                          {note}
+                        </div>
+                      );
+                    })()
+                  : null}
                 {d.reassessedRisk ? (
                   <div className="dimension-finding reassessed">
                     After response: {d.reassessedRisk} risk — {d.reassessedReason}
@@ -2517,9 +2562,11 @@ export default function PropositionForm({
   const aiSourcedRef = useRef({});
   const [f3Filling, setF3Filling] = useState(false);
   const [f4Reassessing, setF4Reassessing] = useState(false);
+  const [f4VerifyingKey, setF4VerifyingKey] = useState("");
   const [refreshingField, setRefreshingField] = useState("");
   const [conceptCardBusy, setConceptCardBusy] = useState(false);
   const [conceptCardError, setConceptCardError] = useState("");
+  const [conceptCardNote, setConceptCardNote] = useState("");
   const [conceptCardName, setConceptCardName] = useState(() =>
     String(initial?.f1?.conceptCardName || "").trim()
   );
@@ -2687,36 +2734,22 @@ export default function PropositionForm({
   const ideaName = doc.name;
   const ideaCategory = doc.category;
   const ideaText = doc.ideaDescription;
+  // Part 138 D52 — no GST pre-fill. The field stays empty until a person enters the HSN rate.
+
+  // Part 138 E5 — net margin starts at the division minimum; it follows a division change until a person edits it.
+  const ideaDivision = doc.division;
+  const ideaDivisionDetection = doc.researchFindings?.divisionDetection;
   useEffect(() => {
-    if (gstTouchedByHuman.current) return;
-    const hasIdea = Boolean(
-      String(ideaName || "").trim() || String(ideaCategory || "").trim() || String(ideaText || "").trim()
-    );
-    if (!hasIdea) return;
-    const resolved = resolveGstRate({
-      name: ideaName,
-      category: ideaCategory,
-      ideaDescription: ideaText,
-    });
     setDoc((prev) => {
-      if (gstTouchedByHuman.current) return prev;
-      if (
-        Number(prev.f2?.gstRatePct) === Number(resolved.gstRatePct) &&
-        String(prev.f2?.gstBasis || "") === resolved.gstBasis
-      ) {
-        return prev;
-      }
-      return {
-        ...prev,
-        f2: { ...(prev.f2 || {}), gstRatePct: resolved.gstRatePct, gstBasis: resolved.gstBasis },
+      const margin = applyDivisionMinimumMargin(prev);
+      if (!margin.changed) return prev;
+      const status = {
+        ...(prev.autofillStatus && typeof prev.autofillStatus === "object" ? prev.autofillStatus : {}),
+        [NET_MARGIN_STATUS_PATH]: divisionMinimumStatusEntry(margin.floor),
       };
+      return { ...prev, f2: margin.f2, autofillStatus: status };
     });
-    setAiSourced((prev) => ({
-      ...prev,
-      [sourcedPath("f2", "gstRatePct")]: true,
-      [sourcedPath("f2", "gstBasis")]: true,
-    }));
-  }, [ideaName, ideaCategory, ideaText]);
+  }, [ideaDivision, ideaDivisionDetection, doc.f2?.netMarginAtScale, doc.f2?.netMarginSource]);
 
   const propositionId = doc.id || initial?.id;
   const hasIdentity = hasSubmitterIdentity(doc);
@@ -3025,6 +3058,75 @@ export default function PropositionForm({
     }
   }
 
+  // Part 138 D — say how much of Filters 5 and 6 the evidence file filled in.
+  const evidenceF5F6 = doc.researchFindings?.evidenceRead?.f5f6;
+  const evidenceF5F6Note =
+    evidenceF5F6 && Array.isArray(evidenceF5F6.found) && doc.researchFindings?.evidenceRead?.status === "read"
+      ? `Evidence file read: found ${evidenceF5F6.found.filter((h) => h.filter === "f5").length} of 5 Filter 5 values, ${
+          evidenceF5F6.found.filter((h) => h.filter === "f6").length
+        } of 3 Filter 6 values`
+      : "";
+
+  // Part 138 E6 (D54) — when Filter 2 is on screen and COGS is empty, fetch the AI estimate once, without a click.
+  // The COGS value is labelled "AI estimate — review", is never scored, and "Re-run this estimate" stays available.
+  const cogsAutoRequestedFor = useRef("");
+  const f2Visible = unlockedFilterKeys.has("f2") && currentView === "propositionForm";
+  const cogsBlank = isBlankValue(doc.f2?.cogsAtScale);
+  const ideaHasDescription = String(ideaText || "").trim() !== "";
+  const ideaHasCategory = String(ideaCategory || "").trim() !== "";
+  const costAlreadyEstimated = doc.researchFindings?.f2?.costEstimate?.cogsAtScale != null;
+  useEffect(() => {
+    if (!f2Visible || !cogsBlank || !ideaHasDescription || !ideaHasCategory || costAlreadyEstimated) return undefined;
+    if (!propositionId || cogsAutoRequestedFor.current === propositionId) return undefined;
+    const timer = setTimeout(() => {
+      if (cogsAutoRequestedFor.current === propositionId) return;
+      if (!isBlankValue(docRef.current?.f2?.cogsAtScale)) return;
+      cogsAutoRequestedFor.current = propositionId;
+      handleRefreshField("cogsAtScale");
+    }, 3000);
+    return () => clearTimeout(timer);
+    // handleRefreshField is re-created each render; the ref guard keeps this to one automatic call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f2Visible, cogsBlank, ideaHasDescription, ideaHasCategory, costAlreadyEstimated, propositionId, ideaText, ideaCategory]);
+
+  /** Part 138 F (D56) — web-check a hand-entered Filter 4 rating; only the assessment + checks come back. */
+  async function handleVerifyF4Dimension(dimensionKey, nextRisk) {
+    if (!propositionId || !dimensionKey) return;
+    setF4VerifyingKey(dimensionKey);
+    setLocalError("");
+    try {
+      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/verify-f4`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: llmProvider,
+          dimensionKey,
+          techShiftRisk: nextRisk,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLocalError(data.error || "Could not web-check that Filter 4 rating.");
+        return;
+      }
+      if (data.proposition) {
+        const saved = mergeProposition(data.proposition);
+        // Keep whatever the person typed meanwhile — take only the stored findings.
+        setDoc((prev) => ({ ...prev, researchFindings: saved.researchFindings || prev.researchFindings }));
+        if (data.advisoryChecks) {
+          setAdvisoryChecks(data.advisoryChecks);
+          setSummaryChecks(data.advisoryChecks);
+        }
+        if (saved.goNoGo?.classification) setGoNoGo(saved.goNoGo);
+      }
+    } catch (e) {
+      setLocalError(e.message || "Could not web-check that Filter 4 rating.");
+    } finally {
+      setF4VerifyingKey("");
+    }
+  }
+
   async function handleRefreshField(fieldKey) {
     if (!propositionId || refreshingField || saving) return;
     const pathGuess = fieldKey.includes(".") ? fieldKey : `f2.${fieldKey}`;
@@ -3172,6 +3274,13 @@ export default function PropositionForm({
         return;
       }
       if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      // Part 138 B — only values the document states are suggested; say how many were left out.
+      const keptCount = Array.isArray(data.extractedKeys) ? data.extractedKeys.length : 0;
+      const droppedCount = Number(data.droppedCount) || 0;
+      setConceptCardNote(
+        `Suggested from the concept card (AI-suggested, review): ${keptCount} field${keptCount === 1 ? "" : "s"} kept` +
+          (droppedCount ? `; ${droppedCount} dropped because the document does not state ${droppedCount === 1 ? "it" : "them"}.` : ".")
+      );
       if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
@@ -3224,6 +3333,16 @@ export default function PropositionForm({
       }
       if (filterKey === "f2" && fieldKey === "netMarginAtScale") {
         nextFilter.netMarginSource = "user";
+        if (prev.autofillStatus?.[NET_MARGIN_STATUS_PATH]?.source === DIVISION_MINIMUM_SOURCE) {
+          return {
+            ...prev,
+            [filterKey]: nextFilter,
+            autofillStatus: {
+              ...prev.autofillStatus,
+              [NET_MARGIN_STATUS_PATH]: { status: "kept", source: "user", at: new Date().toISOString() },
+            },
+          };
+        }
       }
       if (
         filterKey === "f5" &&
@@ -3993,6 +4112,7 @@ export default function PropositionForm({
             <AlertTriangle size={14} /> {conceptCardError}
           </div>
         ) : null}
+        {conceptCardNote ? <p className="prop-helper">{conceptCardNote}</p> : null}
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
@@ -4145,6 +4265,9 @@ export default function PropositionForm({
               </div>
             </div>
             <InlineFloorFail check={check} />
+            {(spec.key === "f5" || spec.key === "f6") && evidenceF5F6Note ? (
+              <p className="prop-helper">{evidenceF5F6Note}</p>
+            ) : null}
 
             <div className="prop-grid">
               {spec.fields.map((field) =>
@@ -4206,6 +4329,12 @@ export default function PropositionForm({
                       }
                       onReassess={spec.key === "f4" && field.key === "techShiftRisk" ? handleReassessF4 : undefined}
                       reassessing={spec.key === "f4" && field.key === "techShiftRisk" ? f4Reassessing : false}
+                      onVerifyDimension={
+                        spec.key === "f4" && field.key === "techShiftRisk" ? handleVerifyF4Dimension : undefined
+                      }
+                      verifyingDimension={
+                        spec.key === "f4" && field.key === "techShiftRisk" ? f4VerifyingKey : ""
+                      }
                       mitigationResponses={spec.key === "f4" ? values.f4MitigationResponses : null}
                       onMitigationChange={
                         spec.key === "f4" && field.key === "techShiftRisk"
@@ -4239,8 +4368,7 @@ export default function PropositionForm({
                           : undefined
                       }
                       onRefresh={
-                        (spec.key === "f2" &&
-                          ["cogsAtScale", "netMarginAtScale", "gstRatePct", "grammage"].includes(field.key)) ||
+                        (spec.key === "f2" && field.key === "cogsAtScale") ||
                         (spec.key === "f3" && field.key === "marginElasticity") ||
                         (spec.key === "f4" && field.key === "techShiftRisk")
                           ? () => handleRefreshField(field.key)

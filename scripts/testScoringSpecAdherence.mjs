@@ -1,5 +1,5 @@
 /**
- * Live scoring must match docs/SCORING_SPEC.md v5.5 (fixed 15 slots, INCOMPLETE,
+ * Live scoring must match docs/SCORING_SPEC.md v5.6 (fixed 18 slots, INCOMPLETE,
  * web-verified F1, no gram badge on INCOMPLETE, explainer not teaching WATCH-cap).
  */
 import assert from "node:assert/strict";
@@ -22,24 +22,25 @@ import { flattenProposition } from "../lib/logExport.js";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const howDoc = readFileSync(path.join(root, "../docs/HOW_THE_SCORE_WORKS.md"), "utf8");
 
-assert.equal(SCORING_RULESET_VERSION, "v5.5");
+assert.equal(SCORING_RULESET_VERSION, "v5.6");
 assert.equal(SCORE_DENOMINATOR_MODE, "fixed-slots");
 assert.equal(INCOMPLETE_VERDICT_MODE, "incomplete");
-assert.equal(SCORE_CHECK_SLOTS_TOTAL, 15);
+assert.equal(SCORE_CHECK_SLOTS_TOTAL, 18);
 assert.equal(GONOGO_SCORE_BANDS.NOGO_MAX, 60);
 assert.equal(GONOGO_SCORE_BANDS.WATCH_MAX, 80);
 
-const F1_SLOTS = ["benchmark", "gap", "attributes", "derivation", "route", "argument"];
+const F1_SLOTS = ["benchmark", "gap", "attributes", "derivation", "parity", "route", "argument"];
 const SLOT_TEXTS = {
   f1: [
     "Benchmark relevant: Brand",
     "Declared gap 3.0 clears the 2.0 floor",
-    "Evidence Source read and relevant",
-    "Gap derivation and parity entered",
+    "Attribute claim read as strong on the web check",
+    "Gap derivation entered",
+    "Parity exceptions entered",
     "Growth route penetration selected",
     "Growth argument entered",
   ],
-  f2: ["Net margin 55% clears the division minimum"],
+  f2: ["Net margin 55% clears the division minimum", "Pack size 50 g entered with a unit", "GST rate 18% entered"],
   f3: ["Filter 2 MRP sits within the safe range"],
   f4: Array.from({ length: 7 }, (_, i) => `Dim ${i} Low risk`),
 };
@@ -67,16 +68,26 @@ function cleared(filterKey) {
   assert.equal(incomplete, "INCOMPLETE");
 }
 
-// Floor beats unfinished
+// Floor beats unfinished — Part 138 D49: only F4 overall High is a hard stop
 {
   assert.equal(
     computeGoNoGo({
-      f1: { checkLabel: "Below floor", items: [{ status: "pending", text: "gap below floor" }] },
+      f1: { checkLabel: "Not yet run", items: [] },
+      f2: { checkLabel: "Not yet run", items: [] },
+      f3: { checkLabel: "Not yet run", items: [] },
+      f4: { checkLabel: "Below floor", items: [{ status: "pending", text: "overall structural risk High" }] },
+    }),
+    "NO-GO"
+  );
+  // F1 gap below the floor is a mark-down: it never hard-stops and never beats an unfinished filter.
+  assert.equal(
+    computeGoNoGo({
+      f1: { checkLabel: "Marked down", items: [{ status: "pending", text: "gap marked down" }] },
       f2: { checkLabel: "Not yet run", items: [] },
       f3: { checkLabel: "Not yet run", items: [] },
       f4: { checkLabel: "Not yet run", items: [] },
     }),
-    "NO-GO"
+    "INCOMPLETE"
   );
 }
 
@@ -126,7 +137,7 @@ function cleared(filterKey) {
 // INCOMPLETE: no gram badge (helper + export + local gate)
 {
   const doc = {
-    goNoGo: { classification: "INCOMPLETE", score: { pct: 40, done: 6, total: 15 } },
+    goNoGo: { classification: "INCOMPLETE", score: { pct: 33, done: 6, total: 18 } },
     f5: {},
   };
   assert.equal(ideaSizeForResult(doc), null);
@@ -154,4 +165,4 @@ function cleared(filterKey) {
   assert.equal(howDoc.replace(/\r\n/g, "\n").trim(), scoreExplainerMarkdown().trim());
 }
 
-console.log("PASS testScoringSpecAdherence — v5.5 live logic matches SCORING_SPEC");
+console.log("PASS testScoringSpecAdherence — v5.6 live logic matches SCORING_SPEC");
