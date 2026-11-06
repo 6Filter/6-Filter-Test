@@ -178,9 +178,10 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
   }
 }
 
-async function saveDraftSilently(id, payload) {
+async function saveDraftSilently(id, payload, { keepalive = false } = {}) {
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
     method: "POST",
+    keepalive,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
@@ -1056,10 +1057,10 @@ export default function App() {
     }
   }
 
-  async function savePropositionDraft(doc) {
+  async function savePropositionDraft(doc, opts = {}) {
     if (!doc?.id) return null;
     try {
-      const saved = await saveDraftSilently(doc.id, doc);
+      const saved = await saveDraftSilently(doc.id, doc, opts);
       if (saved?.id) {
         setPropositionList((rows) => {
           const next = {

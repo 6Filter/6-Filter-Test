@@ -271,7 +271,7 @@ function formatSuggestion(field, value) {
   return s.length > 180 ? `${s.slice(0, 177)}…` : s;
 }
 
-function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, _currentValue) {
+function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, currentValue) {
   if (SUGGEST_BLOCKLIST.has(fieldKey)) return null;
   const path = filterKey ? `${filterKey}.${fieldKey}` : fieldKey;
   if (dismissed[path]) return null;
@@ -279,6 +279,9 @@ function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, _currentV
     ? suggestions?.[filterKey]?.[fieldKey]
     : suggestions?.top?.[fieldKey] ?? suggestions?.[fieldKey];
   if (raw == null || (typeof raw === "string" && !raw.trim())) return null;
+  // A filled field stays as typed. The chip is only for an empty field.
+  if (typeof currentValue === "number" && Number.isFinite(currentValue)) return null;
+  if (typeof currentValue === "string" && currentValue.trim()) return null;
   return raw;
 }
 
@@ -2852,15 +2855,25 @@ export default function PropositionForm({
   }, [doc, propositionId, saving]);
 
   useEffect(() => {
-    return () => {
+    function flushDraft(keepalive) {
       if (
-        draftDirtyRef.current &&
-        typeof onSaveDraftRef.current === "function" &&
-        docRef.current?.id &&
-        !isScoredProposition(sourceDocRef.current)
+        !draftDirtyRef.current ||
+        typeof onSaveDraftRef.current !== "function" ||
+        !docRef.current?.id ||
+        isScoredProposition(sourceDocRef.current)
       ) {
-        Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
+        return;
       }
+      draftDirtyRef.current = false;
+      Promise.resolve(onSaveDraftRef.current(docRef.current, { keepalive })).catch(() => {
+        draftDirtyRef.current = true;
+      });
+    }
+    const onHide = () => flushDraft(true);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flushDraft(true);
     };
   }, []);
 
@@ -3172,7 +3185,16 @@ export default function PropositionForm({
         return;
       }
       if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
+      if (data.proposition) {
+        const server = data.proposition;
+        const cardName = String(server.f1?.conceptCardName || data.conceptCardName || "").trim();
+        setDoc((prev) => ({
+          ...prev,
+          version: server.version ?? prev.version,
+          updatedAt: server.updatedAt ?? prev.updatedAt,
+          f1: cardName ? { ...(prev.f1 || {}), conceptCardName: cardName } : prev.f1,
+        }));
+      }
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),

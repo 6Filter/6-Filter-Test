@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
 import { classifyAttachment, prepareIdeaInput } from "../lib/extractAttachment.js";
+import { extractConceptCardFields } from "../lib/filters/extractConceptCard.js";
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /handleConceptCardFile/);
@@ -47,6 +48,18 @@ const prepared = await prepareIdeaInput("", {
 });
 assert.match(prepared.idea, /Hair oils/);
 assert.match(prepared.idea, /Herbal cooling hair oil/);
+
+const extracted = await extractConceptCardFields({
+  attachment: {
+    name: "concept-card.xlsx",
+    mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    data: Buffer.from(xlsxBuf).toString("base64"),
+  },
+});
+assert.equal(extracted.category, "Hair oils");
+assert.equal(extracted.ideaDescription, "Herbal cooling hair oil with pearl extract");
+assert.equal(extracted.benchmark, "Dabur Amla 90ml");
+assert.equal(extracted.declaredAttribute, undefined);
 
 await assert.rejects(
   () => prepareIdeaInput("", { name: "notes.txt", data: Buffer.from("hello").toString("base64") }),
