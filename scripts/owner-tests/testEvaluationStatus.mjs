@@ -157,6 +157,33 @@ check("incomplete when some done some missing", () => {
   assert.equal(st.state, "incomplete");
 });
 
+check("a whole-pass research failure names the reason on every unfinished step", () => {
+  const reason = "Claude API key missing";
+  const st = evaluationStatus({
+    f1: {
+      benchmark: "Dove",
+      declaredGap: 3,
+      gapDerivation: "lighter finish",
+      growthRoute: "penetration",
+      declaredAttribute: "light",
+      evidenceSourceFile: { fileId: "e" },
+    },
+    f2: { cogsAtScale: 40, netMarginAtScale: 25, gstRatePct: 18, mrpInr: 62.93 },
+    researchFindings: {
+      f1: { researchFailed: true, failureReason: reason },
+      f3: { researchFailed: true, failureReason: reason },
+      f4: { researchFailed: true, failureReason: reason },
+    },
+  });
+  for (const step of ["evidence", "benchmark", "claims", "plan", "priceEvents", "filter4"]) {
+    const miss = st.missing.find((m) => m.step === step);
+    assert.ok(miss, step);
+    assert.equal(miss.failed, true, step);
+    assert.equal(miss.reason, reason, step);
+  }
+  assert.equal(st.state, "incomplete");
+});
+
 check("required list matches missing+done", () => {
   const st = evaluationStatus({ f1: { benchmark: "A", declaredGap: 2 } });
   assert.equal(st.required.length, st.done.length + st.missing.length);
