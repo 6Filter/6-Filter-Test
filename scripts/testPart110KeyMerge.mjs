@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SIX_FILTERS_FORM } from "../lib/propositionFields.js";
-import { isServerOwnedFilterKey, mergeFilterObject } from "../lib/filterWriteGuard.js";
+import { SIX_FILTERS_FORM, mergeProposition } from "../lib/propositionFields.js";
+import { isHandRatedTechShift, isServerOwnedFilterKey, mergeFilterObject } from "../lib/filterWriteGuard.js";
 import { liftStoredMitigations } from "../lib/filterOwnershipLift.js";
 
 const doc = readFileSync(new URL("../docs/FIELD_OWNERSHIP_KEYS.md", import.meta.url), "utf8");
@@ -47,6 +47,46 @@ const serverKey = mergeFilterObject(
   { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", reason: "shift" } } } }
 );
 assert.equal(serverKey.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+
+const hand = {
+  dimensions: { functionalCoreStability: { risk: "Low", reason: "Person says Low" } },
+  aiSourced: false,
+};
+assert.equal(isHandRatedTechShift(hand), true);
+const handSaved = mergeFilterObject({}, { techShiftRisk: hand });
+assert.equal(handSaved.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+const handEdit = mergeFilterObject(
+  { techShiftRisk: hand },
+  {
+    techShiftRisk: {
+      dimensions: { functionalCoreStability: { risk: "Medium", reason: "Person says Medium" } },
+      aiSourced: false,
+    },
+  }
+);
+assert.equal(handEdit.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Medium");
+const researchCannotClobberHand = mergeFilterObject(
+  { techShiftRisk: hand },
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", reason: "model" } } } }
+);
+assert.equal(researchCannotClobberHand.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+
+const reloaded = mergeProposition({
+  name: "Reload",
+  f4: {
+    techShiftRisk: {
+      aiSourced: false,
+      dimensions: {
+        functionalCoreStability: { risk: "High", reason: "shift" },
+        consumptionContextStability: { risk: "", reason: "" },
+      },
+    },
+  },
+});
+assert.equal(reloaded.f4.techShiftRisk.dimensions.functionalCoreStability.risk, "High");
+assert.equal(reloaded.f4.techShiftRisk.dimensions.consumptionContextStability.risk, "");
+assert.equal(reloaded.f4.techShiftRisk.dimensions.manufacturingDisruptionRisk.risk, "");
+assert.equal(reloaded.f4.techShiftRisk.aiSourced, false);
 
 const explicit = mergeFilterObject(
   { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } },

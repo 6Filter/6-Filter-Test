@@ -71,6 +71,7 @@ import {
   applyDivisionMinimumMargin,
   divisionMinimumStatusEntry,
 } from "../lib/netMarginDefault.js";
+import { detectDivision } from "../lib/npdMaster.js";
 import { priceCrossings } from "../lib/priceResilience.js";
 import {
   DIMENSION_LABELS,
@@ -2735,6 +2736,33 @@ export default function PropositionForm({
   const ideaCategory = doc.category;
   const ideaText = doc.ideaDescription;
   // Part 138 D52 — no GST pre-fill. The field stays empty until a person enters the HSN rate.
+
+  // Keyword division (same rules the server uses when the model is down) so the margin floor and MRP can fill before Submit.
+  const divisionSourceText = [doc.name, doc.category, doc.ideaDescription].map((v) => String(v || "").trim()).join("\n");
+  useEffect(() => {
+    if (String(doc.division || "").trim()) return undefined;
+    const detected = detectDivision(divisionSourceText);
+    if (!detected) return undefined;
+    setDoc((prev) => {
+      if (String(prev.division || "").trim()) return prev;
+      const textNow = [prev.name, prev.category, prev.ideaDescription].map((v) => String(v || "").trim()).join("\n");
+      if (detectDivision(textNow) !== detected) return prev;
+      return {
+        ...prev,
+        division: detected,
+        researchFindings: {
+          ...(prev.researchFindings && typeof prev.researchFindings === "object" ? prev.researchFindings : {}),
+          divisionDetection: {
+            source: "rules",
+            reason: `Keyword match: ${detected}`,
+            needsConfirmation: true,
+            rulesDivision: detected,
+          },
+        },
+      };
+    });
+    return undefined;
+  }, [divisionSourceText, doc.division]);
 
   // Part 138 E5 — net margin starts at the division minimum; it follows a division change until a person edits it.
   const ideaDivision = doc.division;
