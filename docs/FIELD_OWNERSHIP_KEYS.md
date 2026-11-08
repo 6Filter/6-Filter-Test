@@ -8,7 +8,7 @@ Forum verdict and verdict note sit on every filter object. They are human-owned.
 
 | Key | Filter | Reason |
 |---|---|---|
-| `techShiftRisk` | F4 | Research writes the seven dimension ratings and the overall risk. |
+| `techShiftRisk` | F4 | Research may draft the seven ratings. A hand rating (`aiSourced: false`) is stored and can be edited. A research-shaped client payload cannot replace a stored rating. |
 | `computedRevenue` | F5 | The year-3 revenue figure is computed from the five human factors. |
 
 ## Human-owned
