@@ -178,12 +178,18 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
   }
 }
 
-async function saveDraftSilently(id, payload) {
+async function saveDraftSilently(id, payload, { keepalive = false } = {}) {
+  const clientWriteAt = Number(payload?.clientWriteAt) || Date.now();
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    keepalive,
     body: JSON.stringify({
-      proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
+      proposition: {
+        ...payload,
+        clientWriteAt,
+        baseVersion: payload?.baseVersion ?? payload?.version,
+      },
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -968,11 +974,16 @@ export default function App() {
         classification: sealed?.classification || full?.classification || row.classification || "",
         _openFromLog: from === "log",
         _preferOutput:
-          from === "log" ||
-          evalState === "evaluated" ||
-          evalState === "legacy" ||
-          evalState === "incomplete" ||
-          evalState === "not-evaluated",
+          !(
+            (opts.initialDeepLink || opts.fromPop) &&
+            evalState !== "evaluated" &&
+            evalState !== "legacy"
+          ) &&
+          (from === "log" ||
+            evalState === "evaluated" ||
+            evalState === "legacy" ||
+            evalState === "incomplete" ||
+            evalState === "not-evaluated"),
       });
       setSavedFlash(false);
       setReturnView(from);
@@ -1056,10 +1067,10 @@ export default function App() {
     }
   }
 
-  async function savePropositionDraft(doc) {
+  async function savePropositionDraft(doc, opts) {
     if (!doc?.id) return null;
     try {
-      const saved = await saveDraftSilently(doc.id, doc);
+      const saved = await saveDraftSilently(doc.id, doc, opts);
       if (saved?.id) {
         setPropositionList((rows) => {
           const next = {

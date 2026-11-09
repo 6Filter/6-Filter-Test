@@ -2472,6 +2472,12 @@ function preferOutputView(doc = null) {
   return state === "evaluated" || state === "legacy";
 }
 
+function ideaHasEnteredContent(doc = {}) {
+  return ["name", "category", "ideaDescription", "submitterName", "submitterDepartment"].some(
+    (key) => String(doc?.[key] || "").trim()
+  );
+}
+
 export default function PropositionForm({
   initial,
   onSave,
@@ -2570,10 +2576,15 @@ export default function PropositionForm({
   const [conceptCardName, setConceptCardName] = useState(() =>
     String(initial?.f1?.conceptCardName || "").trim()
   );
-  const [draftSaveState, setDraftSaveState] = useState("");
+  const [draftSaveState, setDraftSaveState] = useState(() =>
+    ideaHasEnteredContent(initial) ? "Draft saved" : ""
+  );
   const conceptCardRef = useRef(null);
-  const skipDraftRef = useRef(true);
+  // Skip the mount render and the setDoc that follows loading `initial`.
+  const skipDraftLoads = useRef(2);
   const draftDirtyRef = useRef(false);
+  const draftChain = useRef(Promise.resolve());
+  const draftWriteAt = useRef(0);
   const onSaveDraftRef = useRef(onSaveDraft);
   onSaveDraftRef.current = onSaveDraft;
 
@@ -2608,8 +2619,9 @@ export default function PropositionForm({
     f3RangeTouchedByHuman.current = false;
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
-    skipDraftRef.current = true;
+    skipDraftLoads.current = 2;
     draftDirtyRef.current = false;
+    setDraftSaveState(ideaHasEnteredContent(filled.doc) ? "Draft saved" : "");
   }, [initial?.id]);
 
   useEffect(() => {
@@ -2851,49 +2863,77 @@ export default function PropositionForm({
     };
   }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider, initial?.researchRunAt]);
 
+  function enqueueDraft(snap, { keepalive = false } = {}) {
+    if (!snap?.id || typeof onSaveDraftRef.current !== "function") return Promise.resolve(null);
+    if (isScoredProposition(sourceDocRef.current)) return Promise.resolve(null);
+    const clientWriteAt = Date.now();
+    draftWriteAt.current = clientWriteAt;
+    const body = { ...snap, clientWriteAt };
+    const run = () =>
+      Promise.resolve(onSaveDraftRef.current?.(body, { keepalive })).then((saved) => {
+        if (draftWriteAt.current !== clientWriteAt) return saved;
+        if (!saved) {
+          setDraftSaveState("Draft not saved");
+          return null;
+        }
+        draftDirtyRef.current = false;
+        if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
+          const active = document.activeElement?.getAttribute?.("data-field") || "";
+          setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
+          setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
+          return saved;
+        }
+        setDraftSaveState("Draft saved");
+        return saved;
+      });
+    if (keepalive) {
+      draftDirtyRef.current = false;
+      return run().catch(() => {
+        setDraftSaveState("Draft not saved");
+        return null;
+      });
+    }
+    const next = draftChain.current.then(run, run);
+    draftChain.current = next.catch(() => null);
+    return next;
+  }
+
   useEffect(() => {
-    if (skipDraftRef.current) {
-      skipDraftRef.current = false;
+    if (skipDraftLoads.current > 0) {
+      skipDraftLoads.current -= 1;
       return undefined;
     }
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
     if (isScoredProposition(sourceDocRef.current)) return undefined;
     draftDirtyRef.current = true;
+    setDraftSaveState("Saving…");
     const t = window.setTimeout(() => {
       const snap = docRef.current;
       if (!snap?.id) return;
-      Promise.resolve(onSaveDraftRef.current?.(snap))
-        .then((saved) => {
-          if (!saved) {
-            setDraftSaveState("Draft not saved");
-            return;
-          }
-          draftDirtyRef.current = false;
-          if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
-            const active = document.activeElement?.getAttribute?.("data-field") || "";
-            setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
-            setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
-            return;
-          }
-          setDraftSaveState("Draft saved");
-        })
-        .catch(() => {
-          setDraftSaveState("Draft not saved");
-        });
+      enqueueDraft(snap).catch(() => {
+        setDraftSaveState("Draft not saved");
+      });
     }, 2000);
     return () => window.clearTimeout(t);
   }, [doc, propositionId, saving]);
 
   useEffect(() => {
-    return () => {
+    function flushDraft() {
+      const snap = docRef.current;
       if (
-        draftDirtyRef.current &&
-        typeof onSaveDraftRef.current === "function" &&
-        docRef.current?.id &&
-        !isScoredProposition(sourceDocRef.current)
+        !draftDirtyRef.current ||
+        typeof onSaveDraftRef.current !== "function" ||
+        !snap?.id ||
+        isScoredProposition(sourceDocRef.current)
       ) {
-        Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
+        return;
       }
+      enqueueDraft(snap, { keepalive: true });
+    }
+    window.addEventListener("pagehide", flushDraft);
+    return () => {
+      window.removeEventListener("pagehide", flushDraft);
+      flushDraft();
     };
   }, []);
 
@@ -3930,9 +3970,9 @@ export default function PropositionForm({
           ))}
         </nav>
         <p className="draft-saved mono">
-          {Number(doc.version) > 1 || doc.updatedAt
+          {draftSaveState === "Draft saved"
             ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
-            : "Not yet saved for the team"}
+            : draftSaveState || "Not yet saved for the team"}
         </p>
       </aside>
 
@@ -4505,7 +4545,7 @@ export default function PropositionForm({
           </span>
         ) : null}
         <span className="save-state">
-          v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
+          v{doc.version || 1} · {draftSaveState || "not yet saved for the team"}
         </span>
         <button
           type="button"
