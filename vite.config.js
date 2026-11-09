@@ -34,7 +34,7 @@ function apiPlugin(env) {
       applyEnv(env);
 
       server.middlewares.use(async (req, res, next) => {
-        applySecurityHeaders(res);
+        applySecurityHeaders(res, { dev: true });
         try {
           const handled = await handleApiRequest(req, res);
           if (handled) return;
