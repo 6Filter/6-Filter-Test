@@ -87,6 +87,7 @@ import {
 import { f4DimensionVerification } from "../lib/f4Assessment.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
+import { divisionForScore } from "../lib/divisionForScore.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
 import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
 
@@ -2938,6 +2939,9 @@ export default function PropositionForm({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: doc.name,
+            category: doc.category,
+            ideaDescription: doc.ideaDescription,
             division: doc.division,
             f1: doc.f1,
             f2: doc.f2,
@@ -3260,7 +3264,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const fileName = uploaded.name || file.name;
+      setConceptCardName(fileName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: fileName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -3268,12 +3277,11 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setConceptCardName("");
-        setConceptCardError(data.error || "Could not read that concept card.");
+      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      if (!res.ok || data.extractError) {
+        setConceptCardError(data.extractError || data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
       // Part 138 B — only values the document states are suggested; say how many were left out.
       const keptCount = Array.isArray(data.extractedKeys) ? data.extractedKeys.length : 0;
       const droppedCount = Number(data.droppedCount) || 0;
@@ -3281,7 +3289,6 @@ export default function PropositionForm({
         `Suggested from the concept card (AI-suggested, review): ${keptCount} field${keptCount === 1 ? "" : "s"} kept` +
           (droppedCount ? `; ${droppedCount} dropped because the document does not state ${droppedCount === 1 ? "it" : "them"}.` : ".")
       );
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -3290,7 +3297,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -4161,7 +4167,7 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec, divisionForScore(doc))}</p>
                 {spec.key === "f2" && doc.division ? (
                   <p className="prop-filter-sub">
                     {doc.researchFindings?.divisionDetection?.needsConfirmation
@@ -4181,7 +4187,7 @@ export default function PropositionForm({
                 ) : null}
                 {spec.key === "f2" ? (
                   <div className="margin-hint-block">
-                    <p className="prop-filter-sub">{formatMinimumMarginHint(doc)}</p>
+                    <p className="prop-filter-sub">{formatMinimumMarginHint({ ...doc, division: divisionForScore(doc) })}</p>
                     {doc.researchFindings?.divisionDetection?.reason || doc.division ? (
                       <details className="why-division">
                         <summary>Why this division?</summary>
@@ -4223,9 +4229,15 @@ export default function PropositionForm({
                         </button>
                       </details>
                     ) : null}
-                    {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, doc) ? (
+                    {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, {
+                      ...doc,
+                      division: divisionForScore(doc),
+                    }) ? (
                       <p className="margin-below-warn">
-                        {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, doc)}
+                        {marginBelowFloorWarning(values.netMarginAtScale ?? doc.f2?.netMarginAtScale, {
+                          ...doc,
+                          division: divisionForScore(doc),
+                        })}
                       </p>
                     ) : null}
                   </div>
