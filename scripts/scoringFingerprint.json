@@ -1,12 +1,12 @@
 {
-  "rulesetVersion": "v5.6",
-  "fingerprint": "569d0e1d7b5a4b1d2564c99782b950ccc453c54e70614c1daf4754e99d133709",
+  "rulesetVersion": "v5.7",
+  "fingerprint": "0df36fdd83c0b65843f7556e810457c71550d00919e5768ef08d164e4cf498f1",
   "files": {
-    "lib/lockedConstants.js": "ba9fff1232bb5a64f125b7a1f9744028193fad9fee0ac2dfaf54a323dd0c00a0",
-    "lib/goNoGo.js": "45d404117d22e4430e3da3b679eb78c44908ef95df1089ea654d96450587dcbe",
+    "lib/lockedConstants.js": "906f6ec4d9f515cabf4ecab57730999378e2eddd31734555beaa84adcbb0ed11",
+    "lib/goNoGo.js": "14577f52bc661cab562791a340a82ed647cc4c9fc598a95e165c21a035ece93f",
     "lib/filterChecks.js": "2511b67d2dba90cf5f69938671a977dc304f28bc8cfaf64ac3a8772c82129d4d",
-    "lib/propositionScoring.js": "acc374b08e7963863b1e0f042870354ddff9d5013ee8023c4c6a0892e25c8c6a",
-    "lib/analysisStability.js": "1d536763515fa470d340cfc5cb5710f86da04ff0fd6dfa2175a9b62c3eb0d313",
+    "lib/propositionScoring.js": "b98b1cd686b86c1fc8cdab8b2600c59d656c23b647bd347cb10e20f725f73cd4",
+    "lib/analysisStability.js": "48abeddcadc77437cdc93e70997164f0ec7011609748c7f9c510cf6c6ab909c6",
     "lib/techShiftRisk.js": "57ada3816f4b685eadb64a172db6602f7bf15932e61fc883396992235f6aaf7f",
     "lib/scoreSlots.js": "92ea2ac66327c7852b3334714577055125cad020b4396cbf071bb3e3efa6c724",
     "lib/mrpFormula.js": "ddc98cae158e31f122d236b50796c20601ea2840605d2e65aafb02c38a80bbea",
