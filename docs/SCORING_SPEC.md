@@ -1,12 +1,12 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v5.6**, Part 138). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.7**, Part 138). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v5.6` |
+| `SCORING_RULESET_VERSION` | `v5.7` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `SCORING_MODEL` | `relevance` |
 | `RELEVANCE_SHADOW_MODE` | `true` |
@@ -16,6 +16,10 @@ Generated from `lib/lockedConstants.js` (ruleset **v5.6**, Part 138). Filters 5�
 | `FIXED_PRICE_POINTS` | `1, 2, 5, 10, 20, 50, 100` |
 | `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
+
+### What changed in v5.7
+
+Slot weights are unchanged (still 18: F1 = 7, F2 = 3, F3 = 1, F4 = 7). When the stored division is blank, scoring uses the same keyword match Submit uses if the model is unavailable. An explicit division still wins. A score read does not write the division, so the same idea text cannot produce two Filter 2 results.
 
 ### What changed in v5.6 (Part 138 — 18 checks)
 
