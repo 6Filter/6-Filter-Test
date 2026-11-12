@@ -193,7 +193,8 @@ await handlePropositionById(
 );
 assert.ok([403, 404].includes(denyRes.statusCode), "non-owner cannot edit inputs");
 
-// Client techShiftRisk when stored empty → forbidden at API layer
+// Hand-entered Filter 4 rating is saved with the idea. It must not 403 Submit,
+// and it must not replace a risk level that is already stored.
 const riskRes = mkRes();
 const current = await getPropositionById(prop.id);
 await handlePropositionById(
@@ -203,7 +204,7 @@ await handlePropositionById(
         ...current,
         f4: {
           techShiftRisk: {
-            dimensions: { functionalCoreStability: { risk: "Low", reason: "injected" } },
+            dimensions: { functionalCoreStability: { risk: "Low", reason: "oil holds" } },
           },
         },
         submitterName: "Owner",
@@ -217,8 +218,36 @@ await handlePropositionById(
   prop.id,
   { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
 );
-assert.equal(riskRes.statusCode, 403);
-assert.equal(riskRes.body?.field, "techShiftRisk");
+assert.notEqual(riskRes.statusCode, 403, riskRes.body?.error || "hand rating blocked Submit");
+const afterHand = await getPropositionById(prop.id);
+assert.equal(afterHand.f4?.techShiftRisk?.dimensions?.functionalCoreStability?.risk, "Low");
+assert.equal(afterHand.f4?.techShiftRisk?.dimensions?.functionalCoreStability?.reason, "oil holds");
+
+const clashRes = mkRes();
+await handlePropositionById(
+  mkReq(
+    {
+      proposition: {
+        ...afterHand,
+        f4: {
+          techShiftRisk: {
+            dimensions: { functionalCoreStability: { risk: "High", reason: "overwrite" } },
+          },
+        },
+        submitterName: "Owner",
+        submitterDepartment: "R&D",
+      },
+      confirmMissingSteps: true,
+    },
+    { ...dbOwner, team: "R&D", role: "BM" }
+  ),
+  clashRes,
+  prop.id,
+  { readBody: async (r) => JSON.parse(await readStream(r)), sendJson, redactSecrets: (s) => s }
+);
+assert.notEqual(clashRes.statusCode, 403);
+const afterClash = await getPropositionById(prop.id);
+assert.equal(afterClash.f4?.techShiftRisk?.dimensions?.functionalCoreStability?.risk, "Low");
 
 // set-team allows change when team already set
 await setUserTeam(dbOwner.id, "R&D");
