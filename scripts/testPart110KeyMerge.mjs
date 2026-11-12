@@ -47,6 +47,27 @@ const serverKey = mergeFilterObject(
   { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "High", reason: "shift" } } } }
 );
 assert.equal(serverKey.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+assert.equal(serverKey.value.techShiftRisk.dimensions.functionalCoreStability.reason, "stable");
+
+const handFirst = mergeFilterObject(
+  {},
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low", reason: "oil holds" } } } }
+);
+assert.equal(handFirst.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+assert.equal(handFirst.value.techShiftRisk.dimensions.functionalCoreStability.reason, "oil holds");
+
+const reasonKept = mergeFilterObject(
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low", reason: "stable" } } } },
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low", reason: "daily oiling still holds" } } } }
+);
+assert.equal(reasonKept.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Low");
+assert.equal(reasonKept.value.techShiftRisk.dimensions.functionalCoreStability.reason, "daily oiling still holds");
+
+const blankShell = mergeFilterObject(
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Medium", reason: "shift" } } } },
+  { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "", reason: "" } } } }
+);
+assert.equal(blankShell.value.techShiftRisk.dimensions.functionalCoreStability.risk, "Medium");
 
 const explicit = mergeFilterObject(
   { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } },
