@@ -178,13 +178,36 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
   }
 }
 
-async function saveDraftSilently(id, payload) {
+function slimDraftForUnload(payload) {
+  const next = { ...payload };
+  if (next.f1?.evidenceSourceFile && typeof next.f1.evidenceSourceFile === "object") {
+    const { data, content, ...rest } = next.f1.evidenceSourceFile;
+    next.f1 = { ...next.f1, evidenceSourceFile: rest };
+  }
+  if (next.attachment && typeof next.attachment === "object") {
+    const { data, content, ...rest } = next.attachment;
+    next.attachment = rest;
+  }
+  if (next.marketResearchProof && typeof next.marketResearchProof === "object") {
+    const { data, content, ...rest } = next.marketResearchProof;
+    next.marketResearchProof = rest;
+  }
+  return next;
+}
+
+async function saveDraftSilently(id, payload, { keepalive = false } = {}) {
+  const proposition = { ...payload, baseVersion: payload?.baseVersion ?? payload?.version };
+  let body = JSON.stringify({ proposition });
+  // A reload cancels a normal fetch. keepalive is capped near 64KB, so a huge
+  // file is omitted and the typed fields still land.
+  if (keepalive && body.length > 60000) {
+    body = JSON.stringify({ proposition: { ...slimDraftForUnload(proposition), baseVersion: proposition.baseVersion } });
+  }
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
-    }),
+    body,
+    keepalive: Boolean(keepalive) && body.length <= 60000,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Could not save draft.");
@@ -1056,10 +1079,10 @@ export default function App() {
     }
   }
 
-  async function savePropositionDraft(doc) {
+  async function savePropositionDraft(doc, options = {}) {
     if (!doc?.id) return null;
     try {
-      const saved = await saveDraftSilently(doc.id, doc);
+      const saved = await saveDraftSilently(doc.id, doc, options);
       if (saved?.id) {
         setPropositionList((rows) => {
           const next = {

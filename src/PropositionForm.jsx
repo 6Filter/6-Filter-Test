@@ -2439,6 +2439,25 @@ function ProofUploadPanel({ proof, onPick, onClear, fileRef, error, disabled }) 
   );
 }
 
+function serverCopyHasContent(doc) {
+  if (!doc || typeof doc !== "object") return false;
+  if (String(doc.name || "").trim()) return true;
+  if (String(doc.category || "").trim()) return true;
+  if (String(doc.ideaDescription || "").trim()) return true;
+  if (String(doc.submitterName || "").trim()) return true;
+  for (const key of ["f1", "f2", "f3", "f4", "f5", "f6"]) {
+    const column = doc[key];
+    if (!column || typeof column !== "object") continue;
+    for (const [name, value] of Object.entries(column)) {
+      if (name === "forumVerdict" || name === "verdictNote") continue;
+      if (value == null || value === "") continue;
+      if (typeof value === "object" && !Object.keys(value).length) continue;
+      return true;
+    }
+  }
+  return false;
+}
+
 function formatSavedAt(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -2851,6 +2870,33 @@ export default function PropositionForm({
     };
   }, [propositionId, f3Unlocked, f2Cogs, f2Margin, saving, f3SuggestedRange, llmProvider, initial?.researchRunAt]);
 
+  function flushDraft({ keepalive = false } = {}) {
+    if (!draftDirtyRef.current) return;
+    if (typeof onSaveDraftRef.current !== "function") return;
+    const snap = docRef.current;
+    if (!snap?.id || isScoredProposition(sourceDocRef.current)) return;
+    draftDirtyRef.current = false;
+    Promise.resolve(onSaveDraftRef.current(snap, { keepalive }))
+      .then((saved) => {
+        if (!saved) {
+          draftDirtyRef.current = true;
+          setDraftSaveState("Draft not saved");
+          return;
+        }
+        if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
+          const active = document.activeElement?.getAttribute?.("data-field") || "";
+          setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
+          setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
+          return;
+        }
+        setDraftSaveState("Draft saved");
+      })
+      .catch(() => {
+        draftDirtyRef.current = true;
+        setDraftSaveState("Draft not saved");
+      });
+  }
+
   useEffect(() => {
     if (skipDraftRef.current) {
       skipDraftRef.current = false;
@@ -2859,41 +2905,18 @@ export default function PropositionForm({
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
     if (isScoredProposition(sourceDocRef.current)) return undefined;
     draftDirtyRef.current = true;
-    const t = window.setTimeout(() => {
-      const snap = docRef.current;
-      if (!snap?.id) return;
-      Promise.resolve(onSaveDraftRef.current?.(snap))
-        .then((saved) => {
-          if (!saved) {
-            setDraftSaveState("Draft not saved");
-            return;
-          }
-          draftDirtyRef.current = false;
-          if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
-            const active = document.activeElement?.getAttribute?.("data-field") || "";
-            setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
-            setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
-            return;
-          }
-          setDraftSaveState("Draft saved");
-        })
-        .catch(() => {
-          setDraftSaveState("Draft not saved");
-        });
-    }, 2000);
+    const t = window.setTimeout(() => flushDraft(), 2000);
     return () => window.clearTimeout(t);
   }, [doc, propositionId, saving]);
 
   useEffect(() => {
+    function flushLeaving() {
+      flushDraft({ keepalive: true });
+    }
+    window.addEventListener("pagehide", flushLeaving);
     return () => {
-      if (
-        draftDirtyRef.current &&
-        typeof onSaveDraftRef.current === "function" &&
-        docRef.current?.id &&
-        !isScoredProposition(sourceDocRef.current)
-      ) {
-        Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
-      }
+      window.removeEventListener("pagehide", flushLeaving);
+      flushLeaving();
     };
   }, []);
 
@@ -3930,9 +3953,9 @@ export default function PropositionForm({
           ))}
         </nav>
         <p className="draft-saved mono">
-          {Number(doc.version) > 1 || doc.updatedAt
+          {draftSaveState === "Draft saved" || serverCopyHasContent(initial)
             ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
-            : "Not yet saved for the team"}
+            : draftSaveState || "Not yet saved for the team"}
         </p>
       </aside>
 
@@ -4505,7 +4528,7 @@ export default function PropositionForm({
           </span>
         ) : null}
         <span className="save-state">
-          v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
+          v{doc.version || 1} · {draftSaveState || (serverCopyHasContent(initial) ? "saved for the team" : "not yet saved for the team")}
         </span>
         <button
           type="button"
