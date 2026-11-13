@@ -62,6 +62,15 @@ import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult }
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
+import { BeforeYouSubmit, FIELD_ROLE_CSS, FieldRoleBadge, FieldRoleLegend } from "./FieldRoleBadge.jsx";
+import {
+  ROLE_LABEL,
+  annotatePathActions,
+  effectiveRole,
+  getFieldRole,
+  roleLabel,
+  submitBarMessage,
+} from "../lib/fieldRoles.js";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -381,7 +390,7 @@ function AutofillProvenance({ fieldPath, doc, aiSourced, editedName, onRestore, 
   if (aiSourced || entry?.status === "filled") {
     return (
       <div className="autofill-status" data-tone="ai">
-        Filled by AI
+        {ROLE_LABEL["filled-by-ai"]}
       </div>
     );
   }
@@ -642,6 +651,7 @@ function FieldControl({
           {field.label}
           {wand}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <p className="prop-helper">
@@ -776,7 +786,10 @@ function FieldControl({
         : null;
     return (
       <div className={`prop-field span-2${locked ? " is-locked" : ""}`} title={lockTitle} data-f2-mrp="derived">
-        <div className="prop-label">{field.label}</div>
+        <div className="prop-label">
+          {field.label}
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
+        </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <label className="prop-check" style={{ marginBottom: 8 }}>
           <input
@@ -868,7 +881,11 @@ function FieldControl({
         title={lockTitle}
         data-f3-resilience="cliff"
       >
-        <div className="prop-label">{field.label}{wand}</div>
+        <div className="prop-label">
+          {field.label}
+          {wand}
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
+        </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <p className="derived-note">
           {priced.ok
@@ -966,6 +983,7 @@ function FieldControl({
           {field.label}
           {wand}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
         {loading ? (
@@ -1040,10 +1058,11 @@ function FieldControl({
 
   if (field.type === "computed") {
     return (
-      <div className={`prop-field span-2`}>
+      <div className={`prop-field span-2`} data-field={fieldPath || undefined}>
         <div className="prop-label">
           {field.label}
           {wand}
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
         {helper ? <p className="prop-helper">{helper}</p> : null}
       </div>
@@ -1064,14 +1083,17 @@ function FieldControl({
           {field.label}
           {wand}
         </span>
+        <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
       </label>
     );
   }
 
   const listId = Array.isArray(field.datalist) && field.datalist.length ? `${field.key}-presets` : "";
+  // The role badge holds a button, so the label points at its box explicitly.
+  const inputId = `fld-${String(fieldPath || field.key).replace(/[^A-Za-z0-9_-]+/g, "-")}`;
   const input =
     field.type === "select" ? (
-      <select data-field={fieldPath || undefined} value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
+      <select id={inputId} data-field={fieldPath || undefined} value={value ?? ""} disabled={locked} title={lockTitle} onChange={(e) => onChange(e.target.value)}>
         {(field.options || []).map((opt) => (
           <option key={`${opt.v}::${opt.l}`} value={opt.v}>
             {opt.l}
@@ -1080,6 +1102,7 @@ function FieldControl({
       </select>
     ) : field.type === "textarea" ? (
       <textarea
+        id={inputId}
         data-field={fieldPath || undefined}
         rows={3}
         value={value ?? ""}
@@ -1091,6 +1114,7 @@ function FieldControl({
     ) : (
       <>
         <input
+          id={inputId}
           data-field={fieldPath || undefined}
           type={field.type === "number" ? "number" : "text"}
           step={field.type === "number" ? "any" : undefined}
@@ -1113,11 +1137,12 @@ function FieldControl({
 
   return (
     <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle}>
-      <label className="prop-field-inner">
+      <label className="prop-field-inner" htmlFor={inputId}>
         <span className="prop-label">
           {field.label}
           {wand}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </span>
         {input}
       </label>
@@ -1664,6 +1689,15 @@ function EvaluationPendingPage({
                       {entry.status === "rule" ? " — fixed rule" : ""}
                       {entry.status === "not-scored" && !entry.reason ? " — used, not scored" : ""}
                     </span>
+                    {roleLabel(entry.field, doc) ? (
+                      <span
+                        className="field-role-badge"
+                        data-role-for={entry.field}
+                        data-role={effectiveRole(entry.field, doc)}
+                      >
+                        {roleLabel(entry.field, doc)}
+                      </span>
+                    ) : null}
                     {entry.status === "failed" ? (
                       <button
                         type="button"
@@ -1887,7 +1921,7 @@ export function GoNoGoResultPage({
     []
   );
   const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
-  const pathActions = Array.isArray(pathPlan?.actions) ? pathPlan.actions : [];
+  const pathActions = annotatePathActions(Array.isArray(pathPlan?.actions) ? pathPlan.actions : [], doc);
   const pathKind = String(pathPlan?.kind || "path");
   const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {
     have: 0,
@@ -2068,6 +2102,11 @@ export function GoNoGoResultPage({
                       <span className="path-action-text">
                         <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
                         {it.why ? <small className="path-why">{it.why}</small> : null}
+                        {it.optionalHint ? (
+                          <small className="path-why path-optional-hint" data-role="optional">
+                            {ROLE_LABEL.optional} — {it.optionalHint}
+                          </small>
+                        ) : null}
                       </span>
                       <span className="mono path-gain">
                         +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -2087,6 +2126,11 @@ export function GoNoGoResultPage({
                     <span className="path-action-text">
                       <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
                       {it.why ? <small className="path-why">{it.why}</small> : null}
+                        {it.optionalHint ? (
+                          <small className="path-why path-optional-hint" data-role="optional">
+                            {ROLE_LABEL.optional} — {it.optionalHint}
+                          </small>
+                        ) : null}
                     </span>
                     {Number(it.gainPct) > 0 ? (
                       <span className="mono path-gain">
@@ -2106,6 +2150,11 @@ export function GoNoGoResultPage({
                         <span className="path-action-text">
                           <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
                           {it.why ? <small className="path-why">{it.why}</small> : null}
+                        {it.optionalHint ? (
+                          <small className="path-why path-optional-hint" data-role="optional">
+                            {ROLE_LABEL.optional} — {it.optionalHint}
+                          </small>
+                        ) : null}
                         </span>
                         <span className="mono path-gain">
                           +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -2157,6 +2206,11 @@ export function GoNoGoResultPage({
                     <span className="path-action-text">
                       <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
                       {it.why ? <small className="path-why">{it.why}</small> : null}
+                        {it.optionalHint ? (
+                          <small className="path-why path-optional-hint" data-role="optional">
+                            {ROLE_LABEL.optional} — {it.optionalHint}
+                          </small>
+                        ) : null}
                     </span>
                     <span className="mono path-gain">
                       +{Number.isFinite(Number(it.gainPct)) ? it.gainPct : 7}%
@@ -3942,6 +3996,7 @@ export default function PropositionForm({
           <FieldControl
             key={field.key}
             field={field}
+            fieldPath="submitterName"
             value={doc[field.key]}
             onChange={(v) => setTop(field.key, v)}
             currentUser={currentUser}
@@ -3949,12 +4004,24 @@ export default function PropositionForm({
             {...fieldControlExtras("", field)}
           />
         ))}
-        <label className="field">
-          <span className="field-label">Your team</span>
+        <label className="field" htmlFor="fld-submitterDepartment">
+          <span className="field-label prop-label">
+            Your team
+            <FieldRoleBadge path="submitterDepartment" doc={doc} />
+          </span>
           {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? (
-            <input value={`Legacy: ${doc.submitterDepartment}`} disabled readOnly aria-label="Your team" />
+            <input
+              id="fld-submitterDepartment"
+              data-field="submitterDepartment"
+              value={`Legacy: ${doc.submitterDepartment}`}
+              disabled
+              readOnly
+              aria-label="Your team"
+            />
           ) : (
             <select
+              id="fld-submitterDepartment"
+              data-field="submitterDepartment"
               value={doc.submitterDepartment || currentUser?.team || ""}
               disabled={false}
               onChange={(e) => setTop("submitterDepartment", e.target.value)}
@@ -3978,6 +4045,8 @@ export default function PropositionForm({
         </label>
       </section>
 
+      <FieldRoleLegend />
+
       {String(currentUser?.role || "") === "ADMIN" &&
       (doc.researchFindings?.autofillReport?.fields || doc.researchFindings?.autofillStatus) ? (
         <details className="ai-fill-report">
@@ -3998,7 +4067,13 @@ export default function PropositionForm({
       <section id="the-proposition" className="prop-form-hero">
         <h1>Start with the idea</h1>
         <p>Three fields. Research fills the rest, you edit it.</p>
+        <div className="prop-label hero-label">
+          <label htmlFor="fld-name">{getFieldRole("name")?.label}</label>
+          <FieldRoleBadge path="name" doc={doc} />
+        </div>
         <input
+          id="fld-name"
+          data-field="name"
           placeholder="Enter the proposition name — e.g. Herbal cooling hair oil"
           value={doc.name || ""}
           onChange={(e) => {
@@ -4016,7 +4091,13 @@ export default function PropositionForm({
           onUseSuggestion={(s) => applyInputSuggestion("name", s)}
           onKeepTyped={() => keepInputTyped("name")}
         />
+        <div className="prop-label hero-label">
+          <label htmlFor="fld-category">{getFieldRole("category")?.label}</label>
+          <FieldRoleBadge path="category" doc={doc} />
+        </div>
         <input
+          id="fld-category"
+          data-field="category"
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
@@ -4052,7 +4133,13 @@ export default function PropositionForm({
             />
           ) : null;
         })()}
+        <div className="prop-label hero-label">
+          <label htmlFor="fld-ideaDescription">{getFieldRole("ideaDescription")?.label}</label>
+          <FieldRoleBadge path="ideaDescription" doc={doc} />
+        </div>
         <textarea
+          id="fld-ideaDescription"
+          data-field="ideaDescription"
           placeholder="Describe the product idea, or attach a PDF, Word file, or image with the insight."
           value={doc.ideaDescription || ""}
           onChange={(e) => {
@@ -4272,9 +4359,10 @@ export default function PropositionForm({
             <div className="prop-grid">
               {spec.fields.map((field) =>
                 field.type === "computed" ? (
-                  <div key={field.key} className="prop-field span-2">
+                  <div key={field.key} className="prop-field span-2" data-field={`${spec.key}.${field.key}`}>
                     <div className="prop-label">
                       {field.label}
+                      <FieldRoleBadge path={`${spec.key}.${field.key}`} doc={doc} />
                       {["householdsReachedY3Mn", "trialRatePct", "repeatConversionPct", "purchaseFrequencyYr", "avgPackValueInr"].some(
                         (k) => aiSourced[sourcedPath("f5", k)]
                       ) ? (
@@ -4430,6 +4518,8 @@ export default function PropositionForm({
         );
       })}
 
+      <BeforeYouSubmit doc={doc} />
+
       {missingFormInputs.length && !justSubmitted ? (
         <div className="unlock-hint" role="status">
           <strong>Still to enter before a full score:</strong>
@@ -4495,7 +4585,7 @@ export default function PropositionForm({
 
       <div className="submit-bar">
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
-        <span><b>{progress.requiredLeft}</b> required fields left before you can submit</span>
+        <span className="submit-bar-message" data-testid="submit-bar-message">{submitBarMessage(doc)}</span>
         <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
         {liveInputReview.fields.length ? (
           <span className="mono field-list" title={liveInputReview.fields.map((f) => f.message).join(" ")}>
@@ -4635,6 +4725,8 @@ export const PROP_CSS = `
 .prop-field-inner{display:flex;flex-direction:column;gap:6px;}
 .prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
 .prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
+${FIELD_ROLE_CSS}
+.submit-bar .submit-bar-message{flex:1 1 260px;min-width:0;font-size:13px;line-height:1.4;}
 .autofill-status{margin-top:4px;font-size:12px;line-height:1.35;color:#c4b5d8;}
 .autofill-status[data-tone="ai"]{color:#C9A0E8;}
 .autofill-status[data-tone="edited"]{color:#93c5fd;}
@@ -4995,5 +5087,6 @@ export const PROP_CSS = `
   .prop-page.prop-form-page{margin:0;padding:16px 16px 96px;}
   .prop-page.output-page{margin:0;padding:8px 16px 32px;}
   .submit-bar{padding:10px 16px 12px;}
+  .prop-check{flex-wrap:wrap;}
 }
 `;

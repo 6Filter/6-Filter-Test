@@ -3,6 +3,7 @@
  */
 import { createRoot } from "react-dom/client";
 import { PROPOSITION_TOP_FIELDS, SIX_FILTERS_FORM } from "../lib/propositionFields.js";
+import { roleLabel } from "../lib/fieldRoles.js";
 import {
   createOutputPdfDocument,
   exportElementToPdf,
@@ -61,6 +62,8 @@ function InputsSnapshot({ doc }) {
       title: "Idea",
       rows: PROPOSITION_TOP_FIELDS.map((f) => ({
         label: f.label,
+        path: f.key,
+        role: roleLabel(f.key, doc),
         value: displayValue(readField(doc, null, f.key)),
       })),
     },
@@ -70,6 +73,8 @@ function InputsSnapshot({ doc }) {
         .filter((f) => f.key !== "forumVerdict" && f.key !== "verdictNote")
         .map((f) => ({
           label: f.label,
+          path: `${spec.key}.${f.key}`,
+          role: roleLabel(`${spec.key}.${f.key}`, doc),
           value: displayValue(readField(doc, spec.key, f.key)),
         })),
     })),
@@ -92,7 +97,14 @@ function InputsSnapshot({ doc }) {
           <dl>
             {section.rows.map((row) => (
               <div key={row.label} className="inputs-pdf-row">
-                <dt>{row.label}</dt>
+                <dt>
+                  {row.label}
+                  {row.role ? (
+                    <span className="inputs-pdf-role" data-role-for={row.path}>
+                      Label: {row.role}
+                    </span>
+                  ) : null}
+                </dt>
                 <dd>{row.value}</dd>
               </div>
             ))}
@@ -110,6 +122,7 @@ function InputsSnapshot({ doc }) {
         .inputs-pdf-row{display:grid;grid-template-columns:240px 1fr;gap:12px;padding:6px 0;border-top:1px solid #F1ECDD;}
         .inputs-pdf-row:first-of-type{border-top:0;}
         .inputs-pdf-row dt{margin:0;font-size:12px;color:#6E6858;font-family:system-ui,sans-serif;}
+        .inputs-pdf-role{display:block;margin-top:2px;font-size:11px;font-weight:600;color:#3F3A2E;}
         .inputs-pdf-row dd{margin:0;font-size:13px;white-space:pre-wrap;word-break:break-word;}
       `}</style>
     </div>

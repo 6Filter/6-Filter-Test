@@ -8,6 +8,7 @@ import {
   SIX_FILTERS_SPEC,
   SPEC_FILTERS_NAV,
 } from "./specContent.js";
+import { FIELD_ROLE_CSS, FieldRoleLegend } from "./FieldRoleBadge.jsx";
 
 function FilterSpecSection({ spec }) {
   const { key, num, title, accentBg, accentFg, v4Test, howToThink, modelAndAi, steps } = spec;
@@ -92,6 +93,7 @@ export default function SpecPage({ onEnterProposition }) {
   return (
     <div className="spec-page">
       <style>{SPEC_CSS}</style>
+      <style>{FIELD_ROLE_CSS}</style>
       <div className="spec-cta-banner">
         <button type="button" className="spec-cta-btn" onClick={onEnterProposition}>
           Enter your proposition here <ArrowRight size={18} strokeWidth={2.4} />
@@ -124,6 +126,7 @@ export default function SpecPage({ onEnterProposition }) {
       </nav>
 
       <div className="spec-body">
+        <FieldRoleLegend />
         <section className="spec-spine" aria-labelledby="data-spine-h">
           <h2 id="data-spine-h" className="spec-spine-h">
             THE DATA SPINE — WHO PROVIDES WHAT, IN ONE VIEW
