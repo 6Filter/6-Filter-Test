@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
+import { omitServerOwnedForSave, plainDraftSaveError } from "../lib/clientSavePayload.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { DEFAULT_LLM_PROVIDER, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
@@ -138,7 +139,10 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
+        proposition: {
+          ...omitServerOwnedForSave(payload),
+          baseVersion: payload?.baseVersion ?? payload?.version,
+        },
         provider,
         forceResearch: Boolean(forceResearch),
         asNew: Boolean(asNew),
@@ -183,11 +187,18 @@ async function saveDraftSilently(id, payload) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      proposition: { ...payload, baseVersion: payload?.baseVersion ?? payload?.version },
+      proposition: {
+        ...omitServerOwnedForSave(payload),
+        baseVersion: payload?.baseVersion ?? payload?.version,
+      },
     }),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Could not save draft.");
+  if (!res.ok) {
+    const err = new Error(data.error || `Could not save draft (server said ${res.status}).`);
+    err.status = res.status;
+    throw err;
+  }
   if (data.proposition && Array.isArray(data.ignoredKeys) && data.ignoredKeys.length) {
     data.proposition.ignoredKeys = data.ignoredKeys;
   }
@@ -611,6 +622,9 @@ export default function App() {
   const [savingProp, setSavingProp] = useState(false);
   const [processJob, setProcessJob] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  // Part 140 E — the uploaded-ideas review list lives here so it survives "Open draft".
+  const [importResult, setImportResult] = useState(null);
+  const [formNonce, setFormNonce] = useState(0);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState("");
 
@@ -638,6 +652,15 @@ export default function App() {
   const deepLinkHandled = useRef(false);
   const navTokenRef = useRef(0);
   const openAbortRef = useRef(null);
+  /** Part 140 B (D64) — the open form tells us when it holds changes that are not saved. */
+  const formUnsavedRef = useRef(false);
+
+  function confirmLeaveUnsaved() {
+    if (view !== "form" || !formUnsavedRef.current) return true;
+    return window.confirm(
+      "Your changes are NOT saved yet. If you leave now you may lose them.\n\nLeave anyway?"
+    );
+  }
 
   function bumpNavToken() {
     navTokenRef.current += 1;
@@ -845,6 +868,7 @@ export default function App() {
   }, [view]);
 
   function goBack() {
+    if (!confirmLeaveUnsaved()) return;
     if (view === "form" || view === "result") {
       if (returnView === "log") {
         openLogTab();
@@ -874,6 +898,7 @@ export default function App() {
   }
 
   function openLogTab() {
+    if (!confirmLeaveUnsaved()) return;
     bumpNavToken();
     clearStashedReturnIdea();
     setOpeningId(null);
@@ -886,6 +911,7 @@ export default function App() {
   }
 
   function openSettingsTab() {
+    if (!confirmLeaveUnsaved()) return;
     bumpNavToken();
     clearStashedReturnIdea();
     setOpeningId(null);
@@ -896,6 +922,7 @@ export default function App() {
   }
 
   function openHomeTab() {
+    if (!confirmLeaveUnsaved()) return;
     bumpNavToken();
     clearStashedReturnIdea();
     setOpeningId(null);
@@ -976,6 +1003,7 @@ export default function App() {
       });
       setSavedFlash(false);
       setReturnView(from);
+      if (opts.remount) setFormNonce((n) => n + 1);
       setView("form");
       if (!opts.fromPop) {
         syncAddress("form", row.id, { replace: Boolean(opts.replaceAddress) });
@@ -994,6 +1022,31 @@ export default function App() {
       }
     } finally {
       if (token === navTokenRef.current) setOpeningId(null);
+    }
+  }
+
+  /** Part 140 E — open one uploaded draft in a fresh form (the form is keyed so it does not keep the old idea). */
+  async function openImportedDraft(id) {
+    await openProposition({ id }, "spec", { remount: true });
+  }
+
+  /** Part 140 E — Submit one uploaded draft exactly as the form's Submit does. Resolves { ok, message | error }. */
+  async function submitImportedIdea(id) {
+    try {
+      const full = await fetchPropositionById(id);
+      const result = await putProposition(id, full, normalizeProvider(llmProvider), {});
+      const saved = result.proposition;
+      const verdict = saved?.goNoGo?.classification || saved?.classification || "";
+      return {
+        ok: true,
+        message: result.researchError
+          ? `Submitted, but research reported a problem: ${result.researchError}`
+          : verdict
+            ? `Submitted — ${verdict}.`
+            : "Submitted.",
+      };
+    } catch (e) {
+      return { ok: false, error: e?.message || "Could not submit this idea." };
     }
   }
 
@@ -1056,8 +1109,9 @@ export default function App() {
     }
   }
 
+  /** Part 140 B (D64) — resolves { ok: true, proposition } or { ok: false, error }; never a silent null. */
   async function savePropositionDraft(doc) {
-    if (!doc?.id) return null;
+    if (!doc?.id) return { ok: false, error: "This idea has no id yet, so it cannot be saved." };
     try {
       const saved = await saveDraftSilently(doc.id, doc);
       if (saved?.id) {
@@ -1088,9 +1142,10 @@ export default function App() {
           return [next, ...rows.filter((r) => r.id !== saved.id)];
         });
       }
-      return saved;
-    } catch {
-      return null;
+      if (!saved) return { ok: false, error: "The server did not send the saved idea back." };
+      return { ok: true, proposition: saved };
+    } catch (e) {
+      return { ok: false, error: plainDraftSaveError(e) };
     }
   }
 
@@ -1557,9 +1612,17 @@ export default function App() {
 
       {view === "form" && proposition && (
         <PropositionForm
+          key={formNonce}
           initial={proposition}
+          importResult={importResult}
+          setImportResult={setImportResult}
+          onOpenImportedDraft={openImportedDraft}
+          onSubmitImportedIdea={submitImportedIdea}
           onSave={savePropositionForTeam}
           onSaveDraft={savePropositionDraft}
+          onUnsavedChange={(dirty) => {
+            formUnsavedRef.current = Boolean(dirty);
+          }}
           saving={savingProp}
           savedFlash={savedFlash}
           error={error}

@@ -1,13 +1,13 @@
 {
   "rulesetVersion": "v5.6",
-  "fingerprint": "569d0e1d7b5a4b1d2564c99782b950ccc453c54e70614c1daf4754e99d133709",
+  "fingerprint": "56b301d0bbbdc6fafbfa772ee7b3491995c055392fb2f4290a53f6f7427119aa",
   "files": {
     "lib/lockedConstants.js": "ba9fff1232bb5a64f125b7a1f9744028193fad9fee0ac2dfaf54a323dd0c00a0",
     "lib/goNoGo.js": "45d404117d22e4430e3da3b679eb78c44908ef95df1089ea654d96450587dcbe",
     "lib/filterChecks.js": "2511b67d2dba90cf5f69938671a977dc304f28bc8cfaf64ac3a8772c82129d4d",
     "lib/propositionScoring.js": "acc374b08e7963863b1e0f042870354ddff9d5013ee8023c4c6a0892e25c8c6a",
     "lib/analysisStability.js": "1d536763515fa470d340cfc5cb5710f86da04ff0fd6dfa2175a9b62c3eb0d313",
-    "lib/techShiftRisk.js": "57ada3816f4b685eadb64a172db6602f7bf15932e61fc883396992235f6aaf7f",
+    "lib/techShiftRisk.js": "fb4c440543f67bd2baccfdd94384a57dd63ac5dda830829c889ce4614055cb92",
     "lib/scoreSlots.js": "92ea2ac66327c7852b3334714577055125cad020b4396cbf071bb3e3efa6c724",
     "lib/mrpFormula.js": "ddc98cae158e31f122d236b50796c20601ea2840605d2e65aafb02c38a80bbea",
     "lib/packSize.js": "bc9145ee0c352e617e51ab546ab42dac257f610f01aab4394a11600f4af2a9b7",
@@ -25,7 +25,7 @@
     "lib/evaluationStatus.js": "24dc3e0c0e4736e8a368dc636fe835ee36e1ef0a574f279dbec78eb29e600bf8",
     "lib/filterNarrativeText.js": "154000680d8cf41d97079e58b3607b9d0923897e732790dce2bc9f7e324c3e21",
     "lib/assessmentResult.js": "8537a5f38741334a29870d76f70464b6894e58532b602ead5c3a73e4e36ee792",
-    "lib/f4Assessment.js": "5c9db1c04c78f8fbf58d5066ed12cc6989ee31ae96868e6e9bcb84dfdc14e908",
+    "lib/f4Assessment.js": "97a8e2f2b86e8635a66f1d3f42edae8f138620f857aad4b348f62389a11999fb",
     "lib/inputCoverage.js": "d4786a23b6577451749ed9683c7f0161e7c70dbddf1d936c524f74421de3b2f7",
     "lib/researchProgress.js": "c318ccdf19461da8c3350e57c7414877782a4dbf52d3c2b21e43dddafe93c3df"
   }

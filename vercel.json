@@ -12,6 +12,12 @@
     "api/ideas.js": {
       "maxDuration": 180
     },
+    "api/propositions/import.js": {
+      "maxDuration": 90
+    },
+    "api/propositions/import-template.js": {
+      "maxDuration": 15
+    },
     "api/ideas/[id].js": {
       "maxDuration": 30
     },

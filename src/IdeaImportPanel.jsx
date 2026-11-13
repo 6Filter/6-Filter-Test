@@ -1,0 +1,287 @@
+import { useRef, useState } from "react";
+import { AlertTriangle, Download, FileUp, Loader2 } from "lucide-react";
+import { MEASURED_FRESH_IDEA } from "../lib/researchProgress.js";
+
+/**
+ * Part 140 E — "Upload your idea (Excel, Word or PDF)" for the new-idea page.
+ * The file is read on the server (POST /api/propositions/import); every idea becomes a draft owned by
+ * the uploader. Nothing is scored until Submit. `result` / `setResult` live in App so the review list
+ * survives "Open draft".
+ */
+
+export const IMPORT_TEMPLATE_URL = "/api/propositions/import-template";
+export const IMPORT_URL = "/api/propositions/import";
+const MAX_BYTES = 5 * 1024 * 1024;
+
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      const at = text.indexOf("base64,");
+      resolve(at >= 0 ? text.slice(at + 7) : text);
+    };
+    reader.onerror = () => reject(reader.error || new Error("Could not read that file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function plural(n, one, many) {
+  return n === 1 ? one : many;
+}
+
+/** The words for the Submit-all price confirm (list price per idea from the measured fresh idea). */
+export function submitAllConfirmText(count) {
+  const each = MEASURED_FRESH_IDEA.listPriceUsd;
+  return (
+    `Submit ${count} ${plural(count, "idea", "ideas")}? Each one runs the full research, one after another. ` +
+    `Estimated list price about $${(each * count).toFixed(2)} (about $${each.toFixed(2)} each).\n\nContinue?`
+  );
+}
+
+export default function IdeaImportPanel({ result, setResult, llmProvider = "claude", onOpenDraft, onSubmitIdea }) {
+  const fileRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [submittingAll, setSubmittingAll] = useState(false);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    if (file.size > MAX_BYTES) {
+      setError("That file is over 5 MB. Remove pictures or split it into smaller files.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const data = await readAsBase64(file);
+      const res = await fetch(IMPORT_URL, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attachment: { name: file.name, data, mediaType: file.type || "" }, provider: llmProvider }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error || "Could not read that file.");
+        return;
+      }
+      setResult({
+        fileName: file.name,
+        created: (body.created || []).map((idea) => ({ ...idea, submitState: "", submitMessage: "" })),
+        rejected: body.rejected || [],
+        ignoredColumns: body.ignoredColumns || [],
+        usedAi: Boolean(body.usedAi),
+      });
+    } catch (err) {
+      setError(err.message || "Could not read that file.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function patchIdea(id, patch) {
+    setResult((prev) =>
+      prev ? { ...prev, created: prev.created.map((idea) => (idea.id === id ? { ...idea, ...patch } : idea)) } : prev
+    );
+  }
+
+  async function submitOne(idea) {
+    if (typeof onSubmitIdea !== "function") return;
+    patchIdea(idea.id, { submitState: "submitting", submitMessage: "" });
+    const out = await onSubmitIdea(idea.id);
+    if (out?.ok) {
+      patchIdea(idea.id, { submitState: "submitted", submitMessage: out.message || "Submitted." });
+    } else {
+      patchIdea(idea.id, { submitState: "failed", submitMessage: out?.error || "Could not submit this idea." });
+    }
+  }
+
+  const created = result?.created || [];
+  const rejected = result?.rejected || [];
+  const ready = created.filter((i) => !i.missingRequired?.length && i.submitState !== "submitted" && i.submitState !== "submitting");
+
+  async function submitAll() {
+    if (!ready.length || submittingAll) return;
+    if (!window.confirm(submitAllConfirmText(ready.length))) return;
+    setSubmittingAll(true);
+    try {
+      for (const idea of ready) {
+        // eslint-disable-next-line no-await-in-loop
+        await submitOne(idea);
+      }
+    } finally {
+      setSubmittingAll(false);
+    }
+  }
+
+  return (
+    <div className="import-panel" data-testid="import-panel">
+      <div className="import-actions-row">
+        <input
+          ref={fileRef}
+          type="file"
+          hidden
+          data-testid="import-file"
+          accept=".xlsx,.xlsm,.csv,.doc,.docx,.pdf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          onChange={handleFile}
+        />
+        <button
+          type="button"
+          className="import-upload-btn"
+          data-testid="import-upload"
+          disabled={busy || submittingAll}
+          onClick={() => fileRef.current?.click()}
+        >
+          {busy ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
+          Upload your idea (Excel, Word or PDF)
+        </button>
+        <a className="import-template-link" data-testid="import-template-link" href={IMPORT_TEMPLATE_URL} download>
+          <Download size={14} /> Download the Excel template
+        </a>
+      </div>
+      <p className="prop-helper import-help">
+        One idea or many (up to 200, 5 MB). Each idea becomes a draft you own. Nothing is scored until you press Submit.
+      </p>
+      {error ? (
+        <div className="prop-err" role="alert" data-testid="import-error">
+          <AlertTriangle size={14} /> {error}
+        </div>
+      ) : null}
+
+      {result ? (
+        <section className="import-review" data-testid="import-review" aria-live="polite">
+          <h2 className="import-review-title">
+            <span data-testid="import-count-created">{created.length}</span> {plural(created.length, "idea", "ideas")} imported as drafts
+            {rejected.length ? (
+              <>
+                {", "}
+                <span data-testid="import-count-rejected">{rejected.length}</span> not imported
+              </>
+            ) : null}
+          </h2>
+          <p className="prop-helper import-file-name">From {result.fileName}</p>
+          {result.usedAi ? (
+            <p className="prop-helper" data-testid="import-ai-note">
+              Read by AI from a free-form document. Only values the document states were kept — check each one.
+            </p>
+          ) : null}
+          {result.ignoredColumns?.length ? (
+            <p className="prop-helper" data-testid="import-ignored">
+              Columns not used: {result.ignoredColumns.join(", ")}
+            </p>
+          ) : null}
+
+          <ul className="import-list">
+            {created.map((idea) => {
+              const missing = idea.missingRequired || [];
+              const busyIdea = idea.submitState === "submitting";
+              return (
+                <li className="import-idea" key={idea.id} data-testid="import-idea" data-idea-id={idea.id}>
+                  <div className="import-idea-head">
+                    <strong className="import-idea-name">{idea.name || "Untitled idea"}</strong>
+                    <span className="import-idea-filled">
+                      {(idea.filled || []).length} {plural((idea.filled || []).length, "box", "boxes")} filled
+                    </span>
+                  </div>
+                  {missing.length ? (
+                    <p className="import-idea-missing" data-testid="import-missing">
+                      Still needed before Submit: {missing.join(", ")}
+                    </p>
+                  ) : (
+                    <p className="import-idea-ready">Ready to submit.</p>
+                  )}
+                  {(idea.warnings || []).length ? (
+                    <ul className="import-idea-warnings" data-testid="import-warnings">
+                      {idea.warnings.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {idea.submitMessage ? (
+                    <p className={`import-idea-status ${idea.submitState}`} role="status">
+                      {idea.submitMessage}
+                    </p>
+                  ) : null}
+                  <div className="import-idea-actions">
+                    <button type="button" className="ghost" data-testid="import-open" onClick={() => onOpenDraft?.(idea.id)}>
+                      Open draft
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost"
+                      data-testid="import-submit"
+                      disabled={missing.length > 0 || busyIdea || submittingAll || idea.submitState === "submitted"}
+                      title={missing.length ? "Open the draft and fill the boxes listed first." : ""}
+                      onClick={() => submitOne(idea)}
+                    >
+                      {busyIdea ? <Loader2 size={14} className="spin" /> : null}
+                      {idea.submitState === "submitted" ? "Submitted" : "Submit"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {rejected.length ? (
+            <ul className="import-rejected" data-testid="import-rejected">
+              {rejected.map((r, i) => (
+                <li key={`${r.row}-${i}`}>
+                  <AlertTriangle size={13} /> Row {r.row}: {r.reason}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {created.length > 1 ? (
+            <div className="import-submit-all">
+              <button
+                type="button"
+                className="ghost"
+                data-testid="import-submit-all"
+                disabled={!ready.length || submittingAll}
+                onClick={submitAll}
+              >
+                {submittingAll ? <Loader2 size={14} className="spin" /> : null}
+                Submit all ({ready.length})
+              </button>
+              <span className="prop-helper">Ideas with required boxes still empty are skipped.</span>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+/** Works on a narrow screen: the actions stack, buttons fill the width, nothing scrolls sideways. */
+export const IDEA_IMPORT_CSS = `
+.import-panel{display:flex;flex-direction:column;gap:8px;min-width:0;}
+.import-actions-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;}
+.import-upload-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;border:1px solid var(--accent,#7c5cff);background:var(--accent,#7c5cff);color:#fff;font-weight:600;font-size:15px;cursor:pointer;min-height:44px;max-width:100%;}
+.import-upload-btn:disabled{opacity:.6;cursor:default;}
+.import-template-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-secondary,#a9a3b8);text-decoration:underline;min-height:44px;}
+.import-help{margin:0;}
+.import-review{border:1px solid var(--card-border,#3d2154);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;overflow-wrap:anywhere;}
+.import-review-title{margin:0;font-size:17px;}
+.import-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+.import-idea{border:1px solid var(--card-border,#3d2154);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;}
+.import-idea-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;}
+.import-idea-name{min-width:0;overflow-wrap:anywhere;}
+.import-idea-filled{font-size:13px;color:var(--ink-secondary,#a9a3b8);}
+.import-idea-missing,.import-idea-ready,.import-idea-status{margin:0;font-size:13.5px;}
+.import-idea-missing,.import-idea-status.failed{color:#e8b563;}
+.import-idea-status.submitted{color:#6fe0a3;}
+.import-idea-warnings,.import-rejected{margin:0;padding-left:18px;font-size:13px;color:var(--ink-secondary,#a9a3b8);}
+.import-rejected{list-style:none;padding-left:0;}
+.import-idea-actions,.import-submit-all{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+@media (max-width:640px){
+  .import-actions-row{flex-direction:column;align-items:stretch;}
+  .import-upload-btn{width:100%;}
+  .import-idea-actions button,.import-submit-all button{flex:1 1 140px;min-height:44px;}
+  .import-review{padding:10px;}
+}
+`;

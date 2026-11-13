@@ -62,6 +62,7 @@ import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult }
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
+import IdeaImportPanel, { IDEA_IMPORT_CSS } from "./IdeaImportPanel.jsx";
 import { BeforeYouSubmit, FIELD_ROLE_CSS, FieldRoleBadge, FieldRoleLegend } from "./FieldRoleBadge.jsx";
 import {
   ROLE_LABEL,
@@ -92,14 +93,21 @@ import {
   aggregateTechShiftRisk,
   aggregateTechShiftRiskWithResponses,
   hasReassessedDimension,
+  normalizeF4UserInputs,
+  patchF4UserInput,
+  userInputFor,
 } from "../lib/techShiftRisk.js";
-import { f4DimensionVerification } from "../lib/f4Assessment.js";
+import { f4WebCheckRelation } from "../lib/f4Assessment.js";
+import { plainDraftSaveError } from "../lib/clientSavePayload.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
 import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
 
 const LAST_TEAM_KEY = "primus.lastIdeaTeam";
+/** Part 140 B (D64) — a failed draft save retries on its own every 10 s, up to 3 times. */
+const DRAFT_AUTO_RETRY_MS = 10000;
+const DRAFT_AUTO_RETRY_MAX = 3;
 
 function rememberedIdeaTeam(accountTeam) {
   try {
@@ -538,6 +546,7 @@ function FieldControl({
   verifyingDimension = "",
   mitigationResponses = null,
   onMitigationChange,
+  onUserInputChange,
   rangeOverride = null,
   onRangeOverride,
   fieldPath = "",
@@ -609,31 +618,19 @@ function FieldControl({
       const d = dimensions[key];
       return String((mitigationResponses && mitigationResponses[key]) || d?.userResponse || "").trim();
     });
-    const patchDimension = (key, patch) => {
-      const nextDims = { ...dimensions };
-      nextDims[key] = { ...(nextDims[key] || { risk: "", reason: "" }), ...patch };
-      const anyRated = TECH_SHIFT_DIMENSIONS.some((k) => normalizeRiskLevel(nextDims[k]?.risk));
-      if (!anyRated) {
-        if (typeof onChange === "function") onChange(null);
-        return;
-      }
-      const nextOverall = TECH_SHIFT_DIMENSIONS.every((k) => normalizeRiskLevel(nextDims[k]?.risk))
-        ? aggregateTechShiftRisk(nextDims)
-        : "";
-      const nextRisk = {
-        dimensions: nextDims,
-        overallRisk: nextOverall,
-        sources: Array.isArray(risk.sources) ? risk.sources : [],
-        aiSourced: false,
-      };
-      if (typeof onChange === "function") onChange(nextRisk);
+    // Part 140 C (D63) — the person's rating and view go to f4.userInputs only. techShiftRisk is
+    // research output: it is shown below as the Web check and is never edited from this form.
+    const storedUserInputs = ideaDoc?.f4?.userInputs;
+    const patchUserInput = (key, patch) => {
+      const nextInputs = patchF4UserInput(storedUserInputs, key, patch);
+      if (typeof onUserInputChange === "function") onUserInputChange(nextInputs, key);
       // Part 138 F (D56) — a hand-entered rating is web-checked; until that check supports it, it earns nothing.
       if (
-        Object.prototype.hasOwnProperty.call(patch, "risk") &&
-        normalizeRiskLevel(patch.risk) &&
+        Object.prototype.hasOwnProperty.call(patch, "rating") &&
+        normalizeRiskLevel(patch.rating) &&
         typeof onVerifyDimension === "function"
       ) {
-        onVerifyDimension(key, nextRisk);
+        onVerifyDimension(key, nextInputs);
       }
     };
     const f4Assessments = ideaDoc?.researchFindings?.f4?.assessments || {};
@@ -661,52 +658,90 @@ function FieldControl({
         <div className="f4-dimension-editor">
           {TECH_SHIFT_DIMENSIONS.map((key) => {
             const d = dimensions[key] || { risk: "", reason: "" };
-            const riskVal = normalizeRiskLevel(d.risk) || "";
+            const mine = userInputFor(storedUserInputs, key);
+            const assessment = f4Assessments[key] || null;
+            const aiRating = normalizeRiskLevel(d.risk) || "";
+            const checkedRating = normalizeRiskLevel(assessment?.raw?.rating) || "";
+            const checkedOk = assessment && assessment.status === "ok" && assessment.searchUsed === true;
+            const relation = f4WebCheckRelation(mine.rating, assessment);
+            const finding = String(assessment?.raw?.quote || d.reason || "").trim();
+            const sourceUrl = String(assessment?.raw?.source_url || "").trim();
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key}>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                <select
-                  data-field={fieldPath || undefined}
-                  value={riskVal}
-                  disabled={locked || reassessing}
-                  title={lockTitle}
-                  onChange={(e) => patchDimension(key, { risk: e.target.value })}
-                >
-                  <option value="">Select risk</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-                <textarea
-                  data-field={fieldPath || undefined}
-                  rows={2}
-                  placeholder="Why this rating (optional for Low; required evidence for Medium/High mitigation below)"
-                  value={d.reason || ""}
-                  disabled={locked || reassessing}
-                  title={lockTitle}
-                  onChange={(e) => patchDimension(key, { reason: e.target.value })}
-                />
-                {riskVal
-                  ? (() => {
-                      if (verifyingDimension === key) {
-                        return <div className="dimension-finding original">Web-checking this rating…</div>;
-                      }
-                      const v = f4DimensionVerification({ risk: riskVal }, f4Assessments[key]);
-                      const note =
-                        v.state === "supported"
-                          ? "Web check supports this rating — it earns its point"
-                          : v.state === "contradicted"
-                            ? "Web check contradicts this rating — marked down"
-                            : v.state === "failed"
-                              ? `Web check did not complete (${v.assessment?.error || "no answer"}) — earns nothing until it does`
-                              : "Not web-checked yet — earns nothing until a web check supports it";
-                      return (
-                        <div className="dimension-finding original" data-f4-verification={v.state}>
-                          {note}
+                <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
+                  <div className="f4-block-title">Your rating and view</div>
+                  <select
+                    data-field={fieldPath || undefined}
+                    value={mine.rating}
+                    disabled={locked || reassessing}
+                    title={lockTitle}
+                    aria-label={`Your rating for ${DIMENSION_LABELS[key] || key}`}
+                    onChange={(e) => patchUserInput(key, { rating: e.target.value })}
+                  >
+                    <option value="">Select risk</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                  <textarea
+                    data-field={fieldPath || undefined}
+                    rows={2}
+                    placeholder="Your view: why this rating (optional for Low; required evidence for Medium/High mitigation below)"
+                    value={mine.pov}
+                    disabled={locked || reassessing}
+                    title={lockTitle}
+                    aria-label={`Your view on ${DIMENSION_LABELS[key] || key}`}
+                    onChange={(e) => patchUserInput(key, { pov: e.target.value })}
+                  />
+                </div>
+                <div className="f4-dimension-block f4-web-check" data-f4-block="web-check">
+                  <div className="f4-block-title">Web check</div>
+                  {verifyingDimension === key ? (
+                    <div className="dimension-finding original">Web-checking your rating…</div>
+                  ) : (
+                    <>
+                      <div className="dimension-finding original" data-f4-web-rating={checkedRating || aiRating || ""}>
+                        Web check rating: {checkedOk && checkedRating ? checkedRating : aiRating || "not checked yet"}
+                      </div>
+                      {finding ? <div className="dimension-finding original">{finding}</div> : null}
+                      {sourceUrl ? (
+                        <div className="dimension-finding original">
+                          Source:{" "}
+                          <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                            {sourceUrl}
+                          </a>
                         </div>
-                      );
-                    })()
-                  : null}
+                      ) : null}
+                      {assessment && assessment.status === "failed" ? (
+                        <div className="dimension-finding original" data-f4-verification="failed">
+                          Web check did not complete ({assessment.error || "no answer"}) — earns nothing until it does
+                        </div>
+                      ) : null}
+                      {relation ? (
+                        <div className="dimension-finding original" data-f4-verification={relation}>
+                          {relation === "supports"
+                            ? "Web check supports your rating — it earns its point"
+                            : "Web check contradicts your rating — marked down"}
+                        </div>
+                      ) : mine.rating && !assessment ? (
+                        <div className="dimension-finding original" data-f4-verification="unchecked">
+                          Not web-checked yet — earns nothing until a web check supports it
+                        </div>
+                      ) : null}
+                      {typeof onVerifyDimension === "function" && mine.rating ? (
+                        <button
+                          type="button"
+                          className="ghost f4-check-again"
+                          disabled={locked || reassessing}
+                          onClick={() => onVerifyDimension(key, normalizeF4UserInputs(storedUserInputs))}
+                        >
+                          Check my rating on the web
+                        </button>
+                      ) : null}
+                    </>
+                  )}
+                </div>
                 {d.reassessedRisk ? (
                   <div className="dimension-finding reassessed">
                     After response: {d.reassessedRisk} risk — {d.reassessedReason}
@@ -2530,12 +2565,17 @@ export default function PropositionForm({
   initial,
   onSave,
   onSaveDraft,
+  onUnsavedChange,
   saving,
   savedFlash,
   error,
   currentUser,
   llmProvider = "claude",
   onProcessingChange,
+  importResult = null,
+  setImportResult = () => {},
+  onOpenImportedDraft,
+  onSubmitImportedIdea,
 }) {
   const [doc, setDoc] = useState(() => mergeProposition(initial));
   useEffect(() => {
@@ -2625,11 +2665,95 @@ export default function PropositionForm({
     String(initial?.f1?.conceptCardName || "").trim()
   );
   const [draftSaveState, setDraftSaveState] = useState("");
+  // Part 140 B (D64) — a failed draft save is loud: banner, "Not saved" sidebar, auto-retry, leave warning.
+  const [draftError, setDraftError] = useState("");
+  const [lastGoodSaveAt, setLastGoodSaveAt] = useState(() => initial?.updatedAt || null);
+  const [draftRetrying, setDraftRetrying] = useState(false);
+  const [draftRetryNote, setDraftRetryNote] = useState("");
+  const [whyBlockedOpen, setWhyBlockedOpen] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState("");
+  const [submitFailed, setSubmitFailed] = useState(false);
+  const [pressedBlocked, setPressedBlocked] = useState(false);
+  const draftErrorRef = useRef("");
+  const draftRetryRef = useRef({ count: 0, timer: null });
   const conceptCardRef = useRef(null);
   const skipDraftRef = useRef(true);
   const draftDirtyRef = useRef(false);
   const onSaveDraftRef = useRef(onSaveDraft);
   onSaveDraftRef.current = onSaveDraft;
+  const onUnsavedChangeRef = useRef(onUnsavedChange);
+  onUnsavedChangeRef.current = onUnsavedChange;
+
+  /** One place that flips "has unsaved changes" so the leave warnings and the App guard agree. */
+  function setDraftDirty(value) {
+    draftDirtyRef.current = Boolean(value);
+    onUnsavedChangeRef.current?.(draftDirtyRef.current || Boolean(draftErrorRef.current));
+  }
+
+  function clearDraftRetryTimer() {
+    const r = draftRetryRef.current;
+    if (r.timer) window.clearTimeout(r.timer);
+    r.timer = null;
+  }
+
+  /**
+   * Save the current doc as a draft. Resolves to nothing; every outcome is shown on screen.
+   * `auto` marks a retry the form scheduled itself (10 s apart, at most 3 in a row).
+   */
+  async function performDraftSave({ auto = false } = {}) {
+    const snap = docRef.current;
+    if (!snap?.id || typeof onSaveDraftRef.current !== "function") return;
+    clearDraftRetryTimer();
+    if (!auto) draftRetryRef.current.count = 0;
+    setDraftRetrying(true);
+    let outcome;
+    try {
+      outcome = await onSaveDraftRef.current(snap);
+    } catch (e) {
+      outcome = { ok: false, error: plainDraftSaveError(e) };
+    }
+    setDraftRetrying(false);
+    if (outcome && outcome.ok === undefined) {
+      // Older callers resolved to the saved idea (or null) instead of { ok }.
+      outcome = outcome.id ? { ok: true, proposition: outcome } : { ok: false, error: "" };
+    }
+    if (outcome?.ok) {
+      draftRetryRef.current.count = 0;
+      draftErrorRef.current = "";
+      setDraftError("");
+      setDraftRetryNote("");
+      setLastGoodSaveAt(outcome.proposition?.updatedAt || new Date().toISOString());
+      if (docRef.current === snap) setDraftDirty(false);
+      else onUnsavedChangeRef.current?.(true);
+      const saved = outcome.proposition || {};
+      if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
+        const active = document.activeElement?.getAttribute?.("data-field") || "";
+        setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
+        setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
+        return;
+      }
+      setDraftSaveState("Draft saved");
+      return;
+    }
+    const reason = String(outcome?.error || "").trim() || "the server did not accept the save";
+    draftErrorRef.current = reason;
+    setDraftError(reason);
+    setDraftSaveState("Not saved");
+    onUnsavedChangeRef.current?.(true);
+    const r = draftRetryRef.current;
+    if (r.count < DRAFT_AUTO_RETRY_MAX) {
+      r.count += 1;
+      setDraftRetryNote(`Trying again in ${DRAFT_AUTO_RETRY_MS / 1000} seconds (retry ${r.count} of ${DRAFT_AUTO_RETRY_MAX}).`);
+      r.timer = window.setTimeout(() => {
+        r.timer = null;
+        performDraftSaveRef.current?.({ auto: true });
+      }, DRAFT_AUTO_RETRY_MS);
+    } else {
+      setDraftRetryNote("We stopped retrying on our own. Press Retry when your connection is back.");
+    }
+  }
+  const performDraftSaveRef = useRef(performDraftSave);
+  performDraftSaveRef.current = performDraftSave;
 
   useEffect(() => {
     docRef.current = doc;
@@ -2663,7 +2787,14 @@ export default function PropositionForm({
     gstTouchedByHuman.current = false;
     f3AutoFillRequested.current = false;
     skipDraftRef.current = true;
-    draftDirtyRef.current = false;
+    clearDraftRetryTimer();
+    draftRetryRef.current.count = 0;
+    draftErrorRef.current = "";
+    setDraftError("");
+    setDraftRetryNote("");
+    setDraftSaveState("");
+    setLastGoodSaveAt(initial?.updatedAt || null);
+    setDraftDirty(false);
   }, [initial?.id]);
 
   useEffect(() => {
@@ -2814,6 +2945,33 @@ export default function PropositionForm({
   );
   const inputBlocking = INVALID_INPUTS_BLOCK_SUBMIT && liveInputReview.blocking;
   const canSubmit = progress.requiredLeft === 0 && !inputBlocking;
+  // Part 140 B (D64) — "Why can't I submit?": every reason in plain words.
+  const submitBlockers = [];
+  if (!hasIdentity) {
+    submitBlockers.push({ id: "identity", blocking: true, text: "Enter your name and pick your team." });
+  }
+  if (progress.missingFieldLabels.length) {
+    submitBlockers.push({
+      id: "required",
+      blocking: true,
+      text: `Fill ${progress.missingFieldLabels.length === 1 ? "this required box" : "these required boxes"}: ${progress.missingFieldLabels.join(", ")}.`,
+    });
+  }
+  for (const f of liveInputReview.fields.filter((x) => x.status === "invalid")) {
+    submitBlockers.push({ id: `invalid-${f.field}`, blocking: INVALID_INPUTS_BLOCK_SUBMIT, text: f.message });
+  }
+  if (draftError) {
+    submitBlockers.push({
+      id: "save-failed",
+      blocking: false,
+      text: `Your changes are NOT saved: ${draftError}. Submit will try to save everything again.`,
+    });
+  }
+  const blockingNow = submitBlockers.filter((w) => w.blocking);
+  const submitBarError =
+    pressedBlocked && blockingNow.length
+      ? `Cannot submit yet: ${blockingNow.map((w) => w.text).join(" ")}`
+      : submitMsg || (submitFailed ? String(error || "").trim() || "Submit did not go through. Try again." : "");
 
   function inputReviewIssue(field) {
     return visibleInputReviewFields.find((f) => f.field === field) || null;
@@ -2912,43 +3070,40 @@ export default function PropositionForm({
     }
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
     if (isScoredProposition(sourceDocRef.current)) return undefined;
-    draftDirtyRef.current = true;
+    setDraftDirty(true);
     const t = window.setTimeout(() => {
-      const snap = docRef.current;
-      if (!snap?.id) return;
-      Promise.resolve(onSaveDraftRef.current?.(snap))
-        .then((saved) => {
-          if (!saved) {
-            setDraftSaveState("Draft not saved");
-            return;
-          }
-          draftDirtyRef.current = false;
-          if (Array.isArray(saved.ignoredKeys) && saved.ignoredKeys.length) {
-            const active = document.activeElement?.getAttribute?.("data-field") || "";
-            setDoc((prev) => patchIgnoredKeys(prev, saved, saved.ignoredKeys, active).doc);
-            setDraftSaveState("Kept a newer saved value. This screen matches the saved idea.");
-            return;
-          }
-          setDraftSaveState("Draft saved");
-        })
-        .catch(() => {
-          setDraftSaveState("Draft not saved");
-        });
+      if (!docRef.current?.id) return;
+      performDraftSaveRef.current?.({});
     }, 2000);
     return () => window.clearTimeout(t);
   }, [doc, propositionId, saving]);
 
   useEffect(() => {
     return () => {
+      clearDraftRetryTimer();
       if (
         draftDirtyRef.current &&
         typeof onSaveDraftRef.current === "function" &&
         docRef.current?.id &&
         !isScoredProposition(sourceDocRef.current)
       ) {
+        // Last chance on the way out; the person has already been warned if this fails.
         Promise.resolve(onSaveDraftRef.current(docRef.current)).catch(() => {});
       }
+      onUnsavedChangeRef.current?.(false);
     };
+  }, []);
+
+  // Part 140 B (D64) — closing or reloading the tab with changes that are not saved asks first.
+  useEffect(() => {
+    function warnBeforeUnload(event) {
+      if (!draftDirtyRef.current && !draftErrorRef.current) return undefined;
+      event.preventDefault();
+      event.returnValue = "Your changes are not saved yet.";
+      return event.returnValue;
+    }
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, []);
 
   useEffect(() => {
@@ -3089,6 +3244,7 @@ export default function PropositionForm({
         body: JSON.stringify({
           provider: llmProvider,
           techShiftRisk: risk,
+          userInputs: normalizeF4UserInputs(doc.f4?.userInputs),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -3098,7 +3254,10 @@ export default function PropositionForm({
       }
       if (data.proposition) {
         const next = mergeProposition(data.proposition);
-        setDoc(next);
+        // Part 140 C — research never overwrites what the person said; keep their on-screen rating and view.
+        const mineNow = docRef.current?.f4?.userInputs;
+        const kept = mineNow && Object.keys(mineNow).length ? { ...next, f4: { ...(next.f4 || {}), userInputs: mineNow } } : next;
+        setDoc(kept);
         if (data.advisoryChecks) {
           setAdvisoryChecks(data.advisoryChecks);
           setSummaryChecks(data.advisoryChecks);
@@ -3144,7 +3303,7 @@ export default function PropositionForm({
   }, [f2Visible, cogsBlank, ideaHasDescription, ideaHasCategory, costAlreadyEstimated, propositionId, ideaText, ideaCategory]);
 
   /** Part 138 F (D56) — web-check a hand-entered Filter 4 rating; only the assessment + checks come back. */
-  async function handleVerifyF4Dimension(dimensionKey, nextRisk) {
+  async function handleVerifyF4Dimension(dimensionKey, nextUserInputs) {
     if (!propositionId || !dimensionKey) return;
     setF4VerifyingKey(dimensionKey);
     setLocalError("");
@@ -3156,7 +3315,8 @@ export default function PropositionForm({
         body: JSON.stringify({
           provider: llmProvider,
           dimensionKey,
-          techShiftRisk: nextRisk,
+          // Part 140 C — the person's rating and view are the context; research never writes them back.
+          userInputs: normalizeF4UserInputs(nextUserInputs ?? docRef.current?.f4?.userInputs),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -3711,27 +3871,33 @@ export default function PropositionForm({
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing) return;
-    if (!hasSubmitterIdentity(doc)) {
-      setLocalError("Enter your name and pick the team for this idea before Submit.");
-      return;
-    }
-    if (!canSubmit) {
-      if (inputBlocking) {
+    // Part 140 B (D64) — the button stays pressable; a blocked press explains itself in the Submit bar.
+    if (!hasSubmitterIdentity(doc) || !canSubmit) {
+      setPressedBlocked(true);
+      setSubmitMsg("");
+      setSubmitFailed(false);
+      setWhyBlockedOpen(true);
+      if (!hasSubmitterIdentity(doc)) {
+        setLocalError("Enter your name and pick the team for this idea before Submit.");
+      } else if (inputBlocking) {
         setLocalError(
           liveInputReview.fields
             .filter((f) => f.status === "invalid")
             .map((f) => f.message)
             .join(" ") || "Fix invalid inputs before Submit."
         );
-        return;
+      } else if (!canSubmit) {
+        setLocalError(
+          progress.missingFieldLabels.length
+            ? `Fill ${progress.missingFieldLabels.join(", ")} before Submit.`
+            : "Fill the required fields before Submit."
+        );
       }
-      setLocalError(
-        progress.missingFieldLabels.length
-          ? `Fill ${progress.missingFieldLabels.join(", ")} before Submit.`
-          : "Fill the required fields before Submit."
-      );
       return;
     }
+    setSubmitMsg("");
+    setSubmitFailed(false);
+    setPressedBlocked(false);
     setLocalError("");
     setFailedBanner(null);
     const provider = providerOverride || llmProvider;
@@ -3764,12 +3930,26 @@ export default function PropositionForm({
       asNew,
       confirmMissingSteps: repairing,
     });
-    if (!result?.proposition) return;
+    if (!result?.proposition) {
+      // onSave returns null on failure and has already set the error; say so in the Submit bar too.
+      setSubmitFailed(true);
+      return;
+    }
     savedOk = true;
+    // Part 140 B — Submit saved everything, so any earlier draft failure is moot.
+    clearDraftRetryTimer();
+    draftErrorRef.current = "";
+    setDraftError("");
+    setDraftRetryNote("");
+    setDraftSaveState("Draft saved");
+    setLastGoodSaveAt(result.proposition.updatedAt || new Date().toISOString());
+    setSubmitFailed(false);
+    setDraftDirty(false);
     const saved = mergeProposition(result.proposition);
     const researchRan = Boolean(result.researchRan) || (!hadResearchRunAt && result.suggestions);
     const filled = researchRan && result.suggestions ? applyResearchResult(result, saved) : saved;
     if (result.researchError) {
+      setSubmitMsg(`Your idea was saved, but the research step failed: ${String(result.researchError).replace(/[.\s]+$/, "")}.`);
       setLocalError(result.researchError);
       setFailedBanner({
         label: result.failedProviderLabel || provider || "Claude",
@@ -3983,14 +4163,41 @@ export default function PropositionForm({
             </a>
           ))}
         </nav>
-        <p className="draft-saved mono">
-          {Number(doc.version) > 1 || doc.updatedAt
-            ? `Draft saved ${formatSavedAt(doc.updatedAt) || ""}`.trim()
-            : "Not yet saved for the team"}
-        </p>
+        {draftError ? (
+          <p className="draft-saved draft-not-saved mono" data-testid="sidebar-not-saved" role="status">
+            Not saved
+            <br />
+            {lastGoodSaveAt
+              ? `Last good save ${formatSavedAt(lastGoodSaveAt) || "earlier"}`
+              : "Nothing saved yet"}
+          </p>
+        ) : (
+          <p className="draft-saved mono">
+            {Number(doc.version) > 1 || doc.updatedAt
+              ? `Draft saved ${formatSavedAt(lastGoodSaveAt || doc.updatedAt) || ""}`.trim()
+              : "Not yet saved for the team"}
+          </p>
+        )}
       </aside>
 
       <div className="prop-form-main">
+      {draftError ? (
+        <div className="draft-save-banner" role="alert" data-testid="draft-save-banner">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span className="draft-save-banner-text">
+            Your changes are NOT saved: {draftError}. {draftRetryNote}
+          </span>
+          <button
+            type="button"
+            className="draft-save-retry"
+            data-testid="draft-save-retry"
+            disabled={draftRetrying}
+            onClick={() => performDraftSave({})}
+          >
+            {draftRetrying ? "Retrying…" : "Retry"}
+          </button>
+        </div>
+      ) : null}
       <section className="prop-identity-strip" aria-label="Submitter">
         {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName").map((field) => (
           <FieldControl
@@ -4067,6 +4274,13 @@ export default function PropositionForm({
       <section id="the-proposition" className="prop-form-hero">
         <h1>Start with the idea</h1>
         <p>Three fields. Research fills the rest, you edit it.</p>
+        <IdeaImportPanel
+          result={importResult}
+          setResult={setImportResult}
+          llmProvider={llmProvider}
+          onOpenDraft={onOpenImportedDraft}
+          onSubmitIdea={onSubmitImportedIdea}
+        />
         <div className="prop-label hero-label">
           <label htmlFor="fld-name">{getFieldRole("name")?.label}</label>
           <FieldRoleBadge path="name" doc={doc} />
@@ -4435,6 +4649,11 @@ export default function PropositionForm({
                             }
                           : undefined
                       }
+                      onUserInputChange={
+                        spec.key === "f4" && field.key === "techShiftRisk"
+                          ? (nextInputs) => setFilter("f4", "userInputs", nextInputs)
+                          : undefined
+                      }
                       rangeOverride={spec.key === "f3" ? values.f3RangeOverride : null}
                       onRangeOverride={
                         spec.key === "f3" && field.key === "marginElasticity"
@@ -4583,6 +4802,26 @@ export default function PropositionForm({
       </div>
       </div>
 
+      {whyBlockedOpen ? (
+        <div className="why-blocked-panel" role="dialog" aria-label="Why you cannot submit" data-testid="why-blocked-panel">
+          <h3>Why can't I submit?</h3>
+          {submitBlockers.length ? (
+            <ul>
+              {submitBlockers.map((w) => (
+                <li key={w.id} data-blocking={w.blocking ? "yes" : "no"}>
+                  {w.text}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="why-note">Nothing is blocking you. Press Submit for verdict.</p>
+          )}
+          <button type="button" className="ghost" onClick={() => setWhyBlockedOpen(false)}>
+            Close
+          </button>
+        </div>
+      ) : null}
+
       <div className="submit-bar">
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
         <span className="submit-bar-message" data-testid="submit-bar-message">{submitBarMessage(doc)}</span>
@@ -4594,11 +4833,34 @@ export default function PropositionForm({
               : `${liveInputReview.fields.length} input warning(s)`}
           </span>
         ) : null}
-        <span className="save-state">
-          v{doc.version || 1} · {draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
+        <span className={`save-state${draftError ? " save-state-bad" : ""}`} data-testid="save-state">
+          v{doc.version || 1} ·{" "}
+          {draftError
+            ? "Not saved"
+            : draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
         </span>
+        {submitBarError ? (
+          <span className="submit-bar-error" data-testid="submit-bar-error" role="alert">
+            {submitBarError}
+          </span>
+        ) : null}
+        {!canSubmit || !hasIdentity || draftError ? (
+          <button
+            type="button"
+            className="why-blocked-btn ghost"
+            data-testid="why-cant-submit"
+            aria-expanded={whyBlockedOpen}
+            onClick={() => {
+              setPressedBlocked(true);
+              setWhyBlockedOpen((open) => !open);
+            }}
+          >
+            Why can't I submit?
+          </button>
+        ) : null}
         <button
           type="button"
+          className={canSubmit && hasIdentity ? undefined : "submit-blocked"}
           onClick={() => handleSubmit()}
           disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
           title={
@@ -4633,6 +4895,7 @@ export default function PropositionForm({
 }
 
 export const PROP_CSS = `
+${IDEA_IMPORT_CSS}
 .prop-form-page{
   --bg:#120818; --header-bg:#0d0512; --header-border:#2a1836;
   --sidebar-hover:#1d1029; --sidebar-active:#241333;
@@ -4713,6 +4976,24 @@ export const PROP_CSS = `
   background:var(--accent);color:#efe8f5;border:none;border-radius:999px;
   padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;}
 .submit-bar button:disabled{opacity:.55;cursor:not-allowed;}
+/* Part 140 B (D64) — a blocked Submit keeps its full colour; the reason is in the bar and under "Why can't I submit?". */
+.submit-bar button.submit-blocked:disabled{opacity:1;cursor:help;}
+.submit-bar .why-blocked-btn{margin-left:0;background:transparent;border:1px solid var(--header-border);color:var(--ink);padding:8px 14px;font-size:13px;font-weight:600;}
+.submit-bar .save-state-bad{color:#ff9d9d;font-weight:700;}
+.submit-bar .submit-bar-error{flex:1 1 100%;order:-1;font-size:13px;line-height:1.4;color:#ffb4b4;
+  border:1px solid rgba(255,120,120,.45);background:rgba(120,20,20,.25);border-radius:8px;padding:8px 12px;}
+.why-blocked-panel{position:fixed;right:24px;bottom:92px;z-index:41;max-width:min(460px,calc(100vw - 48px));
+  background:var(--header-bg);border:1px solid var(--header-border);border-radius:12px;padding:14px 16px;color:var(--ink);
+  box-shadow:0 12px 32px rgba(8,4,16,.45);font-size:13px;line-height:1.45;}
+.why-blocked-panel h3{margin:0 0 8px;font-size:14px;}
+.why-blocked-panel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+.why-blocked-panel .why-note{color:var(--ink-muted-2);}
+.draft-save-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:10px;
+  border:1px solid rgba(255,120,120,.6);background:rgba(120,20,20,.35);color:#ffd4d4;font-size:13.5px;line-height:1.4;}
+.draft-save-banner .draft-save-banner-text{flex:1 1 260px;min-width:0;overflow-wrap:anywhere;}
+.draft-save-retry{background:#ffd4d4;color:#3a0d0d;border:none;border-radius:999px;padding:7px 16px;font-weight:700;cursor:pointer;font-family:inherit;}
+.draft-save-retry:disabled{opacity:.6;cursor:wait;}
+.draft-not-saved{color:#ff9d9d;font-weight:700;}
 .prop-page{max-width:1080px;margin:0 auto;padding:0 28px 40px;color:#F3EAF8;}
 .prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 80px;color:var(--ink);}
 .prop-page.output-page{max-width:none;margin:0;min-height:calc(100vh - 88px);padding:8px 32px 40px;}
@@ -4763,12 +5044,17 @@ ${FIELD_ROLE_CSS}
 .f3-cliff-list li+li{margin-top:4px;}
 .price-events-register{margin:8px 0 0;padding:0 0 0 18px;font-size:12.5px;line-height:1.45;color:rgba(243,234,248,.78);}
 .f4-dimension-editor{display:flex;flex-direction:column;gap:12px;margin:8px 0 12px;}
-.f4-dimension-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(120px,160px);gap:8px 12px;align-items:start;
+.f4-dimension-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;align-items:start;
   padding:10px 12px;border:1px solid rgba(243,234,248,.12);border-radius:10px;background:rgba(0,0,0,.18);}
 .f4-dimension-row .dimension-response-label{grid-column:1 / -1;font-size:13px;font-weight:600;color:rgba(243,234,248,.9);}
+.f4-dimension-block{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.f4-block-title{font-family:var(--fm);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:rgba(243,234,248,.62);}
 .f4-dimension-row select{width:100%;min-height:42px;}
-.f4-dimension-row textarea{grid-column:1 / -1;width:100%;min-height:52px;}
-.f4-dimension-row .dimension-finding{grid-column:1 / -1;}
+.f4-dimension-row textarea{width:100%;min-height:52px;}
+.f4-dimension-row .dimension-finding{overflow-wrap:anywhere;}
+.f4-dimension-row > .dimension-finding{grid-column:1 / -1;}
+.f4-check-again{align-self:flex-start;}
+@media (max-width:720px){.f4-dimension-row{grid-template-columns:minmax(0,1fr);}}
 .f4-eval-points{list-style:none;margin:4px 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
 .f4-eval-points li{font-family:var(--fm);font-size:11px;letter-spacing:.02em;color:rgba(243,234,248,.78);
   border:1px solid rgba(243,234,248,.16);border-radius:999px;padding:5px 10px;}

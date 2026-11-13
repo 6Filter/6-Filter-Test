@@ -94,6 +94,10 @@ if (!files.length) {
  * - owner-tests/testInputCoverage: expects a stored answer to read "assessed"; v5.6 requires searchUsed:true
  *   (web-checked) for benchmark/attributes/derivation/parity/route/argument/GST/F4 dimensions, else "pending"
  * - testPathToGoActionCopy (wrapper): Path-to-GO now says "Evaluate to assess this" for unassessed items
+ * Part 140 additions (D62 — server-owned fields ignored, never 403):
+ * - testTeamAndFieldAccess / owner-tests/testTeamAndFieldAccess: expects firstForbiddenField and
+ *   draft/Submit API to return 403 when the client sends f4.techShiftRisk; Part 140 strips and
+ *   ignores server-owned keys instead (returns 200 + ignoredKeys).
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
@@ -113,6 +117,9 @@ const EXPECTED_OWNER_FAILURES = new Set([
   "owner-tests/testFilter2Scoring.mjs",
   "owner-tests/testFilter2CogsGstPlan.mjs",
   "owner-tests/testInputCoverage.mjs",
+  // Part 140 D62 — server-owned writes ignored (no 403).
+  "testTeamAndFieldAccess.mjs",
+  "owner-tests/testTeamAndFieldAccess.mjs",
 ]);
 
 const failures = [];
