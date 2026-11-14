@@ -165,6 +165,7 @@ try {
     assert.equal(Number(p.f1.declaredGap), 3);
     assert.equal(Number(p.f2.gstRatePct), 18);
     assert.equal(p.f2.grammage, "100 ml");
+    assert.notEqual(p.f2.mrpOverride, true, "an upload with no shelf price does not turn on Use my own MRP");
     assert.equal(p.researchRunAt, null, "nothing was researched");
     assert.ok(!p.goNoGo, "nothing was scored");
     assert.deepEqual(p.researchFindings?.fieldSources?.name, { source: "upload", cell: "A3" });
@@ -173,6 +174,32 @@ try {
     const second = await api(`/api/propositions/${created[1].id}`);
     assert.equal((second.json.proposition || second.json).name, "Protein bar");
     assert.equal(Number((second.json.proposition || second.json).f2.cogsAtScale), 22);
+  });
+
+  await check("a stated shelf MRP is kept and not replaced by the COGS formula", async () => {
+    clearRateLimits();
+    const buf = await filledTemplate([
+      {
+        name: "Stated MRP oil",
+        category: "Hair oils",
+        ideaDescription: "Keeps the shelf price from the sheet.",
+        "f2.cogsAtScale": 32,
+        "f2.netMarginAtScale": 12,
+        "f2.gstRatePct": 18,
+        "f2.grammage": "100 ml",
+        "f2.mrpInr": 99,
+      },
+    ]);
+    const { res, json } = await post(attach(buf, "stated-mrp.xlsx"));
+    assert.equal(res.status, 201, JSON.stringify(json));
+    const id = json.created[0].id;
+    const got = await api(`/api/propositions/${id}`);
+    const f2 = (got.json.proposition || got.json).f2;
+    assert.equal(f2.mrpOverride, true);
+    assert.equal(Number(f2.mrpInr), 99);
+    assert.equal(Number(f2.cogsAtScale), 32);
+    assert.equal(Number(f2.netMarginAtScale), 12);
+    assert.equal(f2.grammage, "100 ml");
   });
 
   await check("drafts appear in the list; the upload is not a duplicate-per-call", async () => {
