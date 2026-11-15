@@ -994,12 +994,13 @@ export default function App() {
         goNoGo: sealed,
         classification: sealed?.classification || full?.classification || row.classification || "",
         _openFromLog: from === "log",
+        // A draft that has never been submitted stays on the input form when its
+        // address is reloaded. The Log still opens the output page first.
         _preferOutput:
           from === "log" ||
           evalState === "evaluated" ||
           evalState === "legacy" ||
-          evalState === "incomplete" ||
-          evalState === "not-evaluated",
+          evalState === "incomplete",
       });
       setSavedFlash(false);
       setReturnView(from);

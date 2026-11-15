@@ -98,7 +98,7 @@ import {
   userInputFor,
 } from "../lib/techShiftRisk.js";
 import { f4WebCheckRelation } from "../lib/f4Assessment.js";
-import { plainDraftSaveError } from "../lib/clientSavePayload.js";
+import { omitServerOwnedForSave, plainDraftSaveError } from "../lib/clientSavePayload.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
@@ -2674,6 +2674,7 @@ export default function PropositionForm({
   const [submitMsg, setSubmitMsg] = useState("");
   const [submitFailed, setSubmitFailed] = useState(false);
   const [pressedBlocked, setPressedBlocked] = useState(false);
+  const [draftPending, setDraftPending] = useState(false);
   const draftErrorRef = useRef("");
   const draftRetryRef = useRef({ count: 0, timer: null });
   const conceptCardRef = useRef(null);
@@ -2686,8 +2687,36 @@ export default function PropositionForm({
 
   /** One place that flips "has unsaved changes" so the leave warnings and the App guard agree. */
   function setDraftDirty(value) {
-    draftDirtyRef.current = Boolean(value);
-    onUnsavedChangeRef.current?.(draftDirtyRef.current || Boolean(draftErrorRef.current));
+    const next = Boolean(value);
+    draftDirtyRef.current = next;
+    setDraftPending(next);
+    onUnsavedChangeRef.current?.(next || Boolean(draftErrorRef.current));
+  }
+
+  /**
+   * Reload and tab-close cancel a normal fetch. keepalive lets the latest draft
+   * leave with the page so a refresh inside the autosave delay does not drop fields.
+   */
+  function flushDraftKeepalive() {
+    const snap = docRef.current;
+    if (!draftDirtyRef.current || !snap?.id || isScoredProposition(sourceDocRef.current)) return;
+    const body = JSON.stringify({
+      proposition: {
+        ...omitServerOwnedForSave(snap),
+        baseVersion: snap.baseVersion ?? snap.version,
+      },
+    });
+    try {
+      fetch(`/api/propositions/${encodeURIComponent(snap.id)}/draft`, {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body,
+      }).catch(() => {});
+    } catch {
+      /* the leave warning still tells the person if this cannot be sent */
+    }
   }
 
   function clearDraftRetryTimer() {
@@ -3071,6 +3100,7 @@ export default function PropositionForm({
     if (!propositionId || typeof onSaveDraftRef.current !== "function" || saving) return undefined;
     if (isScoredProposition(sourceDocRef.current)) return undefined;
     setDraftDirty(true);
+    setDraftSaveState("");
     const t = window.setTimeout(() => {
       if (!docRef.current?.id) return;
       performDraftSaveRef.current?.({});
@@ -3098,12 +3128,22 @@ export default function PropositionForm({
   useEffect(() => {
     function warnBeforeUnload(event) {
       if (!draftDirtyRef.current && !draftErrorRef.current) return undefined;
+      flushDraftKeepalive();
       event.preventDefault();
       event.returnValue = "Your changes are not saved yet.";
       return event.returnValue;
     }
+    function flushOnHide() {
+      if (document.visibilityState === "hidden") flushDraftKeepalive();
+    }
     window.addEventListener("beforeunload", warnBeforeUnload);
-    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+    window.addEventListener("pagehide", flushDraftKeepalive);
+    document.addEventListener("visibilitychange", flushOnHide);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      window.removeEventListener("pagehide", flushDraftKeepalive);
+      document.removeEventListener("visibilitychange", flushOnHide);
+    };
   }, []);
 
   useEffect(() => {
@@ -4171,6 +4211,8 @@ export default function PropositionForm({
               ? `Last good save ${formatSavedAt(lastGoodSaveAt) || "earlier"}`
               : "Nothing saved yet"}
           </p>
+        ) : draftPending ? (
+          <p className="draft-saved mono" data-testid="sidebar-saving">Not saved yet</p>
         ) : (
           <p className="draft-saved mono">
             {Number(doc.version) > 1 || doc.updatedAt
@@ -4837,7 +4879,9 @@ export default function PropositionForm({
           v{doc.version || 1} ·{" "}
           {draftError
             ? "Not saved"
-            : draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
+            : draftPending
+              ? "Not saved yet"
+              : draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
         </span>
         {submitBarError ? (
           <span className="submit-bar-error" data-testid="submit-bar-error" role="alert">
