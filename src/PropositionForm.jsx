@@ -145,12 +145,12 @@ function fieldHelper(_field) {
   return "";
 }
 
-/** Paths / field flags the AI first pass may auto-populate (person can still type over). */
+/**
+ * Fields the AI first pass actually writes (person can still type over).
+ * Not marked: Required human boxes (name, category, idea, declared attribute,
+ * benchmark, declared gap, GST, pack size) even if research may later suggest them.
+ */
 const AI_FILLS_KEYS = new Set([
-  "category",
-  "declaredAttribute",
-  "benchmark",
-  "declaredGap",
   "gapDerivation",
   "parityExceptions",
   "growthRoute",
@@ -169,7 +169,8 @@ const AI_FILLS_KEYS = new Set([
 
 function fieldAiFills(field) {
   if (!field) return false;
-  if (field.aiFills === true || field.aiConfirmable === true) return true;
+  if (field.aiFills === true) return true;
+  // aiConfirmable alone is not enough — only keys the pass actually autofills.
   if (field.type === "computed-risk" || field.type === "derived-mrp") return true;
   return AI_FILLS_KEYS.has(field.key);
 }
@@ -4387,15 +4388,11 @@ export default function PropositionForm({
         />
         <div className="prop-label hero-label" data-field-label="category">
           <label htmlFor="fld-category">{getFieldRole("category")?.label}</label>
-          <span className="ai-fills-badge" data-ai-fills="category" title="The AI first pass fills this — check it or type over it">
-            AI fills this
-          </span>
           <FieldRoleBadge path="category" doc={doc} />
         </div>
         <input
           id="fld-category"
           data-field="category"
-          className="is-ai-expected-input"
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}

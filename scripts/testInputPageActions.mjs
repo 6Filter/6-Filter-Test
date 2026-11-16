@@ -21,7 +21,7 @@ assert.match(form, /Submit for verdict/);
 assert.match(form, /f4-dimension-editor/);
 assert.match(form, /Select risk/);
 assert.match(form, /f4-dimension-editor/, "F4 dimensions are editable by hand");
-assert.match(form, /AI fills this/, "AI-fill fields are marked on the form");
+assert.match(form, /AI_FILLS_KEYS/, "AI-fill mark list is defined");
 assert.match(form, /data-f3-resilience="cliff"/);
 assert.match(form, /Enter yearly price rise/);
 assert.match(form, /priceCrossings/);

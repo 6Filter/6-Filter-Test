@@ -31,14 +31,22 @@ check("Filters 2–4 are collapsible with an arrow toggle", () => {
   assert.match(form, /spec\.key === "f2" \|\| spec\.key === "f3" \|\| spec\.key === "f4"/);
 });
 
-check("AI fills this badge and lavender highlight are wired", () => {
+check("AI fills this only on fields the first pass actually writes", () => {
   assert.match(form, /AI_FILLS_KEYS/);
   assert.match(form, /fieldAiFills/);
   assert.match(form, /ai-fills-badge/);
   assert.match(form, /is-ai-expected/);
   assert.match(form, /AI fills this/);
-  assert.match(form, /cogsAtScale/);
-  assert.match(form, /techShiftRisk/);
+  // Human Required boxes must not be pre-labelled as AI-filled.
+  const keysBlock = form.slice(form.indexOf("const AI_FILLS_KEYS"), form.indexOf("function fieldAiFills"));
+  assert.doesNotMatch(keysBlock, /"declaredAttribute"/);
+  assert.doesNotMatch(keysBlock, /"benchmark"/);
+  assert.doesNotMatch(keysBlock, /"declaredGap"/);
+  assert.doesNotMatch(keysBlock, /"category"/);
+  assert.match(keysBlock, /"cogsAtScale"/);
+  assert.match(keysBlock, /"techShiftRisk"/);
+  assert.match(keysBlock, /"gapDerivation"/);
+  assert.doesNotMatch(form, /data-ai-fills="category"/);
 });
 
 console.log(`PASS testFormCollapseAiHint — ${checks} checks`);
