@@ -8,7 +8,7 @@ import {
   SIX_FILTERS_SPEC,
   SPEC_FILTERS_NAV,
 } from "./specContent.js";
-import { FIELD_ROLE_CSS, FieldRoleLegend } from "./FieldRoleBadge.jsx";
+import { FIELD_ROLE_CSS } from "./FieldRoleBadge.jsx";
 
 function FilterSpecSection({ spec }) {
   const { key, num, title, accentBg, accentFg, v4Test, howToThink, modelAndAi, steps } = spec;
@@ -126,7 +126,6 @@ export default function SpecPage({ onEnterProposition }) {
       </nav>
 
       <div className="spec-body">
-        <FieldRoleLegend />
         <section className="spec-spine" aria-labelledby="data-spine-h">
           <h2 id="data-spine-h" className="spec-spine-h">
             THE DATA SPINE — WHO PROVIDES WHAT, IN ONE VIEW

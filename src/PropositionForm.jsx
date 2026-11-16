@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
 import {
@@ -63,15 +63,16 @@ import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import IdeaImportPanel, { IDEA_IMPORT_CSS } from "./IdeaImportPanel.jsx";
-import { BeforeYouSubmit, FIELD_ROLE_CSS, FieldRoleBadge, FieldRoleLegend } from "./FieldRoleBadge.jsx";
+import { FIELD_ROLE_CSS, FieldRoleBadge } from "./FieldRoleBadge.jsx";
 import {
   ROLE_LABEL,
   annotatePathActions,
   effectiveRole,
   getFieldRole,
+  isPathFilled,
   roleLabel,
-  submitBarMessage,
 } from "../lib/fieldRoles.js";
+import { submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -99,7 +100,7 @@ import {
 } from "../lib/techShiftRisk.js";
 import { f4WebCheckRelation } from "../lib/f4Assessment.js";
 import { plainDraftSaveError } from "../lib/clientSavePayload.js";
-import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
+import { FMCG_CATEGORIES } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
 import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
@@ -139,15 +140,38 @@ function filterSubtitle(spec, division) {
   return spec.subtitle || "";
 }
 
-function fieldHelper(field) {
-  const parts = [];
-  if (field.helper) parts.push(field.helper);
-  if (typeof field.helperFromDivision === "function") {
-    parts.push(
-      "Minimum net margin is assigned from the locked division table. You may enter a higher value; below the minimum is a mark-down. Filter 3 tests the Filter 2 MRP on the 10% volume-loss cliff rule."
-    );
-  }
-  return parts.join(" ");
+/** Part 143 D86 — static helpers are gone; GST HSN line is focus-only via field.gstFocusHint. */
+function fieldHelper(_field) {
+  return "";
+}
+
+/** Paths / field flags the AI first pass may auto-populate (person can still type over). */
+const AI_FILLS_KEYS = new Set([
+  "category",
+  "declaredAttribute",
+  "benchmark",
+  "declaredGap",
+  "gapDerivation",
+  "parityExceptions",
+  "growthRoute",
+  "growthArgument",
+  "cogsAtScale",
+  "netMarginAtScale",
+  "mrpInr",
+  "qcomTrajectory",
+  "techShiftRisk",
+  "householdsReachedY3Mn",
+  "trialRatePct",
+  "repeatConversionPct",
+  "purchaseFrequencyYr",
+  "avgPackValueInr",
+]);
+
+function fieldAiFills(field) {
+  if (!field) return false;
+  if (field.aiFills === true || field.aiConfirmable === true) return true;
+  if (field.type === "computed-risk" || field.type === "derived-mrp") return true;
+  return AI_FILLS_KEYS.has(field.key);
 }
 
 const SUGGEST_BLOCKLIST = new Set([
@@ -565,15 +589,11 @@ function FieldControl({
   onMrpOverrideChange,
 }) {
   const fileRef = useRef(null);
+  const [gstFocused, setGstFocused] = useState(false);
   if (field.type === "mitigation-map" || field.type === "range-override") return null;
-  const ownerHint = Array.isArray(field.owners) && field.owners.length
-    ? `Usually provided by ${field.owners.join(" / ")}`
-    : "";
-  const helperParts = [];
-  if (inactive && inactiveHint) helperParts.push(inactiveHint);
-  else if (fieldHelper(field)) helperParts.push(fieldHelper(field));
-  if (ownerHint) helperParts.push(ownerHint);
-  const helper = helperParts.join(" ");
+  // Part 143 D86 — no owner/helper lines at rest; inactive lock stays as title only.
+  const helper = "";
+  const gstFocusHint = fieldPath === "f2.gstRatePct" ? String(field.gstFocusHint || "").trim() : "";
   const full =
     field.type === "textarea" ||
     field.type === "checkbox" ||
@@ -596,6 +616,12 @@ function FieldControl({
       />
     ) : null;
   const wand = aiSourced ? <AiWandMark /> : null;
+  const aiWillFill = fieldAiFills(field);
+  const aiFillMark = aiWillFill ? (
+    <span className="ai-fills-badge" data-ai-fills={fieldPath || field.key || "yes"} title="The AI first pass fills this — check it or type over it">
+      AI fills this
+    </span>
+  ) : null;
 
   if (field.type === "computed-risk") {
     const risk = value && typeof value === "object" ? value : blankTechShiftRisk();
@@ -639,22 +665,19 @@ function FieldControl({
     };
     return (
       <div
-        className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`}
+        className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}${aiWillFill ? " is-ai-expected" : ""}`}
         title={lockTitle}
         data-f4-risk="tech-shift"
         data-f4-state={rated.length === TECH_SHIFT_DIMENSIONS.length ? "scored" : "editable"}
       >
-        <div className="prop-label">
-          {field.label}
+        <div className="prop-label" data-field-label={fieldPath || undefined}>
+          <span>{field.label}</span>
           {wand}
+          {aiFillMark}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {helper ? <p className="prop-helper">{helper}</p> : null}
-        <p className="prop-helper">
-          Rate all seven points (Low / Medium / High). Optional: use Re-run this estimate for an AI draft.
-        </p>
-        {overall ? <p className="derived-note">Current overall: {overall}</p> : null}
+        {overall ? <p className="autofill-status" data-tone="ai">Current overall: {overall}</p> : null}
         <div className="f4-dimension-editor">
           {TECH_SHIFT_DIMENSIONS.map((key) => {
             const d = dimensions[key] || { risk: "", reason: "" };
@@ -753,7 +776,7 @@ function FieldControl({
         </div>
         {respondable.length ? (
           <div className="f4-response-list">
-            <p className="prop-helper">Respond on Medium / High points to clear them</p>
+            <p className="autofill-status">Respond on Medium / High points to clear them</p>
             {respondable.map((key) => {
               const d = dimensions[key];
               return (
@@ -820,14 +843,19 @@ function FieldControl({
         ? `Your MRP implies a net margin of ${eff}%, which is below the ${floor}% minimum for ${div}`
         : null;
     return (
-      <div className={`prop-field span-2${locked ? " is-locked" : ""}`} title={lockTitle} data-f2-mrp="derived">
-        <div className="prop-label">
-          {field.label}
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiWillFill ? " is-ai-expected" : ""}`} title={lockTitle} data-f2-mrp="derived">
+        <div className="prop-label" data-field-label={fieldPath || undefined}>
+          <span>{field.label}</span>
+          {aiFillMark}
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {helper ? <p className="prop-helper">{helper}</p> : null}
-        <label className="prop-check" style={{ marginBottom: 8 }}>
+        <label className="prop-check" style={{ marginBottom: 8 }} htmlFor="fld-f2-mrpOverride">
+          <span className="prop-label" data-field-label="f2.mrpOverride">
+            <span>Use my own MRP</span>
+            <FieldRoleBadge path="f2.mrpOverride" doc={ideaDoc} />
+          </span>
           <input
+            id="fld-f2-mrpOverride"
             data-field="f2.mrpOverride"
             type="checkbox"
             checked={overrideOn}
@@ -836,7 +864,6 @@ function FieldControl({
               if (typeof onMrpOverrideChange === "function") onMrpOverrideChange(e.target.checked);
             }}
           />
-          <span>Use my own MRP</span>
         </label>
         {overrideOn ? (
           <input
@@ -917,31 +944,29 @@ function FieldControl({
         title={lockTitle}
         data-f3-resilience="cliff"
       >
-        <div className="prop-label">
-          {field.label}
+        <div className="prop-label" data-field-label={fieldPath || undefined}>
+          <label htmlFor={`fld-${String(fieldPath || field.key).replace(/[^A-Za-z0-9_-]+/g, "-")}`}>
+            {field.label}
+          </label>
           {wand}
+          {aiFillMark}
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {helper ? <p className="prop-helper">{helper}</p> : null}
-        <p className="derived-note">
-          {priced.ok
-            ? `Price tested: Filter 2 MRP ₹${Number(priced.mrp).toFixed(2)} (change it on Filter 2).`
-            : "Enter COGS, net margin and GST on Filter 2 so there is an MRP to test."}
-        </p>
-        <label className="f3-inflation-label">
-          Planned annual inflation-cover increase (%)
-          <input
-            data-field={fieldPath || undefined}
-            type="number"
-            step="any"
-            min="0"
-            placeholder={field.placeholder || "e.g. 5"}
-            value={inputVal}
-            disabled={locked}
-            title={lockTitle}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </label>
+        {priced.ok ? (
+          <p className="autofill-status">Price tested: Filter 2 MRP ₹{Number(priced.mrp).toFixed(2)}</p>
+        ) : null}
+        <input
+          id={`fld-${String(fieldPath || field.key).replace(/[^A-Za-z0-9_-]+/g, "-")}`}
+          data-field={fieldPath || undefined}
+          type="number"
+          step="any"
+          min="0"
+          placeholder={field.placeholder || "Enter yearly price rise % — e.g. 5"}
+          value={inputVal}
+          disabled={locked}
+          title={lockTitle}
+          onChange={(e) => onChange(e.target.value)}
+        />
         {pe?.annualIncreasePct != null ? (
           <p className="derived-note">
             Research inflation cover {pe.annualIncreasePct}%/yr
@@ -957,7 +982,7 @@ function FieldControl({
         {crossed?.ok ? (
           crossed.crossings?.length ? (
             <div className="f3-cliff-preview">
-              <p className="prop-helper">
+              <p className="autofill-status">
                 At {annual}%/yr over {F3_HORIZON_YEARS} years this MRP would cross:
               </p>
               <ul className="f3-cliff-list">
@@ -1014,14 +1039,14 @@ function FieldControl({
     };
     const basisNote = withoutPercentSign(range.basis);
     return (
-      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle} data-f3-range="mrp">
-        <div className="prop-label">
-          {field.label}
+      <div className={`prop-field span-2${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}${aiWillFill ? " is-ai-expected" : ""}`} title={lockTitle} data-f3-range="mrp">
+        <div className="prop-label" data-field-label={fieldPath || undefined}>
+          <span>{field.label}</span>
           {wand}
+          {aiFillMark}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {helper ? <p className="prop-helper">{helper}</p> : null}
         {loading ? (
           <div className="me-loading" role="status" aria-live="polite">
             <Loader2 size={16} className="spin" aria-hidden="true" />
@@ -1094,32 +1119,35 @@ function FieldControl({
 
   if (field.type === "computed") {
     return (
-      <div className={`prop-field span-2`} data-field={fieldPath || undefined}>
-        <div className="prop-label">
-          {field.label}
+      <div className={`prop-field span-2${aiWillFill ? " is-ai-expected" : ""}`} data-field={fieldPath || undefined}>
+        <div className="prop-label" data-field-label={fieldPath || undefined}>
+          <span>{field.label}</span>
           {wand}
+          {aiFillMark}
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {helper ? <p className="prop-helper">{helper}</p> : null}
       </div>
     );
   }
 
   if (field.type === "checkbox") {
+    const checkId = `fld-${String(fieldPath || field.key).replace(/[^A-Za-z0-9_-]+/g, "-")}`;
     return (
-      <label className={`prop-check span-2${locked ? " is-locked" : ""}`} title={lockTitle}>
+      <label className={`prop-check span-2${locked ? " is-locked" : ""}${aiWillFill ? " is-ai-expected" : ""}`} title={lockTitle} htmlFor={checkId}>
         <input
+          id={checkId}
           data-field={fieldPath || undefined}
           type="checkbox"
           checked={Boolean(value)}
           disabled={locked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span>
+        <span className="prop-label" data-field-label={fieldPath || undefined}>
           {field.label}
           {wand}
+          {aiFillMark}
+          <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </span>
-        <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
       </label>
     );
   }
@@ -1146,6 +1174,8 @@ function FieldControl({
         disabled={locked}
         title={lockTitle}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={gstFocusHint ? () => setGstFocused(true) : undefined}
+        onBlur={gstFocusHint ? () => setGstFocused(false) : undefined}
       />
     ) : (
       <>
@@ -1160,6 +1190,8 @@ function FieldControl({
           disabled={locked}
           title={lockTitle}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={gstFocusHint ? () => setGstFocused(true) : undefined}
+          onBlur={gstFocusHint ? () => setGstFocused(false) : undefined}
         />
         {listId ? (
           <datalist id={listId}>
@@ -1172,11 +1204,12 @@ function FieldControl({
     );
 
   return (
-    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}`} title={lockTitle}>
+    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}${aiWillFill ? " is-ai-expected" : ""}`} title={lockTitle}>
       <label className="prop-field-inner" htmlFor={inputId}>
-        <span className="prop-label">
+        <span className="prop-label" data-field-label={fieldPath || undefined}>
           {field.label}
           {wand}
+          {aiFillMark}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </span>
@@ -1191,17 +1224,17 @@ function FieldControl({
         canRestore={canRestoreAi}
         onConfirmAi={onConfirmAi}
       />
-      {aiSourced && !editedName ? <span className="ai-sourced-tag">AI estimate — review</span> : null}
-      {helper ? <span className="prop-helper">{helper}</span> : null}
+      {aiSourced && !editedName ? <span className="ai-sourced-tag">Filled by AI, check it</span> : null}
+      {gstFocusHint && gstFocused ? <p className="autofill-status">{gstFocusHint}</p> : null}
       {fieldPath === "f2.cogsAtScale" && (ideaDoc?.f2?.cogsLowInr != null || ideaDoc?.f2?.cogsHighInr != null) ? (
-        <p className="derived-note">
+        <p className="autofill-status" data-tone="ai">
           AI estimate range ₹{ideaDoc.f2.cogsLowInr ?? "—"}–₹{ideaDoc.f2.cogsHighInr ?? "—"}
           {ideaDoc.f2.cogsConfidenceNote ? ` — ${ideaDoc.f2.cogsConfidenceNote}` : ""}
           {ideaDoc.f2.cogsBasis ? `. ${ideaDoc.f2.cogsBasis}` : ""}
         </p>
       ) : null}
       {fieldPath === "f2.gstRatePct" && ideaDoc?.f2?.gstBasis ? (
-        <p className="derived-note">{ideaDoc.f2.gstBasis}</p>
+        <p className="autofill-status" data-tone="ai">{ideaDoc.f2.gstBasis}</p>
       ) : null}
       {taxNotes}
       {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
@@ -1243,7 +1276,7 @@ function FieldControl({
             </div>
           ) : null}
           {field.key === "evidenceSourceDate" ? (
-            <p className="prop-helper evidence-read-status">
+            <p className="autofill-status evidence-read-status">
               {ideaDoc?.researchFindings?.evidenceRead?.status === "read"
                 ? `Read: ${ideaDoc.researchFindings.evidenceRead.pagesApprox || "?"} pages, ${(
                     ideaDoc.researchFindings.evidenceRead.facts || []
@@ -2708,6 +2741,15 @@ export default function PropositionForm({
   const [conceptCardName, setConceptCardName] = useState(() =>
     String(initial?.f1?.conceptCardName || "").trim()
   );
+  /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
+  const [benefitExtra, setBenefitExtra] = useState(() => {
+    const f1 = initial?.f1 || {};
+    if (String(f1.declaredAttribute3 || "").trim()) return 2;
+    if (String(f1.declaredAttribute2 || "").trim()) return 1;
+    return 0;
+  });
+  /** Filters 2–4 start collapsed; expand via the header arrow. */
+  const [filterOpen, setFilterOpen] = useState(() => ({ f2: false, f3: false, f4: false }));
   const [draftSaveState, setDraftSaveState] = useState("");
   // Part 140 B (D64) — a failed draft save is loud: banner, "Not saved" sidebar, auto-retry, leave warning.
   const [draftError, setDraftError] = useState("");
@@ -4256,7 +4298,7 @@ export default function PropositionForm({
           />
         ))}
         <label className="field" htmlFor="fld-submitterDepartment">
-          <span className="field-label prop-label">
+          <span className="field-label prop-label" data-field-label="submitterDepartment">
             Your team
             <FieldRoleBadge path="submitterDepartment" doc={doc} />
           </span>
@@ -4286,17 +4328,11 @@ export default function PropositionForm({
               ))}
             </select>
           )}
-          <span className="field-helper">
-            {teamHeadHint ||
-              "Pick the team for this idea (you can change it any time). Reviewed by that team's business head."}
-            {managerReviewRequestedOn(doc)
-              ? " A pending manager review will be re-routed if you change the team."
-              : ""}
-          </span>
+          {managerReviewRequestedOn(doc) ? (
+            <p className="autofill-status">A pending manager review will be re-routed if you change the team.</p>
+          ) : null}
         </label>
       </section>
-
-      <FieldRoleLegend />
 
       {String(currentUser?.role || "") === "ADMIN" &&
       (doc.researchFindings?.autofillReport?.fields || doc.researchFindings?.autofillStatus) ? (
@@ -4325,7 +4361,7 @@ export default function PropositionForm({
           onOpenDraft={onOpenImportedDraft}
           onSubmitIdea={onSubmitImportedIdea}
         />
-        <div className="prop-label hero-label">
+        <div className="prop-label hero-label" data-field-label="name">
           <label htmlFor="fld-name">{getFieldRole("name")?.label}</label>
           <FieldRoleBadge path="name" doc={doc} />
         </div>
@@ -4349,13 +4385,17 @@ export default function PropositionForm({
           onUseSuggestion={(s) => applyInputSuggestion("name", s)}
           onKeepTyped={() => keepInputTyped("name")}
         />
-        <div className="prop-label hero-label">
+        <div className="prop-label hero-label" data-field-label="category">
           <label htmlFor="fld-category">{getFieldRole("category")?.label}</label>
+          <span className="ai-fills-badge" data-ai-fills="category" title="The AI first pass fills this — check it or type over it">
+            AI fills this
+          </span>
           <FieldRoleBadge path="category" doc={doc} />
         </div>
         <input
           id="fld-category"
           data-field="category"
+          className="is-ai-expected-input"
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
@@ -4379,7 +4419,6 @@ export default function PropositionForm({
             <option key={v} value={v} />
           ))}
         </datalist>
-        <p className="prop-helper">{FMCG_CATEGORY_LIST_NOTE}</p>
         {(() => {
           const sp = suggestionProps("", { key: "category" }, doc.category);
           return sp.suggestion != null ? (
@@ -4391,7 +4430,7 @@ export default function PropositionForm({
             />
           ) : null;
         })()}
-        <div className="prop-label hero-label">
+        <div className="prop-label hero-label" data-field-label="ideaDescription">
           <label htmlFor="fld-ideaDescription">{getFieldRole("ideaDescription")?.label}</label>
           <FieldRoleBadge path="ideaDescription" doc={doc} />
         </div>
@@ -4439,6 +4478,7 @@ export default function PropositionForm({
             type="button"
             className="ghost"
             disabled={conceptCardBusy}
+            title="PDF, Word, or Excel. Extracts only fields the document states."
             onClick={() => conceptCardRef.current?.click()}
           >
             {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
@@ -4450,14 +4490,13 @@ export default function PropositionForm({
               {conceptCardName}
             </span>
           ) : null}
-          <span className="prop-helper">PDF, Word, or Excel. Separate from the Filter 1 source-file attach. Extracts only fields the document states.</span>
         </div>
         {conceptCardError ? (
           <div className="prop-err">
             <AlertTriangle size={14} /> {conceptCardError}
           </div>
         ) : null}
-        {conceptCardNote ? <p className="prop-helper">{conceptCardNote}</p> : null}
+        {conceptCardNote ? <p className="autofill-status">{conceptCardNote}</p> : null}
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
@@ -4491,19 +4530,47 @@ export default function PropositionForm({
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
+        const collapsible = spec.key === "f2" || spec.key === "f3" || spec.key === "f4";
+        const filterExpanded = !collapsible || Boolean(filterOpen[spec.key]);
+        const toggleFilter = () => {
+          if (!collapsible) return;
+          setFilterOpen((prev) => ({ ...prev, [spec.key]: !prev[spec.key] }));
+        };
         return (
           <section
             key={spec.key}
             id={spec.key}
-            className={`prop-filter${spec.key === "f5" || spec.key === "f6" ? " f5f6-card" : ""}`}
+            className={`prop-filter${spec.key === "f5" || spec.key === "f6" ? " f5f6-card" : ""}${collapsible ? " is-collapsible" : ""}${collapsible && !filterExpanded ? " is-collapsed" : ""}`}
             style={{ borderLeftColor: spec.accentBg }}
+            data-filter-open={collapsible ? (filterExpanded ? "yes" : "no") : undefined}
           >
-            <div className="prop-filter-h">
+            <div
+              className={`prop-filter-h${collapsible ? " is-toggle" : ""}`}
+              role={collapsible ? "button" : undefined}
+              tabIndex={collapsible ? 0 : undefined}
+              aria-expanded={collapsible ? filterExpanded : undefined}
+              onClick={collapsible ? toggleFilter : undefined}
+              onKeyDown={
+                collapsible
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleFilter();
+                      }
+                    }
+                  : undefined
+              }
+            >
+              {collapsible ? (
+                <span className="prop-filter-chevron" aria-hidden="true">
+                  {filterExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </span>
+              ) : null}
               <span className="prop-badge" style={{ background: spec.accentBg, color: spec.accentFg }}>
                 {spec.num}
               </span>
               <div>
-                <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
+                <h2 className="prop-filter-title">
                   {spec.title}
                 </h2>
                 <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
@@ -4525,7 +4592,7 @@ export default function PropositionForm({
                   </p>
                 ) : null}
                 {spec.key === "f2" ? (
-                  <div className="margin-hint-block">
+                  <div className="margin-hint-block" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                     <p className="prop-filter-sub">{formatMinimumMarginHint(doc)}</p>
                     {doc.researchFindings?.divisionDetection?.reason || doc.division ? (
                       <details className="why-division">
@@ -4576,7 +4643,7 @@ export default function PropositionForm({
                   </div>
                 ) : null}
               </div>
-              <div className="prop-status-wrap">
+              <div className="prop-status-wrap" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                 {checkLabel ? (
                   <span className="check-pill" data-tone={toneFor(checkLabel)}>
                     Check: {checkLabel}
@@ -4609,17 +4676,34 @@ export default function PropositionForm({
                 ) : null}
               </div>
             </div>
+            {filterExpanded ? (
+            <>
             <InlineFloorFail check={check} />
             {(spec.key === "f5" || spec.key === "f6") && evidenceF5F6Note ? (
-              <p className="prop-helper">{evidenceF5F6Note}</p>
+              <p className="autofill-status">{evidenceF5F6Note}</p>
             ) : null}
 
             <div className="prop-grid">
-              {spec.fields.map((field) =>
-                field.type === "computed" ? (
+              {(spec.key === "f1"
+                ? (() => {
+                    const has2 = Boolean(String(values.declaredAttribute2 || "").trim());
+                    const has3 = Boolean(String(values.declaredAttribute3 || "").trim());
+                    const show2 = has2 || has3 || benefitExtra >= 1;
+                    const show3 = has3 || benefitExtra >= 2;
+                    return spec.fields.filter((field) => {
+                      if (field.key === "declaredAttribute2") return show2;
+                      if (field.key === "declaredAttribute3") return show3;
+                      return true;
+                    });
+                  })()
+                : spec.fields
+              ).flatMap((field) => {
+                const nodes = [];
+                if (field.type === "computed") {
+                  nodes.push(
                   <div key={field.key} className="prop-field span-2" data-field={`${spec.key}.${field.key}`}>
-                    <div className="prop-label">
-                      {field.label}
+                    <div className="prop-label" data-field-label={`${spec.key}.${field.key}`}>
+                      <span>{field.label}</span>
                       <FieldRoleBadge path={`${spec.key}.${field.key}`} doc={doc} />
                       {["householdsReachedY3Mn", "trialRatePct", "repeatConversionPct", "purchaseFrequencyYr", "avgPackValueInr"].some(
                         (k) => aiSourced[sourcedPath("f5", k)]
@@ -4631,7 +4715,9 @@ export default function PropositionForm({
                       {f5Sizing?.text || "Sizing incomplete — fill the five factors."}
                     </div>
                   </div>
-                ) : (
+                  );
+                } else {
+                  nodes.push(
                   <div key={field.key} className="prop-field-wrap">
                     <FieldControl
                       field={field}
@@ -4741,8 +4827,52 @@ export default function PropositionForm({
                       onKeepTyped={() => keepInputTyped(field.key)}
                     />
                   </div>
-                )
-              )}
+                  );
+                }
+                if (
+                  spec.key === "f1" &&
+                  field.key === "declaredAttribute" &&
+                  !(
+                    Boolean(String(values.declaredAttribute2 || "").trim()) ||
+                    Boolean(String(values.declaredAttribute3 || "").trim()) ||
+                    benefitExtra >= 1
+                  )
+                ) {
+                  nodes.push(
+                    <div key="add-benefit-1" className="prop-field-wrap span-2 benefit-add-wrap">
+                      <button
+                        type="button"
+                        className="benefit-add"
+                        data-testid="add-another-benefit"
+                        onClick={() => setBenefitExtra((n) => Math.min(2, Math.max(1, n + 1)))}
+                      >
+                        + Add another benefit
+                      </button>
+                    </div>
+                  );
+                } else if (
+                  spec.key === "f1" &&
+                  field.key === "declaredAttribute2" &&
+                  !(
+                    Boolean(String(values.declaredAttribute3 || "").trim()) ||
+                    benefitExtra >= 2
+                  )
+                ) {
+                  nodes.push(
+                    <div key="add-benefit-2" className="prop-field-wrap span-2 benefit-add-wrap">
+                      <button
+                        type="button"
+                        className="benefit-add"
+                        data-testid="add-another-benefit"
+                        onClick={() => setBenefitExtra(2)}
+                      >
+                        + Add another benefit
+                      </button>
+                    </div>
+                  );
+                }
+                return nodes;
+              })}
             </div>
 
             {(justSubmitted || goNoGo) && spec.key !== "f4" && visibleItems.length ? (
@@ -4777,22 +4907,12 @@ export default function PropositionForm({
                 />
               </>
             ) : null}
+            </>
+            ) : null}
           </section>
         );
       })}
 
-      <BeforeYouSubmit doc={doc} />
-
-      {missingFormInputs.length && !justSubmitted ? (
-        <div className="unlock-hint" role="status">
-          <strong>Still to enter before a full score:</strong>
-          <ul>
-            {missingFormInputs.map((m) => (
-              <li key={`${m.filter}.${m.field}`}>{m.label}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
 
       {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
@@ -4868,7 +4988,7 @@ export default function PropositionForm({
 
       <div className="submit-bar">
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
-        <span className="submit-bar-message" data-testid="submit-bar-message">{submitBarMessage(doc)}</span>
+        <span className="submit-bar-message" data-testid="submit-bar-message">{submitBarMessageTwoLabels(doc)}</span>
         <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
         {liveInputReview.fields.length ? (
           <span className="mono field-list" title={liveInputReview.fields.map((f) => f.message).join(" ")}>
@@ -4953,6 +5073,14 @@ ${IDEA_IMPORT_CSS}
   --required-dot:#f472b6;
   --chip-review-bg:#E5E8EC; --chip-review-fg:#3A4A5C;
   --floor-fail-bg:#2a1220; --floor-fail-border:#7f2547; --floor-fail-text:#fda4c0; --floor-fail-body:#e8c9d7;
+  /* Part 143 D88 — type scale and colours */
+  --fs-section:22px; --c-section:#ddd6fe;
+  --fs-status:13px; --c-status:#c4b5d8; --c-error:#fda4c0;
+  --fs-label:16px; --c-label:#f6eefb;
+  --fs-input:15px; --c-input:#efe8f5;
+  --fs-placeholder:15px; --c-placeholder:#9a89ae;
+  --fs-badge:12px; --c-required:#f5b562; --c-optional:#b9a9cc;
+  --gap-label:8px; --gap-field:22px; --h-input:44px;
   font-family:'Sora',system-ui,sans-serif;
   background:var(--bg); color:var(--ink);
   max-width:none; margin:0; padding:20px 24px 80px;
@@ -4988,8 +5116,10 @@ ${IDEA_IMPORT_CSS}
 .prop-form-hero h1{margin:0;font-size:28px;letter-spacing:-.4px;font-weight:700;}
 .prop-form-hero > p{margin:0 0 4px;color:var(--ink-secondary);font-size:14.5px;}
 .prop-form-page input,.prop-form-page select,.prop-form-page textarea{
-  width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:12px;
-  color:var(--ink);font-family:inherit;font-size:14.5px;padding:11px 13px;outline:none;}
+  width:100%;min-height:var(--h-input);background:var(--input-bg);border:1px solid var(--input-border);border-radius:12px;
+  color:var(--c-input);font-family:inherit;font-size:var(--fs-input);font-weight:400;padding:11px 13px;outline:none;box-sizing:border-box;}
+.prop-form-page input::placeholder,.prop-form-page textarea::placeholder{
+  color:var(--c-placeholder);font-size:var(--fs-placeholder);font-weight:400;opacity:1;}
 .prop-form-page textarea{min-height:84px;resize:vertical;}
 .inline-floor-fail{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--floor-fail-bg);border:1px solid var(--floor-fail-border);}
 .inline-floor-fail .fail-title{font-weight:700;color:var(--floor-fail-text);margin:0 0 6px;font-size:13.5px;}
@@ -5044,19 +5174,25 @@ ${IDEA_IMPORT_CSS}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
 .prop-version{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.55);margin:0 0 14px;}
-.prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+.prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-field) 16px;}
 .prop-idea-block{display:flex;flex-direction:column;gap:10px;}
-.prop-field{display:flex;flex-direction:column;gap:6px;margin:0;}
-.prop-field-inner{display:flex;flex-direction:column;gap:6px;}
-.prop-field.span-2,.prop-check.span-2,.span-2{grid-column:1 / -1;}
-.prop-label{font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:rgba(243,234,248,.82);display:flex;align-items:center;flex-wrap:wrap;gap:4px 0;}
+.prop-field{display:flex;flex-direction:column;gap:var(--gap-label);margin:0;}
+.prop-field-inner{display:flex;flex-direction:column;gap:var(--gap-label);}
+.prop-field.span-2,.prop-check.span-2,.span-2,.benefit-add-wrap{grid-column:1 / -1;}
+.prop-label{font-family:'Sora',system-ui,sans-serif;font-size:var(--fs-label);font-weight:600;letter-spacing:0;color:var(--c-label);display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-width:0;}
+.prop-label label,.prop-label > span:first-child{font:inherit;color:inherit;min-width:0;overflow-wrap:anywhere;}
+.prop-filter-title{font-size:var(--fs-section);font-weight:600;color:var(--c-section);margin:0;}
+.prop-filter-sub{font-size:var(--fs-status);font-weight:400;color:var(--ink-secondary);margin:4px 0 0;line-height:1.4;}
+.benefit-add{display:inline-flex;align-items:center;gap:6px;margin:0;padding:8px 0;background:none;border:none;color:#c4b5fd;font-family:inherit;font-size:var(--fs-status);font-weight:500;cursor:pointer;text-align:left;flex-wrap:wrap;}
+.benefit-add:hover{text-decoration:underline;}
 ${FIELD_ROLE_CSS}
-.submit-bar .submit-bar-message{flex:1 1 260px;min-width:0;font-size:13px;line-height:1.4;}
-.autofill-status{margin-top:4px;font-size:12px;line-height:1.35;color:#c4b5d8;}
-.autofill-status[data-tone="ai"]{color:#C9A0E8;}
+.submit-bar .submit-bar-message{flex:1 1 260px;min-width:0;font-size:var(--fs-status);line-height:1.4;}
+.autofill-status{margin-top:4px;font-size:var(--fs-status);font-weight:400;line-height:1.35;color:var(--c-status);}
+.autofill-status[data-tone="ai"]{color:var(--c-status);}
 .autofill-status[data-tone="edited"]{color:#93c5fd;}
-.autofill-status[data-tone="na"]{color:#E8B563;}
-.autofill-status .ghost-link{margin-left:8px;font-size:12px;color:#a78bfa;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}
+.autofill-status[data-tone="na"]{color:var(--c-required);}
+.autofill-status .ghost-link{margin-left:8px;font-size:var(--fs-status);color:#c4b5fd;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}
+.prop-err,.derived-note.error{color:var(--c-error);}
 .ai-fill-report{margin:12px 0 20px;padding:10px 12px;border:1px solid rgba(201,160,232,.25);border-radius:8px;font-size:12px;color:#c4b5d8;}
 .ai-fill-report summary{cursor:pointer;font-weight:600;color:#E8D5F5;}
 .ai-fill-report ul{margin:8px 0 0;padding-left:18px;}
@@ -5064,6 +5200,19 @@ ${FIELD_ROLE_CSS}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
+.ai-fills-badge{display:inline-block;margin-left:2px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;
+  letter-spacing:.02em;color:#c4b5fd;border:1px solid rgba(196,181,253,.55);background:rgba(139,92,246,.16);
+  white-space:nowrap;}
+.prop-field.is-ai-expected,.prop-check.is-ai-expected{border-radius:12px;padding:10px 12px;margin:-2px -4px 0;
+  background:rgba(139,92,246,.07);border:1px solid rgba(196,181,253,.28);}
+.prop-field.is-ai-expected input,.prop-field.is-ai-expected select,.prop-field.is-ai-expected textarea,
+.prop-form-page input.is-ai-expected-input{
+  border-color:rgba(196,181,253,.55);background:rgba(139,92,246,.1);}
+.prop-filter.is-collapsible .prop-filter-h.is-toggle{cursor:pointer;user-select:none;}
+.prop-filter-chevron{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  flex-shrink:0;color:var(--c-section,#ddd6fe);margin-top:6px;}
+.prop-filter.is-collapsed .prop-filter-h{margin-bottom:0;}
+.prop-filter.is-collapsed{padding-bottom:14px;}
 .price-gap-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:#E8B563;}
 .derived-note{margin:4px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.72);}
 .derived-note.error{color:#E8B563;}
@@ -5386,8 +5535,8 @@ ${FIELD_ROLE_CSS}
 .prop-filter-h{display:flex;align-items:flex-start;gap:12px;margin:0 0 14px;}
 .prop-badge{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-family:var(--fm);
   font-size:13px;font-weight:700;flex-shrink:0;}
-.prop-filter-title{margin:0;font-size:18px;letter-spacing:-.3px;}
-.prop-filter-sub{margin:4px 0 0;font-size:12.5px;color:rgba(243,234,248,.55);}
+.prop-form-page .prop-filter-title{margin:0;font-size:var(--fs-section);font-weight:600;letter-spacing:-.3px;color:var(--c-section);}
+.prop-form-page .prop-filter-sub{margin:4px 0 0;font-size:var(--fs-status);font-weight:400;color:var(--ink-secondary);line-height:1.4;}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
 .filter-score{font-family:var(--fm);font-size:11px;color:rgba(243,234,248,.7);}
 .evidence-line{margin:8px 0 0;font-size:12px;line-height:1.45;color:rgba(243,234,248,.62);}
@@ -5410,6 +5559,9 @@ ${FIELD_ROLE_CSS}
 .prop-computed{background:#22113A;border:1px solid rgba(243,234,248,.14);border-radius:12px;padding:12px 14px;
   display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;}
 .prop-computed.is-empty{color:rgba(243,234,248,.45);font-size:13.5px;}
+@media (max-width:1099px){
+  .prop-form-page .prop-grid{grid-template-columns:1fr;}
+}
 @media (max-width:760px){
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
@@ -5421,5 +5573,8 @@ ${FIELD_ROLE_CSS}
   .prop-page.output-page{margin:0;padding:8px 16px 32px;}
   .submit-bar{padding:10px 16px 12px;}
   .prop-check{flex-wrap:wrap;}
+  .prop-label{align-items:flex-start;}
+  .field-role{flex:1 1 100%;margin-left:0;margin-top:4px;}
+  .benefit-add{width:100%;}
 }
 `;

@@ -1,0 +1,149 @@
+/**
+ * Part 143 D88 — type scale, heading, contrast, touch targets (11 checks).
+ * Reads live tokens from PropositionForm PROP_CSS and the reference file.
+ */
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+const formCss = read("../src/PropositionForm.jsx");
+const badgeCss = read("../src/FieldRoleBadge.jsx");
+const css = `${formCss}\n${badgeCss}`;
+const ref = read("../lib/formTokens.reference.css");
+
+let checks = 0;
+function check(name, fn) {
+  try {
+    fn();
+    checks += 1;
+  } catch (e) {
+    console.error(`FAIL: ${name}`);
+    throw e;
+  }
+}
+
+function token(src, name) {
+  const m = src.match(new RegExp(`--${name}\\s*:\\s*([^;]+);`));
+  assert.ok(m, `token --${name}`);
+  return m[1].trim();
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace("#", "").trim();
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = Number.parseInt(full, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function relLum({ r, g, b }) {
+  const f = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+function contrast(fgHex, bgHex) {
+  const L1 = relLum(hexToRgb(fgHex));
+  const L2 = relLum(hexToRgb(bgHex));
+  const lighter = Math.max(L1, L2);
+  const darker = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+const EXPECT = {
+  "fs-section": "22px",
+  "c-section": "#ddd6fe",
+  "fs-status": "13px",
+  "fs-label": "16px",
+  "c-label": "#f6eefb",
+  "fs-input": "15px",
+  "c-input": "#efe8f5",
+  "fs-placeholder": "15px",
+  "c-placeholder": "#9a89ae",
+  "fs-badge": "12px",
+  "c-required": "#f5b562",
+  "c-optional": "#b9a9cc",
+  "c-error": "#fda4c0",
+  "gap-label": "8px",
+  "gap-field": "22px",
+  "h-input": "44px",
+};
+
+check("reference tokens match the D88 table", () => {
+  for (const [k, v] of Object.entries(EXPECT)) {
+    assert.equal(token(ref, k).toLowerCase(), v.toLowerCase(), k);
+  }
+});
+
+check("live .prop-form-page declares the same tokens", () => {
+  for (const [k, v] of Object.entries(EXPECT)) {
+    assert.equal(token(formCss, k).toLowerCase(), v.toLowerCase(), `live ${k}`);
+  }
+});
+
+check("field heading uses Sora scale tokens, not 11px monospace", () => {
+  assert.match(css, /\.prop-label\{[^}]*font-size:var\(--fs-label\)/);
+  assert.match(css, /\.prop-label\{[^}]*font-weight:600/);
+  assert.match(css, /\.prop-label\{[^}]*color:var\(--c-label\)/);
+  assert.match(css, /\.prop-label\{[^}]*font-family:'Sora'/);
+  assert.doesNotMatch(css, /\.prop-label\{[^}]*font-size:11px/);
+  assert.doesNotMatch(css, /\.prop-label\{[^}]*font-family:var\(--fm\)/);
+});
+
+check("inputs use --fs-input / --c-input and min-height --h-input", () => {
+  assert.match(css, /min-height:var\(--h-input\)/);
+  assert.match(css, /font-size:var\(--fs-input\)/);
+  assert.match(css, /color:var\(--c-input\)/);
+  assert.match(css, /::placeholder\{[^}]*color:var\(--c-placeholder\)/s);
+});
+
+check("section title uses --fs-section / --c-section", () => {
+  assert.match(css, /\.prop-filter-title\{[^}]*font-size:var\(--fs-section\)/);
+  assert.match(css, /--c-section|#ddd6fe/);
+});
+
+check("Required solid border vs Optional dashed", () => {
+  assert.match(css, /data-role="required"\]\{[^}]*border:1px solid/s);
+  assert.match(css, /data-role="optional"\]\{[^}]*border:1px dashed/s);
+});
+
+check("touch target height is at least 44px", () => {
+  assert.equal(Number.parseInt(token(formCss, "h-input"), 10), 44);
+});
+
+check("label-to-box and field gaps match D88", () => {
+  assert.equal(token(formCss, "gap-label"), "8px");
+  assert.equal(token(formCss, "gap-field"), "22px");
+});
+
+check("two columns from 1100px; one column below", () => {
+  assert.match(css, /@media \(max-width:1099px\)/);
+  assert.match(css, /\.prop-grid\{[^}]*grid-template-columns:1fr 1fr/s);
+});
+
+const bg = token(ref, "card-bg") || "#1a0f25";
+check("text colours meet WCAG AA (4.5:1) on card background", () => {
+  const pairs = [
+    ["c-label", token(ref, "c-label")],
+    ["c-input", token(ref, "c-input")],
+    ["c-placeholder", token(ref, "c-placeholder")],
+    ["c-section", token(ref, "c-section")],
+    ["c-required", token(ref, "c-required")],
+    ["c-optional", token(ref, "c-optional")],
+    ["c-error", token(ref, "c-error")],
+  ];
+  for (const [name, fg] of pairs) {
+    const ratio = contrast(fg, bg);
+    assert.ok(ratio >= 4.5, `${name} ${fg} on ${bg} = ${ratio.toFixed(2)}`);
+  }
+});
+
+check("status / error colours use the D88 tokens", () => {
+  assert.match(css, /--c-status:#c4b5d8/);
+  assert.match(css, /\.autofill-status\{[^}]*color:var\(--c-status\)/s);
+  assert.match(css, /--c-error:#fda4c0/);
+});
+
+console.log(`PASS testFormTypography — ${checks} checks`);
+process.exit(0);

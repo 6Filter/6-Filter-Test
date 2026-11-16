@@ -1,0 +1,22 @@
+/* Part 143 D88 — reference tokens (mirror of .prop-form-page). Used by testFormTypography.mjs. */
+.prop-form-page {
+  --fs-section: 22px;
+  --c-section: #ddd6fe;
+  --fs-status: 13px;
+  --c-status: #c4b5d8;
+  --c-error: #fda4c0;
+  /* status line colour alias used by autofill-status */
+  --fs-label: 16px;
+  --c-label: #f6eefb;
+  --fs-input: 15px;
+  --c-input: #efe8f5;
+  --fs-placeholder: 15px;
+  --c-placeholder: #9a89ae;
+  --fs-badge: 12px;
+  --c-required: #f5b562;
+  --c-optional: #b9a9cc;
+  --gap-label: 8px;
+  --gap-field: 22px;
+  --h-input: 44px;
+  --card-bg: #1a0f25;
+}

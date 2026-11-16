@@ -57,13 +57,18 @@ for (const file of files) {
 }
 assert.deepEqual(problems, [], `Role words must come from lib/fieldRoles.js:\n${problems.join("\n")}`);
 
-// The UI imports the words instead of typing them.
+// Part 143 — display words come from fieldRoleDisplay.js (Required / Optional only).
+// Multi-word seven-role labels still must not be hard-coded (checked above).
 const badge = readFileSync(path.join(root, "src/FieldRoleBadge.jsx"), "utf8");
-assert.match(badge, /from "\.\.\/lib\/fieldRoles\.js"/);
-assert.match(badge, /ROLE_LABEL\[/);
-assert.match(badge, /ROLE_MEANING\[/);
+assert.match(badge, /from "\.\.\/lib\/fieldRoleDisplay\.js"/);
+assert.match(badge, /displayRole\(/);
+assert.doesNotMatch(badge, /ROLE_LABEL\[/);
+assert.doesNotMatch(badge, /ROLE_MEANING\[/);
 const form = readFileSync(path.join(root, "src/PropositionForm.jsx"), "utf8");
 assert.match(form, /from "\.\.\/lib\/fieldRoles\.js"/);
-assert.match(form, /submitBarMessage\(doc\)/);
+assert.match(form, /submitBarMessageTwoLabels\(doc\)/);
+const display = readFileSync(path.join(root, "lib/fieldRoleDisplay.js"), "utf8");
+assert.match(display, /"Required"/);
+assert.match(display, /"Optional"/);
 
 console.log(`PASS testFieldLabelsNoHardcode — ${files.length} files, ${LABELS.length} labels, ${MEANINGS.length} meanings`);
