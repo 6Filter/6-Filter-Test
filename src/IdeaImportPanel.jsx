@@ -30,6 +30,16 @@ function plural(n, one, many) {
   return n === 1 ? one : many;
 }
 
+/** Part 141 D — cell provenance per idea: [{ path, cell }] from fieldSources ("upload" → the cell it was read from). */
+export function provenanceRows(fieldSources) {
+  if (!fieldSources || typeof fieldSources !== "object") return [];
+  return Object.entries(fieldSources).map(([path, src]) => ({
+    path,
+    cell: String(src?.cell || "").trim() || "file",
+    aiSuggested: Boolean(src?.aiSuggested),
+  }));
+}
+
 /** The words for the Submit-all price confirm (list price per idea from the measured fresh idea). */
 export function submitAllConfirmText(count) {
   const each = MEASURED_FRESH_IDEA.listPriceUsd;
@@ -200,6 +210,19 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
                       ))}
                     </ul>
                   ) : null}
+                  {provenanceRows(idea.fieldSources).length ? (
+                    <details className="import-idea-provenance" data-testid="import-provenance">
+                      <summary>Where each value came from</summary>
+                      <ul>
+                        {provenanceRows(idea.fieldSources).map((row) => (
+                          <li key={row.path} data-testid="import-provenance-row">
+                            <code>{row.path}</code> → {row.cell}
+                            {row.aiSuggested ? " (AI-read, check it)" : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
                   {idea.submitMessage ? (
                     <p className={`import-idea-status ${idea.submitState}`} role="status">
                       {idea.submitMessage}
@@ -277,6 +300,9 @@ export const IDEA_IMPORT_CSS = `
 .import-idea-status.submitted{color:#6fe0a3;}
 .import-idea-warnings,.import-rejected{margin:0;padding-left:18px;font-size:13px;color:var(--ink-secondary,#a9a3b8);}
 .import-rejected{list-style:none;padding-left:0;}
+.import-idea-provenance{font-size:13px;color:var(--ink-secondary,#a9a3b8);}
+.import-idea-provenance summary{cursor:pointer;min-height:24px;}
+.import-idea-provenance ul{margin:4px 0 0;padding-left:18px;}
 .import-idea-actions,.import-submit-all{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 @media (max-width:640px){
   .import-actions-row{flex-direction:column;align-items:stretch;}

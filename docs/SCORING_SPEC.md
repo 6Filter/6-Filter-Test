@@ -1,21 +1,30 @@
 # 6 Filter Test — Scoring specification
 
-Generated from `lib/lockedConstants.js` (ruleset **v5.6**, Part 138). Filters 5–6 stay validation-only and are not scored.
+Generated from `lib/lockedConstants.js` (ruleset **v5.7**, Part 141). Filters 5–6 stay validation-only and are not scored.
 
 ## Ruleset
 
 | Constant | Value |
 |---|---|
-| `SCORING_RULESET_VERSION` | `v5.6` |
+| `SCORING_RULESET_VERSION` | `v5.7` |
 | `SCORE_DENOMINATOR_MODE` | `fixed-slots` |
 | `SCORING_MODEL` | `relevance` |
-| `RELEVANCE_SHADOW_MODE` | `true` |
+| `RELEVANCE_SHADOW_MODE` | `false` |
 | `INCOMPLETE_VERDICT_MODE` | `incomplete` |
 | `F3_HORIZON_YEARS` | `5` |
 | `F3_LOSS_STATISTIC` | `median` |
 | `FIXED_PRICE_POINTS` | `1, 2, 5, 10, 20, 50, 100` |
 | `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
+
+### What changed in v5.7 (Part 141 — one number)
+
+- **One displayed percentage decides the verdict.** `RELEVANCE_SHADOW_MODE` is off. `legacyPct` is still computed for comparison reports but is never read by the band, Log, exports or improvement panel.
+- **Ideas already evaluated** keep their stored score and verdict, labelled "Scored under an older release", until the person evaluates again.
+- **Improvement panel follows the verdict.** It says GO only when the verdict is GO. A capped WATCH names what holds GO back.
+- **Junk / unconfirmed inputs earn zero** whatever the AI returned (`guard: "input-invalid"`). Invalid text is not sent to the AI for grading.
+- **Every web finding** (reason + source) is sealed on the output item and shown beside its check; improvement suggestions for web-checked slots carry the same finding.
+- **A changed draft/Submit value is the person's own** (`netMarginSource: "user"`, GST estimate marker cleared). Unchanged values keep their markers.
 
 ### What changed in v5.6 (Part 138 — 18 checks)
 

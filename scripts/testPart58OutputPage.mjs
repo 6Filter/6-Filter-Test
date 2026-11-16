@@ -239,7 +239,7 @@ assert.notEqual(milkPath.projectedPct, 100);
 const sealedPath = closestPathToGo(
   milkshakeChecks,
   computeImprovementPointValues(milkshakeChecks),
-  { pct: 86, done: 12, total: 14 }
+  { pct: 86, done: 12, total: 14, classification: "GO" }
 );
 assert.equal(sealedPath.currentPct, 86, "path current % must follow the sealed ring score");
 assert.equal(sealedPath.projectedPct, 86, "already-GO sealed ring must not invent a higher path target");

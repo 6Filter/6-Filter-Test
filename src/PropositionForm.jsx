@@ -828,6 +828,7 @@ function FieldControl({
         {helper ? <p className="prop-helper">{helper}</p> : null}
         <label className="prop-check" style={{ marginBottom: 8 }}>
           <input
+            data-field="f2.mrpOverride"
             type="checkbox"
             checked={overrideOn}
             disabled={locked}
@@ -1426,6 +1427,43 @@ function FilterComparePair({ label, actual, target, unit }) {
   );
 }
 
+/** Part 141 E — http(s) source links for a check item (source_url and / or sources[]), de-duplicated. */
+export function webCheckSources(item) {
+  const raw = [item?.source_url, ...(Array.isArray(item?.sources) ? item.sources : [])];
+  const out = [];
+  for (const entry of raw) {
+    const url = String(typeof entry === "string" ? entry : entry?.url || entry?.source_url || "").trim();
+    if (/^https?:\/\//i.test(url) && !out.includes(url)) out.push(url);
+  }
+  return out;
+}
+
+/** "Web check: <what was found>" with the source as a link, for each check item that has a source. */
+function WebCheckList({ items, specKey }) {
+  const rows = (items || [])
+    .map((it) => ({
+      it,
+      sources: webCheckSources(it),
+      text: String(it?.finding || it?.reason || it?.text || "").trim(),
+    }))
+    .filter((r) => r.sources.length && r.text);
+  if (!rows.length) return null;
+  return (
+    <ul className="web-check-list" data-testid="web-check-list">
+      {rows.map((r, i) => (
+        <li key={`${specKey}-web-${i}`} className="web-check-line" data-testid="web-check">
+          Web check: {r.text}{" "}
+          {r.sources.map((url, j) => (
+            <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+              {j === 0 ? "Source" : `Source ${j + 1}`}
+            </a>
+          ))}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function FilterStatusCard({ spec, check, narrative, compare }) {
   const tone = filterCardTone(check, spec.key);
   const items = analysisCheckItems(check?.items);
@@ -1476,6 +1514,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
       ) : (
         <span className="mono filter-progress-n">—</span>
       )}
+      <WebCheckList items={items} specKey={spec.key} />
     </article>
   );
 }
@@ -1874,8 +1913,13 @@ export function GoNoGoResultPage({
   // Single resolver: screened ideas always show the sealed snapshot (Part 128).
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
-  const score = { ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}), pct: scorePct };
   const classification = result.classification;
+  // Part 141 D72 — path panel follows the sealed verdict, not a live recompute.
+  const score = {
+    ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}),
+    pct: scorePct,
+    classification,
+  };
   const tone = goNoGoTone(classification);
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
@@ -5073,6 +5117,9 @@ ${FIELD_ROLE_CSS}
 .dimension-response textarea{width:100%;min-height:72px;}
 .f4-reassess{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;}
 .f4-analysis-dims{margin-top:10px;}
+.web-check-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.web-check-line{font-size:12.5px;line-height:1.5;color:rgba(243,234,248,.78);overflow-wrap:anywhere;}
+.web-check-line a{color:#C9A0E8;margin-left:6px;text-decoration:underline;}
 .output-page .f4-analysis-dims{margin-top:12px;}
 .output-page .f4-analysis-dims li{font-size:13.5px;line-height:1.5;color:var(--ink-muted-85);}
 .ai-wand{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;color:#C9A0E8;

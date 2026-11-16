@@ -98,6 +98,19 @@ if (!files.length) {
  * - testTeamAndFieldAccess / owner-tests/testTeamAndFieldAccess: expects firstForbiddenField and
  *   draft/Submit API to return 403 when the client sends f4.techShiftRisk; Part 140 strips and
  *   ignores server-owned keys instead (returns 200 + ignoredKeys).
+ * Part 141 additions (v5.7 — D71 one number / D72 verdict-driven improvement panel / D73 invalid-input guard).
+ * Owner fixtures are NOT edited. No owner file was newly added to the set for Part 141 (every one that fails today
+ * was already listed); these Part 141 behaviours are why listed owner fixtures stay expected when re-pinned:
+ * - RELEVANCE_SHADOW_MODE is now false: computeGoNoGo / buildPathToGo / Log / exports read scored.pct (relevance),
+ *   never legacyPct. Owner fixtures that assert shadow-mode behaviour (verdict from legacyPct while pct shows the
+ *   relevance number, shadowMode: true in the stamp, or a verdict that disagrees with the displayed %) fail:
+ *   testScoringRules / owner-tests/testScoringRules, owner-tests/testRelevanceScoring (shadow stamp / legacy verdict).
+ * - SCORING_RULESET_VERSION is v5.7: any owner fixture pinning v4.4 / v5.0 / v5.6 fails
+ *   (testEvidenceReading, testScoringRules, testFilter1Scoring, ...).
+ * - Improvement panel headline comes from the verdict (D72): pct > 80 with a WATCH cap reads "WATCH at N%: ...",
+ *   never "GO, above 80%" — testPathToGo / testPathToGoActionCopy / testPathCopy (percent-only GO headline) stay expected.
+ * - Junk / invalid free text earns zero with guard "input-invalid" even when the AI said strong (D73):
+ *   owner-tests/testFilter1Scoring and testInputCoverage that expect AI credit for such text stay expected.
  */
 const EXPECTED_OWNER_FAILURES = new Set([
   "testEvidenceReading.mjs",
@@ -141,7 +154,7 @@ for (const file of files) {
 
 if (expectedOwnerFailures.length) {
   console.error(
-    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–138 ` +
+    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–141 ` +
       `(old F2 hard-stop / F3 band / 15-slot totals / pinned versions / Below floor / not-web-checked coverage):`
   );
   for (const file of expectedOwnerFailures) console.error(`  ${file}`);

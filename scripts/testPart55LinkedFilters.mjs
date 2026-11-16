@@ -30,7 +30,7 @@ const missingEvidence = checkF1(
 );
 const attrMissing = missingEvidence.items.find((i) => i.slot === "attributes");
 assert.equal(attrMissing.status, "pending");
-assert.match(attrMissing.text, /awaiting|assessed when you Submit/i);
+assert.match(attrMissing.text, /awaiting|assessed when you Submit|Evaluate to assess this/i);
 assert.doesNotMatch(attrMissing.text, /Evidence Source|Upload/i);
 
 const attrNoFile = checkF1(
@@ -114,7 +114,7 @@ const unread = checkF1(
   {}
 );
 assert.equal(unread.items.find((i) => i.slot === "attributes").status, "pending");
-assert.match(unread.items.find((i) => i.slot === "attributes").text, /Submit so it can be read|not yet read|awaiting/i);
+assert.match(unread.items.find((i) => i.slot === "attributes").text, /Submit so it can be read|not yet read|awaiting|Evaluate to assess this/i);
 
 const price = normalizeCategoryAvgPrice({
   avgPriceInr: 81.675,
