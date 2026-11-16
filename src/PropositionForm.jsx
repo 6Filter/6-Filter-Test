@@ -101,6 +101,7 @@ import { f4WebCheckRelation } from "../lib/f4Assessment.js";
 import { plainDraftSaveError } from "../lib/clientSavePayload.js";
 import { FMCG_CATEGORIES, FMCG_CATEGORY_LIST_NOTE } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
+import { divisionForScore } from "../lib/divisionForScore.js";
 import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
 import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
 
@@ -3474,7 +3475,12 @@ export default function PropositionForm({
     try {
       const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
       if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
+      const keptName = uploaded.name || file.name;
+      setConceptCardName(keptName);
+      setDoc((prev) => ({
+        ...prev,
+        f1: { ...(prev.f1 || {}), conceptCardName: keptName },
+      }));
       const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
         method: "POST",
         credentials: "include",
@@ -3482,12 +3488,23 @@ export default function PropositionForm({
         body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
       });
       const data = await res.json().catch(() => ({}));
+      const savedName = data.conceptCardName || keptName;
+      if (savedName) {
+        setConceptCardName(savedName);
+        setDoc((prev) => ({
+          ...prev,
+          f1: { ...(prev.f1 || {}), conceptCardName: savedName },
+        }));
+      }
       if (!res.ok) {
-        setConceptCardName("");
         setConceptCardError(data.error || "Could not read that concept card.");
         return;
       }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
+      if (data.extractError) {
+        setConceptCardError(data.extractError);
+        setConceptCardNote("");
+        return;
+      }
       // Part 138 B — only values the document states are suggested; say how many were left out.
       const keptCount = Array.isArray(data.extractedKeys) ? data.extractedKeys.length : 0;
       const droppedCount = Number(data.droppedCount) || 0;
@@ -3495,7 +3512,6 @@ export default function PropositionForm({
         `Suggested from the concept card (AI-suggested, review): ${keptCount} field${keptCount === 1 ? "" : "s"} kept` +
           (droppedCount ? `; ${droppedCount} dropped because the document does not state ${droppedCount === 1 ? "it" : "them"}.` : ".")
       );
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
       if (data.suggestions) {
         setAiSuggestions((prev) => ({
           ...(prev || {}),
@@ -3504,7 +3520,6 @@ export default function PropositionForm({
         }));
       }
     } catch (err) {
-      setConceptCardName("");
       setConceptCardError(err.message || "Could not read that concept card.");
     } finally {
       setConceptCardBusy(false);
@@ -4462,7 +4477,7 @@ export default function PropositionForm({
                 <h2 className="prop-filter-title" style={{ color: spec.accentFg }}>
                   {spec.title}
                 </h2>
-                <p className="prop-filter-sub">{filterSubtitle(spec, doc.division)}</p>
+                <p className="prop-filter-sub">{filterSubtitle(spec, divisionForScore(doc))}</p>
                 {spec.key === "f2" && doc.division ? (
                   <p className="prop-filter-sub">
                     {doc.researchFindings?.divisionDetection?.needsConfirmation
