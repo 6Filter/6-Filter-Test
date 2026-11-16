@@ -25,7 +25,7 @@ const viaFile = filterSidebarCount("f1", { f1: { evidenceSourceFile: { name: "so
 const empty = filterSidebarCount("f1", { f1: {} });
 assert.ok(viaFile.have > empty.have, "an uploaded source file counts as evidence");
 
-assert.equal(field.fileLabel, "Upload source file (Word, PDF, or Excel)");
+assert.equal(field.fileLabel, "Upload source file");
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /handleEvidenceSourceFile/);

@@ -22,7 +22,7 @@ assert(
 );
 
 const f1Growth = SIX_FILTERS_FORM.find((f) => f.key === "f1")?.fields.find((f) => f.key === "growthRoute");
-assert(f1Growth?.label === "Growth Route", `growthRoute label should be Growth Route, got ${f1Growth?.label}`);
+assert(f1Growth?.label === "Growth route", `growthRoute label should be Growth route, got ${f1Growth?.label}`);
 
 // Part 135 — without a resolvable Filter 2 MRP, Filter 3 is Not yet run.
 const missing = checkF3({}, {});

@@ -20,13 +20,10 @@ assert.ok(!/setManagerOpen/.test(form), "orphaned setManagerOpen must not remain
 assert.match(form, /Submit for verdict/);
 assert.match(form, /f4-dimension-editor/);
 assert.match(form, /Select risk/);
-assert.match(
-  form,
-  /Rate all seven points/,
-  "F4 tells the person to rate dimensions by hand"
-);
+assert.match(form, /f4-dimension-editor/, "F4 dimensions are editable by hand");
+assert.match(form, /AI fills this/, "AI-fill fields are marked on the form");
 assert.match(form, /data-f3-resilience="cliff"/);
-assert.match(form, /Planned annual inflation-cover increase/);
+assert.match(form, /Enter yearly price rise/);
 assert.match(form, /priceCrossings/);
 
 assert.equal(isFilterUnlocked("f4", {}), true);
