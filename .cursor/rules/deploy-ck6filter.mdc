@@ -1,0 +1,29 @@
+---
+description: Push Primus / 6 Filter Test changes to GitHub and deploy on Render under ck6filter@cavinkare.com
+alwaysApply: true
+---
+
+# Deploy target: ck6filter
+
+Going forward, ship product changes to the **ck6filter@cavinkare.com** stack:
+
+- **GitHub:** `https://github.com/6Filter/6-Filter-Test.git` (remote `origin`, branch `main`)
+- **Render account / workspace:** logged in as `ck6filter@cavinkare.com` (`tea-dbta5et6e07s73bsi9t0`)
+- **Web service:** `ck-6-filter-test` (`srv-dbtckp67bikc73dnujvg`) → https://ck-6-filter-test-88wu.onrender.com
+- **Postgres:** `6-Filter-Test-Live` (`dpg-dbtca9rbc2fs73doghpg-a`)
+
+## Workflow after meaningful code changes
+
+1. Commit (when the user asks, or when they asked to push/deploy).
+2. `git push origin HEAD` (pre-push runs `ciDryRun`; fix real failures, do not `--no-verify`).
+3. Ensure Render `ck-6-filter-test` is linked to `https://github.com/6Filter/6-Filter-Test` on `main` with:
+   - `buildCommand`: `npm ci --include=dev && npm run build`
+   - `startCommand`: `npm start`
+   - `autoDeployTrigger`: `commit`
+4. If auto-deploy does not fire, `render deploys create srv-dbtckp67bikc73dnujvg --confirm`.
+
+## Blocker to remember
+
+If Render returns `repository URL is invalid or unfetchable`, the **ck6filter** Render account has not connected the GitHub App to the private `6Filter` org. Ask the user to open Render → Account Settings → GitHub → Connect / Configure → grant `6Filter`, then retry the service repo PATCH + deploy. Do not leave the service on `render-examples/express-hello-world`.
+
+Do not print Render API keys or database URLs.
