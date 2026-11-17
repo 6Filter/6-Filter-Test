@@ -31,21 +31,23 @@ check("Filters 2–4 are collapsible with an arrow toggle", () => {
   assert.match(form, /spec\.key === "f2" \|\| spec\.key === "f3" \|\| spec\.key === "f4"/);
 });
 
-check("AI fills this only on fields the first pass actually writes", () => {
+check("AI fills this only on COGS, net margin, and MRP after tax", () => {
   assert.match(form, /AI_FILLS_KEYS/);
   assert.match(form, /fieldAiFills/);
   assert.match(form, /ai-fills-badge/);
   assert.match(form, /is-ai-expected/);
   assert.match(form, /AI fills this/);
-  // Human Required boxes must not be pre-labelled as AI-filled.
+  assert.match(form, /#f59e0b/, "AI fills badge uses a distinct amber font colour");
+  assert.match(form, /accountDisplayName/);
+  assert.match(form, /Type over to use your own figure/);
+  assert.match(form, /Use my own MRP/);
   const keysBlock = form.slice(form.indexOf("const AI_FILLS_KEYS"), form.indexOf("function fieldAiFills"));
-  assert.doesNotMatch(keysBlock, /"declaredAttribute"/);
-  assert.doesNotMatch(keysBlock, /"benchmark"/);
-  assert.doesNotMatch(keysBlock, /"declaredGap"/);
-  assert.doesNotMatch(keysBlock, /"category"/);
-  assert.match(keysBlock, /"cogsAtScale"/);
-  assert.match(keysBlock, /"techShiftRisk"/);
-  assert.match(keysBlock, /"gapDerivation"/);
+  assert.equal(
+    [...keysBlock.matchAll(/"([a-zA-Z0-9]+)"/g)].map((m) => m[1]).sort().join(","),
+    "cogsAtScale,mrpInr,netMarginAtScale"
+  );
+  assert.doesNotMatch(keysBlock, /"techShiftRisk"/);
+  assert.doesNotMatch(keysBlock, /"gapDerivation"/);
   assert.doesNotMatch(form, /data-ai-fills="category"/);
 });
 

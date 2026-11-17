@@ -146,33 +146,21 @@ function fieldHelper(_field) {
 }
 
 /**
- * Fields the AI first pass actually writes (person can still type over).
- * Not marked: Required human boxes (name, category, idea, declared attribute,
- * benchmark, declared gap, GST, pack size) even if research may later suggest them.
+ * Only these Filter 2 price boxes show "AI fills this" — person can override.
+ * COGS / net margin: type over. MRP after tax: "Use my own MRP".
  */
-const AI_FILLS_KEYS = new Set([
-  "gapDerivation",
-  "parityExceptions",
-  "growthRoute",
-  "growthArgument",
-  "cogsAtScale",
-  "netMarginAtScale",
-  "mrpInr",
-  "qcomTrajectory",
-  "techShiftRisk",
-  "householdsReachedY3Mn",
-  "trialRatePct",
-  "repeatConversionPct",
-  "purchaseFrequencyYr",
-  "avgPackValueInr",
-]);
+const AI_FILLS_KEYS = new Set(["cogsAtScale", "netMarginAtScale", "mrpInr"]);
 
 function fieldAiFills(field) {
   if (!field) return false;
-  if (field.aiFills === true) return true;
-  // aiConfirmable alone is not enough — only keys the pass actually autofills.
-  if (field.type === "computed-risk" || field.type === "derived-mrp") return true;
   return AI_FILLS_KEYS.has(field.key);
+}
+
+function accountDisplayName(user) {
+  const name = String(user?.name || "").trim();
+  if (name) return name;
+  const email = String(user?.email || "").trim();
+  return email ? email.split("@")[0] : "";
 }
 
 const SUGGEST_BLOCKLIST = new Set([
@@ -619,7 +607,15 @@ function FieldControl({
   const wand = aiSourced ? <AiWandMark /> : null;
   const aiWillFill = fieldAiFills(field);
   const aiFillMark = aiWillFill ? (
-    <span className="ai-fills-badge" data-ai-fills={fieldPath || field.key || "yes"} title="The AI first pass fills this — check it or type over it">
+    <span
+      className="ai-fills-badge"
+      data-ai-fills={fieldPath || field.key || "yes"}
+      title={
+        field.key === "mrpInr"
+          ? "AI calculates MRP after tax — tick Use my own MRP to override"
+          : "AI fills this — type over it to use your own figure"
+      }
+    >
       AI fills this
     </span>
   ) : null;
@@ -906,6 +902,11 @@ function FieldControl({
           </>
         ) : null}
         {overrideOn && below ? <p className="derived-note error">{below}</p> : null}
+        {!overrideOn ? (
+          <p className="autofill-status" data-tone="ai-override">
+            Calculated from COGS, net margin and GST — tick Use my own MRP to override
+          </p>
+        ) : null}
         {overrideOn ? (
           <button
             type="button"
@@ -1226,6 +1227,11 @@ function FieldControl({
         onConfirmAi={onConfirmAi}
       />
       {aiSourced && !editedName ? <span className="ai-sourced-tag">Filled by AI, check it</span> : null}
+      {aiWillFill && (field.key === "cogsAtScale" || field.key === "netMarginAtScale") ? (
+        <p className="autofill-status" data-tone="ai-override">
+          Type over to use your own figure
+        </p>
+      ) : null}
       {gstFocusHint && gstFocused ? <p className="autofill-status">{gstFocusHint}</p> : null}
       {fieldPath === "f2.cogsAtScale" && (ideaDoc?.f2?.cogsLowInr != null || ideaDoc?.f2?.cogsHighInr != null) ? (
         <p className="autofill-status" data-tone="ai">
@@ -2655,15 +2661,22 @@ export default function PropositionForm({
   onOpenImportedDraft,
   onSubmitImportedIdea,
 }) {
-  const [doc, setDoc] = useState(() => mergeProposition(initial));
+  const [doc, setDoc] = useState(() => {
+    const merged = mergeProposition(initial);
+    const accountName = accountDisplayName(currentUser);
+    if (accountName && !String(merged.submitterName || "").trim()) {
+      merged.submitterName = accountName;
+    }
+    return merged;
+  });
   useEffect(() => {
-    const accountName = String(currentUser?.name || "").trim();
+    const accountName = accountDisplayName(currentUser);
     if (!accountName) return;
     setDoc((prev) => {
       if (String(prev?.submitterName || "").trim()) return prev;
       return { ...prev, submitterName: accountName };
     });
-  }, [currentUser?.name, initial?.id]);
+  }, [currentUser?.name, currentUser?.email, initial?.id]);
   useEffect(() => {
     const preferred = rememberedIdeaTeam(currentUser?.team);
     if (!preferred) return;
@@ -2851,6 +2864,10 @@ export default function PropositionForm({
 
   useEffect(() => {
     const merged = mergeProposition(initial);
+    const accountName = accountDisplayName(currentUser);
+    if (accountName && !String(merged.submitterName || "").trim()) {
+      merged.submitterName = accountName;
+    }
     const filled =
       initial?.suggestions && !initial?.researchRunAt
         ? mergeSuggestionsIntoDoc(merged, initial.suggestions)
@@ -5197,14 +5214,14 @@ ${FIELD_ROLE_CSS}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
-.ai-fills-badge{display:inline-block;margin-left:2px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;
-  letter-spacing:.02em;color:#c4b5fd;border:1px solid rgba(196,181,253,.55);background:rgba(139,92,246,.16);
-  white-space:nowrap;}
+.ai-fills-badge{display:inline-block;margin-left:6px;padding:0;border:0;background:transparent;
+  font-size:11px;font-weight:700;letter-spacing:.03em;color:#f59e0b;white-space:nowrap;}
+.autofill-status[data-tone="ai-override"]{color:#f59e0b;}
 .prop-field.is-ai-expected,.prop-check.is-ai-expected{border-radius:12px;padding:10px 12px;margin:-2px -4px 0;
-  background:rgba(139,92,246,.07);border:1px solid rgba(196,181,253,.28);}
+  background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.28);}
 .prop-field.is-ai-expected input,.prop-field.is-ai-expected select,.prop-field.is-ai-expected textarea,
 .prop-form-page input.is-ai-expected-input{
-  border-color:rgba(196,181,253,.55);background:rgba(139,92,246,.1);}
+  border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.08);}
 .prop-filter.is-collapsible .prop-filter-h.is-toggle{cursor:pointer;user-select:none;}
 .prop-filter-chevron{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
   flex-shrink:0;color:var(--c-section,#ddd6fe);margin-top:6px;}

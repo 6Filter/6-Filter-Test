@@ -58,9 +58,17 @@ assert.equal(legacyMerged.teamIsLegacy, true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(formSrc, /hasSubmitterIdentity/);
+assert.match(formSrc, /accountDisplayName/);
+assert.match(formSrc, /submitterName: accountName/);
 // Part 124: creator picks the idea team on the form (no longer a locked "From your account" box).
 assert.match(formSrc, /SUBMITTER_DEPARTMENTS/);
 assert.match(formSrc, /Ask the admin to change it|Reviewed by/);
+
+const createApi = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(createApi, /submitterName: String\(req\.user\?\.name/);
+const dbSrcCreate = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
+assert.match(dbSrcCreate, /submitter_name, submitter_department/);
+assert.match(dbSrcCreate, /ownerName/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /hasSubmitterIdentity\(payload\)/);
