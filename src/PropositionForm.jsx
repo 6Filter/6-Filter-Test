@@ -1218,7 +1218,7 @@ function FieldControl({
     >
       <label className="prop-field-inner" htmlFor={inputId}>
         <span className="prop-label" data-field-label={fieldPath || undefined}>
-          {field.label}
+          <span>{field.label}</span>
           {wand}
           {aiFillMark}
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
@@ -5231,7 +5231,7 @@ ${IDEA_IMPORT_CSS}
 .prop-field-inner{display:flex;flex-direction:column;gap:var(--gap-label);}
 .prop-field.span-2,.prop-check.span-2,.span-2,.benefit-add-wrap{grid-column:1 / -1;}
 .prop-label{font-family:'Sora',system-ui,sans-serif;font-size:var(--fs-label);font-weight:600;letter-spacing:0;color:var(--c-label);display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-width:0;}
-.prop-label label,.prop-label > span:first-child{font:inherit;color:inherit;min-width:0;overflow-wrap:anywhere;}
+.prop-label label,.prop-label > span:first-child:not(.ai-fills-badge):not(.ai-sourced-tag):not(.field-role){font:inherit;color:inherit;min-width:0;overflow-wrap:anywhere;}
 .prop-filter-title{font-size:var(--fs-section);font-weight:600;color:var(--c-section);margin:0;}
 .prop-filter-sub{font-size:var(--fs-status);font-weight:400;color:var(--ink-secondary);margin:4px 0 0;line-height:1.4;}
 .benefit-add{display:inline-flex;align-items:center;gap:6px;margin:0;padding:8px 0;background:none;border:none;color:#c4b5fd;font-family:inherit;font-size:var(--fs-status);font-weight:500;cursor:pointer;text-align:left;flex-wrap:wrap;}
@@ -5251,10 +5251,13 @@ ${FIELD_ROLE_CSS}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
-.ai-fills-badge{display:inline-block;margin-left:6px;padding:3px 10px;border-radius:999px;
-  font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.2;white-space:nowrap;
+/* Same teal glow pill on COGS, Net margin, and MRP — never inherit label colour. */
+.prop-form-page .ai-fills-badge,.prop-label .ai-fills-badge,.ai-fills-badge{
+  display:inline-block;margin-left:6px;padding:3px 10px;border-radius:999px;
+  font:800 12px/1.2 'Sora',system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap;
   color:#042f2e;background:#2dd4bf;border:1px solid #5eead4;
-  box-shadow:0 0 0 1px rgba(45,212,191,.35),0 0 14px rgba(45,212,191,.35);}
+  box-shadow:0 0 0 1px rgba(45,212,191,.35),0 0 14px rgba(45,212,191,.45);
+  -webkit-text-fill-color:#042f2e;}
 .autofill-status[data-tone="ai-override"]{color:#5eead4;font-weight:600;}
 .prop-field.is-ai-expected,.prop-check.is-ai-expected{border-radius:12px;padding:10px 12px;margin:-2px -4px 0;
   background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.35);}
