@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Search, Wand2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
 import {
@@ -106,9 +106,21 @@ import { advisoryChecksFromOutput } from "../lib/sealOutput.js";
 import { evaluationStatus as computeEvaluationStatus } from "../lib/evaluationStatus.js";
 
 const LAST_TEAM_KEY = "primus.lastIdeaTeam";
+const FORM_ZOOM_KEY = "primus.formZoom";
+const FORM_ZOOM_LEVELS = ["compact", "comfortable", "large"];
 /** Part 140 B (D64) — a failed draft save retries on its own every 10 s, up to 3 times. */
 const DRAFT_AUTO_RETRY_MS = 10000;
 const DRAFT_AUTO_RETRY_MAX = 3;
+
+function readFormZoom() {
+  try {
+    const raw = String(localStorage.getItem(FORM_ZOOM_KEY) || "").trim().toLowerCase();
+    if (FORM_ZOOM_LEVELS.includes(raw)) return raw;
+  } catch {
+    /* ignore */
+  }
+  return "compact";
+}
 
 function rememberedIdeaTeam(accountTeam) {
   try {
@@ -2774,6 +2786,8 @@ export default function PropositionForm({
   });
   /** Filters 2–4 start collapsed; expand via the header arrow. */
   const [filterOpen, setFilterOpen] = useState(() => ({ f2: false, f3: false, f4: false }));
+  /** Compact by default so ~half the form fits; zoom up when editing closely. */
+  const [formZoom, setFormZoom] = useState(() => readFormZoom());
   const [draftSaveState, setDraftSaveState] = useState("");
   // Part 140 B (D64) — a failed draft save is loud: banner, "Not saved" sidebar, auto-retry, leave warning.
   const [draftError, setDraftError] = useState("");
@@ -4265,8 +4279,22 @@ export default function PropositionForm({
     }
   }
 
+  function setFormZoomLevel(next) {
+    const level = FORM_ZOOM_LEVELS.includes(next) ? next : "compact";
+    setFormZoom(level);
+    try {
+      localStorage.setItem(FORM_ZOOM_KEY, level);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const zoomIndex = FORM_ZOOM_LEVELS.indexOf(formZoom);
+  const canZoomOut = zoomIndex > 0;
+  const canZoomIn = zoomIndex >= 0 && zoomIndex < FORM_ZOOM_LEVELS.length - 1;
+
   return (
-    <main className="prop-page prop-form-page" data-view="propositionForm">
+    <main className="prop-page prop-form-page" data-view="propositionForm" data-form-zoom={formZoom}>
       <style>{PROP_CSS}</style>
 
       {outputEvalState === "evaluated" || outputEvalState === "legacy" ? (
@@ -4285,6 +4313,47 @@ export default function PropositionForm({
           </button>
         </div>
       ) : null}
+
+      <div className="prop-form-zoom-bar" role="group" aria-label="Form size">
+        <Search size={14} aria-hidden="true" />
+        <span className="form-zoom-label">View size</span>
+        <button
+          type="button"
+          className="form-zoom-btn"
+          data-testid="form-zoom-out"
+          disabled={!canZoomOut}
+          aria-label="Zoom out"
+          title="Smaller"
+          onClick={() => setFormZoomLevel(FORM_ZOOM_LEVELS[Math.max(0, zoomIndex - 1)])}
+        >
+          <ZoomOut size={15} />
+        </button>
+        <div className="form-zoom-options">
+          {FORM_ZOOM_LEVELS.map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={`form-zoom-chip${formZoom === level ? " is-active" : ""}`}
+              data-testid={`form-zoom-${level}`}
+              aria-pressed={formZoom === level}
+              onClick={() => setFormZoomLevel(level)}
+            >
+              {level === "compact" ? "Compact" : level === "comfortable" ? "Comfortable" : "Large"}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="form-zoom-btn"
+          data-testid="form-zoom-in"
+          disabled={!canZoomIn}
+          aria-label="Zoom in"
+          title="Larger"
+          onClick={() => setFormZoomLevel(FORM_ZOOM_LEVELS[Math.min(FORM_ZOOM_LEVELS.length - 1, zoomIndex + 1)])}
+        >
+          <ZoomIn size={15} />
+        </button>
+      </div>
 
       <div className="prop-form-shell">
       <aside className="prop-sidebar">
@@ -5153,11 +5222,36 @@ ${IDEA_IMPORT_CSS}
   --fs-placeholder:15px; --c-placeholder:#9a89ae;
   --fs-badge:12px; --c-required:#f5b562; --c-optional:#b9a9cc;
   --gap-label:8px; --gap-field:22px; --h-input:44px;
+  --filter-pad-y:18px; --filter-pad-x:20px; --badge-size:42px; --shell-gap:28px; --sidebar-w:220px;
+  --hero-title:28px; --filter-left:5px;
   font-family:'Sora',system-ui,sans-serif;
   background:var(--bg); color:var(--ink);
   max-width:none; margin:0; padding:20px 24px 80px;
 }
+/* Default view: denser so roughly half the form fits; Comfortable/Large zoom back up. */
+.prop-form-page[data-form-zoom="compact"]{
+  --fs-section:16px; --fs-status:12px; --fs-label:13px; --fs-input:13px; --fs-placeholder:13px; --fs-badge:11px;
+  --gap-label:4px; --gap-field:12px; --h-input:34px;
+  --filter-pad-y:10px; --filter-pad-x:12px; --badge-size:28px; --shell-gap:14px; --sidebar-w:168px;
+  --hero-title:20px; --filter-left:3px;
+}
+.prop-form-page[data-form-zoom="large"]{
+  --fs-section:24px; --fs-status:14px; --fs-label:17px; --fs-input:16px; --fs-placeholder:16px; --fs-badge:13px;
+  --gap-label:10px; --gap-field:26px; --h-input:48px;
+  --filter-pad-y:20px; --filter-pad-x:22px; --badge-size:46px; --shell-gap:32px; --sidebar-w:240px;
+  --hero-title:30px; --filter-left:5px;
+}
 .prop-form-page .mono{font-family:'IBM Plex Mono',monospace;}
+.prop-form-zoom-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 12px;padding:8px 10px;
+  border:1px solid var(--card-border);border-radius:12px;background:rgba(26,15,37,.72);color:var(--ink-secondary);font-size:12px;}
+.prop-form-zoom-bar .form-zoom-label{font-weight:600;color:var(--ink);margin-right:2px;}
+.form-zoom-options{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.form-zoom-chip{border:1px solid var(--header-border);background:transparent;color:var(--ink-secondary);
+  border-radius:999px;padding:5px 10px;font:600 12px/1.2 'Sora',system-ui,sans-serif;cursor:pointer;}
+.form-zoom-chip.is-active{color:#042f2e;background:#c4b5fd;border-color:#ddd6fe;}
+.form-zoom-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;
+  border:1px solid var(--header-border);border-radius:8px;background:transparent;color:var(--ink);cursor:pointer;}
+.form-zoom-btn:disabled{opacity:.4;cursor:not-allowed;}
 .prop-output-return{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;
   margin:0 0 16px;padding:12px 16px;border-radius:14px;
@@ -5165,10 +5259,10 @@ ${IDEA_IMPORT_CSS}
 }
 .prop-output-return p{margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-muted-85);max-width:52rem;}
 .prop-output-return .prop-save{margin:0;white-space:nowrap;}
-.prop-form-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;align-items:start;}
-.prop-sidebar{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:14px;padding:8px 0;}
-.prop-side-nav{display:flex;flex-direction:column;gap:2px;}
-.prop-side-link{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;color:var(--ink-secondary);text-decoration:none;font-size:13px;}
+.prop-form-shell{display:grid;grid-template-columns:var(--sidebar-w,220px) minmax(0,1fr);gap:var(--shell-gap,28px);align-items:start;}
+.prop-sidebar{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:10px;padding:4px 0;}
+.prop-side-nav{display:flex;flex-direction:column;gap:1px;}
+.prop-side-link{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--ink-secondary);text-decoration:none;font-size:12.5px;}
 .prop-side-link:hover{background:var(--sidebar-hover);color:var(--ink);}
 .prop-side-link:active,.prop-side-link:focus{background:var(--sidebar-active);}
 .side-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -5182,22 +5276,24 @@ ${IDEA_IMPORT_CSS}
 .side-count{font-size:11px;color:var(--ink-muted);}
 .ownership-note{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink-muted);}
 .draft-saved{margin:0;font-size:11px;color:var(--ink-muted-3);}
-.prop-form-main{min-width:0;display:flex;flex-direction:column;gap:16px;}
+.prop-form-main{min-width:0;display:flex;flex-direction:column;gap:var(--gap-field,16px);}
 .prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-items:start;
   background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
 .prop-identity-cell{min-width:0;display:flex;flex-direction:column;}
 .prop-identity-cell .prop-field{width:100%;margin:0;}
 .prop-identity-cell .prop-label{min-height:28px;align-items:center;}
 .prop-identity-cell .prop-field-inner{width:100%;}
-.prop-form-hero{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;}
-.prop-form-hero h1{margin:0;font-size:28px;letter-spacing:-.4px;font-weight:700;}
-.prop-form-hero > p{margin:0 0 4px;color:var(--ink-secondary);font-size:14.5px;}
+.prop-form-hero{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:var(--gap-field);}
+.prop-form-hero h1{margin:0;font-size:var(--hero-title,28px);letter-spacing:-.4px;font-weight:700;}
+.prop-form-hero > p{margin:0 0 2px;color:var(--ink-secondary);font-size:var(--fs-status);}
 .prop-form-page input,.prop-form-page select,.prop-form-page textarea{
-  width:100%;min-height:var(--h-input);background:var(--input-bg);border:1px solid var(--input-border);border-radius:12px;
-  color:var(--c-input);font-family:inherit;font-size:var(--fs-input);font-weight:400;padding:11px 13px;outline:none;box-sizing:border-box;}
+  width:100%;min-height:var(--h-input);background:var(--input-bg);border:1px solid var(--input-border);border-radius:10px;
+  color:var(--c-input);font-family:inherit;font-size:var(--fs-input);font-weight:400;padding:8px 11px;outline:none;box-sizing:border-box;}
 .prop-form-page input::placeholder,.prop-form-page textarea::placeholder{
   color:var(--c-placeholder);font-size:var(--fs-placeholder);font-weight:400;opacity:1;}
-.prop-form-page textarea{min-height:84px;resize:vertical;}
+.prop-form-page textarea{min-height:calc(var(--h-input) * 2.1);resize:vertical;}
+.prop-form-page[data-form-zoom="compact"] textarea{min-height:64px;}
+.prop-form-page[data-form-zoom="large"] textarea{min-height:96px;}
 .inline-floor-fail{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--floor-fail-bg);border:1px solid var(--floor-fail-border);}
 .inline-floor-fail .fail-title{font-weight:700;color:var(--floor-fail-text);margin:0 0 6px;font-size:13.5px;}
 .inline-floor-fail p{margin:0;color:var(--floor-fail-body);font-size:13px;line-height:1.45;}
@@ -5624,12 +5720,15 @@ ${FIELD_ROLE_CSS}
   font-family:var(--fd);background:transparent;cursor:pointer;}
 .prop-mgr-modal .msg-area{width:100%;min-height:160px;margin:12px 0;background:var(--bg-soft,#22113A);
   border:1px solid rgba(243,234,248,.14);border-radius:12px;color:#F3EAF8;padding:12px;font-family:var(--fd);}
-.prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:5px;border-left-style:solid;
-  border-radius:16px;padding:18px 20px 16px;margin:0;}
+.prop-filter{background:#191919;border:1px solid rgba(243,234,248,.1);border-left-width:var(--filter-left,5px);border-left-style:solid;
+  border-radius:14px;padding:var(--filter-pad-y,18px) var(--filter-pad-x,20px);margin:0;}
 .prop-filter.is-locked{opacity:.78;}
-.prop-filter-h{display:flex;align-items:flex-start;gap:12px;margin:0 0 14px;}
-.prop-badge{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-family:var(--fm);
-  font-size:13px;font-weight:700;flex-shrink:0;}
+.prop-filter-h{display:flex;align-items:flex-start;gap:10px;margin:0 0 var(--gap-field,14px);}
+.prop-badge{width:var(--badge-size,42px);height:var(--badge-size,42px);border-radius:8px;display:grid;place-items:center;font-family:var(--fm);
+  font-size:calc(var(--badge-size,42px) * .32);font-weight:700;flex-shrink:0;}
+.prop-form-page[data-form-zoom="compact"] .prop-filter.is-collapsed{padding-bottom:8px;}
+.prop-form-page[data-form-zoom="compact"] .prop-identity-strip{padding:10px 12px;border-radius:12px;}
+.prop-form-page[data-form-zoom="compact"] .prop-identity-cell .prop-label{min-height:22px;}
 .prop-form-page .prop-filter-title{margin:0;font-size:var(--fs-section);font-weight:600;letter-spacing:-.3px;color:var(--c-section);}
 .prop-form-page .prop-filter-sub{margin:4px 0 0;font-size:var(--fs-status);font-weight:400;color:var(--ink-secondary);line-height:1.4;}
 .prop-status-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
