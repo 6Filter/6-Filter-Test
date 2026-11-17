@@ -28,6 +28,7 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 assert.match(formSrc, /marginElasticityLoading/);
 assert.match(formSrc, /price-resilience|data-f3-resilience|10% volume-loss/);
 assert.match(formSrc, /researches a cited inflation-cover|assessed when you Submit/);
-assert.match(formSrc, /disabled=\{saving \|\| readingGoNoGo \|\| !canSubmit \|\| marginElasticityLoading\}/);
+assert.match(formSrc, /disabled=\{saving \|\| readingGoNoGo \|\| marginElasticityLoading\}/);
+assert.match(formSrc, /Enter required values before Submit|Enter this required value before Submit/);
 
 console.log("PASS Part 62 F3 cliff loading — no band Clear without research");

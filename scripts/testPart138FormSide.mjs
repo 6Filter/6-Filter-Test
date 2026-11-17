@@ -17,15 +17,58 @@ import { SIX_FILTERS_FORM } from "../lib/propositionFields.js";
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 
-// --- A: required fields ---
-assert.deepEqual(firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" }), {
-  field: "name",
-  label: "Idea name",
-});
-assert.equal(firstMissingRequiredField({ name: "a", category: "  ", ideaDescription: "y" }).field, "category");
-assert.equal(firstMissingRequiredField({ name: "a", category: "b", ideaDescription: "\n" }).field, "ideaDescription");
-assert.equal(firstMissingRequiredField({ name: "a", category: "b", ideaDescription: "c" }), null);
-assert.equal(firstMissingRequiredField({ name: "a" }, { category: "b", ideaDescription: "c" }), null);
+// --- A: required fields (all display-Required boxes gate Submit) ---
+assert.equal(firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" }).field, "submitterName");
+assert.equal(
+  firstMissingRequiredField({
+    submitterName: "A",
+    submitterDepartment: "CIA",
+    name: "a",
+    category: "  ",
+    ideaDescription: "y",
+  }).field,
+  "category"
+);
+assert.equal(
+  firstMissingRequiredField({
+    submitterName: "A",
+    submitterDepartment: "CIA",
+    name: "a",
+    category: "b",
+    ideaDescription: "\n",
+  }).field,
+  "ideaDescription"
+);
+const allRequired = {
+  submitterName: "A",
+  submitterDepartment: "CIA",
+  name: "a",
+  category: "b",
+  ideaDescription: "c",
+  f1: {
+    declaredAttribute: "cool",
+    benchmark: "Brand X 100ml",
+    declaredGap: 2,
+    gapDerivation: "lasts",
+    parityExceptions: "none",
+    growthRoute: "penetration",
+    growthArgument: "grow",
+  },
+  f2: { cogsAtScale: 10, netMarginAtScale: 20, gstRatePct: 18, grammage: "100 ml" },
+};
+assert.equal(firstMissingRequiredField(allRequired), null);
+assert.equal(
+  firstMissingRequiredField(
+    { name: "a", f1: allRequired.f1, f2: allRequired.f2 },
+    {
+      submitterName: "A",
+      submitterDepartment: "CIA",
+      category: "b",
+      ideaDescription: "c",
+    }
+  ),
+  null
+);
 {
   const api = read("../lib/propositionsApi.js");
   const put = api.indexOf('if (req.method === "PUT")');

@@ -72,7 +72,7 @@ import {
   isPathFilled,
   roleLabel,
 } from "../lib/fieldRoles.js";
-import { submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
+import { requiredEmpty, submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -576,6 +576,7 @@ function FieldControl({
   canRestoreAi = false,
   onConfirmAi,
   onMrpOverrideChange,
+  requiredError = false,
 }) {
   const fileRef = useRef(null);
   const [gstFocused, setGstFocused] = useState(false);
@@ -618,6 +619,11 @@ function FieldControl({
     >
       AI fills this
     </span>
+  ) : null;
+  const requiredErr = requiredError ? (
+    <p className="prop-err field-required-error" role="alert" data-required-error={fieldPath || field.key || "yes"}>
+      Enter this required value before Submit.
+    </p>
   ) : null;
 
   if (field.type === "computed-risk") {
@@ -1206,7 +1212,10 @@ function FieldControl({
     );
 
   return (
-    <div className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}${aiWillFill ? " is-ai-expected" : ""}`} title={lockTitle}>
+    <div
+      className={`prop-field${full ? " span-2" : ""}${locked ? " is-locked" : ""}${aiSourced ? " is-ai" : ""}${aiWillFill ? " is-ai-expected" : ""}${requiredError ? " is-required-missing" : ""}`}
+      title={lockTitle}
+    >
       <label className="prop-field-inner" htmlFor={inputId}>
         <span className="prop-label" data-field-label={fieldPath || undefined}>
           {field.label}
@@ -1226,6 +1235,7 @@ function FieldControl({
         canRestore={canRestoreAi}
         onConfirmAi={onConfirmAi}
       />
+      {requiredErr}
       {aiSourced && !editedName ? <span className="ai-sourced-tag">Filled by AI, check it</span> : null}
       {aiWillFill && (field.key === "cogsAtScale" || field.key === "netMarginAtScale") ? (
         <p className="autofill-status" data-tone="ai-override">
@@ -3049,6 +3059,9 @@ export default function PropositionForm({
   );
   const inputBlocking = INVALID_INPUTS_BLOCK_SUBMIT && liveInputReview.blocking;
   const canSubmit = progress.requiredLeft === 0 && !inputBlocking;
+  useEffect(() => {
+    if (canSubmit && hasIdentity && pressedBlocked) setPressedBlocked(false);
+  }, [canSubmit, hasIdentity, pressedBlocked]);
   // Part 140 B (D64) — "Why can't I submit?": every reason in plain words.
   const submitBlockers = [];
   if (!hasIdentity) {
@@ -3754,13 +3767,26 @@ export default function PropositionForm({
       Boolean(field.aiConfirmable) &&
       entry?.aiSuggested != null &&
       entry?.confirmed !== true;
+    const missingRequired =
+      pressedBlocked && requiredEmpty(doc).some((item) => item.path === path);
     return {
       ideaDoc: doc,
       editedName,
       canRestoreAi: canRestore,
       onRestoreAi: canRestore ? () => restoreAiValue(filterKey, field.key) : undefined,
       onConfirmAi: needsConfirm ? () => confirmAiField(filterKey, field.key) : undefined,
+      requiredError: missingRequired,
     };
+  }
+
+  function heroRequiredError(path) {
+    if (!pressedBlocked) return null;
+    if (!requiredEmpty(doc).some((item) => item.path === path)) return null;
+    return (
+      <p className="prop-err field-required-error" role="alert" data-required-error={path}>
+        Enter this required value before Submit.
+      </p>
+    );
   }
 
   async function readUploadFile(file, setErr, { allowExcel = false, allowImage = true } = {}) {
@@ -3974,13 +4000,17 @@ export default function PropositionForm({
   }
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
-    if (saving || f3Filling || f4Reassessing) return;
-    // Part 140 B (D64) — the button stays pressable; a blocked press explains itself in the Submit bar.
+    if (saving || f3Filling || f4Reassessing || marginElasticityLoading) return;
+    // Button stays pressable when Required boxes are empty so the press can show field errors.
     if (!hasSubmitterIdentity(doc) || !canSubmit) {
       setPressedBlocked(true);
       setSubmitMsg("");
       setSubmitFailed(false);
       setWhyBlockedOpen(true);
+      const missing = requiredEmpty(doc);
+      if (missing.some((item) => String(item.path).startsWith("f2."))) {
+        setFilterOpen((prev) => ({ ...prev, f2: true }));
+      }
       if (!hasSubmitterIdentity(doc)) {
         setLocalError("Enter your name and pick the team for this idea before Submit.");
       } else if (inputBlocking) {
@@ -3993,8 +4023,8 @@ export default function PropositionForm({
       } else if (!canSubmit) {
         setLocalError(
           progress.missingFieldLabels.length
-            ? `Fill ${progress.missingFieldLabels.join(", ")} before Submit.`
-            : "Fill the required fields before Submit."
+            ? `Enter required values before Submit: ${progress.missingFieldLabels.join(", ")}.`
+            : "Enter all required values before Submit."
         );
       }
       return;
@@ -4386,6 +4416,7 @@ export default function PropositionForm({
         <input
           id="fld-name"
           data-field="name"
+          className={pressedBlocked && requiredEmpty(doc).some((i) => i.path === "name") ? "is-required-missing-input" : undefined}
           placeholder="Enter the proposition name — e.g. Herbal cooling hair oil"
           value={doc.name || ""}
           onChange={(e) => {
@@ -4398,6 +4429,7 @@ export default function PropositionForm({
           }}
           aria-label="Proposition name"
         />
+        {heroRequiredError("name")}
         <InputReviewHint
           issue={inputReviewIssue("name")}
           onUseSuggestion={(s) => applyInputSuggestion("name", s)}
@@ -4410,6 +4442,7 @@ export default function PropositionForm({
         <input
           id="fld-category"
           data-field="category"
+          className={pressedBlocked && requiredEmpty(doc).some((i) => i.path === "category") ? "is-required-missing-input" : undefined}
           placeholder="Enter the category — e.g. Hair oils"
           list="primus-fmcg-categories"
           value={doc.category || ""}
@@ -4423,6 +4456,7 @@ export default function PropositionForm({
           }}
           aria-label="Category"
         />
+        {heroRequiredError("category")}
         <InputReviewHint
           issue={inputReviewIssue("category")}
           onUseSuggestion={(s) => applyInputSuggestion("category", s)}
@@ -4451,6 +4485,7 @@ export default function PropositionForm({
         <textarea
           id="fld-ideaDescription"
           data-field="ideaDescription"
+          className={pressedBlocked && requiredEmpty(doc).some((i) => i.path === "ideaDescription") ? "is-required-missing-input" : undefined}
           placeholder="Describe the product idea, or attach a PDF, Word file, or image with the insight."
           value={doc.ideaDescription || ""}
           onChange={(e) => {
@@ -4464,6 +4499,7 @@ export default function PropositionForm({
           aria-label="Idea / insight description"
           rows={4}
         />
+        {heroRequiredError("ideaDescription")}
         <InputReviewHint
           issue={inputReviewIssue("ideaDescription")}
           onUseSuggestion={(s) => applyInputSuggestion("ideaDescription", s)}
@@ -5040,7 +5076,8 @@ export default function PropositionForm({
           type="button"
           className={canSubmit && hasIdentity ? undefined : "submit-blocked"}
           onClick={() => handleSubmit()}
-          disabled={saving || readingGoNoGo || !canSubmit || marginElasticityLoading}
+          disabled={saving || readingGoNoGo || marginElasticityLoading}
+          aria-disabled={!canSubmit || !hasIdentity ? "true" : undefined}
           title={
             !hasIdentity
               ? "Enter your name and department before Submit"
@@ -5050,7 +5087,7 @@ export default function PropositionForm({
                   .map((f) => f.message)
                   .join(" ")
               : !canSubmit
-              ? progress.missingFieldLabels.join(", ")
+              ? `Enter required values: ${progress.missingFieldLabels.join(", ")}`
               : marginElasticityLoading
                 ? "Wait for the safe MRP range — submitting again will not speed this up"
                 : undefined
@@ -5214,14 +5251,23 @@ ${FIELD_ROLE_CSS}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;
   color:#C9A0E8;background:rgba(201,160,232,.12);border:1px solid rgba(201,160,232,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
-.ai-fills-badge{display:inline-block;margin-left:6px;padding:0;border:0;background:transparent;
-  font-size:11px;font-weight:700;letter-spacing:.03em;color:#f59e0b;white-space:nowrap;}
-.autofill-status[data-tone="ai-override"]{color:#f59e0b;}
+.ai-fills-badge{display:inline-block;margin-left:6px;padding:3px 10px;border-radius:999px;
+  font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.2;white-space:nowrap;
+  color:#042f2e;background:#2dd4bf;border:1px solid #5eead4;
+  box-shadow:0 0 0 1px rgba(45,212,191,.35),0 0 14px rgba(45,212,191,.35);}
+.autofill-status[data-tone="ai-override"]{color:#5eead4;font-weight:600;}
 .prop-field.is-ai-expected,.prop-check.is-ai-expected{border-radius:12px;padding:10px 12px;margin:-2px -4px 0;
-  background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.28);}
+  background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.35);}
 .prop-field.is-ai-expected input,.prop-field.is-ai-expected select,.prop-field.is-ai-expected textarea,
 .prop-form-page input.is-ai-expected-input{
-  border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.08);}
+  border-color:rgba(45,212,191,.55);background:rgba(45,212,191,.1);}
+.prop-field.is-required-missing,.prop-form-page input.is-required-missing-input,
+.prop-form-page textarea.is-required-missing-input{
+  outline:2px solid rgba(226,113,107,.85);outline-offset:2px;}
+.prop-field.is-required-missing input,.prop-field.is-required-missing select,.prop-field.is-required-missing textarea,
+.prop-form-page input.is-required-missing-input,.prop-form-page textarea.is-required-missing-input{
+  border-color:#E2716B;background:rgba(226,113,107,.1);}
+.field-required-error{margin:6px 0 0;}
 .prop-filter.is-collapsible .prop-filter-h.is-toggle{cursor:pointer;user-select:none;}
 .prop-filter-chevron{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
   flex-shrink:0;color:var(--c-section,#ddd6fe);margin-top:6px;}

@@ -59,7 +59,7 @@ await check("requiredEmpty lists only display-Required empties; scoring roles st
   assert.equal(effectiveRole("f1.declaredAttribute2", empty), "optional");
 });
 
-await check("submitBarMessageTwoLabels: gate → ready-with-cost → ready", () => {
+await check("submitBarMessageTwoLabels blocks until every Required box is filled", () => {
   assert.match(submitBarMessageTwoLabels(empty), /required boxes left before you can submit:/i);
   const gated = {
     ...empty,
@@ -70,8 +70,9 @@ await check("submitBarMessageTwoLabels: gate → ready-with-cost → ready", () 
     ideaDescription: "Cooling oil",
   };
   const mid = submitBarMessageTwoLabels(gated);
-  assert.match(mid, /^Ready to submit\./);
-  assert.match(mid, /required boxes? (is|are) still empty/);
+  assert.match(mid, /required boxes left before you can submit:/i);
+  assert.doesNotMatch(mid, /^Ready to submit/);
+  assert.match(mid, /Declared attribute|COGS|GST rate/i);
   const full = structuredClone(gated);
   for (const path of DISPLAY_REQUIRED_PATHS) {
     if (path.startsWith("f1.")) {

@@ -130,11 +130,11 @@ await check("F5 computed revenue still has a badge", () => {
   assert.match(form, /<FieldRoleBadge path=\{`\$\{spec\.key\}\.\$\{field\.key\}`\} doc=\{doc\} \/>/);
 });
 
-await check("Submit with a blank name is still refused by the server rule", () => {
-  assert.deepEqual(firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" }), {
-    field: "name",
-    label: "Idea name",
-  });
+await check("Submit with blank Required boxes is refused by the server rule", () => {
+  const miss = firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" });
+  assert.ok(miss);
+  assert.ok(["submitterName", "name", "category", "ideaDescription"].includes(miss.field));
+  assert.match(String(miss.label || ""), /name|Category|description|team/i);
 });
 
 await check("benefit plus is wired in Filter 1", () => {

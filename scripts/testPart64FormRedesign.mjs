@@ -35,7 +35,7 @@ assert.doesNotMatch(formSrc, /key: "division"/);
 assert.doesNotMatch(formSrc, /setFileError/);
 
 const empty = submitProgress({});
-assert.equal(empty.requiredLeft, 5);
+assert.ok(empty.requiredLeft >= 5);
 assert.ok(empty.missingFieldLabels.includes("Proposition name"));
 assert.ok(empty.missingFieldLabels.includes("Your name"));
 
@@ -45,6 +45,16 @@ const filled = {
   name: "Oil",
   category: "Hair oils",
   ideaDescription: "menthol stick",
+  f1: {
+    declaredAttribute: "cooling",
+    benchmark: "Indulekha Bringha 100ml",
+    declaredGap: 2,
+    gapDerivation: "lasts longer",
+    parityExceptions: "none",
+    growthRoute: "penetration",
+    growthArgument: "category growing",
+  },
+  f2: { cogsAtScale: 40, netMarginAtScale: 22, gstRatePct: 18, grammage: "100 ml" },
 };
 assert.equal(submitProgress(filled).requiredLeft, 0);
 assert.equal(submitProgress(filled).pct, 100);

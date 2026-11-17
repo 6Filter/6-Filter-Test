@@ -37,7 +37,9 @@ check("AI fills this only on COGS, net margin, and MRP after tax", () => {
   assert.match(form, /ai-fills-badge/);
   assert.match(form, /is-ai-expected/);
   assert.match(form, /AI fills this/);
-  assert.match(form, /#f59e0b/, "AI fills badge uses a distinct amber font colour");
+  assert.match(form, /#2dd4bf/, "AI fills badge uses a highlighted teal colour");
+  assert.match(form, /field-required-error/);
+  assert.match(form, /Enter this required value before Submit/);
   assert.match(form, /accountDisplayName/);
   assert.match(form, /Type over to use your own figure/);
   assert.match(form, /Use my own MRP/);
