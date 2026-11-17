@@ -72,7 +72,7 @@ import {
   isPathFilled,
   roleLabel,
 } from "../lib/fieldRoles.js";
-import { requiredEmpty, submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
+import { requiredEmpty, requiredEmptySummary, submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -4333,53 +4333,60 @@ export default function PropositionForm({
         </div>
       ) : null}
       <section className="prop-identity-strip" aria-label="Submitter">
-        {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName").map((field) => (
-          <FieldControl
-            key={field.key}
-            field={field}
-            fieldPath="submitterName"
-            value={doc[field.key]}
-            onChange={(v) => setTop(field.key, v)}
-            currentUser={currentUser}
-            aiSourced={false}
-            {...fieldControlExtras("", field)}
-          />
-        ))}
-        <label className="field" htmlFor="fld-submitterDepartment">
-          <span className="field-label prop-label" data-field-label="submitterDepartment">
-            Your team
-            <FieldRoleBadge path="submitterDepartment" doc={doc} />
-          </span>
-          {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? (
-            <input
-              id="fld-submitterDepartment"
-              data-field="submitterDepartment"
-              value={`Legacy: ${doc.submitterDepartment}`}
-              disabled
-              readOnly
-              aria-label="Your team"
+        <div className="prop-identity-cell" data-identity="name">
+          {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName").map((field) => (
+            <FieldControl
+              key={field.key}
+              field={field}
+              fieldPath="submitterName"
+              value={doc[field.key]}
+              onChange={(v) => setTop(field.key, v)}
+              currentUser={currentUser}
+              aiSourced={false}
+              {...fieldControlExtras("", field)}
             />
-          ) : (
-            <select
-              id="fld-submitterDepartment"
-              data-field="submitterDepartment"
-              value={doc.submitterDepartment || currentUser?.team || ""}
-              disabled={false}
-              onChange={(e) => setTop("submitterDepartment", e.target.value)}
-              aria-label="Your team"
-            >
-              <option value="">Select team…</option>
-              {SUBMITTER_DEPARTMENTS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          )}
-          {managerReviewRequestedOn(doc) ? (
-            <p className="autofill-status">A pending manager review will be re-routed if you change the team.</p>
-          ) : null}
-        </label>
+          ))}
+        </div>
+        <div className="prop-identity-cell" data-identity="team">
+          <div className="prop-field">
+            <label className="prop-field-inner" htmlFor="fld-submitterDepartment">
+              <span className="prop-label" data-field-label="submitterDepartment">
+                <span>Your team</span>
+                <FieldRoleBadge path="submitterDepartment" doc={doc} />
+              </span>
+              {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? (
+                <input
+                  id="fld-submitterDepartment"
+                  data-field="submitterDepartment"
+                  value={`Legacy: ${doc.submitterDepartment}`}
+                  disabled
+                  readOnly
+                  aria-label="Your team"
+                />
+              ) : (
+                <select
+                  id="fld-submitterDepartment"
+                  data-field="submitterDepartment"
+                  value={doc.submitterDepartment || currentUser?.team || ""}
+                  disabled={false}
+                  onChange={(e) => setTop("submitterDepartment", e.target.value)}
+                  aria-label="Your team"
+                >
+                  <option value="">Select team…</option>
+                  {SUBMITTER_DEPARTMENTS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </label>
+            {managerReviewRequestedOn(doc) ? (
+              <p className="autofill-status">A pending manager review will be re-routed if you change the team.</p>
+            ) : null}
+            {heroRequiredError("submitterDepartment")}
+          </div>
+        </div>
       </section>
 
       {String(currentUser?.role || "") === "ADMIN" &&
@@ -5030,80 +5037,94 @@ export default function PropositionForm({
           ) : (
             <p className="why-note">Nothing is blocking you. Press Submit for verdict.</p>
           )}
+          {requiredEmptySummary(doc) ? (
+            <p className="why-missing-list" data-testid="why-missing-required">
+              Still empty: {requiredEmptySummary(doc)}.
+            </p>
+          ) : null}
           <button type="button" className="ghost" onClick={() => setWhyBlockedOpen(false)}>
             Close
           </button>
         </div>
       ) : null}
 
-      <div className="submit-bar">
-        <div className="progress-track"><div className="progress-fill" style={{ width: `${progress.pct}%` }} /></div>
-        <span className="submit-bar-message" data-testid="submit-bar-message">{submitBarMessageTwoLabels(doc)}</span>
-        <span className="mono field-list">{progress.missingFieldLabels.join(" · ")}</span>
-        {liveInputReview.fields.length ? (
-          <span className="mono field-list" title={liveInputReview.fields.map((f) => f.message).join(" ")}>
-            {liveInputReview.fields.filter((f) => f.status === "invalid").length
-              ? `${liveInputReview.fields.filter((f) => f.status === "invalid").length} invalid input(s) block Submit`
-              : `${liveInputReview.fields.length} input warning(s)`}
-          </span>
-        ) : null}
-        <span className={`save-state${draftError ? " save-state-bad" : ""}`} data-testid="save-state">
-          v{doc.version || 1} ·{" "}
-          {draftError
-            ? "Not saved"
-            : draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "not yet saved for the team")}
-        </span>
+      <div className="submit-bar" data-compact="yes">
         {submitBarError ? (
           <span className="submit-bar-error" data-testid="submit-bar-error" role="alert">
             {submitBarError}
           </span>
         ) : null}
-        {!canSubmit || !hasIdentity || draftError ? (
-          <button
-            type="button"
-            className="why-blocked-btn ghost"
-            data-testid="why-cant-submit"
-            aria-expanded={whyBlockedOpen}
-            onClick={() => {
-              setPressedBlocked(true);
-              setWhyBlockedOpen((open) => !open);
-            }}
+        <div className="submit-bar-main">
+          <div className="progress-track" aria-hidden="true">
+            <div className="progress-fill" style={{ width: `${progress.pct}%` }} />
+          </div>
+          <span
+            className="submit-bar-message"
+            data-testid="submit-bar-message"
+            title={requiredEmptySummary(doc) || undefined}
           >
-            Why can't I submit?
-          </button>
-        ) : null}
-        <button
-          type="button"
-          className={canSubmit && hasIdentity ? undefined : "submit-blocked"}
-          onClick={() => handleSubmit()}
-          disabled={saving || readingGoNoGo || marginElasticityLoading}
-          aria-disabled={!canSubmit || !hasIdentity ? "true" : undefined}
-          title={
-            !hasIdentity
-              ? "Enter your name and department before Submit"
-              : inputBlocking
-              ? liveInputReview.fields
-                  .filter((f) => f.status === "invalid")
-                  .map((f) => f.message)
-                  .join(" ")
-              : !canSubmit
-              ? `Enter required values: ${progress.missingFieldLabels.join(", ")}`
-              : marginElasticityLoading
-                ? "Wait for the safe MRP range — submitting again will not speed this up"
-                : undefined
-          }
-        >
-          {saving || readingGoNoGo || marginElasticityLoading ? <Loader2 size={15} className="spin" /> : null}
-          {savedFlash
-            ? "Submitted"
-            : readingGoNoGo
-              ? "Analysing…"
-              : saving
-                ? "Submitting…"
-                : marginElasticityLoading
-                  ? "Calculating MRP range…"
-                  : "Submit for verdict"}
-        </button>
+            {submitBarMessageTwoLabels(doc)}
+          </span>
+          {liveInputReview.fields.filter((f) => f.status === "invalid").length ? (
+            <span className="mono submit-bar-warn">
+              {liveInputReview.fields.filter((f) => f.status === "invalid").length} invalid
+            </span>
+          ) : null}
+          <span className={`save-state${draftError ? " save-state-bad" : ""}`} data-testid="save-state">
+            v{doc.version || 1} ·{" "}
+            {draftError
+              ? "Not saved"
+              : draftSaveState || (Number(doc.version) > 1 || doc.updatedAt ? "saved for the team" : "Draft saved")}
+          </span>
+          <div className="submit-bar-actions">
+            {!canSubmit || !hasIdentity || draftError ? (
+              <button
+                type="button"
+                className="why-blocked-btn ghost"
+                data-testid="why-cant-submit"
+                aria-expanded={whyBlockedOpen}
+                onClick={() => {
+                  setPressedBlocked(true);
+                  setWhyBlockedOpen((open) => !open);
+                }}
+              >
+                Why can't I submit?
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={canSubmit && hasIdentity ? undefined : "submit-blocked"}
+              onClick={() => handleSubmit()}
+              disabled={saving || readingGoNoGo || marginElasticityLoading}
+              aria-disabled={!canSubmit || !hasIdentity ? "true" : undefined}
+              title={
+                !hasIdentity
+                  ? "Enter your name and department before Submit"
+                  : inputBlocking
+                    ? liveInputReview.fields
+                        .filter((f) => f.status === "invalid")
+                        .map((f) => f.message)
+                        .join(" ")
+                    : !canSubmit
+                      ? `Enter required values: ${progress.missingFieldLabels.join(", ")}`
+                      : marginElasticityLoading
+                        ? "Wait for the safe MRP range — submitting again will not speed this up"
+                        : undefined
+              }
+            >
+              {saving || readingGoNoGo || marginElasticityLoading ? <Loader2 size={15} className="spin" /> : null}
+              {savedFlash
+                ? "Submitted"
+                : readingGoNoGo
+                  ? "Analysing…"
+                  : saving
+                    ? "Submitting…"
+                    : marginElasticityLoading
+                      ? "Calculating MRP range…"
+                      : "Submit for verdict"}
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );
@@ -5162,7 +5183,12 @@ ${IDEA_IMPORT_CSS}
 .ownership-note{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink-muted);}
 .draft-saved{margin:0;font-size:11px;color:var(--ink-muted-3);}
 .prop-form-main{min-width:0;display:flex;flex-direction:column;gap:16px;}
-.prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
+.prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-items:start;
+  background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
+.prop-identity-cell{min-width:0;display:flex;flex-direction:column;}
+.prop-identity-cell .prop-field{width:100%;margin:0;}
+.prop-identity-cell .prop-label{min-height:28px;align-items:center;}
+.prop-identity-cell .prop-field-inner{width:100%;}
 .prop-form-hero{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;}
 .prop-form-hero h1{margin:0;font-size:28px;letter-spacing:-.4px;font-weight:700;}
 .prop-form-hero > p{margin:0 0 4px;color:var(--ink-secondary);font-size:14.5px;}
@@ -5188,31 +5214,36 @@ ${IDEA_IMPORT_CSS}
 .manager-comment{margin:0;padding:10px 12px;border-left:3px solid var(--accent);color:var(--ink);font-size:13.5px;}
 .submit-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:40;
-  display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
+  display:flex;flex-direction:column;gap:8px;
   background:var(--header-bg);border-top:1px solid var(--header-border);
-  padding:12px 24px 14px;color:var(--ink);font-family:'Sora',system-ui,sans-serif;
+  padding:10px 20px 12px;color:var(--ink);font-family:'Sora',system-ui,sans-serif;
+  box-shadow:0 -8px 24px rgba(8,4,16,.35);
 }
-.submit-bar .progress-track{flex:1 1 160px;height:6px;border-radius:999px;background:#2a1836;overflow:hidden;min-width:120px;}
+.submit-bar-main{display:flex;flex-wrap:nowrap;align-items:center;gap:10px 14px;min-width:0;}
+.submit-bar .progress-track{flex:0 0 96px;height:6px;border-radius:999px;background:#2a1836;overflow:hidden;}
 .submit-bar .progress-fill{height:100%;background:var(--accent);border-radius:999px;}
-.submit-bar .field-list{font-size:11px;color:var(--ink-muted);flex:1 1 180px;}
-.submit-bar .save-state{font-size:12px;color:var(--ink-muted-2);}
+.submit-bar .save-state{font-size:12px;color:var(--ink-muted-2);white-space:nowrap;flex:0 0 auto;}
+.submit-bar .submit-bar-warn{font-size:12px;color:#fbbf24;white-space:nowrap;flex:0 0 auto;}
+.submit-bar-actions{display:inline-flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto;}
 .submit-bar button{
-  display:inline-flex;align-items:center;gap:8px;margin-left:auto;
+  display:inline-flex;align-items:center;gap:8px;margin-left:0;
   background:var(--accent);color:#efe8f5;border:none;border-radius:999px;
-  padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;}
+  padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .submit-bar button:disabled{opacity:.55;cursor:not-allowed;}
 /* Part 140 B (D64) — a blocked Submit keeps its full colour; the reason is in the bar and under "Why can't I submit?". */
 .submit-bar button.submit-blocked:disabled{opacity:1;cursor:help;}
 .submit-bar .why-blocked-btn{margin-left:0;background:transparent;border:1px solid var(--header-border);color:var(--ink);padding:8px 14px;font-size:13px;font-weight:600;}
 .submit-bar .save-state-bad{color:#ff9d9d;font-weight:700;}
-.submit-bar .submit-bar-error{flex:1 1 100%;order:-1;font-size:13px;line-height:1.4;color:#ffb4b4;
-  border:1px solid rgba(255,120,120,.45);background:rgba(120,20,20,.25);border-radius:8px;padding:8px 12px;}
-.why-blocked-panel{position:fixed;right:24px;bottom:92px;z-index:41;max-width:min(460px,calc(100vw - 48px));
+.submit-bar .submit-bar-error{width:100%;font-size:13px;line-height:1.35;color:#ffb4b4;
+  border:1px solid rgba(255,120,120,.45);background:rgba(120,20,20,.25);border-radius:8px;padding:6px 10px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.why-blocked-panel{position:fixed;right:20px;bottom:76px;z-index:41;max-width:min(460px,calc(100vw - 40px));
   background:var(--header-bg);border:1px solid var(--header-border);border-radius:12px;padding:14px 16px;color:var(--ink);
-  box-shadow:0 12px 32px rgba(8,4,16,.45);font-size:13px;line-height:1.45;}
+  box-shadow:0 12px 32px rgba(8,4,16,.45);font-size:13px;line-height:1.45;max-height:min(50vh,360px);overflow:auto;}
 .why-blocked-panel h3{margin:0 0 8px;font-size:14px;}
 .why-blocked-panel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
 .why-blocked-panel .why-note{color:var(--ink-muted-2);}
+.why-blocked-panel .why-missing-list{margin:10px 0 0;color:var(--ink-secondary);font-size:12.5px;line-height:1.4;}
 .draft-save-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:10px;
   border:1px solid rgba(255,120,120,.6);background:rgba(120,20,20,.35);color:#ffd4d4;font-size:13.5px;line-height:1.4;}
 .draft-save-banner .draft-save-banner-text{flex:1 1 260px;min-width:0;overflow-wrap:anywhere;}
@@ -5220,7 +5251,7 @@ ${IDEA_IMPORT_CSS}
 .draft-save-retry:disabled{opacity:.6;cursor:wait;}
 .draft-not-saved{color:#ff9d9d;font-weight:700;}
 .prop-page{max-width:1080px;margin:0 auto;padding:0 28px 40px;color:#F3EAF8;}
-.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 80px;color:var(--ink);}
+.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 96px;color:var(--ink);}
 .prop-page.output-page{max-width:none;margin:0;min-height:calc(100vh - 88px);padding:8px 32px 40px;}
 .prop-top{background:#191919;border:1px solid rgba(243,234,248,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(8,4,16,.35);}
@@ -5237,7 +5268,8 @@ ${IDEA_IMPORT_CSS}
 .benefit-add{display:inline-flex;align-items:center;gap:6px;margin:0;padding:8px 0;background:none;border:none;color:#c4b5fd;font-family:inherit;font-size:var(--fs-status);font-weight:500;cursor:pointer;text-align:left;flex-wrap:wrap;}
 .benefit-add:hover{text-decoration:underline;}
 ${FIELD_ROLE_CSS}
-.submit-bar .submit-bar-message{flex:1 1 260px;min-width:0;font-size:var(--fs-status);line-height:1.4;}
+.submit-bar .submit-bar-message{flex:1 1 auto;min-width:0;font-size:var(--fs-status);line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .autofill-status{margin-top:4px;font-size:var(--fs-status);font-weight:400;line-height:1.35;color:var(--c-status);}
 .autofill-status[data-tone="ai"]{color:var(--c-status);}
 .autofill-status[data-tone="edited"]{color:#93c5fd;}
@@ -5632,9 +5664,11 @@ ${FIELD_ROLE_CSS}
   .prop-form-shell{grid-template-columns:1fr;}
   .prop-sidebar{position:static;}
   .prop-identity-strip{grid-template-columns:1fr;}
-  .prop-page.prop-form-page{margin:0;padding:16px 16px 96px;}
+  .prop-page.prop-form-page{margin:0;padding:16px 16px 112px;}
   .prop-page.output-page{margin:0;padding:8px 16px 32px;}
   .submit-bar{padding:10px 16px 12px;}
+  .submit-bar-main{flex-wrap:wrap;}
+  .submit-bar-actions{margin-left:0;width:100%;justify-content:flex-end;}
   .prop-check{flex-wrap:wrap;}
   .prop-label{align-items:flex-start;}
   .field-role{flex:1 1 100%;margin-left:0;margin-top:4px;}

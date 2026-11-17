@@ -119,9 +119,12 @@ await check("Before-you-submit card is removed from the input form", () => {
 await check("submit bar uses submitBarMessageTwoLabels(doc)", () => {
   assert.match(form, /\{submitBarMessageTwoLabels\(doc\)\}/);
   assert.match(form, /className="progress-track"/);
+  assert.match(form, /prop-identity-cell/);
+  assert.match(form, /submit-bar-main/);
+  assert.match(form, /requiredEmptySummary/);
   const empty = submitBarMessageTwoLabels(emptyPropositionDoc("x"));
-  assert.match(empty, /required boxes left before you can submit:/);
-  assert.match(empty, /Your name/);
+  assert.match(empty, /required boxes left before you can submit\.?$/);
+  assert.doesNotMatch(empty, /Your name,/);
 });
 
 await check("F5 computed revenue still has a badge", () => {

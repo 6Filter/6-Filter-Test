@@ -60,7 +60,8 @@ await check("requiredEmpty lists only display-Required empties; scoring roles st
 });
 
 await check("submitBarMessageTwoLabels blocks until every Required box is filled", () => {
-  assert.match(submitBarMessageTwoLabels(empty), /required boxes left before you can submit:/i);
+  assert.match(submitBarMessageTwoLabels(empty), /required boxes left before you can submit\.?$/i);
+  assert.doesNotMatch(submitBarMessageTwoLabels(empty), /Proposition name,/);
   const gated = {
     ...empty,
     submitterName: "A",
@@ -70,9 +71,9 @@ await check("submitBarMessageTwoLabels blocks until every Required box is filled
     ideaDescription: "Cooling oil",
   };
   const mid = submitBarMessageTwoLabels(gated);
-  assert.match(mid, /required boxes left before you can submit:/i);
+  assert.match(mid, /required boxes left before you can submit\.?$/i);
   assert.doesNotMatch(mid, /^Ready to submit/);
-  assert.match(mid, /Declared attribute|COGS|GST rate/i);
+  assert.doesNotMatch(mid, /Declared attribute|COGS|GST rate/i);
   const full = structuredClone(gated);
   for (const path of DISPLAY_REQUIRED_PATHS) {
     if (path.startsWith("f1.")) {
