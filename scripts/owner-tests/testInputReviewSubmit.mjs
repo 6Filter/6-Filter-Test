@@ -107,6 +107,8 @@ const nonsense = {
     declaredAttribute: "test",
     benchmark: "asdfgh qwerty",
     declaredGap: 15,
+    gapDerivation: "nonsense derivation text for review",
+    parityExceptions: "none listed",
     growthRoute: "penetration",
     growthArgument: "households growing",
   },

@@ -35,6 +35,7 @@ if (!hostAllowed(testUrl) || /render\.com|neon\.tech|supabase\.co/i.test(testUrl
 
 delete process.env.DATABASE_URL;
 delete process.env.POSTGRES_URL;
+if (!String(process.env.REQUIRE_AUTH || "").trim()) process.env.REQUIRE_AUTH = "false";
 const { openSuiteDatabase } = await import("./pgSuiteDb.mjs");
 const suite = await openSuiteDatabase(testUrl);
 process.env.DATABASE_URL = suite.url;
@@ -70,7 +71,8 @@ globalThis.fetch = async (url, options) => {
   return realFetch(url, options);
 };
 
-const user = { department: "NPD", role: "NPD" };
+// Must match the idea team under PLATFORM_TEAM_LOCK (R&D), or Submit returns 404.
+const user = { department: "R&D", role: "NPD" };
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -109,8 +111,23 @@ function typedDoc(id, label) {
   doc.category = "Hair oils";
   doc.division = "Personal Care";
   doc.ideaDescription = `Wipe fixture ${label}`;
-  doc.f1 = { ...doc.f1, declaredAttribute: "softness", benchmark: "Brand", declaredGap: 3 };
-  doc.f2 = { ...doc.f2, cogsAtScale: 40, netMarginAtScale: 55, gstRatePct: 18 };
+  doc.f1 = {
+    ...doc.f1,
+    declaredAttribute: "softness",
+    benchmark: "Brand Soft 100ml",
+    declaredGap: 3,
+    gapDerivation: "lasts longer than the benchmark",
+    parityExceptions: "none material",
+    growthRoute: "penetration",
+    growthArgument: "category still adding households",
+  };
+  doc.f2 = {
+    ...doc.f2,
+    cogsAtScale: 40,
+    netMarginAtScale: 55,
+    gstRatePct: 18,
+    grammage: "100 ml",
+  };
   return doc;
 }
 
