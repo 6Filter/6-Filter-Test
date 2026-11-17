@@ -319,13 +319,14 @@ await check("App builds every save body without server-owned keys and returns { 
   assert.match(app, /Your changes are NOT saved yet/);
 });
 
-await check("PropositionForm: NOT saved banner, Retry, sidebar Not saved + last good save", () => {
+await check("PropositionForm: NOT saved banner, Retry, Not saved + last good save", () => {
   assert.match(form, /Your changes are NOT saved: \{draftError\}/);
   assert.match(form, /data-testid="draft-save-banner"/);
   assert.match(form, /data-testid="draft-save-retry"/);
   assert.match(form, />\s*\{draftRetrying \? "Retrying…" : "Retry"\}/);
   assert.match(form, /data-testid="sidebar-not-saved"/);
   assert.match(form, /Last good save/);
+  assert.doesNotMatch(form, /prop-sidebar/);
   assert.match(form, /setDraftSaveState\("Not saved"\)/);
   assert.doesNotMatch(form, /setDraftSaveState\("Draft not saved"\)/);
 });
