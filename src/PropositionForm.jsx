@@ -26,7 +26,7 @@ import {
   timeAgo,
   viewerCanApproveManagerReview,
 } from "../lib/managerReview.js";
-import { sidebarNavItems, submitProgress } from "../lib/formProgress.js";
+import { submitProgress } from "../lib/formProgress.js";
 import { isNamedBenchmark } from "../lib/benchmarkName.js";
 import {
   applyLocalGate,
@@ -4356,39 +4356,19 @@ export default function PropositionForm({
       </div>
 
       <div className="prop-form-shell">
-      <aside className="prop-sidebar">
-        <nav className="prop-side-nav" aria-label="Form sections">
-          {sidebarNavItems(liveDoc).map((item) => (
-            <a key={item.id} href={`#${item.id}`} className="prop-side-link">
-              <span className={`side-dot side-dot-${item.dot}`} aria-hidden="true" />
-              <span className="side-label">{item.label}</span>
-              <span className="mono side-count">{item.count}</span>
-            </a>
-          ))}
-        </nav>
-        {draftError ? (
-          <p className="draft-saved draft-not-saved mono" data-testid="sidebar-not-saved" role="status">
-            Not saved
-            <br />
-            {lastGoodSaveAt
-              ? `Last good save ${formatSavedAt(lastGoodSaveAt) || "earlier"}`
-              : "Nothing saved yet"}
-          </p>
-        ) : (
-          <p className="draft-saved mono">
-            {Number(doc.version) > 1 || doc.updatedAt
-              ? `Draft saved ${formatSavedAt(lastGoodSaveAt || doc.updatedAt) || ""}`.trim()
-              : "Not yet saved for the team"}
-          </p>
-        )}
-      </aside>
-
       <div className="prop-form-main">
       {draftError ? (
         <div className="draft-save-banner" role="alert" data-testid="draft-save-banner">
           <AlertTriangle size={16} aria-hidden="true" />
           <span className="draft-save-banner-text">
             Your changes are NOT saved: {draftError}. {draftRetryNote}
+            {" "}
+            <span className="draft-not-saved mono" data-testid="sidebar-not-saved" role="status">
+              Not saved
+              {lastGoodSaveAt
+                ? ` — Last good save ${formatSavedAt(lastGoodSaveAt) || "earlier"}`
+                : " — Nothing saved yet"}
+            </span>
           </span>
           <button
             type="button"
@@ -5222,7 +5202,7 @@ ${IDEA_IMPORT_CSS}
   --fs-placeholder:15px; --c-placeholder:#9a89ae;
   --fs-badge:12px; --c-required:#f5b562; --c-optional:#b9a9cc;
   --gap-label:8px; --gap-field:22px; --h-input:44px;
-  --filter-pad-y:18px; --filter-pad-x:20px; --badge-size:42px; --shell-gap:28px; --sidebar-w:220px;
+  --filter-pad-y:18px; --filter-pad-x:20px; --badge-size:42px; --shell-gap:28px;
   --hero-title:28px; --filter-left:5px;
   font-family:'Sora',system-ui,sans-serif;
   background:var(--bg); color:var(--ink);
@@ -5232,13 +5212,13 @@ ${IDEA_IMPORT_CSS}
 .prop-form-page[data-form-zoom="compact"]{
   --fs-section:16px; --fs-status:12px; --fs-label:13px; --fs-input:13px; --fs-placeholder:13px; --fs-badge:11px;
   --gap-label:4px; --gap-field:12px; --h-input:34px;
-  --filter-pad-y:10px; --filter-pad-x:12px; --badge-size:28px; --shell-gap:14px; --sidebar-w:168px;
+  --filter-pad-y:10px; --filter-pad-x:12px; --badge-size:28px; --shell-gap:14px;
   --hero-title:20px; --filter-left:3px;
 }
 .prop-form-page[data-form-zoom="large"]{
   --fs-section:24px; --fs-status:14px; --fs-label:17px; --fs-input:16px; --fs-placeholder:16px; --fs-badge:13px;
   --gap-label:10px; --gap-field:26px; --h-input:48px;
-  --filter-pad-y:20px; --filter-pad-x:22px; --badge-size:46px; --shell-gap:32px; --sidebar-w:240px;
+  --filter-pad-y:20px; --filter-pad-x:22px; --badge-size:46px; --shell-gap:32px;
   --hero-title:30px; --filter-left:5px;
 }
 .prop-form-page .mono{font-family:'IBM Plex Mono',monospace;}
@@ -5259,24 +5239,10 @@ ${IDEA_IMPORT_CSS}
 }
 .prop-output-return p{margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-muted-85);max-width:52rem;}
 .prop-output-return .prop-save{margin:0;white-space:nowrap;}
-.prop-form-shell{display:grid;grid-template-columns:var(--sidebar-w,220px) minmax(0,1fr);gap:var(--shell-gap,28px);align-items:start;}
-.prop-sidebar{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:10px;padding:4px 0;}
-.prop-side-nav{display:flex;flex-direction:column;gap:1px;}
-.prop-side-link{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;color:var(--ink-secondary);text-decoration:none;font-size:12.5px;}
-.prop-side-link:hover{background:var(--sidebar-hover);color:var(--ink);}
-.prop-side-link:active,.prop-side-link:focus{background:var(--sidebar-active);}
-.side-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.side-dot-required{background:var(--required-dot);}
-.side-dot-f1{background:var(--f1-dot);}
-.side-dot-f2{background:var(--f2-dot);}
-.side-dot-f3{background:var(--f3-dot);}
-.side-dot-f4{background:var(--f4-dot);}
-.side-dot-f5,.side-dot-f6{background:var(--accent);}
-.side-label{flex:1;}
-.side-count{font-size:11px;color:var(--ink-muted);}
+.prop-form-shell{display:block;width:100%;max-width:none;}
 .ownership-note{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink-muted);}
-.draft-saved{margin:0;font-size:11px;color:var(--ink-muted-3);}
-.prop-form-main{min-width:0;display:flex;flex-direction:column;gap:var(--gap-field,16px);}
+.draft-not-saved{display:inline;font-size:12px;color:#ff9d9d;font-weight:700;}
+.prop-form-main{min-width:0;width:100%;display:flex;flex-direction:column;gap:var(--gap-field,16px);}
 .prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-items:start;
   background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
 .prop-identity-cell{min-width:0;display:flex;flex-direction:column;}
@@ -5760,8 +5726,6 @@ ${FIELD_ROLE_CSS}
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
   .prop-page{padding:0 16px 40px;}
-  .prop-form-shell{grid-template-columns:1fr;}
-  .prop-sidebar{position:static;}
   .prop-identity-strip{grid-template-columns:1fr;}
   .prop-page.prop-form-page{margin:0;padding:16px 16px 112px;}
   .prop-page.output-page{margin:0;padding:8px 16px 32px;}
