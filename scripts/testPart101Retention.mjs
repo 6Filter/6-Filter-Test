@@ -15,8 +15,11 @@ import { anthropicSystemBlocks, flattenSkillSystem, sixFilterFullSystem } from "
 const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 assert.match(dbSrc, /BEGIN/);
 assert.match(dbSrc, /INSERT INTO deleted_propositions/);
+assert.match(dbSrc, /DELETE FROM deleted_propositions WHERE id = \$1/);
 assert.match(dbSrc, /INSERT INTO proposition_audit/);
 assert.match(dbSrc, /SET TRANSACTION READ ONLY|BEGIN READ ONLY/);
+const retentionSrc = readFileSync(new URL("../lib/propositionRetention.js", import.meta.url), "utf8");
+assert.match(retentionSrc, /!rows\.some\(\(doc\) => doc\.id === row\.id\)/);
 
 assert.equal(
   decideCountAlarm({ lastCount: 90, previousMax: 100, auditedDeletes: 0, alarmAlreadySent: false }),
@@ -53,6 +56,10 @@ const restored = await restoreDeletedProposition(single.id);
 assert.equal(restored, single.id);
 assert.equal((await getPropositionById(single.id)).name, "archive-me");
 await assert.rejects(() => restoreDeletedProposition(single.id), /Refusing to duplicate/);
+assert.equal(await deleteProposition(single.id, "test"), true, "re-delete after restore must replace archive");
+assert.equal(await getPropositionById(single.id), null);
+const restoredAgain = await restoreDeletedProposition(single.id);
+assert.equal(restoredAgain, single.id);
 await deleteProposition(single.id, "test");
 
 const blank = await createProposition({ submitterDepartment: "Marketing" });
