@@ -5,7 +5,7 @@ const src = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url),
 
 assert.match(src, /className="gonogo-result-page"/);
 assert.match(src, /className="prop-page output-page"/);
-assert.match(src, /<main className="prop-page prop-form-page" data-view="propositionForm">/);
+assert.match(src, /<main className="prop-page prop-form-page" data-view="propositionForm"(?:\s+data-form-zoom=\{formZoom\})?>/);
 
 const tokenBlock = src.slice(src.indexOf(".output-page{"), src.indexOf(".proof-panel"));
 assert.match(tokenBlock, /--bg:#0d0715/);
