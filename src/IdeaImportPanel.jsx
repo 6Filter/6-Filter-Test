@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { AlertTriangle, Download, FileUp, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, FileUp, Layers, Loader2 } from "lucide-react";
 import { MEASURED_FRESH_IDEA } from "../lib/researchProgress.js";
 
 /**
@@ -49,8 +49,23 @@ export function submitAllConfirmText(count) {
   );
 }
 
-export default function IdeaImportPanel({ result, setResult, llmProvider = "claude", onOpenDraft, onSubmitIdea }) {
+/** Part 151 — the bulk summary: name, verdict and score for every idea that was tested. */
+export function bulkSummaryRows(created = []) {
+  return created
+    .filter((idea) => idea.submitState === "submitted" || idea.submitState === "failed")
+    .map((idea) => ({
+      id: idea.id,
+      name: idea.name || "Untitled idea",
+      verdict: idea.verdict || (idea.submitState === "failed" ? "Not tested" : "—"),
+      score: Number.isFinite(Number(idea.pct)) && idea.pct !== null && idea.pct !== "" ? `${Math.round(Number(idea.pct))}%` : "—",
+      state: idea.submitState,
+    }));
+}
+
+export default function IdeaImportPanel({ result, setResult, llmProvider = "claude", onOpenDraft, onSubmitIdea, onOpenLog }) {
   const fileRef = useRef(null);
+  const modeRef = useRef("single");
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [submittingAll, setSubmittingAll] = useState(false);
@@ -71,20 +86,30 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attachment: { name: file.name, data, mediaType: file.type || "" }, provider: llmProvider }),
+        body: JSON.stringify({
+          attachment: { name: file.name, data, mediaType: file.type || "" },
+          provider: llmProvider,
+          mode: modeRef.current,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(body.error || "Could not read that file.");
         return;
       }
+      const createdIdeas = (body.created || []).map((idea) => ({ ...idea, submitState: "", submitMessage: "" }));
       setResult({
         fileName: file.name,
-        created: (body.created || []).map((idea) => ({ ...idea, submitState: "", submitMessage: "" })),
+        mode: modeRef.current,
+        created: createdIdeas,
         rejected: body.rejected || [],
         ignoredColumns: body.ignoredColumns || [],
         usedAi: Boolean(body.usedAi),
       });
+      // One idea: show it straight away in the form with every value already entered.
+      if (modeRef.current === "single" && createdIdeas.length === 1 && typeof onOpenDraft === "function") {
+        onOpenDraft(createdIdeas[0].id, { form: true });
+      }
     } catch (err) {
       setError(err.message || "Could not read that file.");
     } finally {
@@ -103,7 +128,12 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
     patchIdea(idea.id, { submitState: "submitting", submitMessage: "" });
     const out = await onSubmitIdea(idea.id);
     if (out?.ok) {
-      patchIdea(idea.id, { submitState: "submitted", submitMessage: out.message || "Submitted." });
+      patchIdea(idea.id, {
+        submitState: "submitted",
+        submitMessage: out.message || "Submitted.",
+        verdict: out.verdict || "",
+        pct: out.pct ?? null,
+      });
     } else {
       patchIdea(idea.id, { submitState: "failed", submitMessage: out?.error || "Could not submit this idea." });
     }
@@ -111,16 +141,21 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
 
   const created = result?.created || [];
   const rejected = result?.rejected || [];
+  const summaryRows = bulkSummaryRows(created);
   const ready = created.filter((i) => !i.missingRequired?.length && i.submitState !== "submitted" && i.submitState !== "submitting");
 
   async function submitAll() {
     if (!ready.length || submittingAll) return;
     if (!window.confirm(submitAllConfirmText(ready.length))) return;
     setSubmittingAll(true);
+    setProgress({ done: 0, total: ready.length });
     try {
+      let done = 0;
       for (const idea of ready) {
         // eslint-disable-next-line no-await-in-loop
         await submitOne(idea);
+        done += 1;
+        setProgress({ done, total: ready.length });
       }
     } finally {
       setSubmittingAll(false);
@@ -143,10 +178,28 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
           className="import-upload-btn"
           data-testid="import-upload"
           disabled={busy || submittingAll}
-          onClick={() => fileRef.current?.click()}
+          title="One idea: the form opens with every value from the file already entered."
+          onClick={() => {
+            modeRef.current = "single";
+            fileRef.current?.click();
+          }}
         >
           {busy ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
           Upload your idea (Excel, Word or PDF)
+        </button>
+        <button
+          type="button"
+          className="import-bulk-btn"
+          data-testid="import-upload-bulk"
+          disabled={busy || submittingAll}
+          title="Many ideas: one idea per row in the Excel template."
+          onClick={() => {
+            modeRef.current = "bulk";
+            fileRef.current?.click();
+          }}
+        >
+          <Layers size={16} />
+          Bulk upload (many ideas)
         </button>
         <a className="import-template-link" data-testid="import-template-link" href={IMPORT_TEMPLATE_URL} download>
           <Download size={14} /> Download the Excel template
@@ -268,7 +321,40 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
                 {submittingAll ? <Loader2 size={14} className="spin" /> : null}
                 Submit all ({ready.length})
               </button>
-              <span className="prop-helper">Ideas with required boxes still empty are skipped.</span>
+              <span className="prop-helper" data-testid="import-progress">
+                {submittingAll
+                  ? `Testing idea ${Math.min(progress.done + 1, progress.total)} of ${progress.total} …`
+                  : "Ideas with required boxes still empty are skipped."}
+              </span>
+            </div>
+          ) : null}
+
+          {summaryRows.length ? (
+            <div className="import-summary" data-testid="import-summary">
+              <h3 className="import-summary-title">Verdicts for this upload</h3>
+              <table className="import-summary-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Idea</th>
+                    <th scope="col">Verdict</th>
+                    <th scope="col">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryRows.map((r) => (
+                    <tr key={r.id} data-testid="import-summary-row" data-state={r.state}>
+                      <td>{r.name}</td>
+                      <td>{r.verdict}</td>
+                      <td>{r.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {typeof onOpenLog === "function" ? (
+                <button type="button" className="ghost" data-testid="import-open-log" onClick={() => onOpenLog()}>
+                  See them in the Log
+                </button>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -283,6 +369,12 @@ export const IDEA_IMPORT_CSS = `
 .import-actions-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;}
 .import-upload-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;border:1px solid var(--accent,#7c5cff);background:var(--accent,#7c5cff);color:#fff;font-weight:600;font-size:calc(15px * var(--ts, 1));cursor:pointer;min-height:44px;max-width:100%;}
 .import-upload-btn:disabled{opacity:.6;cursor:default;}
+.import-bulk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;border:1px solid var(--accent,#7c5cff);background:transparent;color:var(--accent,#7c5cff);font-weight:600;font-size:calc(15px * var(--ts, 1));cursor:pointer;min-height:44px;max-width:100%;}
+.import-bulk-btn:disabled{opacity:.6;cursor:default;}
+.import-summary{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.import-summary-title{margin:0;font-size:calc(15px * var(--ts, 1));}
+.import-summary-table{width:100%;border-collapse:collapse;font-size:calc(13.5px * var(--ts, 1));}
+.import-summary-table th,.import-summary-table td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--card-border,var(--c-border));overflow-wrap:anywhere;}
 .import-template-link{display:inline-flex;align-items:center;gap:6px;font-size:calc(14px * var(--ts, 1));color:var(--ink-secondary,#a9a3b8);text-decoration:underline;min-height:44px;}
 .import-help{margin:0;}
 .import-review{border:1px solid var(--card-border,var(--c-border));border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;overflow-wrap:anywhere;}

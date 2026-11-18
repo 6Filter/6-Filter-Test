@@ -994,12 +994,14 @@ export default function App() {
         goNoGo: sealed,
         classification: sealed?.classification || full?.classification || row.classification || "",
         _openFromLog: from === "log",
+        // Part 151 — a single upload opens the input form itself (every value already entered), not the output summary.
         _preferOutput:
-          from === "log" ||
+          !opts.forceForm &&
+          (from === "log" ||
           evalState === "evaluated" ||
           evalState === "legacy" ||
           evalState === "incomplete" ||
-          evalState === "not-evaluated",
+          evalState === "not-evaluated"),
       });
       setSavedFlash(false);
       setReturnView(from);
@@ -1026,8 +1028,8 @@ export default function App() {
   }
 
   /** Part 140 E — open one uploaded draft in a fresh form (the form is keyed so it does not keep the old idea). */
-  async function openImportedDraft(id) {
-    await openProposition({ id }, "spec", { remount: true });
+  async function openImportedDraft(id, { form = false } = {}) {
+    await openProposition({ id }, "spec", { remount: true, forceForm: form });
   }
 
   /** Part 140 E — Submit one uploaded draft exactly as the form's Submit does. Resolves { ok, message | error }. */
@@ -1037,8 +1039,11 @@ export default function App() {
       const result = await putProposition(id, full, normalizeProvider(llmProvider), {});
       const saved = result.proposition;
       const verdict = saved?.goNoGo?.classification || saved?.classification || "";
+      const pct = Number(saved?.goNoGo?.output?.score?.pct ?? saved?.goNoGo?.score?.pct);
       return {
         ok: true,
+        verdict,
+        pct: Number.isFinite(pct) ? pct : null,
         message: result.researchError
           ? `Submitted, but research reported a problem: ${result.researchError}`
           : verdict
@@ -1561,6 +1566,8 @@ export default function App() {
             <Settings size={14} /> Settings
           </button>
         </nav>
+        {/* Part 151 — the form's text-size (− % +) control is drawn here, in the top bar, so it never takes a row of its own. */}
+        <div className="masthead-slot" id="primus-masthead-slot" />
         {processJob?.busy ? (
           <ProcessEta startedAt={processJob.startedAt} expectedMs={processJob.expectedMs} />
         ) : null}
@@ -1618,6 +1625,7 @@ export default function App() {
           setImportResult={setImportResult}
           onOpenImportedDraft={openImportedDraft}
           onSubmitImportedIdea={submitImportedIdea}
+          onOpenImportedLog={openLogTab}
           onSave={savePropositionForTeam}
           onSaveDraft={savePropositionDraft}
           onUnsavedChange={(dirty) => {
@@ -2540,6 +2548,12 @@ html:has(.output-page), body:has(.output-page) { background:#faf3e8; }
 .brandmark{width:48px;height:48px;border:1.5px solid var(--ink);border-radius:14px;display:grid;place-items:center;background:linear-gradient(160deg,#E8F4FC,var(--bg));box-shadow:var(--shadow);}
 .brandmark .star{color:var(--ink);font-size:22px;}
 .top-nav{display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;}
+.masthead-slot{display:flex;align-items:center;flex:0 0 auto;margin-right:10px;}
+.masthead-slot:empty{display:none;}
+.screen-spec:has(.prop-form-page) .masthead{flex-wrap:wrap;row-gap:8px;}
+.masthead-slot .text-size-control{margin:0;padding:2px;gap:4px;}
+.masthead-slot .text-size-btn{width:38px;min-height:38px;height:38px;}
+.masthead-slot .text-size-pct{min-width:56px;min-height:38px;height:38px;}
 .process-eta{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;margin-right:8px;
   background:rgba(0,108,180,.08);border:1px solid rgba(0,108,180,.22);padding:6px 12px 6px 10px;
   border-radius:999px;color:var(--ink);font-family:var(--fm);}
