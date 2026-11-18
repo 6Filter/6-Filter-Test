@@ -14,6 +14,7 @@ import {
   filterSegments,
   filterStageLabel,
   formatMonthLabel,
+  isSubmitted,
   isUntouchedDraft,
   logStats,
   propositionStatus,
@@ -22,6 +23,7 @@ import {
   rowCanExportOutputPdf,
   rowEvaluationPill,
   rowEvaluationState,
+  rowDateIso,
   rowPerson,
   rowTeam,
   submittedParts,
@@ -36,9 +38,23 @@ import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
+import { inRange, istParts } from "../lib/istTime.js";
+import {
+  PERIOD_OPTIONS,
+  SUMMARY_TABS,
+  generateInsights,
+  insightRuleLines,
+  monthlyTrend,
+  periodRange,
+  summarize,
+  summaryToCsv,
+} from "../lib/logInsights.js";
+import { InsightsList, MonthTrendChart, StackedBars, SummaryTable, topWithOthers } from "./LogCharts.jsx";
+import { LOG_CHART_CSS } from "./logChartsCss.js";
 
 const STATUS_PILLS = [
-  { id: "ALL", label: "Total ideas submitted" },
+  { id: "SUBMITTED", label: "Ideas submitted" },
+  { id: "DRAFTS", label: "Drafts" },
   { id: "ai-used", label: "AI used" },
   { id: "GO", label: "GO" },
   { id: "NO-GO", label: "NO-GO" },
@@ -52,6 +68,33 @@ const CHIP = {
   STOPPED: { label: "Stopped", cls: "chip-stopped" },
   REVIEW: { label: "Review", cls: "chip-review" },
 };
+
+/** Mine / My team's / All I can see — shared by the list and the analytics so their numbers always agree. */
+function applyViewScope(rows, viewScope, myEmail, myTeam) {
+  const ownerOf = (row) =>
+    String(row.createdByEmail || row.created_by_email || "")
+      .trim()
+      .toLowerCase();
+  if (viewScope === "mine" && myEmail) return rows.filter((row) => ownerOf(row) && ownerOf(row) === myEmail);
+  if (viewScope === "team" && myTeam) {
+    return rows.filter((row) => (ownerOf(row) && ownerOf(row) === myEmail) || rowTeam(row) === myTeam);
+  }
+  return rows;
+}
+
+function downloadTextFile(filename, text, mime = "text/csv;charset=utf-8") {
+  if (typeof document === "undefined" || typeof URL === "undefined" || !URL.createObjectURL) return false;
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  return true;
+}
 
 function isWaitingForBusinessHead(row) {
   return reviewDisplayState(row).statusKey === "waiting";
@@ -99,6 +142,10 @@ export default function LogPage({
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
+  const [analyticsTab, setAnalyticsTab] = useState("team");
+  const [periodId, setPeriodId] = useState("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportingMonthPdf, setExportingMonthPdf] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
@@ -138,19 +185,24 @@ export default function LogPage({
   const uniqueSubmitters = useMemo(() => uniqueLogValues(logRows, rowPerson), [logRows]);
   const stats = useMemo(() => logStats(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
-  const scopedRows = useMemo(
-    () =>
-      applyMonthFilter(
-        applyScopedFilters(logRows, {
-          teamFilter,
-          personFilter,
-          categoryGroupFilter,
-          searchText: query,
-        }),
-        monthFilter
-      ),
-    [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter]
+  // Part 148 D121 — the period (India dates) narrows the list and the analytics together.
+  const period = useMemo(
+    () => periodRange(periodId, Date.now(), { from: customFrom, to: customTo }),
+    [periodId, customFrom, customTo]
   );
+  const scopedRows = useMemo(() => {
+    const base = applyMonthFilter(
+      applyScopedFilters(logRows, {
+        teamFilter,
+        personFilter,
+        categoryGroupFilter,
+        searchText: query,
+      }),
+      monthFilter
+    );
+    if (!period.from && !period.to) return base;
+    return base.filter((row) => inRange(istParts(rowDateIso(row))?.ymd, period));
+  }, [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter, period]);
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
   const isAdminUser = String(currentUser?.role || "").trim() === "ADMIN";
   const showCreatedBy =
@@ -163,30 +215,49 @@ export default function LogPage({
     .toLowerCase();
   const myTeam = String(currentUser?.team || "").trim();
 
+  const viewRows = useMemo(
+    () => applyViewScope(scopedRows, viewScope, myEmail, myTeam),
+    [scopedRows, viewScope, myEmail, myTeam]
+  );
   const filteredRows = useMemo(() => {
-    let rowsForView = scopedRows;
-    if (viewScope === "mine" && myEmail) {
-      rowsForView = scopedRows.filter((row) => {
-        const owner = String(row.createdByEmail || row.created_by_email || "")
-          .trim()
-          .toLowerCase();
-        return owner && owner === myEmail;
-      });
-    } else if (viewScope === "team" && myTeam) {
-      rowsForView = scopedRows.filter((row) => {
-        const owner = String(row.createdByEmail || row.created_by_email || "")
-          .trim()
-          .toLowerCase();
-        if (owner && owner === myEmail) return true;
-        const team = rowTeam(row);
-        return team === myTeam;
-      });
-    }
+    const rowsForView = viewRows;
     if (status === "bh-waiting") {
       return rowsForView.filter((row) => isWaitingForBusinessHead(row));
     }
     return applyLogStatusFilter(rowsForView, status);
-  }, [scopedRows, status, viewScope, myEmail, myTeam]);
+  }, [viewRows, status]);
+
+  // Part 148 — analytics are computed only from rows this Log already holds (D125).
+  const summary = useMemo(
+    () => summarize(viewRows, analyticsTab, { range: period }),
+    [viewRows, analyticsTab, period]
+  );
+  const monthTrend = useMemo(() => monthlyTrend(viewRows, { range: period }), [viewRows, period]);
+  const insights = useMemo(
+    () => generateInsights(applyViewScope(logRows, viewScope, myEmail, myTeam)),
+    [logRows, viewScope, myEmail, myTeam]
+  );
+  const insightRules = useMemo(() => insightRuleLines(), []);
+  const analyticsTabs = useMemo(
+    () => SUMMARY_TABS.filter((t) => t.id !== "person" || showCreatedBy),
+    [showCreatedBy]
+  );
+  const activeTab = analyticsTabs.some((t) => t.id === analyticsTab) ? analyticsTab : "team";
+  function selectGroup(g) {
+    if (activeTab === "team") setTeamFilter(g.filterValue || "");
+    else if (activeTab === "person") setPersonFilter(g.filterValue || "");
+    else if (activeTab === "month") setMonthFilter(g.key);
+    else if (activeTab === "date") {
+      setPeriodId("custom");
+      setCustomFrom(g.key);
+      setCustomTo(g.key);
+    }
+  }
+  function handleDownloadSummaryCsv() {
+    const column = SUMMARY_TABS.find((t) => t.id === activeTab)?.column;
+    const safe = String(period.label || "all").replace(/[^A-Za-z0-9._-]+/g, "-");
+    downloadTextFile(`primus-log-by-${activeTab}-${safe}.csv`, summaryToCsv(summary, { column }));
+  }
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
   const busy =
     loading ||
@@ -204,6 +275,8 @@ export default function LogPage({
   const pillCounts = useMemo(() => {
     const base = {
       ALL: scopedRows.length,
+      SUBMITTED: 0,
+      DRAFTS: 0,
       "ai-used": 0,
       GO: 0,
       "NO-GO": 0,
@@ -212,6 +285,8 @@ export default function LogPage({
       "bh-waiting": 0,
     };
     for (const row of scopedRows) {
+      if (isSubmitted(row)) base.SUBMITTED += 1;
+      else base.DRAFTS += 1;
       if (researchWasUsed(row)) base["ai-used"] += 1;
       const evalState = rowEvaluationState(row);
       if (evalState === "evaluated" || evalState === "legacy") {
@@ -523,15 +598,119 @@ export default function LogPage({
           </div>
         ) : (
           <article className="log-stat-card">
-            <div className="mono log-stat-kicker">Total ideas submitted</div>
-            <div className="log-stat-value">{stats.total}</div>
+            <div className="mono log-stat-kicker">Ideas submitted</div>
+            <div className="log-stat-value">{stats.submitted}</div>
             <p>
-              Every idea entered so far
-              {stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month` : ""}
+              Submitted ideas only
+              {stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month (India time)` : ""}.{" "}
+              {stats.drafts} {stats.drafts === 1 ? "draft is" : "drafts are"} not yet submitted, so{" "}
+              {stats.total} {stats.total === 1 ? "idea was" : "ideas were"} started in all.
             </p>
           </article>
         )}
       </div>
+
+      {!unavailable ? (
+        <section className="log-analytics" aria-label="Ideas by team, month, person and date">
+          <div className="log-analytics-head">
+            <div className="log-tabs" role="tablist" aria-label="Group ideas by">
+              {analyticsTabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === t.id}
+                  className={`log-pill${activeTab === t.id ? " is-active" : ""}`}
+                  onClick={() => setAnalyticsTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="log-analytics-controls">
+              <label>
+                <span className="sr-only">Period</span>
+                <select value={periodId} onChange={(e) => setPeriodId(e.target.value)} aria-label="Period">
+                  {PERIOD_OPTIONS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.id === "this-fy" || p.id === "last-fy" ? periodRange(p.id).label : p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {periodId === "custom" ? (
+                <>
+                  <label>
+                    <span className="sr-only">From</span>
+                    <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label="From date" />
+                  </label>
+                  <label>
+                    <span className="sr-only">To</span>
+                    <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label="To date" />
+                  </label>
+                </>
+              ) : null}
+              <button type="button" className="log-btn" onClick={handleDownloadSummaryCsv} disabled={summary.groups.length === 0}>
+                <Download size={15} />
+                Download CSV
+              </button>
+            </div>
+          </div>
+          <p className="log-analytics-note">
+            Counts use India time (IST). Submitted ideas are counted on the day of their first Submit; drafts on the day
+            they were created and never inside the submitted figures. Ideas screened before this release may sit in a
+            later month if they were screened again afterwards. Click a row or bar to filter the list below.
+          </p>
+          {teamFilter || monthFilter || personFilter || period.from || period.to ? (
+            <div className="log-active-filters" aria-label="Active analytics filters">
+              <span>Showing:</span>
+              {teamFilter ? (
+                <button type="button" onClick={() => setTeamFilter("")}>
+                  Team {teamFilter === "__legacy__" ? "Legacy" : teamFilter} ✕
+                </button>
+              ) : null}
+              {monthFilter ? (
+                <button type="button" onClick={() => setMonthFilter("")}>
+                  Month {formatMonthLabel(monthFilter)} ✕
+                </button>
+              ) : null}
+              {personFilter ? (
+                <button type="button" onClick={() => setPersonFilter("")}>
+                  Person {personFilter} ✕
+                </button>
+              ) : null}
+              {period.from || period.to ? <span>Period: {period.label}</span> : null}
+            </div>
+          ) : null}
+          <div className="log-analytics-grid">
+            <div>
+              {activeTab === "team" ? (
+                <StackedBars title="Ideas submitted by team" groups={summary.groups} onSelect={selectGroup} />
+              ) : null}
+              {activeTab === "person" ? (
+                <StackedBars
+                  title="Ideas submitted by person (top 10)"
+                  groups={topWithOthers(summary.groups, 10)}
+                  onSelect={selectGroup}
+                />
+              ) : null}
+              {activeTab === "month" ? (
+                <MonthTrendChart months={monthTrend} onSelect={(m) => setMonthFilter(m.key)} />
+              ) : null}
+              {activeTab === "date" ? (
+                <p className="log-analytics-note">Daily counts are shown in the table below.</p>
+              ) : null}
+            </div>
+            <InsightsList insights={insights} rules={insightRules} />
+          </div>
+          <SummaryTable
+            summary={summary}
+            columnLabel={SUMMARY_TABS.find((t) => t.id === activeTab)?.column || "Group"}
+            onSelect={selectGroup}
+            newestFirst={activeTab === "date"}
+          />
+        </section>
+      ) : null}
 
       <section className="log-card">
         <div className="log-card-head">
@@ -795,7 +974,7 @@ export default function LogPage({
                 role="tab"
                 aria-selected={status === p.id}
                 className={`log-pill${status === p.id ? " is-active" : ""}`}
-                onClick={() => setStatus(p.id)}
+                onClick={() => setStatus(p.id === "SUBMITTED" || p.id === "DRAFTS" ? (status === p.id ? "ALL" : p.id) : p.id)}
               >
                 {p.label}
                 <span className="mono">{pillCounts[p.id] ?? 0}</span>
@@ -1087,7 +1266,7 @@ export default function LogPage({
   );
 }
 
-export const LOG_PAGE_CSS = `
+export const LOG_PAGE_CSS = LOG_CHART_CSS + `
 .log-page{
   --bg:#F2EFE5; --card-bg:#FFFDF8; --card-border:#E6E1D1;
   --table-header-bg:#FBF8EF; --table-row-hover:#FBF8EF; --table-border:#F1ECDD;
