@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
@@ -2721,6 +2722,7 @@ export default function PropositionForm({
   setImportResult = () => {},
   onOpenImportedDraft,
   onSubmitImportedIdea,
+  onOpenImportedLog,
 }) {
   const [doc, setDoc] = useState(() => {
     const merged = mergeProposition(initial);
@@ -2835,6 +2837,14 @@ export default function PropositionForm({
   }, []);
   /** Part 146 — text size 1–100%. 78% is what people always saw first (the old Compact); 100% is the old Large. */
   const [textSize, setTextSize] = useState(() => readStoredTextSize());
+  // Part 151 — the top bar's slot for the text-size control (null outside the app shell, e.g. in tests).
+  const [headerSlot, setHeaderSlot] = useState(() =>
+    typeof document !== "undefined" ? document.getElementById("primus-masthead-slot") : null
+  );
+  useEffect(() => {
+    const el = document.getElementById("primus-masthead-slot");
+    if (el !== headerSlot) setHeaderSlot(el);
+  }, [headerSlot]);
   const [draftSaveState, setDraftSaveState] = useState("");
   // Part 140 B (D64) — a failed draft save is loud: banner, "Not saved" sidebar, auto-retry, leave warning.
   const [draftError, setDraftError] = useState("");
@@ -4279,12 +4289,15 @@ export default function PropositionForm({
     }
   }
 
+  const textSizeControl = <TextSizeControl value={textSize} onChange={setTextSize} />;
+
   return (
     <main className="prop-page prop-form-page" data-view="propositionForm">
       <style>{PROP_CSS}</style>
 
-      {/* Part 146 — OUTSIDE the scaled page, so it never shrinks and can always be undone. */}
-      <TextSizeControl value={textSize} onChange={setTextSize} />
+      {/* Part 146 — OUTSIDE the scaled page, so it never shrinks and can always be undone.
+          Part 151 — drawn in the top bar (App's masthead slot) when it exists, else right here. */}
+      {headerSlot ? createPortal(textSizeControl, headerSlot) : textSizeControl}
 
       <div
         className="prop-text-scale"
@@ -4408,6 +4421,7 @@ export default function PropositionForm({
           llmProvider={llmProvider}
           onOpenDraft={onOpenImportedDraft}
           onSubmitIdea={onSubmitImportedIdea}
+          onOpenLog={onOpenImportedLog}
         />
         <div className="prop-label hero-label" data-field-label="name">
           <label htmlFor="fld-name">{getFieldRole("name")?.label}</label>

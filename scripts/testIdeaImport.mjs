@@ -58,10 +58,13 @@ await check("template has Ideas + Guide sheets", async () => {
   const headers = ideas.getRow(1).values.slice(1);
   assert.deepEqual(headers, IMPORT_FIELDS.map((f) => importColumnHeader(f.path)));
   assert.ok(headers.includes("Proposition name") && headers.includes("Category") && headers.includes("Idea description"));
-  // Part 145 D111 — fourteen columns; the system-filled cost, margin and MRP are not asked for.
-  assert.equal(headers.length, 14, "fourteen template columns");
+  // Part 151 — one column for every box on the form: the fourteen of Part 145 plus cost, net margin and MRP.
+  assert.equal(headers.length, 17, "seventeen template columns");
+  for (const present of [/COGS/, /Net margin/, /MRP/]) {
+    assert.ok(headers.some((h) => present.test(h)), `${present} column is in the template`);
+  }
   assert.ok(headers.some((h) => /GST/.test(h)) && headers.some((h) => /Pack size/.test(h)));
-  for (const gone of [/COGS/, /Net margin/, /MRP/, /Your name/, /Team/, /Evidence/, /Pure commodity/, /Quick-commerce/, /Finance/, /price rise/i, /Who is this for/i]) {
+  for (const gone of [/Your name/, /Team/, /Evidence/, /Pure commodity/, /Quick-commerce/, /Finance/, /price rise/i, /Who is this for/i]) {
     assert.ok(!headers.some((h) => gone.test(h)), `no ${gone} column`);
   }
   assert.equal(ideas.getRow(2).getCell(1).value, EXAMPLE_NAME, "row 2 is the EXAMPLE row");

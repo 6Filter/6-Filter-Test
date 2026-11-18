@@ -84,7 +84,7 @@ await check("every Inputs Excel column that is a form box is importable, bar own
   assert.deepEqual(
     notImported.filter((p) => !p.startsWith("f6.")),
     [
-      "f1.pureCommodity", "f1.targetConsumer", "f2.cogsAtScale", "f2.financeSigned", "f2.mrpInr", "f2.netMarginAtScale",
+      "f1.pureCommodity", "f1.targetConsumer", "f2.financeSigned",
       "f2.qcomTrajectory", "f5.avgPackValueInr", "f5.computedRevenue", "f5.householdsReachedY3Mn",
       "f5.purchaseFrequencyYr", "f5.repeatConversionPct", "f5.trialRatePct", "submitterDepartment", "submitterName",
     ].sort()
