@@ -1,22 +1,22 @@
-/* Part 143 D88 — reference tokens (mirror of .prop-form-page). Used by testFormTypography.mjs. */
+/* Part 143 D88 — reference tokens (mirror of .prop-form-page). Used by testFormTypography.mjs.
+   Part 147: colours moved to the light cream-and-brown theme; sizes and gaps are unchanged. */
 .prop-form-page {
   --fs-section: 22px;
-  --c-section: #ddd6fe;
+  --c-section: #8a4f2a;
   --fs-status: 13px;
-  --c-status: #c4b5d8;
-  --c-error: #fda4c0;
-  /* status line colour alias used by autofill-status */
+  --c-status: #7a6454;
+  --c-error: #a8432b;
   --fs-label: 16px;
-  --c-label: #f6eefb;
+  --c-label: #3b2a1e;
   --fs-input: 15px;
-  --c-input: #efe8f5;
+  --c-input: #50392e;
   --fs-placeholder: 15px;
-  --c-placeholder: #9a89ae;
+  --c-placeholder: #7a6454;
   --fs-badge: 12px;
-  --c-required: #f5b562;
-  --c-optional: #b9a9cc;
+  --c-required: #8a4f2a;
+  --c-optional: #6b5646;
   --gap-label: 8px;
   --gap-field: 22px;
   --h-input: 44px;
-  --card-bg: #1a0f25;
+  --card-bg: #fffaf1;
 }

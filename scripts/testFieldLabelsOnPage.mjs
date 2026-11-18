@@ -149,7 +149,7 @@ await check("benefit plus is wired in Filter 1", () => {
 await check("type tokens live on .prop-form-page", () => {
   // Part 146: the sizes are the 78% (old Compact) values times --ts on the [data-text-scale-target] wrapper.
   assert.match(form, /--fs-label:calc\(13px \* var\(--ts\)\)/);
-  assert.match(form, /--c-label:#f6eefb/);
+  assert.match(form, /--c-label:#3b2a1e/);
   assert.match(form, /--h-input:34px/);
 });
 

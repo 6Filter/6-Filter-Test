@@ -1,0 +1,33 @@
+/* Part 147 — the owner's light cream-and-brown tokens (contrast-corrected). testThemeTokens.mjs compares the app to this. */
+.prop-form-page, .output-page {
+  --c-bg-page: #faf3e8;
+  --card-bg: #fffaf1;
+  --input-bg: #f6ebd8;
+  --c-border: #e9dcc5;
+  --c-step-active: #ecdcc6;
+  --c-text-strong: #3b2a1e;
+  --c-label: #3b2a1e;
+  --c-text: #50392e;
+  --c-input: #50392e;
+  --c-text-muted: #7a6454;
+  --c-placeholder: #7a6454;
+  --c-section: #8a4f2a;
+  --c-required: #8a4f2a;
+  --c-link: #8a4f2a;
+  --c-optional: #6b5646;
+  --c-accent: #9a5a32;
+  --c-accent-text: #ffffff;
+  --c-go: #3f6b2f;
+  --c-credited: #2f6b3a;
+  --c-credited-line: #96b7a1;
+  --c-watch: #8a6100;
+  --c-partial: #8a6100;
+  --c-watch-line: #ce9200;
+  --c-nogo: #a8432b;
+  --c-error: #a8432b;
+  --radius-card: 16px;
+  --radius-input: 10px;
+  --radius-pill: 999px;
+  --sidebar-w: 240px;
+  --content-max: 1180px;
+}

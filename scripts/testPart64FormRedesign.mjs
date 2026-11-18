@@ -10,8 +10,8 @@ const dbSrc = readFileSync(new URL("../lib/db.js", import.meta.url), "utf8");
 
 assert.match(htmlSrc, /Sora/);
 assert.match(htmlSrc, /IBM\+Plex\+Mono/);
-assert.match(formSrc, /--bg:#120818/);
-assert.match(formSrc, /--accent:#8b5cf6/);
+assert.match(formSrc, /--bg:var\(--c-bg-page\)/);
+assert.match(formSrc, /--accent:var\(--c-accent\)/);
 assert.match(formSrc, /font-family:'Sora'/);
 assert.doesNotMatch(formSrc, /prop-sidebar/);
 assert.doesNotMatch(formSrc, /prop-side-nav/);

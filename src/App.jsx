@@ -2515,8 +2515,8 @@ const CSS = `
 #root .primus.screen-spec,
 #root .primus.screen-log{padding:0;}
 html:has(.screen-log), body:has(.screen-log) { background:#F2EFE5; }
-html:has(.prop-form-page), body:has(.prop-form-page) { background:#120818; }
-html:has(.output-page), body:has(.output-page) { background:#0d0715; }
+html:has(.prop-form-page), body:has(.prop-form-page) { background:#faf3e8; }
+html:has(.output-page), body:has(.output-page) { background:#faf3e8; }
 .primus h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:2px 0 0;color:var(--ink);}
 .primus h1 .dot{color:var(--ink-deep);}
 .eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
@@ -2577,6 +2577,38 @@ html:has(.output-page), body:has(.output-page) { background:#0d0715; }
 .screen-spec .pulse{background:#7EDCA8;animation:none;}
 .screen-spec .page-back{color:#F3EAF8;border-color:rgba(243,234,248,.2);}
 .screen-spec .page-back:hover{background:#22113A;border-color:#C9AEEF;color:#F3EAF8;}
+/* Part 147 — light cream-and-brown theme for the input form and the output page (colours only; spec and log pages keep theirs). */
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)){
+  --bg:#faf3e8; --card:#fffaf1; --panel:#fffaf1; --panel-2:#f6ebd8; --border:#e9dcc5; --border-2:#e9dcc5;
+  --ink:#3b2a1e; --ink-deep:#3b2a1e; --muted:#7a6454; --muted-2:#7a6454; --muted-3:#7a6454; --faint:#7a6454;
+  --accent:#9a5a32; --accent-hover:#84492a; --accent-on:#ffffff;
+  --pass:#3f6b2f; --fail:#a8432b; --watch:#8a6100; --coral:#a8432b;
+  --bg-soft:#f6ebd8; --line:#e9dcc5; --line-soft:#e9dcc5;
+  --accent-rgb:154,90,50; --pass-rgb:63,107,47; --fail-rgb:168,67,43; --watch-rgb:138,97,0; --ink-rgb:80,57,46;
+  font-family:'Sora',system-ui,sans-serif;
+}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .masthead{background:#fffaf1;border-bottom:1px solid #e9dcc5;box-shadow:0 1px 2px rgba(80,57,46,.05);}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .brandmark{background:#f6ebd8;border:1.5px solid #9a5a32;border-radius:14px;box-shadow:none;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .brandmark .star{color:#9a5a32;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .primus h1,:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) h1{color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;color:#7a6454;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .top-nav .nav-tab{color:#50392e;font-family:'Sora',system-ui,sans-serif;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .nav-tab:hover{background:rgba(154,90,50,.1);color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .nav-tab.active{background:#ecdcc6;border-color:transparent;color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .process-eta,:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .model-switch{background:rgba(80,57,46,.06);border-color:#e9dcc5;color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .process-eta-lbl,:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .model-switch-lbl{color:#7a6454;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .model-switch select{color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .session-chip{color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .pulse{background:#3f6b2f;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .page-back{color:#3b2a1e;border-color:#e9dcc5;background:transparent;font-family:'Sora',system-ui,sans-serif;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .page-back:hover{background:#fffaf1;border-color:#9a5a32;color:#3b2a1e;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .spec-chevron{color:#7a6454;}
+@media (max-width:760px){
+  :is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .masthead{flex-wrap:wrap;gap:8px 10px;padding:10px 14px;}
+  :is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .top-nav{flex-wrap:wrap;margin:0;width:100%;}
+  :is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .session-chip,:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .process-eta,:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .model-switch{margin-left:0;}
+  :is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .page-back-bar{padding-left:14px;padding-right:14px;}
+}
 .screen-brief .masthead{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;max-width:1280px;}
 .screen-brief .brandmark{background:var(--card);border-color:var(--accent);}
 .screen-brief .type-toggle{background:var(--panel-2);border-color:var(--border);}

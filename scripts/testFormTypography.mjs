@@ -53,18 +53,18 @@ function contrast(fgHex, bgHex) {
 
 const EXPECT = {
   "fs-section": "22px",
-  "c-section": "#ddd6fe",
+  "c-section": "#8a4f2a",
   "fs-status": "13px",
   "fs-label": "16px",
-  "c-label": "#f6eefb",
+  "c-label": "#3b2a1e",
   "fs-input": "15px",
-  "c-input": "#efe8f5",
+  "c-input": "#50392e",
   "fs-placeholder": "15px",
-  "c-placeholder": "#9a89ae",
+  "c-placeholder": "#7a6454",
   "fs-badge": "12px",
-  "c-required": "#f5b562",
-  "c-optional": "#b9a9cc",
-  "c-error": "#fda4c0",
+  "c-required": "#8a4f2a",
+  "c-optional": "#6b5646",
+  "c-error": "#a8432b",
   "gap-label": "8px",
   "gap-field": "22px",
   "h-input": "44px",
@@ -108,7 +108,7 @@ check("inputs use --fs-input / --c-input and min-height --h-input", () => {
 
 check("section title uses --fs-section / --c-section", () => {
   assert.match(css, /\.prop-filter-title\{[^}]*font-size:var\(--fs-section\)/);
-  assert.match(css, /--c-section|#ddd6fe/);
+  assert.match(css, /--c-section/);
 });
 
 check("Required solid border vs Optional dashed", () => {
@@ -131,7 +131,7 @@ check("two columns from 1100px; one column below", () => {
   assert.match(css, /\.prop-grid\{[^}]*grid-template-columns:1fr 1fr/s);
 });
 
-const bg = token(ref, "card-bg") || "#1a0f25";
+const bg = token(ref, "card-bg") || "#fffaf1";
 check("text colours meet WCAG AA (4.5:1) on card background", () => {
   const pairs = [
     ["c-label", token(ref, "c-label")],
@@ -149,9 +149,9 @@ check("text colours meet WCAG AA (4.5:1) on card background", () => {
 });
 
 check("status / error colours use the D88 tokens", () => {
-  assert.match(css, /--c-status:#c4b5d8/);
+  assert.match(css, /--c-status:#7a6454/);
   assert.match(css, /\.autofill-status\{[^}]*color:var\(--c-status\)/s);
-  assert.match(css, /--c-error:#fda4c0/);
+  assert.match(css, /--c-error:#a8432b/);
 });
 
 console.log(`PASS testFormTypography — ${checks} checks`);
