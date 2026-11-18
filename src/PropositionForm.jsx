@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Copy, Check, Download, FileText, FileUp, Info, Loader2, RefreshCw, Wand2, X } from "lucide-react";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
 import { exportElementToPdf, outputPdfFilename } from "../lib/exportOutputPdf.js";
@@ -682,6 +682,7 @@ function FieldControl({
         </div>
         {overall ? <p className="autofill-status" data-tone="ai">Current overall: {overall}</p> : null}
         <div className="f4-dimension-editor">
+          <div className="f4-grid">
           {TECH_SHIFT_DIMENSIONS.map((key) => {
             const d = dimensions[key] || { risk: "", reason: "" };
             const mine = userInputFor(storedUserInputs, key);
@@ -693,8 +694,9 @@ function FieldControl({
             const finding = String(assessment?.raw?.quote || d.reason || "").trim();
             const sourceUrl = String(assessment?.raw?.source_url || "").trim();
             return (
-              <div key={key} className="f4-dimension-row" data-dimension={key}>
+              <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
+                <div className="f4c-body">
                 <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
                   <div className="f4-block-title">Your rating and view</div>
                   <select
@@ -768,6 +770,7 @@ function FieldControl({
                     </>
                   )}
                 </div>
+                </div>
                 {d.reassessedRisk ? (
                   <div className="dimension-finding reassessed">
                     After response: {d.reassessedRisk} risk — {d.reassessedReason}
@@ -776,6 +779,7 @@ function FieldControl({
               </div>
             );
           })}
+          </div>
         </div>
         {respondable.length ? (
           <div className="f4-response-list">
@@ -2817,7 +2821,18 @@ export default function PropositionForm({
     return 0;
   });
   /** Filters 2–4 start collapsed; expand via the header arrow. */
-  const [filterOpen, setFilterOpen] = useState(() => ({ f2: false, f3: false, f4: false }));
+  const [filterOpen, setFilterOpen] = useState(() => ({ ...DEFAULT_FILTER_OPEN }));
+  // Part 149 D132 — keep room under the last card for the sticky bar, whatever height the bar has (wrapped, error line, phone).
+  const stickyBarRef = useCallback((node) => {
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const page = node.closest(".prop-form-page");
+    if (!page) return;
+    const apply = () => page.style.setProperty("--sticky-bar-h", `${Math.ceil(node.getBoundingClientRect().height)}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(node);
+    node.__stickyBarObserver = ro;
+  }, []);
   /** Part 146 — text size 1–100%. 78% is what people always saw first (the old Compact); 100% is the old Large. */
   const [textSize, setTextSize] = useState(() => readStoredTextSize());
   const [draftSaveState, setDraftSaveState] = useState("");
@@ -4383,7 +4398,9 @@ export default function PropositionForm({
         </details>
       ) : null}
 
-      <section id="the-proposition" className="prop-form-hero">
+      <div className="form-wrap" data-testid="form-wrap">
+      <div className="form-layout" data-testid="form-layout">
+      <section id="the-proposition" className="prop-form-hero" data-card="start">
         <h1>Start with the idea</h1>
         <IdeaImportPanel
           result={importResult}
@@ -4539,6 +4556,7 @@ export default function PropositionForm({
           <section
             key={spec.key}
             id={spec.key}
+            data-card={spec.key}
             className={`prop-filter${spec.key === "f5" || spec.key === "f6" ? " f5f6-card" : ""}${collapsible ? " is-collapsible" : ""}${collapsible && !filterExpanded ? " is-collapsed" : ""}`}
             data-filter-open={collapsible ? (filterExpanded ? "yes" : "no") : undefined}
           >
@@ -4694,7 +4712,7 @@ export default function PropositionForm({
                 </button>
               </div>
             ) : null}
-            <div className="prop-grid">
+            <div className="prop-grid card-grid">
               {(spec.key === "f1"
                 ? (() => {
                     const has2 = Boolean(String(values.declaredAttribute2 || "").trim());
@@ -4964,6 +4982,8 @@ export default function PropositionForm({
           </section>
         );
       })}
+      </div>
+      </div>
 
       {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
         <ManagerReviewPanel
@@ -5042,7 +5062,7 @@ export default function PropositionForm({
         </div>
       ) : null}
 
-      <div className="submit-bar" data-compact="yes">
+      <div className="submit-bar" data-compact="yes" data-testid="submit-bar" ref={stickyBarRef}>
         {submitBarError ? (
           <span className="submit-bar-error" data-testid="submit-bar-error" role="alert">
             {submitBarError}
@@ -5124,6 +5144,9 @@ export default function PropositionForm({
     </main>
   );
 }
+
+/** Part 149 D133 — which collapsible filters are open when the form opens. Part 143 pins these closed; set f2 to true to open Filter 2. */
+const DEFAULT_FILTER_OPEN = { f2: false, f3: false, f4: false };
 
 export const PROP_CSS = `
 ${IDEA_IMPORT_CSS}
@@ -5263,7 +5286,7 @@ ${IDEA_IMPORT_CSS}
 .draft-save-retry:disabled{opacity:.6;cursor:wait;}
 .draft-not-saved{color:var(--c-error);font-weight:700;}
 .prop-page{max-width:1080px;margin:0 auto;padding:0 28px 40px;color:var(--c-text-strong);}
-.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px 96px;color:var(--ink);}
+.prop-page.prop-form-page{max-width:none;margin:0;padding:20px 24px calc(var(--sticky-bar-h, 64px) + 16px);color:var(--ink);}
 .prop-page.output-page{max-width:none;margin:0;min-height:calc(100vh - 88px);padding:8px 32px 40px;}
 .prop-top{background:var(--card-bg);border:1px solid rgba(80,57,46,.12);
   border-radius:16px;padding:18px 20px 16px;margin:0 0 22px;box-shadow:0 12px 32px rgba(80,57,46,0.14);}
@@ -5667,15 +5690,12 @@ ${FIELD_ROLE_CSS}
 .prop-computed{background:var(--card-bg);border:1px solid rgba(80,57,46,.14);border-radius:12px;padding:12px 14px;
   display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;}
 .prop-computed.is-empty{color:var(--c-text-muted);font-size:calc(13.5px * var(--ts, 1));}
-@media (max-width:1099px){
-  .prop-form-page .prop-grid{grid-template-columns:1fr;}
-}
 @media (max-width:760px){
   .prop-grid{grid-template-columns:1fr;}
   .prop-top{position:static;}
   .prop-page{padding:0 16px 40px;}
   .prop-identity-strip{grid-template-columns:1fr;}
-  .prop-page.prop-form-page{margin:0;padding:16px 16px 112px;}
+  .prop-page.prop-form-page{margin:0;padding:16px 16px calc(var(--sticky-bar-h, 132px) + 16px);}
   .prop-page.output-page{margin:0;padding:8px 16px 32px;}
   .submit-bar{padding:10px 16px 12px;}
   .submit-bar-main{flex-wrap:wrap;}
@@ -5703,4 +5723,45 @@ ${FIELD_ROLE_CSS}
 .check-pill[data-tone="pass"]{color:var(--c-credited);background:rgba(47,107,58,.1);border:1px solid var(--c-credited-line);}
 .check-pill[data-tone="watch"]{color:var(--c-partial);background:rgba(206,146,0,.1);border:1px solid var(--c-watch-line);}
 .check-pill[data-tone="fail"]{color:var(--c-nogo);background:rgba(168,67,43,.08);border:1px solid rgba(168,67,43,.4);}
+
+/* Part 149 — the form in two columns ("one glance"). Layout only: no field, label, rule or order changes.
+   A container query can only restyle what is INSIDE its container, so each container (.form-wrap, .prop-filter,
+   [data-f4-card]) is never the element that is restyled; the grid sits inside it. A container centred with auto
+   margins would shrink to nothing, so .form-wrap has width:100%. */
+.form-wrap{container-type:inline-size;container-name:formwrap;width:100%;min-width:0;}
+.form-layout{display:flex;flex-direction:column;gap:var(--gap-field,16px);min-width:0;}
+.form-layout > *{min-width:0;}
+.prop-form-page .prop-filter{container-type:inline-size;container-name:card;}
+@container formwrap (min-width:940px){
+  .form-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;row-gap:var(--gap-field,16px);align-items:start;}
+  .form-layout > [data-card="start"]{grid-column:1;grid-row:1;}
+  .form-layout > [data-card="f1"]{grid-column:2;grid-row:1 / span 3;}
+  .form-layout > [data-card="f2"]{grid-column:1;grid-row:2;}
+  .form-layout > [data-card="f3"]{grid-column:1;grid-row:3;}
+  .form-layout > [data-card="f4"]{grid-column:1 / -1;grid-row:4;}
+  .form-layout > [data-card="f5"]{grid-column:1;grid-row:5;}
+  .form-layout > [data-card="f6"]{grid-column:2;grid-row:5;}
+}
+/* Short boxes go two to a row when the card's own width allows it; long boxes (.span-2) keep the full width. */
+.prop-form-page .card-grid{grid-template-columns:minmax(0,1fr);}
+@container card (min-width:460px){
+  .prop-form-page .card-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+/* Filter 4: seven dimension cards flow left and right (4 + 3) when the card is at least 900px wide. */
+.f4-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px 12px;align-items:start;}
+@container card (min-width:900px){
+  .f4-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;}
+}
+[data-f4-card]{container-type:inline-size;container-name:f4c;display:block;min-width:0;}
+.f4c-body{display:grid;grid-template-columns:minmax(0,1fr);gap:8px 12px;align-items:start;}
+@container f4c (min-width:460px){
+  .f4c-body{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+.f4-dimension-row .dimension-response-label{margin:0 0 6px;}
+.f4-dimension-row .f4-your-view textarea{height:84px;min-height:84px;resize:vertical;}
+.f4-dimension-row .f4-dimension-block{gap:5px;}
+.f4-dimension-row select{min-height:38px;}
+.f4-dimension-row > .dimension-finding.reassessed{margin-top:6px;}
+/* Browsers without container queries keep the single column the form had below 1100px. */
+@media (max-width:1099px){ @supports not (container-type:inline-size){ .prop-form-page .card-grid{grid-template-columns:minmax(0,1fr);} } }
 `;

@@ -73,12 +73,17 @@ export function collectWords() {
           break;
         case "StringLiteral":
           if (parent?.type === "JSXAttribute" && SKIP_ATTRS.has(parent.name?.name)) break;
+          // data-* attributes and DOM plumbing (setProperty / closest / typeof checks) are not visible words
+          if (parent?.type === "JSXAttribute" && /^data-/.test(parent.name?.name || "")) break;
+          if (parent?.type === "CallExpression" && parentKey === "arguments" && /^(setProperty|closest|querySelector|querySelectorAll|getPropertyValue)$/.test(parent.callee?.property?.name || "")) break;
+          if (parent?.type === "BinaryExpression" && /^(===|!==|==|!=)$/.test(parent.operator) && (parent.left?.type === "UnaryExpression" || parent.right?.type === "UnaryExpression")) break;
           if (parent?.type === "ObjectProperty" && parentKey === "value" && /^(className|color|background|border|font|fontSize|fontWeight|padding|margin|width|height|display|gap|opacity|boxShadow|borderRadius|textAlign|flex)/i.test(parent.key?.name || parent.key?.value || "")) break;
           if (parent?.type === "ImportDeclaration" || parent?.type === "ExportNamedDeclaration" || parent?.type === "ExportAllDeclaration") break;
           add(node.value);
           break;
         case "TemplateLiteral": {
           const text = node.quasis.map((q) => q.value.cooked ?? q.value.raw).join("${}");
+          if (parent?.type === "CallExpression" && /^(setProperty)$/.test(parent.callee?.property?.name || "")) break;
           if (!isCssTemplate(text)) add(text);
           break;
         }
