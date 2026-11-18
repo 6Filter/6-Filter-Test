@@ -134,7 +134,7 @@ try {
         "f2.gstRatePct": 18,
         "f2.grammage": "100 ml",
       },
-      { name: "Protein bar", "f2.cogsAtScale": 22 },
+      { name: "Protein bar", "f2.grammage": "50 g" },
     ]);
     const { res, json } = await post(attach(buf));
     assert.equal(res.status, 201, JSON.stringify(json));
@@ -172,7 +172,7 @@ try {
     assert.match(p.researchFindings.fieldSources["f1.benchmark"].cell, /^[A-Z]+3$/);
     const second = await api(`/api/propositions/${created[1].id}`);
     assert.equal((second.json.proposition || second.json).name, "Protein bar");
-    assert.equal(Number((second.json.proposition || second.json).f2.cogsAtScale), 22);
+    assert.equal((second.json.proposition || second.json).f2.grammage, "50 g");
   });
 
   await check("drafts appear in the list; the upload is not a duplicate-per-call", async () => {

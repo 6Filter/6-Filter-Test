@@ -350,7 +350,8 @@ await check("a changes-the-checks switch changes which checks apply", async () =
   const weak = blankBox(full, "f1.gapDerivation");
   const before = await scoreOf(weak);
   const after = await scoreOf({ ...weak, f1: { ...weak.f1, pureCommodity: true } });
-  assert.ok(after.points > before.points, "pure commodity exempts the differentiation checks");
+  // Part 145 D110 — a typed tick no longer exempts anything; only a sourced research finding does.
+  assert.equal(after.points, before.points, "a typed pure-commodity tick does not change the score");
   assert.equal(getFieldRole("f1.pureCommodity").role, "changes-checks");
 });
 

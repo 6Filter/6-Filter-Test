@@ -57,7 +57,9 @@ assert.equal(legacyMerged.submitterDepartment, "NPD");
 assert.equal(legacyMerged.teamIsLegacy, true);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /hasSubmitterIdentity/);
+// Part 145 D105 — the form needs only the team; the server fills the name from the login.
+assert.doesNotMatch(formSrc, /hasSubmitterIdentity/);
+assert.match(formSrc, /data-testid="team-chip"/);
 assert.match(formSrc, /accountDisplayName/);
 assert.match(formSrc, /submitterName: accountName/);
 // Part 124: creator picks the idea team on the form (no longer a locked "From your account" box).
@@ -71,6 +73,7 @@ assert.match(dbSrcCreate, /submitter_name, submitter_department/);
 assert.match(dbSrcCreate, /ownerName/);
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(apiSrc, /fillIdentityFromAccount\(payload, opened, req\.user\)/);
 assert.match(apiSrc, /hasSubmitterIdentity\(payload\)/);
 assert.match(apiSrc, /canAccessIdea/);
 

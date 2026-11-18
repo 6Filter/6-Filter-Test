@@ -18,7 +18,7 @@ import { SIX_FILTERS_FORM } from "../lib/propositionFields.js";
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 
 // --- A: required fields (all display-Required boxes gate Submit) ---
-assert.equal(firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" }).field, "submitterName");
+assert.equal(firstMissingRequiredField({ name: " ", category: "x", ideaDescription: "y" }).field, "name"); // Part 145 D105: name is filled from the login, not a box
 assert.equal(
   firstMissingRequiredField({
     submitterName: "A",

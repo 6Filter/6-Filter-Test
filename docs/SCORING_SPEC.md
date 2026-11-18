@@ -17,6 +17,16 @@ Generated from `lib/lockedConstants.js` (ruleset **v5.7**, Part 141). Filters 5�
 | `VOLUME_LOSS_CEILING_PCT` | `10` |
 | `GST_STANDARD_RATES` | Finance-owned list (currently `0, 3, 5, 12, 18, 28, 40`) |
 
+### Part 145 — the short input form and the sourced commodity exemption (no band, check or minimum changed)
+
+No band, check, cap, hard stop or division minimum moves. The ruleset stays **v5.7**; only what the form asks for and how the pure-commodity exemption is decided change.
+
+- **Twelve typed Required boxes** gate Submit: name, category, idea description; Filter 1 attribute, benchmark (waived for a new market), declared gap, gap derivation, parity, growth route, growth argument; Filter 2 pack size and GST rate. Name and team come from the login; COGS, net margin and MRP are filled by the system (`Adjust cost and margin` overrides them) and never block Submit.
+- **Parity is one tick**, "Parity or better on the remaining attributes". Ticked stores `f1.parityExceptions = "none"`; unticked opens the box. Nothing typed is hidden.
+- **Pure commodity is a research finding, never a tick.** The Filter 1 research step returns `{ pureCommodity, reason, source_url, quote, confidence }`. The exemption applies only when research says yes, with a quote, a source the search actually returned, and **medium or high** confidence (`decideExemption`). A typed `f1.pureCommodity` tick is ignored.
+- **An exempt idea is scored over the checks that remain.** Filter 1's seven checks leave the numerator and the denominator together: **11 checks at screening** (F2 = 3, F3 = 1, F4 = 7) and **14 in the final** when the proof stage adds its three checks (Part 144). A non-exempt idea stays at **18** and **21**. No free marks.
+- **Ideas stored under the old tick keep their stored score**, labelled "Scored under an older release", until evaluated again.
+
 ### What changed in v5.7 (Part 141 — one number)
 
 - **One displayed percentage decides the verdict.** `RELEVANCE_SHADOW_MODE` is off. `legacyPct` is still computed for comparison reports but is never read by the band, Log, exports or improvement panel.

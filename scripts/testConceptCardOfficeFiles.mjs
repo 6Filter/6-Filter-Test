@@ -4,13 +4,13 @@ import * as XLSX from "xlsx";
 import { classifyAttachment, prepareIdeaInput } from "../lib/extractAttachment.js";
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /handleConceptCardFile/);
-assert.match(
-  formSrc,
-  /readUploadFile\(file, setConceptCardError, \{ allowExcel: true, allowImage: true \}\)/
-);
-assert.match(formSrc, /accept="[^"]*\.xlsx/);
-assert.match(formSrc, /PDF, Word, or Excel/);
+// Part 145 D107 — no separate concept-card button; the one upload takes Excel, Word and PDF.
+assert.doesNotMatch(formSrc, /handleConceptCardFile|Upload concept card/);
+const importSrc = readFileSync(new URL("../src/IdeaImportPanel.jsx", import.meta.url), "utf8");
+assert.match(importSrc, /accept="[^"]*\.xlsx/);
+assert.match(importSrc, /\.docx/);
+assert.match(importSrc, /\.pdf/);
+assert.match(importSrc, /Upload your idea/);
 
 const extractSrc = readFileSync(new URL("../lib/filters/extractConceptCard.js", import.meta.url), "utf8");
 assert.match(extractSrc, /PDF, Word, or Excel/);

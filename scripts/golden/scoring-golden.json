@@ -7470,7 +7470,7 @@
     },
     {
       "id": "commodity-exempt",
-      "note": "pure commodity exempt F1",
+      "note": "pure commodity exempt F1 by sourced research finding (11 checks)",
       "doc": {
         "name": "Commodity salt",
         "category": "Instant noodles",
@@ -7480,8 +7480,7 @@
           "benchmark": "",
           "declaredGap": 3,
           "growthRoute": "penetration",
-          "growthArgument": "Households still under-indexed in South India",
-          "pureCommodity": true
+          "growthArgument": "Households still under-indexed in South India"
         },
         "f2": {
           "cogsAtScale": 50.34,
@@ -7543,20 +7542,30 @@
                 ]
               }
             ],
-            "benchmarkVerified": true
+            "benchmarkVerified": true,
+            "commodityFinding": {
+              "pureCommodity": true,
+              "reason": "Plain salt has no brand-level differentiation",
+              "source_url": "https://example.com/salt-category",
+              "quote": "Packaged salt is sold on price with no meaningful differentiation",
+              "confidence": "high",
+              "returnedSources": [
+                "https://example.com/salt-category"
+              ]
+            }
           },
           "f4": {}
         }
       },
       "expected": {
-        "pct": 56,
-        "done": 10,
-        "total": 18,
+        "pct": 27,
+        "done": 3,
+        "total": 11,
         "classification": "NO-GO",
         "byFilter": {
           "f1": {
-            "done": 7,
-            "total": 7
+            "done": 0,
+            "total": 0
           },
           "f2": {
             "done": 3,
@@ -7647,6 +7656,361 @@
               "gainPct": 0
             }
           ]
+        },
+        "f2": {
+          "checkLabel": "Cleared",
+          "items": [
+            {
+              "status": "done",
+              "text": "Net margin 40% clears the 35% Foods minimum",
+              "slot": "margin",
+              "code": "F2_MARGIN_CLEARS",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [
+                "CLEARS_MINIMUM"
+              ],
+              "gainPct": 0
+            },
+            {
+              "status": "done",
+              "text": "Pack size 50 g entered with a unit",
+              "slot": "packSize",
+              "code": "F2_PACK_SIZE_CLEARS",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
+            },
+            {
+              "status": "done",
+              "text": "GST rate 18% entered",
+              "slot": "gst",
+              "code": "F2_GST_CLEARS",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
+            },
+            {
+              "status": "pending",
+              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
+              "slot": "finance",
+              "code": "F2_FINANCE_SIGN",
+              "level": "none",
+              "credit": 0,
+              "reasons": [],
+              "gainPct": 6,
+              "formAdmin": true
+            }
+          ],
+          "markedDown": false
+        },
+        "f3": {
+          "checkLabel": "Marked down",
+          "markedDown": true,
+          "capsGo": true,
+          "items": [
+            {
+              "status": "pending",
+              "text": "Price resilience is assessed when you Submit.",
+              "slot": "resilience",
+              "code": "F3_RESILIENCE_CANNOT_ASSESS",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_RESEARCHED"
+              ],
+              "gainPct": 6
+            }
+          ]
+        },
+        "f4": {
+          "checkLabel": "Evidence missing",
+          "items": [
+            {
+              "status": "pending",
+              "text": "Functional core stability: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Functional core stability\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "Consumption context stability: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Consumption context stability\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "Manufacturing disruption risk: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Manufacturing disruption risk\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "User habit shift potential: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"User habit shift potential\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "Adjacent substitution threat: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Adjacent substitution threat\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "Purchase frequency shift: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Purchase frequency shift\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            },
+            {
+              "status": "pending",
+              "text": "Regulatory disruption risk: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Regulatory disruption risk\"",
+              "code": "F4_NOT_VERIFIED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_VERIFIED"
+              ],
+              "reason": "Low for golden"
+            }
+          ]
+        },
+        "f5": {
+          "checkLabel": "Not yet run",
+          "items": []
+        },
+        "f6": {
+          "checkLabel": "Not yet run",
+          "items": []
+        }
+      }
+    },
+    {
+      "id": "commodity-tick-ignored",
+      "note": "typed pure-commodity tick is ignored; all 18 checks apply",
+      "doc": {
+        "name": "Ticked but unsourced",
+        "category": "Instant noodles",
+        "division": "Foods",
+        "f1": {
+          "declaredAttribute": "Taste",
+          "benchmark": "Maggi",
+          "declaredGap": 3,
+          "growthRoute": "penetration",
+          "growthArgument": "Households still under-indexed in South India",
+          "pureCommodity": true
+        },
+        "f2": {
+          "cogsAtScale": 50.34,
+          "netMarginAtScale": 40,
+          "gstRatePct": 18,
+          "grammage": "50 g",
+          "mrpInr": 99,
+          "qcomTrajectory": "optional notes — not scored"
+        },
+        "f3": {
+          "marginElasticity": {
+            "minMrpInr": 80,
+            "maxMrpInr": 120
+          }
+        },
+        "f4": {
+          "techShiftRisk": {
+            "dimensions": {
+              "functionalCoreStability": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "consumptionContextStability": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "manufacturingDisruptionRisk": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "userHabitShiftPotential": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "adjacentSubstitutionThreat": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "purchaseFrequencyShift": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              },
+              "regulatoryDisruptionRisk": {
+                "risk": "Low",
+                "reason": "Low for golden"
+              }
+            },
+            "overall": null
+          }
+        },
+        "researchFindings": {
+          "f1": {
+            "attributeValidation": [
+              {
+                "attribute": "Taste",
+                "isPurchaseDriver": true,
+                "channels": [
+                  "GT"
+                ]
+              }
+            ],
+            "benchmarkVerified": true
+          },
+          "f4": {}
+        }
+      },
+      "expected": {
+        "pct": 22,
+        "done": 4,
+        "total": 18,
+        "classification": "NO-GO",
+        "byFilter": {
+          "f1": {
+            "done": 1,
+            "total": 7
+          },
+          "f2": {
+            "done": 3,
+            "total": 3
+          },
+          "f3": {
+            "done": 0,
+            "total": 1
+          },
+          "f4": {
+            "done": 0,
+            "total": 7
+          }
+        }
+      },
+      "checks": {
+        "f1": {
+          "checkLabel": "Evidence missing",
+          "markedDown": false,
+          "items": [
+            {
+              "status": "pending",
+              "text": "Named benchmark awaiting web check — Evaluate to assess this",
+              "slot": "benchmark",
+              "code": "F1_BENCHMARK_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
+            },
+            {
+              "status": "done",
+              "text": "Declared gap 3 clears the 2.0 floor",
+              "slot": "gap",
+              "code": "F1_GAP_STRONG",
+              "level": "strong",
+              "credit": 1,
+              "reasons": [],
+              "gainPct": 0
+            },
+            {
+              "status": "pending",
+              "text": "Evaluate to assess this",
+              "slot": "attributes",
+              "code": "F1_ATTRIBUTES_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
+            },
+            {
+              "status": "pending",
+              "text": "Enter gap derivation — what we intend to beat on",
+              "slot": "derivation",
+              "code": "F1_DERIVATION_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
+            },
+            {
+              "status": "pending",
+              "text": "Enter parity exceptions — or type \"none\"",
+              "slot": "parity",
+              "code": "F1_PARITY_NOT_ENTERED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ENTERED"
+              ],
+              "gainPct": 6
+            },
+            {
+              "status": "pending",
+              "text": "Growth route awaiting AI check — Evaluate to assess this",
+              "slot": "route",
+              "code": "F1_ROUTE_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
+            },
+            {
+              "status": "pending",
+              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
+              "slot": "argument",
+              "code": "F1_ARGUMENT_NOT_ASSESSED",
+              "level": "none",
+              "credit": 0,
+              "reasons": [
+                "NOT_ASSESSED"
+              ],
+              "gainPct": 6
+            }
+          ],
+          "scoringModel": "relevance",
+          "shadowMode": false
         },
         "f2": {
           "checkLabel": "Cleared",
@@ -21067,360 +21431,6 @@
               "text": "Functional core stability: High risk — High for golden. Clear via a Filter 4 mitigation response on \"Functional core stability\" naming contracts, lab proof, or a dated certification path",
               "code": "F4_DIMENSION_RISK",
               "reason": "High for golden"
-            },
-            {
-              "status": "pending",
-              "text": "Consumption context stability: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Consumption context stability\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            },
-            {
-              "status": "pending",
-              "text": "Manufacturing disruption risk: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Manufacturing disruption risk\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            },
-            {
-              "status": "pending",
-              "text": "User habit shift potential: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"User habit shift potential\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            },
-            {
-              "status": "pending",
-              "text": "Adjacent substitution threat: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Adjacent substitution threat\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            },
-            {
-              "status": "pending",
-              "text": "Purchase frequency shift: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Purchase frequency shift\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            },
-            {
-              "status": "pending",
-              "text": "Regulatory disruption risk: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Regulatory disruption risk\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
-            }
-          ]
-        },
-        "f5": {
-          "checkLabel": "Not yet run",
-          "items": []
-        },
-        "f6": {
-          "checkLabel": "Not yet run",
-          "items": []
-        }
-      }
-    },
-    {
-      "id": "doc-pad-0",
-      "note": "doc pad",
-      "doc": {
-        "name": "Pad 0",
-        "category": "Instant noodles",
-        "division": "Foods",
-        "f1": {
-          "declaredAttribute": "Taste",
-          "benchmark": "Maggi",
-          "declaredGap": 3,
-          "growthRoute": "penetration",
-          "growthArgument": "Households still under-indexed in South India"
-        },
-        "f2": {
-          "cogsAtScale": 50.34,
-          "netMarginAtScale": 36,
-          "gstRatePct": 18,
-          "grammage": "50 g",
-          "mrpInr": 99,
-          "qcomTrajectory": "optional notes — not scored"
-        },
-        "f3": {
-          "marginElasticity": {
-            "minMrpInr": 80,
-            "maxMrpInr": 120
-          }
-        },
-        "f4": {
-          "techShiftRisk": {
-            "dimensions": {
-              "functionalCoreStability": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "consumptionContextStability": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "manufacturingDisruptionRisk": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "userHabitShiftPotential": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "adjacentSubstitutionThreat": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "purchaseFrequencyShift": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              },
-              "regulatoryDisruptionRisk": {
-                "risk": "Low",
-                "reason": "Low for golden"
-              }
-            },
-            "overall": null
-          }
-        },
-        "researchFindings": {
-          "f1": {
-            "attributeValidation": [
-              {
-                "attribute": "Taste",
-                "isPurchaseDriver": true,
-                "channels": [
-                  "GT"
-                ]
-              }
-            ],
-            "benchmarkVerified": true
-          },
-          "f4": {}
-        }
-      },
-      "expected": {
-        "pct": 22,
-        "done": 4,
-        "total": 18,
-        "classification": "NO-GO",
-        "byFilter": {
-          "f1": {
-            "done": 1,
-            "total": 7
-          },
-          "f2": {
-            "done": 3,
-            "total": 3
-          },
-          "f3": {
-            "done": 0,
-            "total": 1
-          },
-          "f4": {
-            "done": 0,
-            "total": 7
-          }
-        }
-      },
-      "checks": {
-        "f1": {
-          "checkLabel": "Evidence missing",
-          "markedDown": false,
-          "items": [
-            {
-              "status": "pending",
-              "text": "Named benchmark awaiting web check — Evaluate to assess this",
-              "slot": "benchmark",
-              "code": "F1_BENCHMARK_NOT_ASSESSED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ASSESSED"
-              ],
-              "gainPct": 6
-            },
-            {
-              "status": "done",
-              "text": "Declared gap 3 clears the 2.0 floor",
-              "slot": "gap",
-              "code": "F1_GAP_STRONG",
-              "level": "strong",
-              "credit": 1,
-              "reasons": [],
-              "gainPct": 0
-            },
-            {
-              "status": "pending",
-              "text": "Evaluate to assess this",
-              "slot": "attributes",
-              "code": "F1_ATTRIBUTES_NOT_ASSESSED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ASSESSED"
-              ],
-              "gainPct": 6
-            },
-            {
-              "status": "pending",
-              "text": "Enter gap derivation — what we intend to beat on",
-              "slot": "derivation",
-              "code": "F1_DERIVATION_NOT_ENTERED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ENTERED"
-              ],
-              "gainPct": 6
-            },
-            {
-              "status": "pending",
-              "text": "Enter parity exceptions — or type \"none\"",
-              "slot": "parity",
-              "code": "F1_PARITY_NOT_ENTERED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ENTERED"
-              ],
-              "gainPct": 6
-            },
-            {
-              "status": "pending",
-              "text": "Growth route awaiting AI check — Evaluate to assess this",
-              "slot": "route",
-              "code": "F1_ROUTE_NOT_ASSESSED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ASSESSED"
-              ],
-              "gainPct": 6
-            },
-            {
-              "status": "pending",
-              "text": "Growth argument awaiting fact-check — Evaluate to assess this",
-              "slot": "argument",
-              "code": "F1_ARGUMENT_NOT_ASSESSED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_ASSESSED"
-              ],
-              "gainPct": 6
-            }
-          ],
-          "scoringModel": "relevance",
-          "shadowMode": false
-        },
-        "f2": {
-          "checkLabel": "Cleared",
-          "items": [
-            {
-              "status": "done",
-              "text": "Net margin 36% clears the 35% Foods minimum",
-              "slot": "margin",
-              "code": "F2_MARGIN_CLEARS",
-              "level": "strong",
-              "credit": 1,
-              "reasons": [
-                "CLEARS_MINIMUM"
-              ],
-              "gainPct": 0
-            },
-            {
-              "status": "done",
-              "text": "Pack size 50 g entered with a unit",
-              "slot": "packSize",
-              "code": "F2_PACK_SIZE_CLEARS",
-              "level": "strong",
-              "credit": 1,
-              "reasons": [],
-              "gainPct": 0
-            },
-            {
-              "status": "done",
-              "text": "GST rate 18% entered",
-              "slot": "gst",
-              "code": "F2_GST_CLEARS",
-              "level": "strong",
-              "credit": 1,
-              "reasons": [],
-              "gainPct": 0
-            },
-            {
-              "status": "pending",
-              "text": "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence; unconfirmed figures are treated as a gap",
-              "slot": "finance",
-              "code": "F2_FINANCE_SIGN",
-              "level": "none",
-              "credit": 0,
-              "reasons": [],
-              "gainPct": 6,
-              "formAdmin": true
-            }
-          ],
-          "markedDown": false
-        },
-        "f3": {
-          "checkLabel": "Marked down",
-          "markedDown": true,
-          "capsGo": true,
-          "items": [
-            {
-              "status": "pending",
-              "text": "Price resilience is assessed when you Submit.",
-              "slot": "resilience",
-              "code": "F3_RESILIENCE_CANNOT_ASSESS",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_RESEARCHED"
-              ],
-              "gainPct": 6
-            }
-          ]
-        },
-        "f4": {
-          "checkLabel": "Evidence missing",
-          "items": [
-            {
-              "status": "pending",
-              "text": "Functional core stability: Low risk — Low for golden. Earns no credit: nobody has web-checked this rating. Run the web check for \"Functional core stability\"",
-              "code": "F4_NOT_VERIFIED",
-              "level": "none",
-              "credit": 0,
-              "reasons": [
-                "NOT_VERIFIED"
-              ],
-              "reason": "Low for golden"
             },
             {
               "status": "pending",

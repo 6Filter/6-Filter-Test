@@ -7,7 +7,6 @@ import {
   PROPOSITION_TOP_FIELDS,
   SIX_FILTERS_FORM,
   VERDICT_NOTE_FIELD,
-  hasSubmitterIdentity,
   mergeProposition,
   SUBMITTER_DEPARTMENTS,
   isCanonicalTeam,
@@ -20,7 +19,6 @@ import {
   isFilterUnlocked,
   listMissingFormInputs,
   listUnfinishedResearch,
-  nextLockedHint,
 } from "../lib/filterUnlock.js";
 import {
   canRequestManagerReview,
@@ -1330,7 +1328,7 @@ function FieldControl({
                     }`
                   : fileValue?.name || String(value || "").trim()
                     ? "Not read yet. It is read when you Submit."
-                    : "Optional. Read on Submit when a link or file is provided."}
+                    : ""}
             </p>
           ) : null}
         </div>
@@ -1582,24 +1580,6 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
   );
 }
 
-function FilterTeaserCard({ spec, sub, checkLabel }) {
-  const f5f6 = spec.key === "f5" || spec.key === "f6";
-  return (
-    <div id={spec.key} className={`teaser-card${f5f6 ? " teaser-f5f6" : ""}`}>
-      <span className="teaser-badge">{spec.num}</span>
-      <div>
-        <div className="teaser-title">{spec.title}</div>
-        <div className="teaser-sub">{sub}</div>
-      </div>
-      {checkLabel ? (
-        <span className="check-pill" data-tone={toneFor(checkLabel)}>
-          Check: {checkLabel}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
 function InlineFloorFail({ check }) {
   if (check?.checkLabel !== "Below floor") return null;
   const pending = (check.items || []).find((i) => i.status === "pending");
@@ -1610,6 +1590,18 @@ function InlineFloorFail({ check }) {
     </div>
   );
 }
+
+/** Part 145 D108 — boxes removed from the input form (their data model and saved values stay). */
+const FORM_HIDDEN_FIELD_PATHS = new Set([
+  "f1.evidenceSourceDate",
+  "f1.targetConsumer",
+  "f1.pureCommodity",
+  "f2.qcomTrajectory",
+  "f2.financeSigned",
+  "f3.plannedAnnualIncreasePct",
+]);
+/** Part 145 D106 — filled by the system; shown only after "Adjust cost and margin". */
+const COST_ADJUST_FIELD_PATHS = new Set(["f2.cogsAtScale", "f2.netMarginAtScale", "f2.mrpInr"]);
 
 function ManagerReviewPanel({
   classification,
@@ -1628,6 +1620,7 @@ function ManagerReviewPanel({
   slackNotice = "",
   onDismissSlack,
   announcePreview = "",
+  onFinanceSigned,
 }) {
   if (classification === "NO-GO") return null;
   if (classification !== "WATCH") return null;
@@ -1676,6 +1669,19 @@ function ManagerReviewPanel({
   return (
     <div className="manager-review-panel">
       <p>This idea is WATCH. A manager review can unlock proof upload the same way a GO would.</p>
+      {/* Part 145 D108 — the Finance sign-off tick lives here, not on the input form. */}
+      {typeof onFinanceSigned === "function" ? (
+        <label className="prop-check finance-signoff" data-testid="finance-signoff" htmlFor="fld-f2-financeSigned">
+          <input
+            id="fld-f2-financeSigned"
+            data-field="f2.financeSigned"
+            type="checkbox"
+            checked={Boolean(live.f2?.financeSigned)}
+            onChange={(e) => onFinanceSigned(e.target.checked)}
+          />
+          <span>Finance has confirmed the margin computation</span>
+        </label>
+      ) : null}
       {requestedAt && !rejected ? (
         <div className="manager-review-banner" role="status">
           <p>
@@ -2811,12 +2817,9 @@ export default function PropositionForm({
   const [f4Reassessing, setF4Reassessing] = useState(false);
   const [f4VerifyingKey, setF4VerifyingKey] = useState("");
   const [refreshingField, setRefreshingField] = useState("");
-  const [conceptCardBusy, setConceptCardBusy] = useState(false);
-  const [conceptCardError, setConceptCardError] = useState("");
-  const [conceptCardNote, setConceptCardNote] = useState("");
-  const [conceptCardName, setConceptCardName] = useState(() =>
-    String(initial?.f1?.conceptCardName || "").trim()
-  );
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
+  const [parityOpen, setParityOpen] = useState(false);
+  const [costAdjustOpen, setCostAdjustOpen] = useState(false);
   /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
   const [benefitExtra, setBenefitExtra] = useState(() => {
     const f1 = initial?.f1 || {};
@@ -2840,7 +2843,6 @@ export default function PropositionForm({
   const [pressedBlocked, setPressedBlocked] = useState(false);
   const draftErrorRef = useRef("");
   const draftRetryRef = useRef({ count: 0, timer: null });
-  const conceptCardRef = useRef(null);
   const skipDraftRef = useRef(true);
   const draftDirtyRef = useRef(false);
   const onSaveDraftRef = useRef(onSaveDraft);
@@ -2948,7 +2950,6 @@ export default function PropositionForm({
     }
     if (initial?.sealedChecks) setSummaryChecks(initial.sealedChecks);
     else if (evalState === "evaluated") setSummaryChecks(sealedChecksForDoc(initial));
-    setConceptCardName(String(initial?.f1?.conceptCardName || "").trim());
     setResearchKeyAtRun(initial?.researchRunAt ? researchInputKey(filled.doc) : "");
     sourceDocRef.current = filled.doc;
     f3RangeTouchedByHuman.current = false;
@@ -3105,7 +3106,8 @@ export default function PropositionForm({
   }, [ideaDivision, ideaDivisionDetection, doc.f2?.netMarginAtScale, doc.f2?.netMarginSource]);
 
   const propositionId = doc.id || initial?.id;
-  const hasIdentity = hasSubmitterIdentity(doc);
+  // Part 145 D105 — name and team come from the login; only a team must exist.
+  const hasIdentity = Boolean(String(doc.submitterDepartment || currentUser?.team || "").trim());
   const progress = submitProgress(doc);
   const liveInputReview = reviewInputs(doc);
   const visibleInputReviewFields = liveInputReview.fields.filter(
@@ -3119,7 +3121,7 @@ export default function PropositionForm({
   // Part 140 B (D64) — "Why can't I submit?": every reason in plain words.
   const submitBlockers = [];
   if (!hasIdentity) {
-    submitBlockers.push({ id: "identity", blocking: true, text: "Enter your name and pick your team." });
+    submitBlockers.push({ id: "identity", blocking: true, text: "Pick your team with Change." });
   }
   if (progress.missingFieldLabels.length) {
     submitBlockers.push({
@@ -3182,7 +3184,6 @@ export default function PropositionForm({
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
   const f5Unlocked = isFilterUnlocked("f5", liveDoc);
-  const unlockHint = nextLockedHint(liveDoc);
   const unlockedFilterKeys = new Set(
     SIX_FILTERS_FORM.map((s) => s.key).filter((k) => isFilterUnlocked(k, liveDoc))
   );
@@ -3636,52 +3637,6 @@ export default function PropositionForm({
     }
   }
 
-  async function handleConceptCardFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !propositionId) return;
-    setConceptCardError("");
-    setConceptCardBusy(true);
-    try {
-      const uploaded = await readUploadFile(file, setConceptCardError, { allowExcel: true, allowImage: true });
-      if (!uploaded) return;
-      setConceptCardName(uploaded.name || file.name);
-      const res = await fetch(`/api/propositions/${encodeURIComponent(propositionId)}/concept-card`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attachment: uploaded, provider: llmProvider }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setConceptCardName("");
-        setConceptCardError(data.error || "Could not read that concept card.");
-        return;
-      }
-      if (data.conceptCardName) setConceptCardName(data.conceptCardName);
-      // Part 138 B — only values the document states are suggested; say how many were left out.
-      const keptCount = Array.isArray(data.extractedKeys) ? data.extractedKeys.length : 0;
-      const droppedCount = Number(data.droppedCount) || 0;
-      setConceptCardNote(
-        `Suggested from the concept card (AI-suggested, review): ${keptCount} field${keptCount === 1 ? "" : "s"} kept` +
-          (droppedCount ? `; ${droppedCount} dropped because the document does not state ${droppedCount === 1 ? "it" : "them"}.` : ".")
-      );
-      if (data.proposition) setDoc(mergeProposition(data.proposition));
-      if (data.suggestions) {
-        setAiSuggestions((prev) => ({
-          ...(prev || {}),
-          top: { ...(prev?.top || {}), ...(data.suggestions.top || {}) },
-          f1: { ...(prev?.f1 || {}), ...(data.suggestions.f1 || {}) },
-        }));
-      }
-    } catch (err) {
-      setConceptCardName("");
-      setConceptCardError(err.message || "Could not read that concept card.");
-    } finally {
-      setConceptCardBusy(false);
-    }
-  }
-
   function setTop(key, value) {
     noteEdit();
     markEdited("", key);
@@ -4056,7 +4011,7 @@ export default function PropositionForm({
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing || marginElasticityLoading) return;
     // Button stays pressable when Required boxes are empty so the press can show field errors.
-    if (!hasSubmitterIdentity(doc) || !canSubmit) {
+    if (!hasIdentity || !canSubmit) {
       setPressedBlocked(true);
       setSubmitMsg("");
       setSubmitFailed(false);
@@ -4065,8 +4020,8 @@ export default function PropositionForm({
       if (missing.some((item) => String(item.path).startsWith("f2."))) {
         setFilterOpen((prev) => ({ ...prev, f2: true }));
       }
-      if (!hasSubmitterIdentity(doc)) {
-        setLocalError("Enter your name and pick the team for this idea before Submit.");
+      if (!hasIdentity) {
+        setLocalError("Choose the team with Change before Submit.");
       } else if (inputBlocking) {
         setLocalError(
           liveInputReview.fields
@@ -4422,63 +4377,51 @@ export default function PropositionForm({
           </button>
         </div>
       ) : null}
-      <section className="prop-identity-strip" aria-label="Submitter">
-        <div className="prop-identity-cell" data-identity="name">
-          {PROPOSITION_TOP_FIELDS.filter((f) => f.key === "submitterName").map((field) => (
-            <FieldControl
-              key={field.key}
-              field={field}
-              fieldPath="submitterName"
-              value={doc[field.key]}
-              onChange={(v) => setTop(field.key, v)}
-              currentUser={currentUser}
-              aiSourced={false}
-              {...fieldControlExtras("", field)}
-            />
-          ))}
-        </div>
+      <section className="prop-identity-strip" aria-label="Team">
+        {/* Part 145 D105 — name and team are not boxes. The server fills both from the login. */}
         <div className="prop-identity-cell" data-identity="team">
-          <div className="prop-field">
-            <label className="prop-field-inner" htmlFor="fld-submitterDepartment">
-              <span className="prop-label" data-field-label="submitterDepartment">
-                <span>Your team</span>
-                <FieldRoleBadge path="submitterDepartment" doc={doc} />
-              </span>
-              {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? (
-                <input
-                  id="fld-submitterDepartment"
-                  data-field="submitterDepartment"
-                  value={`Legacy: ${doc.submitterDepartment}`}
-                  disabled
-                  readOnly
-                  aria-label="Your team"
-                />
-              ) : (
-                <select
-                  id="fld-submitterDepartment"
-                  data-field="submitterDepartment"
-                  value={doc.submitterDepartment || currentUser?.team || ""}
-                  disabled={false}
-                  onChange={(e) => setTop("submitterDepartment", e.target.value)}
-                  aria-label="Your team"
-                >
-                  <option value="">Select team…</option>
-                  {SUBMITTER_DEPARTMENTS.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </label>
-            {managerReviewRequestedOn(doc) ? (
-              <p className="autofill-status">A pending manager review will be re-routed if you change the team.</p>
-            ) : null}
-            {heroRequiredError("submitterDepartment")}
-          </div>
+          <span className="team-chip" data-testid="team-chip" data-field="submitterDepartment">
+            Team: {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment)
+              ? `Legacy: ${doc.submitterDepartment}`
+              : doc.submitterDepartment || currentUser?.team || "not set"}
+          </span>
+          {doc.teamIsLegacy && !isCanonicalTeam(doc.submitterDepartment) ? null : (
+            <button
+              type="button"
+              className="ghost team-change-btn"
+              data-testid="team-change"
+              aria-expanded={teamPickerOpen}
+              onClick={() => setTeamPickerOpen((open) => !open)}
+            >
+              Change
+            </button>
+          )}
+          {teamPickerOpen ? (
+            <select
+              id="fld-submitterDepartment"
+              data-field="submitterDepartment"
+              data-testid="team-select"
+              value={doc.submitterDepartment || currentUser?.team || ""}
+              onChange={(e) => {
+                setTop("submitterDepartment", e.target.value);
+                setTeamPickerOpen(false);
+              }}
+              aria-label="Your team"
+            >
+              <option value="">Select team…</option>
+              {SUBMITTER_DEPARTMENTS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {managerReviewRequestedOn(doc) ? (
+            <p className="autofill-status">A pending manager review will be re-routed if you change the team.</p>
+          ) : null}
+          {heroRequiredError("submitterDepartment")}
         </div>
       </section>
-
       {String(currentUser?.role || "") === "ADMIN" &&
       (doc.researchFindings?.autofillReport?.fields || doc.researchFindings?.autofillStatus) ? (
         <details className="ai-fill-report">
@@ -4498,7 +4441,6 @@ export default function PropositionForm({
 
       <section id="the-proposition" className="prop-form-hero">
         <h1>Start with the idea</h1>
-        <p>Three fields. Research fills the rest, you edit it.</p>
         <IdeaImportPanel
           result={importResult}
           setResult={setImportResult}
@@ -4613,37 +4555,6 @@ export default function PropositionForm({
             />
           ) : null;
         })()}
-        <div className="prop-attach concept-card-upload">
-          <input
-            ref={conceptCardRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-            hidden
-            onChange={handleConceptCardFile}
-          />
-          <button
-            type="button"
-            className="ghost"
-            disabled={conceptCardBusy}
-            title="PDF, Word, or Excel. Extracts only fields the document states."
-            onClick={() => conceptCardRef.current?.click()}
-          >
-            {conceptCardBusy ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
-            Upload concept card
-          </button>
-          {conceptCardName ? (
-            <span className="chip file prop-file-chip">
-              <FileText size={15} />
-              {conceptCardName}
-            </span>
-          ) : null}
-        </div>
-        {conceptCardError ? (
-          <div className="prop-err">
-            <AlertTriangle size={14} /> {conceptCardError}
-          </div>
-        ) : null}
-        {conceptCardNote ? <p className="autofill-status">{conceptCardNote}</p> : null}
         <AiPassResultBanner meta={aiPassMeta} />
       </section>
 
@@ -4651,20 +4562,8 @@ export default function PropositionForm({
         const researchPlan = planResearch(doc);
         const missingStep = researchPlan.researchState === "incomplete" && researchPlan.steps.includes(spec.key.toUpperCase());
         const unlocked = unlockedFilterKeys.has(spec.key);
-        if (!unlocked && (spec.key === "f5" || spec.key === "f6")) {
-          return (
-            <FilterTeaserCard
-              key={spec.key}
-              spec={spec}
-              checkLabel="Not yet run"
-              sub={
-                spec.key === "f5"
-                  ? "Opens once the idea reads GO and proof is uploaded."
-                  : "Opens together with Filter 5 after proof is uploaded."
-              }
-            />
-          );
-        }
+        // Part 145 D108 — Filters 5 and 6 show only at the proof stage; before that they render nothing.
+        if (!unlocked && (spec.key === "f5" || spec.key === "f6")) return null;
         const values = doc[spec.key] || {};
         const check =
           spec.key === "f1" || spec.key === "f2" || spec.key === "f3" || spec.key === "f4"
@@ -4677,6 +4576,15 @@ export default function PropositionForm({
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
+        // Part 145 D108 / D106 — boxes taken off the form; cost and margin sit behind one button.
+        const costAdjustVisible =
+          costAdjustOpen || (spec.key === "f2" && (doc.f2?.mrpOverride === true || doc.f2?.netMarginSource === "user"));
+        const visibleSpecFields = spec.fields.filter((f) => {
+          const path = `${spec.key}.${f.key}`;
+          if (FORM_HIDDEN_FIELD_PATHS.has(path)) return false;
+          if (COST_ADJUST_FIELD_PATHS.has(path)) return costAdjustVisible;
+          return true;
+        });
         const collapsible = spec.key === "f2" || spec.key === "f3" || spec.key === "f4";
         const filterExpanded = !collapsible || Boolean(filterOpen[spec.key]);
         const toggleFilter = () => {
@@ -4830,6 +4738,19 @@ export default function PropositionForm({
               <p className="autofill-status">{evidenceF5F6Note}</p>
             ) : null}
 
+            {spec.key === "f2" ? (
+              <div className="cost-adjust-row">
+                <button
+                  type="button"
+                  className="ghost"
+                  data-testid="adjust-cost-margin"
+                  aria-expanded={costAdjustVisible}
+                  onClick={() => setCostAdjustOpen((open) => !open)}
+                >
+                  Adjust cost and margin
+                </button>
+              </div>
+            ) : null}
             <div className="prop-grid">
               {(spec.key === "f1"
                 ? (() => {
@@ -4837,16 +4758,57 @@ export default function PropositionForm({
                     const has3 = Boolean(String(values.declaredAttribute3 || "").trim());
                     const show2 = has2 || has3 || benefitExtra >= 1;
                     const show3 = has3 || benefitExtra >= 2;
-                    return spec.fields.filter((field) => {
+                    return visibleSpecFields.filter((field) => {
                       if (field.key === "declaredAttribute2") return show2;
                       if (field.key === "declaredAttribute3") return show3;
                       return true;
                     });
                   })()
-                : spec.fields
+                : visibleSpecFields
               ).flatMap((field) => {
                 const nodes = [];
-                if (field.type === "computed") {
+                if (spec.key === "f1" && field.key === "parityExceptions") {
+                  // Part 145 D109 — parity is one tick; "none" is what the scorer already reads.
+                  const rawParity = String(values.parityExceptions || "").trim();
+                  const parityNone = rawParity.toLowerCase() === "none";
+                  const parityText = rawParity !== "" && !parityNone;
+                  nodes.push(
+                    <div key="parity-tick" className="prop-field-wrap span-2 parity-tick-wrap" data-testid="parity-tick" data-field="f1.parityExceptions-tick">
+                      <label className="prop-check" htmlFor="fld-f1-parityTick">
+                        <input
+                          id="fld-f1-parityTick"
+                          type="checkbox"
+                          checked={parityNone}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setParityOpen(false);
+                              setFilter("f1", "parityExceptions", "none");
+                            } else {
+                              setParityOpen(true);
+                              setFilter("f1", "parityExceptions", "");
+                            }
+                          }}
+                        />
+                        <span className="prop-label" data-field-label="f1.parityExceptions">
+                          <span>Parity or better on the remaining attributes</span>
+                          <FieldRoleBadge path="f1.parityExceptions" doc={doc} />
+                        </span>
+                      </label>
+                      {!parityNone && !parityText && !parityOpen ? (
+                        <button
+                          type="button"
+                          className="benefit-add"
+                          data-testid="parity-exceptions-open"
+                          onClick={() => setParityOpen(true)}
+                        >
+                          We may lose on some attributes
+                        </button>
+                      ) : null}
+                      {!parityNone && !parityText && !parityOpen ? heroRequiredError("f1.parityExceptions") : null}
+                    </div>
+                  );
+                  if (!parityText && !parityOpen) return nodes;
+                }                if (field.type === "computed") {
                   nodes.push(
                   <div key={field.key} className="prop-field span-2" data-field={`${spec.key}.${field.key}`}>
                     <div className="prop-label" data-field-label={`${spec.key}.${field.key}`}>
@@ -5060,8 +5022,6 @@ export default function PropositionForm({
         );
       })}
 
-      {unlockHint && !f5Unlocked && !justSubmitted ? <p className="unlock-hint">{unlockHint}</p> : null}
-
       {liveDoc.goNoGo?.classification === "WATCH" || hasManagerApproval(liveDoc) ? (
         <ManagerReviewPanel
           classification={liveDoc.goNoGo?.classification}
@@ -5080,6 +5040,7 @@ export default function PropositionForm({
           slackNotice={slackNotice}
           onDismissSlack={() => setSlackNotice("")}
           announcePreview={reviewAnnounce || doc.managerReview?.announce || ""}
+          onFinanceSigned={(on) => setFilter("f2", "financeSigned", on)}
         />
       ) : null}
 
@@ -5189,7 +5150,7 @@ export default function PropositionForm({
               aria-disabled={!canSubmit || !hasIdentity ? "true" : undefined}
               title={
                 !hasIdentity
-                  ? "Enter your name and department before Submit"
+                  ? "Pick your team with Change before Submit"
                   : inputBlocking
                     ? liveInputReview.fields
                         .filter((f) => f.status === "invalid")
@@ -5284,9 +5245,18 @@ ${IDEA_IMPORT_CSS}
 .ownership-note{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink-muted);}
 .draft-not-saved{display:inline;font-size:12px;color:#ff9d9d;font-weight:700;}
 .prop-form-main{min-width:0;width:100%;display:flex;flex-direction:column;gap:var(--gap-field,16px);}
-.prop-identity-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-items:start;
+.prop-identity-strip{display:grid;grid-template-columns:1fr;gap:12px 16px;align-items:start;
   background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;}
-.prop-identity-cell{min-width:0;display:flex;flex-direction:column;}
+.prop-identity-cell{min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 12px;}
+.team-chip{display:inline-flex;align-items:center;min-height:36px;padding:4px 12px;border-radius:999px;border:1px solid var(--card-border);font-size:13.5px;max-width:100%;overflow-wrap:anywhere;}
+.team-change-btn{min-height:44px;min-width:44px;padding:8px 14px;font-size:13px;}
+.prop-identity-cell select{min-height:44px;max-width:100%;}
+.cost-adjust-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 10px;}
+.cost-adjust-row .ghost{min-height:44px;padding:8px 14px;font-size:13px;}
+.parity-tick-wrap{display:flex;flex-direction:column;gap:6px;}
+.parity-tick-wrap .prop-check{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:10px;}
+.parity-tick-wrap .prop-check input[type="checkbox"]{flex:0 0 auto;width:22px;height:22px;margin-top:2px;}
+.parity-tick-wrap .prop-label{flex:1 1 auto;min-width:0;}
 .prop-identity-cell .prop-field{width:100%;margin:0;}
 .prop-identity-cell .prop-label{min-height:28px;align-items:center;}
 .prop-identity-cell .prop-field-inner{width:100%;}
@@ -5600,8 +5570,6 @@ ${FIELD_ROLE_CSS}
   border-radius:999px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;
 }
 .field-refresh:disabled{opacity:.55;cursor:not-allowed;}
-.concept-card-upload{align-items:flex-start;}
-.concept-card-upload .prop-helper{margin:0;max-width:420px;}
 .gonogo-badge{
   display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em;
   padding:6px 12px;border-radius:999px;margin:0;

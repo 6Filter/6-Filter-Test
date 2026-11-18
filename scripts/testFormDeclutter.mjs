@@ -46,15 +46,14 @@ check("D3b team field-helper static copy is gone", () => {
   assert.doesNotMatch(form, /Pick the team for this idea/);
 });
 
-check("D3c concept-card caption is title-only, not a prop-helper span", () => {
-  assert.match(form, /Upload concept card/);
-  assert.match(form, /title="PDF, Word, or Excel/);
+check("D3c concept-card button is gone (Part 145 D107: one upload)", () => {
+  assert.doesNotMatch(form, /Upload concept card/);
   assert.doesNotMatch(form, /Separate from the Filter 1 source-file/);
 });
 
 check("D4 every FieldControl / hero heading carries data-field-label", () => {
   assert.match(form, /data-field-label=\{fieldPath \|\| undefined\}/);
-  for (const key of ["name", "category", "ideaDescription", "submitterDepartment"]) {
+  for (const key of ["name", "category", "ideaDescription"]) {
     assert.match(form, new RegExp(`data-field-label="${key}"`), key);
   }
   assert.match(form, /data-field-label="f2\.mrpOverride"/);

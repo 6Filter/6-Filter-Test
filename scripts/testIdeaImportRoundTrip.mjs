@@ -78,19 +78,25 @@ await check("every Inputs Excel column that is a form box is importable, bar own
   const exportCols = new Set(FULL_EXPORT_COLUMNS);
   const formBoxes = formFieldPaths().filter((p) => exportCols.has(p));
   const notImported = formBoxes.filter((p) => !IMPORT_PATHS.includes(p) && pathForHeader(p) !== p).sort();
-  // Left out on purpose: who the uploader is (taken from the account), sign-offs, a computed result, Filter 6.
+  // Left out on purpose (Part 145 D111): who the uploader is (taken from the account), sign-offs, a computed result,
+  // the boxes taken off the form (pure commodity, who it is for, system-filled cost/margin/MRP, quick-commerce) and the
+  // proof-stage boxes (Filters 5 and 6).
   assert.deepEqual(
     notImported.filter((p) => !p.startsWith("f6.")),
-    ["f2.financeSigned", "f5.computedRevenue", "submitterDepartment", "submitterName"].sort()
+    [
+      "f1.pureCommodity", "f1.targetConsumer", "f2.cogsAtScale", "f2.financeSigned", "f2.mrpInr", "f2.netMarginAtScale",
+      "f2.qcomTrajectory", "f5.avgPackValueInr", "f5.computedRevenue", "f5.householdsReachedY3Mn",
+      "f5.purchaseFrequencyYr", "f5.repeatConversionPct", "f5.trialRatePct", "submitterDepartment", "submitterName",
+    ].sort()
   );
   for (const p of formBoxes.filter((x) => IMPORT_PATHS.includes(x))) {
     assert.equal(pathForHeader(p), p, `${p} header is recognised as itself`);
   }
 });
 
-await check("the export's own aliases (evidenceSourceLink) map to the same box", () => {
-  assert.equal(pathForHeader("f1.evidenceSourceLink"), "f1.evidenceSourceDate");
-  assert.equal(pathForHeader("f1.evidenceSourceDate"), "f1.evidenceSourceDate");
+await check("Part 145 D108: the evidence-source box is gone from the upload as well", () => {
+  assert.equal(pathForHeader("f1.evidenceSourceLink"), null);
+  assert.equal(pathForHeader("f1.evidenceSourceDate"), null);
 });
 
 await check("template headers and export headers resolve to the same paths", () => {

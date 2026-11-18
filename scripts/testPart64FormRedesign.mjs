@@ -18,7 +18,7 @@ assert.doesNotMatch(formSrc, /prop-side-nav/);
 assert.match(formSrc, /prop-form-shell/);
 assert.match(formSrc, /prop-form-hero/);
 assert.match(formSrc, /Start with the idea/);
-assert.match(formSrc, /Three fields\. Research fills the rest, you edit it\./);
+assert.doesNotMatch(formSrc, /Three fields\. Research fills the rest/); // Part 145 D108
 assert.match(formSrc, /e\.g\. Herbal cooling hair oil/);
 assert.match(formSrc, /e\.g\. Hair oils/);
 assert.match(formSrc, /Describe the product idea/);
@@ -39,7 +39,8 @@ assert.doesNotMatch(formSrc, /setFileError/);
 const empty = submitProgress({});
 assert.ok(empty.requiredLeft >= 5);
 assert.ok(empty.missingFieldLabels.includes("Proposition name"));
-assert.ok(empty.missingFieldLabels.includes("Your name"));
+assert.ok(!empty.missingFieldLabels.includes("Your name"), "Part 145 D105: name is not a box");
+assert.equal(empty.requiredLeft, 12, "Part 145: twelve typed Required boxes");
 
 const filled = {
   submitterName: "Asha",

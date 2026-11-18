@@ -58,8 +58,12 @@ await check("template has Ideas + Guide sheets", async () => {
   const headers = ideas.getRow(1).values.slice(1);
   assert.deepEqual(headers, IMPORT_FIELDS.map((f) => importColumnHeader(f.path)));
   assert.ok(headers.includes("Proposition name") && headers.includes("Category") && headers.includes("Idea description"));
-  assert.ok(headers.some((h) => /COGS/.test(h)), "COGS column");
-  assert.ok(headers.some((h) => /Net margin/.test(h)) && headers.some((h) => /GST/.test(h)) && headers.some((h) => /Pack size/.test(h)));
+  // Part 145 D111 — fourteen columns; the system-filled cost, margin and MRP are not asked for.
+  assert.equal(headers.length, 14, "fourteen template columns");
+  assert.ok(headers.some((h) => /GST/.test(h)) && headers.some((h) => /Pack size/.test(h)));
+  for (const gone of [/COGS/, /Net margin/, /MRP/, /Your name/, /Team/, /Evidence/, /Pure commodity/, /Quick-commerce/, /Finance/, /price rise/i, /Who is this for/i]) {
+    assert.ok(!headers.some((h) => gone.test(h)), `no ${gone} column`);
+  }
   assert.equal(ideas.getRow(2).getCell(1).value, EXAMPLE_NAME, "row 2 is the EXAMPLE row");
 });
 
@@ -106,11 +110,9 @@ await check("filled template: two ideas, typed values, cells recorded", async ()
   put(3, "f1.declaredGap", 3);
   put(3, "f1.growthRoute", "New market");
   put(3, "f2.gstRatePct", "18%");
-  put(3, "f2.mrpInr", "₹ 99");
-  put(3, "f2.cogsAtScale", "1,250");
   put(4, "name", "Protein bar");
   put(4, "f2.grammage", "50 g");
-  put(4, "f2.netMarginAtScale", "abc");
+  put(4, "f1.declaredGap", "abc");
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   const out = await parseSpreadsheetImport(buf, "ideas.xlsx");
   assert.equal(out.ideas.length, 2);
@@ -119,14 +121,12 @@ await check("filled template: two ideas, typed values, cells recorded", async ()
   assert.equal(a.fields["f1.declaredGap"], 3);
   assert.equal(a.fields["f1.growthRoute"], "new-market");
   assert.equal(a.fields["f2.gstRatePct"], 18);
-  assert.equal(a.fields["f2.mrpInr"], 99);
-  assert.equal(a.fields["f2.cogsAtScale"], 1250);
   assert.deepEqual(a.fieldSources.name, { source: "upload", cell: "A3" });
   assert.equal(a.row, 3);
   assert.equal(b.fields["f2.grammage"], "50 g");
-  assert.ok(!("f2.netMarginAtScale" in b.fields), "a non-number is left out");
+  assert.ok(!("f1.declaredGap" in b.fields), "a non-number is left out");
   assert.ok(b.warnings.some((w) => /not a number/.test(w)), "and explained");
-  assert.deepEqual(b.dropped, ["f2.netMarginAtScale"]);
+  assert.deepEqual(b.dropped, ["f1.declaredGap"]);
 });
 
 // ───────────────────────────── Q&A sheet ─────────────────────────────

@@ -89,7 +89,7 @@ const router = readFileSync(new URL("../lib/apiRouter.js", import.meta.url), "ut
 const log = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 
 assert.match(form, /previewAdvisoryChecks\(liveDoc\)/);
-assert.match(form, /Upload concept card/);
+assert.doesNotMatch(form, /Upload concept card/); // Part 145 D107
 assert.match(form, /primus-fmcg-categories/);
 assert.match(form, /Re-run this estimate/);
 assert.match(form, /saveDraftSilently|onSaveDraft/);

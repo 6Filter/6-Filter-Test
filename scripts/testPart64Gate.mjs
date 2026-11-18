@@ -93,7 +93,7 @@ assert.match(formSrc, /runGoNoGoRead/);
 assert.match(formSrc, /Submit for verdict/);
 assert.match(formSrc, /listMissingFormInputs/);
 assert.match(formSrc, /Values you have not entered yet|Still to enter before a full score/);
-assert.match(formSrc, /FilterTeaserCard/);
-assert.match(formSrc, /Opens once the idea reads GO and proof is uploaded/);
+assert.doesNotMatch(formSrc, /FilterTeaserCard/); // Part 145 D108
+assert.doesNotMatch(formSrc, /Opens once the idea reads GO and proof is uploaded/);
 
 console.log("PASS Part 64 proof-upload gate + F5/F6-only lock");

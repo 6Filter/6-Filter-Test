@@ -152,9 +152,6 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
           <Download size={14} /> Download the Excel template
         </a>
       </div>
-      <p className="prop-helper import-help">
-        One idea or many (up to 200, 5 MB). Each idea becomes a draft you own. Nothing is scored until you press Submit.
-      </p>
       {error ? (
         <div className="prop-err" role="alert" data-testid="import-error">
           <AlertTriangle size={14} /> {error}
