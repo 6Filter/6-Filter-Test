@@ -90,6 +90,14 @@ if (stored.length !== RESTORED_ROW_COUNT) throw new Error(`Loaded ${stored.lengt
 const storedChecksum = checksumRows(stored);
 if (storedChecksum !== fileChecksum) throw new Error("Loaded checksum does not match the 8 Oct backup.");
 
+// Advance serial counters after the load (copied rows can leave nextval behind MAX(id)).
+process.env.DATABASE_URL = adminText;
+process.env.PRIMUS_SCHEMA = RESTORED_DATABASE;
+const dbAfter = await import("../lib/db.js");
+await dbAfter.initDb();
+await dbAfter.repairSerialSequences();
+await dbAfter.closeDatabase();
+
 const locker = new pg.Client({ connectionString: adminText });
 await locker.connect();
 const publicTable = await locker.query(`SELECT to_regclass('public.propositions') AS name`);

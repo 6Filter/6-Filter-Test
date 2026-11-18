@@ -69,3 +69,5 @@ Tables included: all app tables except `research_cache`, including `manager_revi
 ## Health
 
 `GET /api/health` includes `lastBackupAt`. If no export for **36 hours**, the app sends **one** Slack ops alert per day.
+
+Moving a database (copy/restore into a new Render Postgres) means either using `pg_dump` / `pg_restore` (which set serial counters) or running the app’s `repairSerialSequences()` after load — otherwise deletes can hit `deleted_propositions_pkey` until the counters catch up. `/api/health` reports `sequencesOk` when counters match.

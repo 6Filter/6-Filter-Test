@@ -19,6 +19,7 @@ import {
   hasManagerApproval,
   isFilterUnlocked,
   listMissingFormInputs,
+  listUnfinishedResearch,
   nextLockedHint,
 } from "../lib/filterUnlock.js";
 import {
@@ -1936,6 +1937,7 @@ export function GoNoGoResultPage({
   allowPdfExport = true,
   sealedOutput = null,
   missingFormInputs = null,
+  unfinishedResearch = null,
 }) {
   const pageRef = useRef(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -2106,6 +2108,44 @@ export function GoNoGoResultPage({
                   <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
                 ))}
               </ul>
+            </div>
+          );
+        })()}
+        {(() => {
+          const gaps =
+            Array.isArray(unfinishedResearch) && unfinishedResearch.length
+              ? unfinishedResearch
+              : listUnfinishedResearch(doc || {});
+          if (!gaps.length) return null;
+          const hasF4 = gaps.some((g) => g.filter === "f4" || g.field === "techShiftRisk");
+          return (
+            <div className="research-unfinished-block" role="status" data-testid="research-unfinished">
+              <h3>Research that did not finish</h3>
+              <ul className="evaluation-missing-list">
+                {gaps.map((entry) => (
+                  <li key={`${entry.filter}.${entry.field}`}>
+                    <strong>{entry.label}</strong>
+                    {entry.reason ? <span className="research-unfinished-reason"> — {entry.reason}</span> : null}
+                  </li>
+                ))}
+              </ul>
+              {hasF4 ? (
+                <p className="research-unfinished-share">
+                  Filter 4 is 7 of the 18 checks (39% of the score)
+                </p>
+              ) : null}
+              {typeof onSubmit === "function" ? (
+                <button
+                  type="button"
+                  className="prop-save pdf-hide"
+                  data-testid="research-unfinished-screen-again"
+                  disabled={saving}
+                  onClick={onSubmit}
+                >
+                  {saving ? <Loader2 size={14} className="spin" /> : null}
+                  Screen again
+                </button>
+              ) : null}
             </div>
           );
         })()}
@@ -4230,6 +4270,7 @@ export default function PropositionForm({
             advisoryChecks={displayChecks}
             sealedOutput={sealedOutput}
             missingFormInputs={listMissingFormInputs(doc)}
+            unfinishedResearch={listUnfinishedResearch(doc)}
             category={formCategoryLabel(doc) || displayGo.category}
             ideaName={formIdeaLabel(doc) || displayGo.ideaName}
             doc={doc}
@@ -5674,6 +5715,12 @@ ${FIELD_ROLE_CSS}
 .evaluation-pending-page .gonogo-pending-title{margin:12px 0 8px;font-size:20px;font-weight:700;color:var(--ink);}
 .evaluation-missing-list{margin:16px 0 0;padding-left:20px;color:var(--ink-muted-85);}
 .evaluation-missing-list li{margin:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.research-unfinished-block{margin:0 0 16px;padding:14px 16px;border-radius:14px;
+  background:rgba(240,193,75,.08);border:1px solid rgba(240,193,75,.35);color:var(--ink);}
+.research-unfinished-block h3{margin:0;font-size:15px;font-weight:700;}
+.research-unfinished-reason{font-weight:400;color:var(--ink-secondary);}
+.research-unfinished-share{margin:10px 0 0;font-size:13px;color:var(--ink-secondary);}
+.research-unfinished-block .prop-save{margin-top:12px;}
 @media (max-width:900px){
   .output-hero-row,.filter-grid{grid-template-columns:1fr;}
 }

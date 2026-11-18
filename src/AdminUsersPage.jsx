@@ -42,6 +42,8 @@ export default function AdminUsersPage({ apiFetch }) {
   const [scoringSelected, setScoringSelected] = useState(() => new Set());
   const [scoringShadow, setScoringShadow] = useState(true);
   const [scoringWeightNote, setScoringWeightNote] = useState("");
+  const [sequencesOk, setSequencesOk] = useState(true);
+  const [sequenceDrift, setSequenceDrift] = useState([]);
 
   const loadUsers = useCallback(async () => {
     setError("");
@@ -112,6 +114,24 @@ export default function AdminUsersPage({ apiFetch }) {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/health", { credentials: "include" });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        setSequencesOk(data.sequencesOk !== false);
+        setSequenceDrift(Array.isArray(data.sequenceDrift) ? data.sequenceDrift : []);
+      } catch {
+        if (!cancelled) setSequencesOk(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (tab === "roster") loadRoster();
@@ -230,6 +250,12 @@ export default function AdminUsersPage({ apiFetch }) {
         ))}
       </div>
       {error ? <p className="admin-error">{error}</p> : null}
+      {!sequencesOk ? (
+        <p className="admin-error" role="alert" data-testid="sequence-drift-warning">
+          Database serial counters are behind copied rows ({sequenceDrift.map((d) => `${d.table}.${d.column}`).join(", ") || "see /api/health"}).
+          Deletes can fail until the app repairs them on start-up — or run repairSerialSequences / the setval SQL in the Hotfix note.
+        </p>
+      ) : null}
 
       {tab === "scoring" ? (
         <section className="admin-panel">
