@@ -145,10 +145,10 @@ assert.equal(coverage.total, 6);
 assert.equal(coverage.have, 2);
 
 const src = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(src, /--bg:#0d0715/);
-assert.match(src, /--path-panel-bg:#151f2c/);
-assert.match(src, /Space Grotesk/);
-assert.match(src, /JetBrains Mono/);
+assert.match(src, /--c-bg-page:#faf3e8/);
+assert.match(src, /--path-panel-bg:var\(--card-bg\)/);
+assert.match(src, /Sora/);
+assert.match(src, /IBM Plex Mono/);
 assert.match(src, /buildPathToGo/);
 assert.match(src, /What to do next/);
 assert.match(src, /Closest path to GO/);

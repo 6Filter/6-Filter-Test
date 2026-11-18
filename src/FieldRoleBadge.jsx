@@ -45,15 +45,15 @@ export function BeforeYouSubmit({ doc }) {
 export const FIELD_ROLE_CSS = `
 .field-role{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-left:8px;min-width:0;max-width:100%;font-family:'Sora',system-ui,sans-serif;letter-spacing:0;}
 .field-role-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:var(--fs-badge,12px);font-weight:500;line-height:1.35;white-space:normal;}
-.field-role-badge[data-role="required"]{color:var(--c-required,#f5b562);border:1px solid var(--c-required,#f5b562);background:rgba(245,181,98,.12);}
-.field-role-badge[data-role="optional"]{color:var(--c-optional,#b9a9cc);border:1px dashed var(--c-optional,#b9a9cc);background:rgba(185,169,204,.08);}
+.field-role-badge[data-role="required"]{color:var(--c-required,var(--c-watch));border:1px solid var(--c-required,#f5b562);background:rgba(245,181,98,.12);}
+.field-role-badge[data-role="optional"]{color:var(--c-optional,var(--c-text-muted));border:1px dashed var(--c-optional,#b9a9cc);background:rgba(185,169,204,.08);}
 .hero-label{margin:6px 0 2px;}
 .hero-label label{font-weight:600;}
-.before-you-submit{padding:12px 16px;border:1px solid rgba(201,160,232,.3);border-radius:12px;background:rgba(25,12,34,.55);color:var(--c-input,#efe8f5);font-size:var(--fs-status,13px);}
-.before-you-submit-title{margin:0 0 8px;font-size:calc(15px * var(--ts, 1));font-weight:700;color:var(--c-section,#ddd6fe);}
+.before-you-submit{padding:12px 16px;border:1px solid rgba(154,90,50,.3);border-radius:12px;background:rgba(255,250,241,.55);color:var(--c-input,var(--c-text-strong));font-size:var(--fs-status,13px);}
+.before-you-submit-title{margin:0 0 8px;font-size:calc(15px * var(--ts, 1));font-weight:700;color:var(--c-section);}
 .before-you-submit-one{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;}
-.before-you-submit .byc-text{color:var(--c-placeholder,#9a89ae);}
-.before-you-submit .mono{font-size:calc(18px * var(--ts, 1));font-weight:700;color:var(--c-label,#f6eefb);}
+.before-you-submit .byc-text{color:var(--c-placeholder,var(--c-text-muted));}
+.before-you-submit .mono{font-size:calc(18px * var(--ts, 1));font-weight:700;color:var(--c-label,var(--c-text-strong));}
 @media (max-width:760px){
 .field-role{flex:1 1 100%;margin-left:0;margin-top:4px;flex-wrap:wrap;}
 }

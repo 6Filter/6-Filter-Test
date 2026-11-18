@@ -8,16 +8,16 @@ assert.match(src, /className="prop-page output-page"/);
 assert.match(src, /<main className="prop-page prop-form-page" data-view="propositionForm"(?:\s+data-form-zoom=\{formZoom\})?>/);
 
 const tokenBlock = src.slice(src.indexOf(".output-page{"), src.indexOf(".proof-panel"));
-assert.match(tokenBlock, /--bg:#0d0715/);
-assert.match(tokenBlock, /--path-panel-bg:#151f2c/);
-assert.match(tokenBlock, /--ink:#efe8fb/);
-assert.match(tokenBlock, /--pass:#7ee0a8/);
-assert.match(tokenBlock, /--fail:#ff8a6b/);
-assert.match(tokenBlock, /--watch:#f0c14b/);
-assert.match(tokenBlock, /--nogo-bg:#4d1f1f/);
-assert.match(tokenBlock, /--btn-primary:#5a2ea6/);
-assert.match(tokenBlock, /font-family:'Space Grotesk'/);
-assert.match(tokenBlock, /JetBrains Mono/);
+assert.match(tokenBlock, /--c-bg-page:#faf3e8/);
+assert.match(tokenBlock, /--path-panel-bg:var\(--card-bg\)/);
+assert.match(tokenBlock, /--ink:var\(--c-text\)/);
+assert.match(tokenBlock, /--pass:var\(--c-go\)/);
+assert.match(tokenBlock, /--fail:var\(--c-nogo\)/);
+assert.match(tokenBlock, /--watch:var\(--c-watch\)/);
+assert.match(tokenBlock, /--nogo-bg:rgba\(168,67,43,\.1\)/);
+assert.match(tokenBlock, /--btn-primary:var\(--c-accent\)/);
+assert.match(tokenBlock, /font-family:'Sora'/);
+assert.match(tokenBlock, /IBM Plex Mono/);
 assert.doesNotMatch(tokenBlock, /--hero-go/);
 assert.doesNotMatch(tokenBlock, /Plus Jakarta Sans/);
 

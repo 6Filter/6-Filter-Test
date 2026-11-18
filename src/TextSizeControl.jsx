@@ -194,14 +194,14 @@ export default function TextSizeControl({ value, onChange, className = "" }) {
  */
 export const TEXT_SIZE_CSS = `
 .text-size-control{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;padding:4px;max-width:100%;box-sizing:border-box;
-  border:1px solid rgba(201,160,232,.3);border-radius:12px;background:rgba(26,15,37,.72);color:#efe8f5;
+  border:1px solid rgba(154,90,50,.3);border-radius:12px;background:rgba(255,250,241,.72);color:var(--c-text-strong);
   font-family:'Sora',system-ui,sans-serif;font-size:14px;line-height:1;}
 .text-size-btn,.text-size-pct{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
-  min-width:44px;min-height:44px;height:44px;margin:0;padding:0 10px;border:1px solid rgba(201,160,232,.35);border-radius:10px;
+  min-width:44px;min-height:44px;height:44px;margin:0;padding:0 10px;border:1px solid rgba(154,90,50,.35);border-radius:10px;
   background:transparent;color:inherit;font:600 14px/1 'Sora',system-ui,sans-serif;cursor:pointer;}
 .text-size-btn{width:44px;padding:0;}
 .text-size-pct{min-width:64px;}
 .text-size-btn:disabled{opacity:.4;cursor:not-allowed;}
-.text-size-btn:focus-visible,.text-size-pct:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px;}
+.text-size-btn:focus-visible,.text-size-pct:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px;}
 .text-size-btn{touch-action:manipulation;user-select:none;-webkit-user-select:none;}
 `;
