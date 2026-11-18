@@ -120,7 +120,11 @@ const statsRows = [
   { createdAt: "2026-09-03T10:00:00.000Z", classification: "NO-GO", name: "D" },
 ];
 const stats = logStats(statsRows, now);
-assert.equal(stats.submittedThisMonth, 3);
+// Part 148 D118/D119: only submitted ideas count (A and C are still drafts); was 3 when drafts were counted.
+assert.equal(stats.submittedThisMonth, 1);
+assert.equal(stats.submitted, 1);
+assert.equal(stats.drafts, 3);
+assert.equal(stats.submitted + stats.drafts, stats.total);
 assert.equal(stats.cleared, 1);
 assert.equal(stats.clearedRate, 25);
 assert.equal(stats.open, 2);
@@ -202,7 +206,9 @@ assert.match(logSrc, /exportPropositionInputsPdf/);
 assert.match(logSrc, /Delete this idea/);
 assert.match(logSrc, /Delete all/);
 assert.match(logSrc, /STATUS_PILLS|id: "GO"/);
-assert.match(logSrc, /Total ideas submitted/);
+// Part 148 D118: the top chip is now "Ideas submitted" (submitted only) with a separate "Drafts" chip.
+assert.match(logSrc, /Ideas submitted/);
+assert.match(logSrc, /label: "Drafts"/);
 assert.match(logSrc, /AI used/);
 assert.match(logSrc, /Waiting for business head/);
 assert.match(logSrc, /Month-wise ideas/);
