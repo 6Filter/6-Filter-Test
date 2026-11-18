@@ -50,10 +50,10 @@ export const FIELD_ROLE_CSS = `
 .hero-label{margin:6px 0 2px;}
 .hero-label label{font-weight:600;}
 .before-you-submit{padding:12px 16px;border:1px solid rgba(201,160,232,.3);border-radius:12px;background:rgba(25,12,34,.55);color:var(--c-input,#efe8f5);font-size:var(--fs-status,13px);}
-.before-you-submit-title{margin:0 0 8px;font-size:15px;font-weight:700;color:var(--c-section,#ddd6fe);}
+.before-you-submit-title{margin:0 0 8px;font-size:calc(15px * var(--ts, 1));font-weight:700;color:var(--c-section,#ddd6fe);}
 .before-you-submit-one{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;}
 .before-you-submit .byc-text{color:var(--c-placeholder,#9a89ae);}
-.before-you-submit .mono{font-size:18px;font-weight:700;color:var(--c-label,#f6eefb);}
+.before-you-submit .mono{font-size:calc(18px * var(--ts, 1));font-weight:700;color:var(--c-label,#f6eefb);}
 @media (max-width:760px){
 .field-role{flex:1 1 100%;margin-left:0;margin-top:4px;flex-wrap:wrap;}
 }

@@ -1,24 +1,21 @@
 /**
- * Form view size: compact by default, with Comfortable/Large zoom controls.
+ * Form text size. Superseded by Part 146: the three presets (Compact / Comfortable / Large) are replaced by one
+ * control, a minus, a percentage and a plus (1% to 100%). 78% keeps today's default look, so nothing changes
+ * until a button is pressed. The behaviour tests are testTextSizeControl.mjs and testTextSizeForm.mjs.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
-assert.match(form, /FORM_ZOOM_KEY/);
-assert.match(form, /data-form-zoom=\{formZoom\}/);
-assert.match(form, /data-testid=\{`form-zoom-\$\{level\}`\}/);
-assert.match(form, /data-testid="form-zoom-in"/);
-assert.match(form, /data-testid="form-zoom-out"/);
-assert.match(form, /Compact|Comfortable|Large/);
-assert.match(form, /\[data-form-zoom="compact"\]/);
-assert.match(form, /\[data-form-zoom="large"\]/);
-assert.match(form, /return "compact"/);
+for (const gone of [/FORM_ZOOM/, /data-form-zoom/, /form-zoom-/, /View size/, /"comfortable"/]) {
+  assert.doesNotMatch(form, gone, String(gone));
+}
+assert.match(form, /<TextSizeControl\b/);
+// The default look is unchanged: the old Compact values are what 78% produces.
 assert.match(form, /--h-input:34px/);
-assert.match(form, /--fs-section:16px/);
-// Comfortable / D88 base tokens remain for zoom-up.
-assert.match(form, /--h-input:44px/);
-assert.match(form, /--fs-section:22px/);
+assert.match(form, /--fs-section:calc\(16px \* var\(--ts\)\)/);
+assert.match(form, /--fs-label:calc\(13px \* var\(--ts\)\)/);
+assert.match(form, /--fs-input:calc\(13px \* var\(--ts\)\)/);
 
-console.log("PASS testFormZoom");
+console.log("PASS testFormZoom (Part 146: one text size control)");

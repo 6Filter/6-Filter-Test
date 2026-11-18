@@ -76,10 +76,18 @@ check("reference tokens match the D88 table", () => {
   }
 });
 
-check("live .prop-form-page declares the same tokens", () => {
+// Part 146: colours stay as D88. Text sizes are the 78% (old Compact) values times --ts on the scaled wrapper,
+// and the spacing tokens are the old Compact values, so the default look is unchanged.
+const LIVE_SIZES = { "fs-section": 16, "fs-status": 12, "fs-label": 13, "fs-input": 13, "fs-placeholder": 13, "fs-badge": 11 };
+const LIVE_SPACING = { "gap-label": "4px", "gap-field": "12px", "h-input": "34px" };
+check("live .prop-form-page declares the same colours; sizes are the 78% values times --ts", () => {
   for (const [k, v] of Object.entries(EXPECT)) {
-    assert.equal(token(formCss, k).toLowerCase(), v.toLowerCase(), `live ${k}`);
+    if (k.startsWith("c-")) assert.equal(token(formCss, k).toLowerCase(), v.toLowerCase(), `live ${k}`);
   }
+  for (const [k, px] of Object.entries(LIVE_SIZES)) {
+    assert.equal(token(formCss, k).replace(/\s+/g, " "), `calc(${px}px * var(--ts))`, `live ${k}`);
+  }
+  for (const [k, v] of Object.entries(LIVE_SPACING)) assert.equal(token(formCss, k), v, `live ${k}`);
 });
 
 check("field heading uses Sora scale tokens, not 11px monospace", () => {
@@ -108,13 +116,14 @@ check("Required solid border vs Optional dashed", () => {
   assert.match(css, /data-role="optional"\]\{[^}]*border:1px dashed/s);
 });
 
-check("touch target height is at least 44px", () => {
-  assert.equal(Number.parseInt(token(formCss, "h-input"), 10), 44);
+check("reference touch target height is 44px; the text size control itself uses 44px buttons", () => {
+  assert.equal(Number.parseInt(token(ref, "h-input"), 10), 44);
+  assert.match(read("../src/TextSizeControl.jsx"), /min-height:44px/);
 });
 
-check("label-to-box and field gaps match D88", () => {
-  assert.equal(token(formCss, "gap-label"), "8px");
-  assert.equal(token(formCss, "gap-field"), "22px");
+check("label-to-box and field gaps match the reference (D88)", () => {
+  assert.equal(token(ref, "gap-label"), "8px");
+  assert.equal(token(ref, "gap-field"), "22px");
 });
 
 check("two columns from 1100px; one column below", () => {
