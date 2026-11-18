@@ -207,7 +207,7 @@ await check("clicking a team row or bar sets the team filter and the list follow
   await click([...host.querySelectorAll(".log-active-filters button")][0]);
   assert.equal(select.value, "");
   assert.equal(listCount(host), rows.length);
-  const bar = [...host.querySelectorAll(".log-bar-row")].find((r) => r.textContent.startsWith("PC"));
+  const bar = [...host.querySelectorAll(".log-analytics .log-bar-row")].find((r) => r.textContent.startsWith("PC"));
   await key(bar, "Enter");
   assert.equal(select.value, "PC");
   assert.equal(listCount(host), 3);
