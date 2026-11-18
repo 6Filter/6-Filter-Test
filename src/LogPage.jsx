@@ -48,8 +48,9 @@ import {
   periodRange,
   summarize,
   summaryToCsv,
+  dashboardStats,
 } from "../lib/logInsights.js";
-import { InsightsList, MonthTrendChart, StackedBars, SummaryTable, topWithOthers } from "./LogCharts.jsx";
+import { InsightsList, MonthTrendChart, SimpleBars, StackedBars, SummaryTable, topWithOthers } from "./LogCharts.jsx";
 import { LOG_CHART_CSS } from "./logChartsCss.js";
 
 const STATUS_PILLS = [
@@ -184,6 +185,9 @@ export default function LogPage({
   const logRows = useMemo(() => rows.filter((row) => !row.probe), [rows]);
   const uniqueSubmitters = useMemo(() => uniqueLogValues(logRows, rowPerson), [logRows]);
   const stats = useMemo(() => logStats(logRows), [logRows]);
+  // Part 150 — the dashboard always counts the whole log, whatever the period picker below says.
+  const dash = useMemo(() => dashboardStats(logRows), [logRows]);
+  const dashMonths = useMemo(() => monthlyTrend(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
   // Part 148 D121 — the period (India dates) narrows the list and the analytics together.
   const period = useMemo(
@@ -597,18 +601,70 @@ export default function LogPage({
             <AlertTriangle size={14} /> Database unavailable
           </div>
         ) : (
-          <article className="log-stat-card">
-            <div className="mono log-stat-kicker">Ideas submitted</div>
-            <div className="log-stat-value">{stats.submitted}</div>
-            <p>
-              Submitted ideas only
-              {stats.submittedThisMonth ? `, ${stats.submittedThisMonth} this month (India time)` : ""}.{" "}
-              {stats.drafts} {stats.drafts === 1 ? "draft is" : "drafts are"} not yet submitted, so{" "}
-              {stats.total} {stats.total === 1 ? "idea was" : "ideas were"} started in all.
-            </p>
-          </article>
+          <>
+            <article className="log-stat-card" data-testid="dash-submitted">
+              <div className="mono log-stat-kicker">Ideas submitted</div>
+              <div className="log-stat-value">{dash.submitted}</div>
+              <p>
+                {dash.thisMonth} this month (India time)
+                {dash.lastMonth > 0 || dash.thisMonth > 0
+                  ? `, ${dash.thisMonth >= dash.lastMonth ? "up" : "down"} from ${dash.lastMonth} in ${dash.prevMonthName}`
+                  : ""}
+                . {dash.drafts} {dash.drafts === 1 ? "draft is" : "drafts are"} not yet submitted.
+              </p>
+            </article>
+            <article className="log-stat-card" data-testid="dash-screened">
+              <div className="mono log-stat-kicker">Screened</div>
+              <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.screened}</div>
+              <p>
+                {dash.GO} GO · {dash["NO-GO"]} NO-GO · {dash.WATCH} WATCH
+              </p>
+            </article>
+            <article className="log-stat-card" data-testid="dash-go">
+              <div className="mono log-stat-kicker">Verdict · GO</div>
+              <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.GO}</div>
+            </article>
+            <article className="log-stat-card" data-testid="dash-nogo">
+              <div className="mono log-stat-kicker">Verdict · NO-GO</div>
+              <div className="log-stat-value" style={{ color: "var(--chart-nogo)" }}>{dash["NO-GO"]}</div>
+            </article>
+            <article className="log-stat-card" data-testid="dash-watch">
+              <div className="mono log-stat-kicker">Verdict · Watch</div>
+              <div className="log-stat-value" style={{ color: "var(--chart-watch)" }}>{dash.WATCH}</div>
+            </article>
+            <article className="log-stat-card" data-testid="dash-waiting">
+              <div className="mono log-stat-kicker">Waiting for approval</div>
+              <div className="log-stat-value" style={{ color: "var(--chart-watch)" }}>{dash.waiting}</div>
+              <p>Business head review pending</p>
+            </article>
+          </>
         )}
       </div>
+
+      {!unavailable ? (
+        <section className="log-dash-charts" data-testid="dash-charts" aria-label="Ideas submitted: by month, top submitters and teams">
+          <div className="log-dash-main">
+            <MonthTrendChart title="Ideas submitted per month" months={dashMonths} />
+          </div>
+          <div className="log-dash-side">
+            <SimpleBars
+              title={`Top 5 submitters in ${dash.monthName || "this month"}`}
+              unit="ideas"
+              items={dash.topPeople.map((g) => ({ key: g.key, label: g.label, value: g.submitted }))}
+              emptyText="No ideas submitted this month yet."
+            />
+            <StackedBars
+              title={`Ideas submitted by team in ${dash.monthName || "this month"}`}
+              groups={dash.teams}
+              onSelect={(g) => {
+                setTeamFilter(g.filterValue || "");
+                if (dash.monthKey) setMonthFilter(dash.monthKey);
+              }}
+              emptyText="No ideas submitted this month yet."
+            />
+          </div>
+        </section>
+      ) : null}
 
       {!unavailable ? (
         <section className="log-analytics" aria-label="Ideas by team, month, person and date">
@@ -1292,7 +1348,11 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
   background:#FBF1EE;border:1px solid var(--danger-border);color:var(--danger-text);
   font-size:13px;line-height:1.45;font-weight:600;
 }
-.log-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+.log-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+.log-dash-charts{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start;}
+.log-dash-main,.log-dash-side{display:flex;flex-direction:column;gap:14px;min-width:0;}
+.log-dash-charts .log-chart{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;margin:0;}
+@media (max-width:1000px){.log-dash-charts{grid-template-columns:minmax(0,1fr);}}
 .log-stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 18px;}
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
 .log-stat-value{font-size:32px;font-weight:700;letter-spacing:-.8px;line-height:1.1;}
@@ -1432,7 +1492,7 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
   .log-export-btn,.log-page .log-del{font-size:9.5px;padding:4px 5px;}
 }
 @media (max-width:860px){
-  .log-stats{grid-template-columns:1fr;}
+  .log-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
   .log-page{padding:12px 10px 28px;}
   .log-card{padding:14px 10px 6px;}
 }
