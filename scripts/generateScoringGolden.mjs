@@ -455,11 +455,33 @@ async function main() {
     },
   };
 
+  // Part 145 D110 — exempt only on a sourced research finding; Filter 1's seven checks leave numerator and denominator.
   ideas.push(await packDoc("commodity-exempt", {
     ...baseComplete,
     name: "Commodity salt",
-    f1: { ...baseComplete.f1, pureCommodity: true, declaredAttribute: "Salt", benchmark: "" },
-  }, "pure commodity exempt F1"));
+    f1: { ...baseComplete.f1, declaredAttribute: "Salt", benchmark: "" },
+    researchFindings: {
+      ...baseComplete.researchFindings,
+      f1: {
+        ...baseComplete.researchFindings.f1,
+        commodityFinding: {
+          pureCommodity: true,
+          reason: "Plain salt has no brand-level differentiation",
+          source_url: "https://example.com/salt-category",
+          quote: "Packaged salt is sold on price with no meaningful differentiation",
+          confidence: "high",
+          returnedSources: ["https://example.com/salt-category"],
+        },
+      },
+    },
+  }, "pure commodity exempt F1 by sourced research finding (11 checks)"));
+
+  // The old typed tick alone exempts nothing: Filter 1 is scored in full (18 checks).
+  ideas.push(await packDoc("commodity-tick-ignored", {
+    ...baseComplete,
+    name: "Ticked but unsourced",
+    f1: { ...baseComplete.f1, pureCommodity: true },
+  }, "typed pure-commodity tick is ignored; all 18 checks apply"));
 
   ideas.push(await packDoc("international-business", {
     ...baseComplete,

@@ -24,6 +24,8 @@ const typedFilled = {
     declaredAttribute: "cooling",
     benchmark: "Indulekha Bringha 100ml",
     declaredGap: 2,
+    gapDerivation: "lasts longer",
+    parityExceptions: "none", // Part 145 D109: the one tick
     growthRoute: "penetration",
     growthArgument: "category growing",
   },

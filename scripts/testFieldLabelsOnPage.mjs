@@ -70,7 +70,8 @@ await check("every visible control has data-field", () => {
     assert.match(form, new RegExp(`htmlFor="fld-${key}"`), `label for ${key}`);
   }
   assert.match(form, /data-field="submitterDepartment"/);
-  assert.match(form, /<FieldRoleBadge path="submitterDepartment" doc=\{doc\} \/>/);
+  // Part 145 D105: the team is a chip, not a Required box, so it carries no badge.
+  assert.doesNotMatch(form, /<FieldRoleBadge path="submitterDepartment"/);
 });
 
 await check("legend is gone from the form and Spec page", () => {

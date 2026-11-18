@@ -78,7 +78,10 @@ await check("labelled Word file: read without any AI call", async () => {
   assert.equal(idea.fields["f2.gstRatePct"], 18);
   assert.equal(idea.fieldSources.name.source, "upload");
   assert.match(idea.fieldSources.name.cell, /^line \d+$/);
-  assert.deepEqual(idea.missingRequired, [], "name, category, idea description, your name and team are all present");
+  for (const present of ["Proposition name", "Category", "Idea description"]) {
+    assert.ok(!idea.missingRequired.includes(present), `${present} is present`);
+  }
+  assert.ok(!idea.missingRequired.some((l) => /name$|team/i.test(l) && /your|team/i.test(l)), "Part 145: name and team are not boxes");
 });
 
 await check("labelled PDF: read without any AI call", async () => {
@@ -129,7 +132,8 @@ await check("free-form Word: ONE labelled call, no web search, invented values d
   assert.equal(out.usedAi, true);
   const idea = out.ideas[0];
   assert.deepEqual(Object.keys(idea.fields).sort(), ["category", "f1.benchmark", "f2.grammage", "name"]);
-  assert.deepEqual(idea.dropped.sort(), ["f1.declaredAttribute", "f1.declaredGap", "f2.mrpInr"]);
+  // mrpInr is system-filled (Part 145 D106) and no longer an import column, so it is not read at all.
+  assert.deepEqual(idea.dropped.sort(), ["f1.declaredAttribute", "f1.declaredGap", "mrpInr"]);
   assert.equal(idea.fieldSources.name.aiSuggested, true, "AI-read values are marked");
   assert.ok(idea.missingRequired.includes("Idea description"), "the AI is not asked to fill what the file does not say");
 });

@@ -111,8 +111,13 @@ if (!files.length) {
  *   never "GO, above 80%" — testPathToGo / testPathToGoActionCopy / testPathCopy (percent-only GO headline) stay expected.
  * - Junk / invalid free text earns zero with guard "input-invalid" even when the AI said strong (D73):
  *   owner-tests/testFilter1Scoring and testInputCoverage that expect AI credit for such text stay expected.
+ * Part 145 (D110) — pure commodity is a sourced research finding, never a typed tick. The Part 136 owner fixture
+ * owner-tests/testEvaluationStatus ("pure commodity needs none of the Filter 1 checks" with f1.pureCommodity: true)
+ * is NOT edited; it fails solely because a typed tick no longer exempts anything. The new behaviour is covered by
+ * testPureCommodityExemption.mjs.
  */
 const EXPECTED_OWNER_FAILURES = new Set([
+  "owner-tests/testEvaluationStatus.mjs",
   "testEvidenceReading.mjs",
   "testPathToGo.mjs",
   "testPathToGoActionCopy.mjs",
