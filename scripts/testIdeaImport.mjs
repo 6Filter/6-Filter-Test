@@ -58,13 +58,19 @@ await check("template has Ideas + Guide sheets", async () => {
   const headers = ideas.getRow(1).values.slice(1);
   assert.deepEqual(headers, IMPORT_FIELDS.map((f) => importColumnHeader(f.path)));
   assert.ok(headers.includes("Proposition name") && headers.includes("Category") && headers.includes("Idea description"));
-  // Part 151 — one column for every box on the form: the fourteen of Part 145 plus cost, net margin and MRP.
-  assert.equal(headers.length, 17, "seventeen template columns");
+  // Part 158 — one column for every typed box from Filter 1 to Filter 4: the seventeen of Part 151, the yearly price
+  // rise (Filter 3) and a rating plus a view for each of the seven Filter 4 points.
+  assert.equal(headers.length, 32, "thirty-two template columns");
+  assert.ok(headers.some((h) => /price rise/i.test(h)), "Filter 3 yearly price rise column");
+  for (const dim of ["Functional core stability", "Consumption context stability", "Manufacturing disruption risk", "User habit shift potential", "Adjacent substitution threat", "Purchase frequency shift", "Regulatory disruption risk"]) {
+    assert.ok(headers.includes(`${dim} — your rating`), `${dim} rating column`);
+    assert.ok(headers.includes(`${dim} — your view`), `${dim} view column`);
+  }
   for (const present of [/COGS/, /Net margin/, /MRP/]) {
     assert.ok(headers.some((h) => present.test(h)), `${present} column is in the template`);
   }
   assert.ok(headers.some((h) => /GST/.test(h)) && headers.some((h) => /Pack size/.test(h)));
-  for (const gone of [/Your name/, /Team/, /Evidence/, /Pure commodity/, /Quick-commerce/, /Finance/, /price rise/i, /Who is this for/i]) {
+  for (const gone of [/Your name/, /Team/, /Evidence/, /Pure commodity/, /Quick-commerce/, /Finance/, /Who is this for/i]) {
     assert.ok(!headers.some((h) => gone.test(h)), `no ${gone} column`);
   }
   assert.equal(ideas.getRow(2).getCell(1).value, EXAMPLE_NAME, "row 2 is the EXAMPLE row");
@@ -80,7 +86,7 @@ await check("Guide carries the Part 139 role label for every column", async () =
     const header = importColumnHeader(f.path);
     const row = rows.find((r) => r[0] === header);
     assert.ok(row, `Guide row for ${header}`);
-    assert.equal(row[1], roleLabel(f.path, {}), `${header} role label`);
+    assert.equal(row[1], roleLabel(f.path, {}) || ROLE_LABEL.optional, `${header} role label (the Filter 4 columns are Optional)`);
     assert.ok(Object.values(ROLE_LABEL).includes(row[1]), `${header} uses a ROLE_LABEL word`);
   }
   const flat = rows.flat().join("|");
