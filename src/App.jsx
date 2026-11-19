@@ -32,6 +32,7 @@ import {
 import {
   clearStashedReturnIdea,
   parseAppLocation,
+  screenFromHash,
   pathForView,
   readStashedReturnIdea,
   stashReturnIdea,
@@ -676,8 +677,10 @@ export default function App() {
   }
 
   function syncAddress(nextView, ideaId = "", { replace = false } = {}) {
-    const path = pathForView(nextView === "spec" ? "spec" : nextView, ideaId);
+    let path = pathForView(nextView === "spec" ? "spec" : nextView, ideaId);
     try {
+      // Part 154 — keep the "#input" / "#output" page marker when the address is only being re-written in place.
+      if (replace && path === window.location.pathname) path += window.location.hash || "";
       const state = { view: nextView, ideaId: ideaId || "" };
       if (replace) window.history.replaceState(state, "", path);
       else window.history.pushState(state, "", path);
@@ -752,6 +755,7 @@ export default function App() {
       setOpeningId(null);
       setDeepLinkMissing(false);
       const loc = parseAppLocation(window.location.pathname, window.location.search);
+      const screen = screenFromHash(window.location.hash);
       if (loc.kind === "log") {
         setProposition(null);
         setReturnView("log");
@@ -765,7 +769,7 @@ export default function App() {
       }
       if (loc.kind === "proposition" && loc.ideaId) {
         // Re-open from address without pushing again.
-        void openProposition({ id: loc.ideaId }, "spec", { token, replaceAddress: true, fromPop: true });
+        void openProposition({ id: loc.ideaId }, "spec", { token, replaceAddress: true, fromPop: true, screen });
         return;
       }
       setProposition(null);
@@ -799,7 +803,12 @@ export default function App() {
       return;
     }
     if (loc.kind === "proposition" && loc.ideaId) {
-      void openProposition({ id: loc.ideaId }, "spec", { replaceAddress: true, initialDeepLink: true });
+      // Part 154 — a refresh returns to the same page of the idea (input form or output) it was on.
+      void openProposition({ id: loc.ideaId }, "spec", {
+        replaceAddress: true,
+        initialDeepLink: true,
+        screen: screenFromHash(window.location.hash),
+      });
       return;
     }
 
@@ -996,12 +1005,15 @@ export default function App() {
         _openFromLog: from === "log",
         // Part 151 — a single upload opens the input form itself (every value already entered), not the output summary.
         _preferOutput:
-          !opts.forceForm &&
-          (from === "log" ||
-          evalState === "evaluated" ||
-          evalState === "legacy" ||
-          evalState === "incomplete" ||
-          evalState === "not-evaluated"),
+          opts.screen === "output"
+            ? true
+            : opts.screen === "input" || opts.forceForm
+              ? false
+              : from === "log" ||
+                evalState === "evaluated" ||
+                evalState === "legacy" ||
+                evalState === "incomplete" ||
+                evalState === "not-evaluated",
       });
       setSavedFlash(false);
       setReturnView(from);

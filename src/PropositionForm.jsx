@@ -2712,6 +2712,8 @@ function researchInputKey(doc) {
 
 function preferOutputView(doc = null) {
   if (doc?._preferOutput) return true;
+  // Part 154 — an explicit "show the input form" (refresh on #input, or an uploaded idea) beats the evaluated state.
+  if (doc?._preferOutput === false) return false;
   const state = propositionEvalState(doc);
   return state === "evaluated" || state === "legacy";
 }
@@ -2793,6 +2795,18 @@ export default function PropositionForm({
   const [currentView, setCurrentView] = useState(() =>
     preferOutputView(initial) ? "goNoGoResult" : "propositionForm"
   );
+  // Part 154 — remember the page in the address (#input / #output) so a refresh stays on it.
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined" || !initial?.id) return;
+      const mark = currentView === "propositionForm" ? "#input" : "#output";
+      if (window.location.hash === mark) return;
+      if (!/^\/propositions\//.test(window.location.pathname)) return;
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search + mark);
+    } catch {
+      /* address bar is a convenience only */
+    }
+  }, [currentView, initial?.id]);
   const openedFromLog = Boolean(initial?._openFromLog);
   const [readingGoNoGo, setReadingGoNoGo] = useState(false);
   const [proofError, setProofError] = useState("");
