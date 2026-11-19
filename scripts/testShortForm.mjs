@@ -191,43 +191,15 @@ await check("Part 152 cost and net margin are always on the form; no 'Adjust cos
   assert.equal(q('[data-field="f2.cogsAtScale"] [data-role="required"]'), null, "never Required");
 });
 
-// ───────────── D109 parity tick ─────────────
-await check("Part 153 parity tick and the exceptions box are always both on the form (not collapsible)", async () => {
-  const tickWrap = q('[data-testid="parity-tick"]');
-  assert.ok(tickWrap, "tick present");
-  assert.match(tickWrap.textContent, /Parity or better on the remaining attributes/);
-  const box = () => q('textarea[data-field="f1.parityExceptions"], input[data-field="f1.parityExceptions"], [data-field="f1.parityExceptions"] textarea');
-  assert.ok(box(), "unanswered still shows the box");
-  assert.equal(q('[data-testid="parity-exceptions-open"]'), null, "no 'We may lose' open button");
-  const tick = tickWrap.querySelector('input[type="checkbox"]');
-  await click(tick);
-  assert.equal(tick.checked, true, "ticked");
-  assert.ok(box(), "ticked still shows the box");
-  await click(tick);
-  assert.equal(tick.checked, false, "unticked");
-  assert.ok(box(), "unticked shows the exceptions box");
-});
-
-await check("D109 existing parity text opens with the tick off and the text showing", async () => {
-  await m.unmount();
-  const withText = await mount({
-    ...props,
-    initial: { id: "short-2", name: "Oil", category: "Hair oils", ideaDescription: "x", f1: { parityExceptions: "Fragrance may be weaker" } },
-  });
-  const tick = withText.host.querySelector('[data-testid="parity-tick"] input[type="checkbox"]');
-  assert.equal(tick.checked, false, "tick off");
-  assert.match(withText.host.innerHTML + [...withText.host.querySelectorAll("textarea,input")].map((e) => e.value).join("|"), /Fragrance may be weaker/);
-  await withText.unmount();
-});
-
-await check("D109 a stored 'none' opens with the tick on", async () => {
-  const done = await mount({
-    ...props,
-    initial: { id: "short-3", name: "Oil", category: "Hair oils", ideaDescription: "x", f1: { parityExceptions: "none" } },
-  });
-  const tick = done.host.querySelector('[data-testid="parity-tick"] input[type="checkbox"]');
-  assert.equal(tick.checked, true);
-  await done.unmount();
+// ───────────── Part 156 parity: the tick is gone; the exceptions box is the one place ─────────────
+await check("Part 156 no parity tick on the form; the Parity exceptions box is there and takes 'none'", async () => {
+  assert.equal(q('[data-testid="parity-tick"]'), null, "tick removed");
+  assert.equal(q('#fld-f1-parityTick'), null, "tick checkbox removed");
+  assert.doesNotMatch(text(), /Parity or better on the remaining attributes/, "tick label removed");
+  assert.doesNotMatch(text(), /We may lose on some attributes/, "no collapse button");
+  const box = q('textarea[data-field="f1.parityExceptions"], [data-field="f1.parityExceptions"] textarea');
+  assert.ok(box, "exceptions box shown");
+  assert.match(box.getAttribute("placeholder") || "", /or none/i, "placeholder says 'or none'");
 });
 
 // ───────────── phone width ─────────────
