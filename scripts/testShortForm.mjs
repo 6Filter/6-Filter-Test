@@ -192,19 +192,20 @@ await check("Part 152 cost and net margin are always on the form; no 'Adjust cos
 });
 
 // ───────────── D109 parity tick ─────────────
-await check("D109 parity is one Required tick; unticked opens the box; ticked hides it", async () => {
+await check("Part 153 parity tick and the exceptions box are always both on the form (not collapsible)", async () => {
   const tickWrap = q('[data-testid="parity-tick"]');
   assert.ok(tickWrap, "tick present");
   assert.match(tickWrap.textContent, /Parity or better on the remaining attributes/);
   const box = () => q('textarea[data-field="f1.parityExceptions"], input[data-field="f1.parityExceptions"], [data-field="f1.parityExceptions"] textarea');
-  assert.equal(box(), null, "unanswered shows no box");
+  assert.ok(box(), "unanswered still shows the box");
+  assert.equal(q('[data-testid="parity-exceptions-open"]'), null, "no 'We may lose' open button");
   const tick = tickWrap.querySelector('input[type="checkbox"]');
   await click(tick);
   assert.equal(tick.checked, true, "ticked");
-  assert.equal(box(), null, "ticked shows no box");
+  assert.ok(box(), "ticked still shows the box");
   await click(tick);
   assert.equal(tick.checked, false, "unticked");
-  assert.ok(box() || q('[data-field="f1.parityExceptions"]'), "unticked opens the exceptions box");
+  assert.ok(box(), "unticked shows the exceptions box");
 });
 
 await check("D109 existing parity text opens with the tick off and the text showing", async () => {

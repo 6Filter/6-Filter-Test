@@ -2822,7 +2822,6 @@ export default function PropositionForm({
   const [f4VerifyingKey, setF4VerifyingKey] = useState("");
   const [refreshingField, setRefreshingField] = useState("");
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
-  const [parityOpen, setParityOpen] = useState(false);
   /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
   const [benefitExtra, setBenefitExtra] = useState(() => {
     const f1 = initial?.f1 || {};
@@ -4751,10 +4750,8 @@ export default function PropositionForm({
                           checked={parityNone}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setParityOpen(false);
                               setFilter("f1", "parityExceptions", "none");
                             } else {
-                              setParityOpen(true);
                               setFilter("f1", "parityExceptions", "");
                             }
                           }}
@@ -4764,20 +4761,9 @@ export default function PropositionForm({
                           <FieldRoleBadge path="f1.parityExceptions" doc={doc} />
                         </span>
                       </label>
-                      {!parityNone && !parityText && !parityOpen ? (
-                        <button
-                          type="button"
-                          className="benefit-add"
-                          data-testid="parity-exceptions-open"
-                          onClick={() => setParityOpen(true)}
-                        >
-                          We may lose on some attributes
-                        </button>
-                      ) : null}
-                      {!parityNone && !parityText && !parityOpen ? heroRequiredError("f1.parityExceptions") : null}
                     </div>
                   );
-                  if (!parityText && !parityOpen) return nodes;
+                  // Part 153 — the exceptions box is always available (not collapsible).
                 }                if (field.type === "computed") {
                   nodes.push(
                   <div key={field.key} className="prop-field span-2" data-field={`${spec.key}.${field.key}`}>
