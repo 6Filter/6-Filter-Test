@@ -44,7 +44,7 @@ const FORM_INPUTS = [
   "f2.cogsAtScale", "f2.netMarginAtScale", "f2.gstRatePct", "f2.grammage", "f2.mrpInr",
   // Part 158 — Filter 3 (yearly price rise) and Filter 4 (your rating and view for each of the seven points).
   "f3.plannedAnnualIncreasePct",
-  ...F4_POINTS.flatMap((k) => [`f4.userInputs.${k}.rating`, `f4.userInputs.${k}.pov`]),
+  ...F4_POINTS.flatMap((k) => [`f4.userInputs.${k}.rating`, `f4.userInputs.${k}.pov`, `f4.f4MitigationResponses.${k}`]),
 ];
 
 await check("the template has one column for every input on the form, in form order", () => {
@@ -56,9 +56,9 @@ await check("the template's Ideas sheet shows all those headers, frozen, with a 
   await wb.xlsx.load(await buildImportTemplateBuffer());
   const ws = wb.getWorksheet("Ideas");
   const headers = ws.getRow(1).values.slice(1);
-  assert.equal(headers.length, 32);
+  assert.equal(headers.length, 39);
   assert.deepEqual(headers, FORM_INPUTS.map(importColumnHeader));
-  for (let c = 1; c <= 32; c += 1) {
+  for (let c = 1; c <= 39; c += 1) {
     const cell = ws.getRow(1).getCell(c);
     assert.ok(cell.fill?.fgColor?.argb, `header ${c} has a colour`);
     assert.ok(cell.note, `header ${c} explains itself`);
@@ -91,7 +91,7 @@ const sample = (i) => ({
   "f2.grammage": "100 ml",
   "f2.mrpInr": "₹120",
   "f3.plannedAnnualIncreasePct": "5%",
-  ...Object.fromEntries(F4_POINTS.flatMap((k, j) => [[`f4.userInputs.${k}.rating`, ["low", "Medium", "HIGH"][j % 3]], [`f4.userInputs.${k}.pov`, `View on ${k} ${i}`]])),
+  ...Object.fromEntries(F4_POINTS.flatMap((k, j) => [[`f4.userInputs.${k}.rating`, ["low", "Medium", "HIGH"][j % 3]], [`f4.userInputs.${k}.pov`, `View on ${k} ${i}`], [`f4.f4MitigationResponses.${k}`, `Response on ${k} ${i}`]])),
 });
 async function filledTemplate(rows) {
   const wb = new ExcelJS.Workbook();
@@ -111,7 +111,7 @@ await check("a bulk file of 25 rows reads 25 ideas, every value in its own box, 
   assert.equal(parsed.examplesSkipped, 1);
   assert.deepEqual(parsed.rejected, []);
   parsed.ideas.forEach((idea, i) => {
-    assert.equal(Object.keys(idea.fields).length, 32, `row ${i + 1} filled all 32 boxes`);
+    assert.equal(Object.keys(idea.fields).length, 39, `row ${i + 1} filled all 39 boxes`);
     assert.equal(idea.fields.name, `Idea ${i + 1}`);
     assert.equal(idea.fields["f1.growthRoute"], "penetration");
     assert.equal(idea.fields["f2.cogsAtScale"], 56 + i);
@@ -176,12 +176,12 @@ try {
   });
 
   let singleId;
-  await check("Upload one idea: one row becomes one draft with all 32 values and the typed-number markers", async () => {
+  await check("Upload one idea: one row becomes one draft with all 39 values and the typed-number markers", async () => {
     clearRateLimits();
     const { res, json } = await post(await filledTemplate([sample(1)]), "single");
     assert.equal(res.status, 201, JSON.stringify(json));
     assert.equal(json.created.length, 1);
-    assert.equal(json.created[0].filled.length, 32);
+    assert.equal(json.created[0].filled.length, 39);
     singleId = json.created[0].id;
     const got = await api(`/api/propositions/${singleId}`);
     const p = got.json.proposition || got.json;
@@ -200,6 +200,8 @@ try {
     assert.equal(p.f4.userInputs.manufacturingDisruptionRisk.rating, "High");
     assert.equal(p.f4.userInputs.userHabitShiftPotential.pov, "View on userHabitShiftPotential 1");
     assert.equal(Object.keys(p.f4.userInputs).length, 7, "all seven points kept");
+    assert.equal(p.f4.f4MitigationResponses.adjacentSubstitutionThreat, "Response on adjacentSubstitutionThreat 1", "written responses are kept per point");
+    assert.equal(Object.keys(p.f4.f4MitigationResponses).length, 7);
   });
 
   await check("Bulk upload: 12 rows become 12 drafts, each ready to test; the Log lists them", async () => {
