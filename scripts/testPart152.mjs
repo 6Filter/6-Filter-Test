@@ -10,15 +10,14 @@ check("no 'not checked yet' placeholder and no empty Web check panel on Filter 4
   assert.match(form, /showWebCheck \? \(/);
   assert.match(form, /\{webRating \? \(/);
 });
-check("no Adjust cost and margin button; cost and margin always visible", () => {
-  assert.doesNotMatch(form, /data-testid="adjust-cost-margin"/);
-  assert.doesNotMatch(form, />\s*Adjust cost and margin\s*</);
-  assert.match(form, /const costAdjustVisible = true;/);
+check("Punch list 2.5 — cost and margin sit behind one Adjust cost and margin button again", () => {
+  assert.match(form, /data-testid="adjust-cost-margin"/);
+  assert.doesNotMatch(form, /const costAdjustVisible = true;/);
 });
 check("Screened tile no longer prints the GO / NO-GO / WATCH breakdown", () => {
   assert.doesNotMatch(log, /NO-GO\} NO-GO|\} GO · /);
 });
-check("Required badge is not rendered", () => {
-  assert.match(badge, /if \(role === "required"\) return null;/);
+check("Punch list 2.4 — the Required badge is rendered again on every Required box", () => {
+  assert.doesNotMatch(badge, /if \(role === "required"\) return null;/);
 });
 console.log(`PASS Part 152 (${n} checks)`);

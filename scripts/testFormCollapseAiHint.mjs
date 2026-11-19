@@ -37,9 +37,9 @@ check("AI fills this only on COGS, net margin, and MRP after tax", () => {
   assert.match(form, /ai-fills-badge/);
   assert.match(form, /is-ai-expected/);
   assert.match(form, /AI fills this/);
-  assert.match(form, /#2dd4bf/, "AI fills badge uses a highlighted teal colour");
+  assert.match(form, /background:var\(--c-accent\);border:1px solid var\(--c-accent\)/, "AI fills badge is a solid pill in the theme accent (cream-and-brown theme, no teal)");
   assert.match(form, /prop-label > span:first-child:not\(\.ai-fills-badge\)/);
-  assert.match(form, /-webkit-text-fill-color:#042f2e/);
+  assert.match(form, /-webkit-text-fill-color:var\(--c-accent-text\)/);
   assert.match(form, /field-required-error/);
   assert.match(form, /Enter this required value before Submit/);
   assert.match(form, /accountDisplayName/);
