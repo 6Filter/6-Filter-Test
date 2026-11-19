@@ -108,9 +108,12 @@ await db.initDb();
 
 await check("forcing the archive counter behind MAX makes status not ok", async () => {
   const created = await db.createProposition({ submitterDepartment: "CIA", name: "seq-drift" });
+  // Part 155 — archive two ideas first: a counter set back to 1 is only behind MAX when MAX is above 1.
+  const other = await db.createProposition({ submitterDepartment: "CIA", name: "seq-drift-other" });
+  assert.equal(await db.deleteProposition(other.id, "test"), true);
   assert.equal(await db.deleteProposition(created.id, "test"), true);
   const maxRow = await db.query(`SELECT COALESCE(MAX(archive_id), 0)::bigint AS max FROM deleted_propositions`);
-  assert.ok(Number(maxRow[0]?.max || 0) > 0);
+  assert.ok(Number(maxRow[0]?.max || 0) > 1);
   await db.query(`SELECT setval(pg_get_serial_sequence('deleted_propositions', 'archive_id'), 1, true)`);
   const status = await db.serialSequenceStatus();
   assert.equal(status.ok, false);

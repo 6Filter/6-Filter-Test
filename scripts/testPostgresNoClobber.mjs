@@ -382,6 +382,7 @@ assert.ok(
       "go_nogo_json",
       "research_findings_json",
       "research_run_at",
+      "first_submitted_at",
       "updated_at",
       "version",
     ].includes(c)
