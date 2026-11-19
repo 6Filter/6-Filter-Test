@@ -4750,35 +4750,7 @@ export default function PropositionForm({
                 : visibleSpecFields
               ).flatMap((field) => {
                 const nodes = [];
-                if (spec.key === "f1" && field.key === "parityExceptions") {
-                  // Part 145 D109 — parity is one tick; "none" is what the scorer already reads.
-                  const rawParity = String(values.parityExceptions || "").trim();
-                  const parityNone = rawParity.toLowerCase() === "none";
-                  const parityText = rawParity !== "" && !parityNone;
-                  nodes.push(
-                    <div key="parity-tick" className="prop-field-wrap span-2 parity-tick-wrap" data-testid="parity-tick" data-field="f1.parityExceptions-tick">
-                      <label className="prop-check" htmlFor="fld-f1-parityTick">
-                        <input
-                          id="fld-f1-parityTick"
-                          type="checkbox"
-                          checked={parityNone}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFilter("f1", "parityExceptions", "none");
-                            } else {
-                              setFilter("f1", "parityExceptions", "");
-                            }
-                          }}
-                        />
-                        <span className="prop-label" data-field-label="f1.parityExceptions">
-                          <span>Parity or better on the remaining attributes</span>
-                          <FieldRoleBadge path="f1.parityExceptions" doc={doc} />
-                        </span>
-                      </label>
-                    </div>
-                  );
-                  // Part 153 — the exceptions box is always available (not collapsible).
-                }                if (field.type === "computed") {
+                if (field.type === "computed") {
                   nodes.push(
                   <div key={field.key} className="prop-field span-2" data-field={`${spec.key}.${field.key}`}>
                     <div className="prop-label" data-field-label={`${spec.key}.${field.key}`}>
@@ -5225,10 +5197,6 @@ ${IDEA_IMPORT_CSS}
 .prop-identity-cell select{min-height:44px;max-width:100%;}
 .cost-adjust-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 10px;}
 .cost-adjust-row .ghost{min-height:44px;padding:8px 14px;font-size:calc(13px * var(--ts, 1));}
-.parity-tick-wrap{display:flex;flex-direction:column;gap:6px;}
-.parity-tick-wrap .prop-check{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:10px;}
-.parity-tick-wrap .prop-check input[type="checkbox"]{flex:0 0 auto;width:22px;height:22px;margin-top:2px;}
-.parity-tick-wrap .prop-label{flex:1 1 auto;min-width:0;}
 .prop-identity-cell .prop-field{width:100%;margin:0;}
 .prop-identity-cell .prop-label{min-height:28px;align-items:center;}
 .prop-identity-cell .prop-field-inner{width:100%;}
