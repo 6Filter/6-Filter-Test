@@ -128,15 +128,24 @@ await check("D105 the Change button opens the team picker", async () => {
 });
 
 // ───────────── the twelve typed Required boxes ─────────────
-await check("D105 the typed Required boxes are exactly the twelve (Filter 2 opened with its header)", async () => {
+await check("D105 / Part 152 the twelve required boxes are on the form but carry no 'Required' tab", async () => {
   for (const header of qa('[data-filter-open="no"] .prop-filter-h')) await click(header);
-  const required = new Set(qa('[data-role="required"][data-role-for]').map((b) => b.getAttribute("data-role-for")));
+  assert.equal(qa('[data-role="required"][data-role-for]').length, 0, "no Required tabs");
+  assert.doesNotMatch(text().replace(/Required boxes still empty/gi, ""), /\bRequired\b(?! boxes)/, "no Required word on the form");
+  const required = new Set();
   const want = [
     "name", "category", "ideaDescription",
     "f1.declaredAttribute", "f1.benchmark", "f1.declaredGap", "f1.gapDerivation", "f1.parityExceptions",
     "f1.growthRoute", "f1.growthArgument", "f2.grammage", "f2.gstRatePct",
   ];
-  assert.deepEqual([...required].sort(), want.sort());
+  for (const path of want) {
+    const [a, b] = path.includes(".") ? path.split(".") : [null, path];
+    assert.ok(
+      q(`[data-field="${path}"]`) || q(`#fld-${(a ? a + "-" : "") + b}`) || q(`[data-field-label="${path}"]`),
+      `${path} is still on the form`
+    );
+  }
+  void required;
 });
 
 // ───────────── D108 what is gone ─────────────
@@ -175,15 +184,10 @@ await check("D107 one upload, and the template link sits inside it", () => {
 });
 
 // ───────────── D106 cost and margin ─────────────
-await check("D106 cost, margin and MRP sit behind 'Adjust cost and margin' and open on press", async () => {
-  const btn = q('[data-testid="adjust-cost-margin"]');
-  assert.ok(btn, "button present");
-  for (const path of ["f2.cogsAtScale", "f2.netMarginAtScale", "f2.mrpInr"]) {
-    assert.equal(q(`[data-field="${path}"]`), null, `${path} hidden at first`);
-  }
-  await click(btn);
-  const opened = ["f2.cogsAtScale", "f2.netMarginAtScale"].filter((p) => q(`[data-field="${p}"]`));
-  assert.equal(opened.length, 2, "COGS and net margin show after the press");
+await check("Part 152 cost and net margin are always on the form; no 'Adjust cost and margin' button", async () => {
+  assert.equal(q('[data-testid="adjust-cost-margin"]'), null, "button is gone");
+  const shown = ["f2.cogsAtScale", "f2.netMarginAtScale"].filter((p) => q(`[data-field="${p}"]`));
+  assert.equal(shown.length, 2, "COGS and net margin show without a press");
   assert.equal(q('[data-field="f2.cogsAtScale"] [data-role="required"]'), null, "never Required");
 });
 
@@ -231,7 +235,7 @@ await check("phone width: the form's own CSS wraps rows and keeps tap targets", 
   assert.match(form, /@media \(max-width:760px\)/);
   assert.match(form, /\.prop-label\{[^}]*flex-wrap:wrap/s);
   assert.match(form, /\.team-chip/);
-  assert.match(form, /\.cost-adjust-row|adjust-cost-margin/);
+  assert.doesNotMatch(form, /data-testid="adjust-cost-margin"/);
   assert.equal(window.innerWidth, 360);
 });
 

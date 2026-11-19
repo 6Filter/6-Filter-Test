@@ -694,10 +694,15 @@ function FieldControl({
             const relation = f4WebCheckRelation(mine.rating, assessment);
             const finding = String(assessment?.raw?.quote || d.reason || "").trim();
             const sourceUrl = String(assessment?.raw?.source_url || "").trim();
+            // Part 152 — no empty "Web check" panel: it appears only when there is something to show.
+            const webRating = checkedOk && checkedRating ? checkedRating : aiRating;
+            const showWebCheck = Boolean(
+              verifyingDimension === key || webRating || finding || sourceUrl || assessment || mine.rating
+            );
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                <div className="f4c-body">
+                <div className="f4c-body" data-web-check={showWebCheck ? "yes" : "no"}>
                 <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
                   <div className="f4-block-title">Your rating and view</div>
                   <select
@@ -724,15 +729,18 @@ function FieldControl({
                     onChange={(e) => patchUserInput(key, { pov: e.target.value })}
                   />
                 </div>
+                {showWebCheck ? (
                 <div className="f4-dimension-block f4-web-check" data-f4-block="web-check">
                   <div className="f4-block-title">Web check</div>
                   {verifyingDimension === key ? (
                     <div className="dimension-finding original">Web-checking your rating…</div>
                   ) : (
                     <>
-                      <div className="dimension-finding original" data-f4-web-rating={checkedRating || aiRating || ""}>
-                        Web check rating: {checkedOk && checkedRating ? checkedRating : aiRating || "not checked yet"}
-                      </div>
+                      {webRating ? (
+                        <div className="dimension-finding original" data-f4-web-rating={checkedRating || aiRating || ""}>
+                          Web check rating: {webRating}
+                        </div>
+                      ) : null}
                       {finding ? <div className="dimension-finding original">{finding}</div> : null}
                       {sourceUrl ? (
                         <div className="dimension-finding original">
@@ -771,6 +779,7 @@ function FieldControl({
                     </>
                   )}
                 </div>
+                ) : null}
                 </div>
                 {d.reassessedRisk ? (
                   <div className="dimension-finding reassessed">
@@ -2814,7 +2823,6 @@ export default function PropositionForm({
   const [refreshingField, setRefreshingField] = useState("");
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
   const [parityOpen, setParityOpen] = useState(false);
-  const [costAdjustOpen, setCostAdjustOpen] = useState(false);
   /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
   const [benefitExtra, setBenefitExtra] = useState(() => {
     const f1 = initial?.f1 || {};
@@ -4552,8 +4560,8 @@ export default function PropositionForm({
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
         // Part 145 D108 / D106 — boxes taken off the form; cost and margin sit behind one button.
-        const costAdjustVisible =
-          costAdjustOpen || (spec.key === "f2" && (doc.f2?.mrpOverride === true || doc.f2?.netMarginSource === "user"));
+        // Part 152 — COGS and net margin are always on the form (no "Adjust cost and margin" button).
+        const costAdjustVisible = true;
         const visibleSpecFields = spec.fields.filter((f) => {
           const path = `${spec.key}.${f.key}`;
           if (FORM_HIDDEN_FIELD_PATHS.has(path)) return false;
@@ -4713,19 +4721,6 @@ export default function PropositionForm({
               <p className="autofill-status">{evidenceF5F6Note}</p>
             ) : null}
 
-            {spec.key === "f2" ? (
-              <div className="cost-adjust-row">
-                <button
-                  type="button"
-                  className="ghost"
-                  data-testid="adjust-cost-margin"
-                  aria-expanded={costAdjustVisible}
-                  onClick={() => setCostAdjustOpen((open) => !open)}
-                >
-                  Adjust cost and margin
-                </button>
-              </div>
-            ) : null}
             <div className="prop-grid card-grid">
               {(spec.key === "f1"
                 ? (() => {
@@ -5768,6 +5763,7 @@ ${FIELD_ROLE_CSS}
 }
 [data-f4-card]{container-type:inline-size;container-name:f4c;display:block;min-width:0;}
 .f4c-body{display:grid;grid-template-columns:minmax(0,1fr);gap:8px 12px;align-items:start;}
+.f4c-body[data-web-check="no"]{grid-template-columns:minmax(0,1fr) !important;}
 @container f4c (min-width:460px){
   .f4c-body{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
