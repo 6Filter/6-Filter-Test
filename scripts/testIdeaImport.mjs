@@ -59,12 +59,13 @@ await check("template has Ideas + Guide sheets", async () => {
   assert.deepEqual(headers, IMPORT_FIELDS.map((f) => importColumnHeader(f.path)));
   assert.ok(headers.includes("Proposition name") && headers.includes("Category") && headers.includes("Idea description"));
   // Part 158 — one column for every typed box from Filter 1 to Filter 4: the seventeen of Part 151, the yearly price
-  // rise (Filter 3) and a rating plus a view for each of the seven Filter 4 points.
-  assert.equal(headers.length, 32, "thirty-two template columns");
+  // rise (Filter 3) and a rating, a view and a written response for each of the seven Filter 4 points.
+  assert.equal(headers.length, 39, "thirty-nine template columns");
   assert.ok(headers.some((h) => /price rise/i.test(h)), "Filter 3 yearly price rise column");
   for (const dim of ["Functional core stability", "Consumption context stability", "Manufacturing disruption risk", "User habit shift potential", "Adjacent substitution threat", "Purchase frequency shift", "Regulatory disruption risk"]) {
     assert.ok(headers.includes(`${dim} — your rating`), `${dim} rating column`);
     assert.ok(headers.includes(`${dim} — your view`), `${dim} view column`);
+    assert.ok(headers.includes(`${dim} — your response to the risk`), `${dim} response column`);
   }
   for (const present of [/COGS/, /Net margin/, /MRP/]) {
     assert.ok(headers.some((h) => present.test(h)), `${present} column is in the template`);

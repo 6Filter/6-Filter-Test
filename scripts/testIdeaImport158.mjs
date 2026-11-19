@@ -33,7 +33,8 @@ await check("the template runs Filter 1, 2, 3, 4 in form order and ends with Fil
     assert.ok(IMPORT_PATHS.includes(`f4.userInputs.${k}.rating`), `${k} rating`);
     assert.ok(IMPORT_PATHS.includes(`f4.userInputs.${k}.pov`), `${k} view`);
   }
-  assert.equal(IMPORT_PATHS.length, 32);
+  assert.equal(IMPORT_PATHS.length, 39);
+  for (const k of TECH_SHIFT_DIMENSIONS) assert.ok(IMPORT_PATHS.includes(`f4.f4MitigationResponses.${k}`), `${k} response`);
 });
 
 await check("a rating is read as Low, Medium or High; anything else is left out with a warning", () => {
@@ -67,6 +68,8 @@ await check("Filter 4 columns become f4.userInputs.<point> = { rating, pov }, th
   assert.equal(doc.f4.userInputs.purchaseFrequencyShift.pov, "View only, no rating");
   assert.ok(doc.f4.userInputs.functionalCoreStability.at, "stamped like a typed entry");
   assert.equal(fieldsToDoc({ name: "Y" }).f4, undefined, "no Filter 4 columns, no f4 in the draft");
+  const withResp = fieldsToDoc({ "f4.f4MitigationResponses.userHabitShiftPotential": "Switch to sachets" });
+  assert.deepEqual(withResp.f4.f4MitigationResponses, { userHabitShiftPotential: "Switch to sachets" }, "responses are stored the way the form stores them");
 });
 
 await check("headers are plain: '<point> — your rating' / '— your view', and each is recognised on upload", () => {
@@ -75,6 +78,8 @@ await check("headers are plain: '<point> — your rating' / '— your view', and
     assert.equal(importColumnHeader(`f4.userInputs.${k}.rating`), `${label} — your rating`);
     assert.equal(pathForHeader(`${label} — your view`), `f4.userInputs.${k}.pov`);
     assert.equal(pathForHeader(`${label} rating`), `f4.userInputs.${k}.rating`);
+    assert.equal(importColumnHeader(`f4.f4MitigationResponses.${k}`), `${label} — your response to the risk`);
+    assert.equal(pathForHeader(`${label} mitigation`), `f4.f4MitigationResponses.${k}`);
   }
   assert.deepEqual(imp.ALIAS_CONFLICTS, []);
 });
@@ -88,7 +93,7 @@ await check("the rating columns have a Low / Medium / High drop-down; the view c
     if (f.type === "risk") {
       assert.equal(dv?.type, "list", `${f.path} is a drop-down`);
       assert.match(String(dv.formulae[0]), /Low,Medium,High/);
-    } else if (/\.pov$/.test(f.path)) {
+    } else if (/\.pov$|MitigationResponses/.test(f.path)) {
       assert.ok(!dv, `${f.path} is free text`);
     }
   });
@@ -109,6 +114,7 @@ await check("a Log export carries the same columns, so an exported idea uploads 
     functionalCoreStability: { rating: "Low", pov: "Core is stable", at: null },
     adjacentSubstitutionThreat: { rating: "High", pov: "Ready-mix sachets", at: null },
   };
+  doc.f4.f4MitigationResponses = { adjacentSubstitutionThreat: "Launch our own sachet" };
   const flat = flattenProposition(doc);
   assert.equal(flat["f3.plannedAnnualIncreasePct"], 6);
   assert.equal(flat["f4.userInputs.adjacentSubstitutionThreat.rating"], "High");
@@ -119,6 +125,7 @@ await check("a Log export carries the same columns, so an exported idea uploads 
   assert.equal(f["f3.plannedAnnualIncreasePct"], 6);
   assert.equal(f["f4.userInputs.functionalCoreStability.pov"], "Core is stable");
   assert.equal(f["f4.userInputs.adjacentSubstitutionThreat.rating"], "High");
+  assert.equal(f["f4.f4MitigationResponses.adjacentSubstitutionThreat"], "Launch our own sachet");
   assert.equal(f["f4.userInputs.purchaseFrequencyShift.rating"], undefined, "an untouched point stays empty");
 });
 
