@@ -28,7 +28,7 @@ assert.match(formSrc, /inline-floor-fail/);
 assert.match(formSrc, /teaser-card/);
 assert.doesNotMatch(formSrc, /Still to enter before a full score:/);
 assert.doesNotMatch(formSrc, /<BeforeYouSubmit\b/);
-assert.match(formSrc, /submitBarMessageTwoLabels/);
+assert.match(formSrc, /submitBarLine/);
 assert.match(formSrc, /listMissingFormInputs/);
 assert.doesNotMatch(formSrc, /Open anyway/);
 assert.doesNotMatch(formSrc, /Run research & pre-fill/);

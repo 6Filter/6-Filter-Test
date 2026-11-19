@@ -120,8 +120,8 @@ await check("Before-you-submit card is removed from the input form", () => {
   assert.doesNotMatch(badgeSrc, /data-count="scored-empty"/);
 });
 
-await check("submit bar uses submitBarMessageTwoLabels(doc)", () => {
-  assert.match(form, /\{submitBarMessageTwoLabels\(doc\)\}/);
+await check("submit bar uses submitBarLine(doc)", () => {
+  assert.match(form, /\{submitBarLine\(doc\)\}/);
   assert.match(form, /className="progress-track"/);
   assert.match(form, /prop-identity-cell/);
   assert.match(form, /submit-bar-main/);

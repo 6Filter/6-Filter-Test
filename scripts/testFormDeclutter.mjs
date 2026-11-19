@@ -130,8 +130,8 @@ check("A6 F4/F5/F6 static prop-helper captions are not resting lines", () => {
   assert.match(form, /className="autofill-status">\{evidenceF5F6Note\}/);
 });
 
-check("Submit bar uses submitBarMessageTwoLabels; BeforeYouSubmit removed from form", () => {
-  assert.match(form, /submitBarMessageTwoLabels\(doc\)/);
+check("Submit bar uses submitBarLine; BeforeYouSubmit removed from form", () => {
+  assert.match(form, /submitBarLine\(doc\)/);
   assert.doesNotMatch(form, /<BeforeYouSubmit\b/);
   assert.doesNotMatch(badge, /data-count="required-left"/);
   assert.doesNotMatch(badge, /data-count="scored-empty"/);

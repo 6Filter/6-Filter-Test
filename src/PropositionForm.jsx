@@ -47,7 +47,15 @@ import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
 import { inputCoverage } from "../lib/inputCoverage.js";
 import { isGoScore, INVALID_INPUTS_BLOCK_SUBMIT } from "../lib/lockedConstants.js";
-import { reviewInputs, titleCaseName } from "../lib/inputReview.js";
+import { invalidInputFields, titleCaseName } from "../lib/inputReview.js";
+import {
+  GUARDED_FIELDS,
+  answerProblem,
+  circularFreeCopy,
+  isPlaceholderAnswer,
+  reviewInputsGuarded as reviewInputs,
+  sanitizeSuggestion,
+} from "../lib/answerGuard.js";
 import {
   buildPathToGo,
   resolveOutputScore,
@@ -61,6 +69,12 @@ import {
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
+
+// Part 150 D137 — the improvement panel never says "replace X with X".
+function pathCopy(text, categoryName, doc) {
+  const copy = rewriteUnmatchedDivisionCopy(text, categoryName);
+  return circularFreeCopy(copy, doc?.f1?.benchmark, doc?.f1?.benchmarkResearchName);
+}
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import IdeaImportPanel, { IDEA_IMPORT_CSS } from "./IdeaImportPanel.jsx";
@@ -73,7 +87,7 @@ import {
   isPathFilled,
   roleLabel,
 } from "../lib/fieldRoles.js";
-import { requiredEmpty, requiredEmptySummary, submitBarMessageTwoLabels } from "../lib/fieldRoleDisplay.js";
+import { requiredEmpty, requiredEmptySummary, submitBarLine, submitProblems } from "../lib/fieldRoleDisplay.js";
 import { applyDerivedMrpToF2, computeMrp, deriveMrp, formatRupeeInr, hydrateMarginElasticityMrp, isMarginElasticityUnfilled, marginElasticityUnchanged, marginPctFromMrp, recastMarginElasticityLive, resolveF2Price, seedMarginElasticityFromAi, withoutPercentSign } from "../lib/mrpFormula.js";
 import { DIVISION_MIN_NET_MARGIN_PCT, F3_HORIZON_YEARS, VOLUME_LOSS_CEILING_PCT } from "../lib/lockedConstants.js";
 import { expectedProcessMs } from "../lib/processTimer.js";
@@ -231,8 +245,23 @@ function applyAiAutoFill(current, suggested, { overwritePaths = {}, filterKey = 
   return { next, sourced };
 }
 
+/** Part 150 D136 — drop a stored suggestion that is a placeholder, so it can never be written into an empty box. */
+function guardedSuggestions(suggestions, baseDoc) {
+  if (!suggestions || typeof suggestions !== "object" || !suggestions.f1 || typeof suggestions.f1 !== "object") {
+    return suggestions;
+  }
+  const f1 = { ...suggestions.f1 };
+  for (const key of GUARDED_FIELDS) {
+    if (f1[key] === undefined) continue;
+    const kept = sanitizeSuggestion({ field: key, suggested: f1[key], current: baseDoc?.f1?.[key] });
+    if (kept == null) delete f1[key];
+    else f1[key] = kept;
+  }
+  return { ...suggestions, f1 };
+}
+
 function mergeSuggestionsIntoDoc(baseDoc, suggestions, { overwritePaths = {} } = {}) {
-  const raw = suggestions && typeof suggestions === "object" ? suggestions : {};
+  const raw = guardedSuggestions(suggestions && typeof suggestions === "object" ? suggestions : {}, baseDoc);
   const flags = {};
   let nextDoc = baseDoc;
   if (raw.top && typeof raw.top === "object") {
@@ -324,7 +353,26 @@ function lookupSuggestion(suggestions, dismissed, filterKey, fieldKey, _currentV
     ? suggestions?.[filterKey]?.[fieldKey]
     : suggestions?.top?.[fieldKey] ?? suggestions?.[fieldKey];
   if (raw == null || (typeof raw === "string" && !raw.trim())) return null;
+  // Part 150 D136 — the AI never suggests a placeholder, and never what is already in the box.
+  if (filterKey === "f1" && GUARDED_FIELDS.includes(fieldKey)) {
+    return sanitizeSuggestion({ field: fieldKey, suggested: raw, current: _currentValue });
+  }
   return raw;
+}
+
+const NO_SUGGESTION_LINE = Object.freeze({
+  benchmark: "No suggestion found: name the closest competitor you know",
+  default: "No suggestion found: write it in your own words",
+});
+
+/** The one line shown in place of a suggestion that was a placeholder (empty / refused box only). */
+function noSuggestionLineFor(suggestions, dismissed, filterKey, fieldKey, currentValue) {
+  if (filterKey !== "f1" || !GUARDED_FIELDS.includes(fieldKey)) return "";
+  if (dismissed[`${filterKey}.${fieldKey}`]) return "";
+  const raw = suggestions?.[filterKey]?.[fieldKey];
+  if (typeof raw !== "string" || !raw.trim() || !isPlaceholderAnswer(raw)) return "";
+  if (String(currentValue ?? "").trim() && !answerProblem(fieldKey, currentValue)) return "";
+  return NO_SUGGESTION_LINE[fieldKey] || NO_SUGGESTION_LINE.default;
 }
 
 function AiWandMark({ size = 13 }) {
@@ -578,6 +626,7 @@ function FieldControl({
   onConfirmAi,
   onMrpOverrideChange,
   requiredError = false,
+  noSuggestionText = "",
 }) {
   const fileRef = useRef(null);
   const [gstFocused, setGstFocused] = useState(false);
@@ -585,6 +634,11 @@ function FieldControl({
   // Part 143 D86 — no owner/helper lines at rest; inactive lock stays as title only.
   const helper = "";
   const gstFocusHint = fieldPath === "f2.gstRatePct" ? String(field.gstFocusHint || "").trim() : "";
+  // Part 150 D140 — say the rule before the mistake: while the box is empty or refused.
+  const ruleHint =
+    field.ruleHint && (!String(value ?? "").trim() || answerProblem(field.key, value) || invalidInputFields(ideaDoc || {}).has(field.key))
+      ? String(field.ruleHint)
+      : "";
   const full =
     field.type === "textarea" ||
     field.type === "checkbox" ||
@@ -1270,6 +1324,16 @@ function FieldControl({
       {taxNotes}
       {!taxNotes && breakdownNote ? <p className="derived-note">{breakdownNote}</p> : null}
       {!taxNotes && liveNote ? <p className="price-gap-note">{liveNote}</p> : null}
+      {ruleHint ? (
+        <p className="autofill-status" data-testid="rule-hint" data-rule-hint={fieldPath || field.key}>
+          {ruleHint}
+        </p>
+      ) : null}
+      {noSuggestionText ? (
+        <p className="autofill-status" data-testid="no-suggestion" data-tone="na">
+          {noSuggestionText}
+        </p>
+      ) : null}
       {chip}
       {field.fileKey ? (
         <div className="prop-attach">
@@ -2290,7 +2354,7 @@ export function GoNoGoResultPage({
                     <li key={`${it.id || it.filter}-${i}`}>
                       <span className="mono imp-filter-tag">{it.filter}</span>
                       <span className="path-action-text">
-                        <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                        <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
                         {it.why ? <small className="path-why">{it.why}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
@@ -2314,7 +2378,7 @@ export function GoNoGoResultPage({
                   <li key={`b-${it.id || i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
-                      <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                      <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
                       {it.why ? <small className="path-why">{it.why}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
@@ -2338,7 +2402,7 @@ export function GoNoGoResultPage({
                       <li key={`a-${it.id || i}`}>
                         <span className="mono imp-filter-tag">{it.filter}</span>
                         <span className="path-action-text">
-                          <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                          <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
                           {it.why ? <small className="path-why">{it.why}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
@@ -2394,7 +2458,7 @@ export function GoNoGoResultPage({
                   <li key={`${it.id || it.filter}-${i}`}>
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
-                      <span>{rewriteUnmatchedDivisionCopy(it.instruction || it.text, categoryName)}</span>
+                      <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
                       {it.why ? <small className="path-why">{it.why}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
@@ -3168,6 +3232,14 @@ export default function PropositionForm({
   for (const f of liveInputReview.fields.filter((x) => x.status === "invalid")) {
     submitBlockers.push({ id: `invalid-${f.field}`, blocking: INVALID_INPUTS_BLOCK_SUBMIT, text: f.message });
   }
+  // Part 150 D138 — AI-written texts nobody has confirmed score nothing; the panel names them (the bar counts them).
+  for (const u of submitProblems(doc).unconfirmed) {
+    submitBlockers.push({
+      id: `unconfirmed-${u.path}`,
+      blocking: false,
+      text: `Confirm or edit the text the AI wrote for: ${u.label}`,
+    });
+  }
   if (draftError) {
     submitBlockers.push({
       id: "save-failed",
@@ -3783,6 +3855,8 @@ export default function PropositionForm({
     return {
       suggestion,
       suggestionBasis,
+      noSuggestionText:
+        suggestion == null ? noSuggestionLineFor(aiSuggestions, aiDismissed, filterKey, field.key, currentValue) : "",
       onAcceptSuggestion: suggestion == null ? undefined : () => acceptSuggestion(filterKey, field.key, suggestion),
       onDismissSuggestion: () => dismissSuggestion(filterKey, field.key),
     };
@@ -4043,6 +4117,41 @@ export default function PropositionForm({
     }
   }
 
+  /** Part 150 D139 — scroll to the first box that blocks Submit, focus it; its message shows beside it. */
+  function focusFirstBlockingBox() {
+    const problems = submitProblems(doc);
+    const wanted = [];
+    if (!hasIdentity) wanted.push("submitterDepartment");
+    for (const r of problems.requiredEmpty) wanted.push(r.path);
+    for (const i of problems.invalid) wanted.push(i.path);
+    if (!wanted.length) return;
+    const order = [
+      "submitterDepartment",
+      "name",
+      "category",
+      "ideaDescription",
+      ...SIX_FILTERS_FORM.flatMap((s) => s.fields.map((f) => `${s.key}.${f.key}`)),
+    ];
+    const rank = (p) => {
+      const i = order.indexOf(p);
+      return i < 0 ? order.length : i;
+    };
+    const target = [...wanted].sort((a, b) => rank(a) - rank(b))[0];
+    const filterKey = /^f[1-6]\./.test(target) ? target.split(".")[0] : "";
+    if (filterKey) setFilterOpen((prev) => ({ ...prev, [filterKey]: true }));
+    window.setTimeout(() => {
+      const id = `fld-${target.replace(/[^A-Za-z0-9_-]+/g, "-")}`;
+      const el = document.querySelector(`[data-field="${target}"]`) || document.getElementById(id);
+      if (!el) return;
+      try {
+        if (typeof el.scrollIntoView === "function") el.scrollIntoView({ block: "center", behavior: "smooth" });
+      } catch {
+        /* older browsers: focus alone still scrolls */
+      }
+      if (typeof el.focus === "function") el.focus({ preventScroll: true });
+    }, 0);
+  }
+
   async function handleSubmit(providerOverride, submitOpts = {}) {
     if (saving || f3Filling || f4Reassessing || marginElasticityLoading) return;
     // Button stays pressable when Required boxes are empty so the press can show field errors.
@@ -4051,6 +4160,7 @@ export default function PropositionForm({
       setSubmitMsg("");
       setSubmitFailed(false);
       setWhyBlockedOpen(true);
+      focusFirstBlockingBox();
       const missing = requiredEmpty(doc);
       if (missing.some((item) => String(item.path).startsWith("f2."))) {
         setFilterOpen((prev) => ({ ...prev, f2: true }));
@@ -5058,7 +5168,7 @@ export default function PropositionForm({
             data-testid="submit-bar-message"
             title={requiredEmptySummary(doc) || undefined}
           >
-            {submitBarMessageTwoLabels(doc)}
+            {submitBarLine(doc)}
           </span>
           {liveInputReview.fields.filter((f) => f.status === "invalid").length ? (
             <span className="mono submit-bar-warn">
