@@ -616,9 +616,6 @@ export default function LogPage({
             <article className="log-stat-card" data-testid="dash-screened">
               <div className="mono log-stat-kicker">Screened</div>
               <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.screened}</div>
-              <p>
-                {dash.GO} GO · {dash["NO-GO"]} NO-GO · {dash.WATCH} WATCH
-              </p>
             </article>
             <article className="log-stat-card" data-testid="dash-go">
               <div className="mono log-stat-kicker">Verdict · GO</div>

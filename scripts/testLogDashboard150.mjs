@@ -181,7 +181,7 @@ await check("the six tiles show submitted, screened, GO, NO-GO, Watch and waitin
   assert.equal(tileValue("dash-nogo"), 2);
   assert.equal(tileValue("dash-watch"), 2);
   assert.equal(tileValue("dash-waiting"), 1);
-  assert.match(tile("dash-screened").textContent, /1 GO · 2 NO-GO · 2 WATCH/);
+  assert.doesNotMatch(tile("dash-screened").textContent, /GO ·|NO-GO ·|WATCH/, "Part 152: no verdict split under Screened");
   assert.match(tile("dash-waiting").textContent, /Business head review pending/);
   assert.match(tile("dash-nogo").querySelector(".log-stat-kicker").textContent, /Verdict · NO-GO/);
 });
