@@ -206,5 +206,19 @@ await check("clicking a team bar in the dashboard filters the list to that team 
   assert.equal(host.querySelectorAll("tr.log-tr").length, 3);
 });
 
+await check("Part 153 a centred spinner overlay shows while the log is loading, and only then", async () => {
+  assert.equal(host.querySelector('[data-testid="log-loading-overlay"]'), null, "no overlay when idle");
+  const host2 = document.createElement("div");
+  document.body.appendChild(host2);
+  await act(async () => {
+    createRoot(host2).render(h(LogPage, { ...props, loading: true }));
+  });
+  const ov = host2.querySelector('[data-testid="log-loading-overlay"]');
+  assert.ok(ov, "overlay while loading");
+  assert.ok(ov.querySelector(".log-loading-spinner"), "spinner");
+  assert.match(ov.textContent, /Loading logs/);
+  assert.equal(ov.getAttribute("role"), "status");
+});
+
 console.log(`PASS Part 150 Log dashboard (${n} checks)`);
 process.exit(0);

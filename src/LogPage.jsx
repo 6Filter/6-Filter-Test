@@ -114,6 +114,16 @@ function FilterBar({ segments, stage }) {
   );
 }
 
+/** Part 153 — one spinner in the centre of the screen while the log loads. */
+function LogLoadingOverlay({ label }) {
+  return (
+    <div className="log-loading-overlay" role="status" aria-live="polite" data-testid="log-loading-overlay">
+      <span className="log-loading-spinner" aria-hidden="true" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export default function LogPage({
   rows = [],
   loading = false,
@@ -524,9 +534,7 @@ export default function LogPage({
   if (!gateReady) {
     return (
       <main className="log-page">
-        <div className="log-empty">
-          <Loader2 size={18} className="spin" /> Opening log…
-        </div>
+        <LogLoadingOverlay label="Opening log…" />
       </main>
     );
   }
@@ -583,6 +591,7 @@ export default function LogPage({
 
   return (
     <main className="log-page">
+      {loading ? <LogLoadingOverlay label="Loading logs…" /> : null}
       <p className="log-export-notice" role="status">
         Kindly export your ideas to make sure you always have a copy — ideas will be wiped out
         {ideasWipeLabel ? (
@@ -1074,9 +1083,7 @@ export default function LogPage({
         {unavailable ? (
           <div className="log-empty">Database unavailable</div>
         ) : loading && rows.length === 0 ? (
-          <div className="log-empty">
-            <Loader2 size={18} className="spin" /> Loading propositions…
-          </div>
+          <div className="log-empty" aria-hidden="true" style={{ minHeight: 160 }} />
         ) : filteredRows.length === 0 ? (
           <div className="log-empty">
             {rows.length === 0
@@ -1398,6 +1405,9 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
 .log-legend .tone-incomplete,.log-seg-bit.tone-incomplete{background:#8a7a4a;}
 .log-legend .tone-none,.log-seg-bit.tone-none{background:var(--none);}
 .log-err{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--danger-hover-bg);color:var(--danger-text);font-size:13px;}
+.log-loading-overlay{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(250,244,234,.72);backdrop-filter:blur(1.5px);color:var(--ink-muted,#6b5a49);font-size:15px;font-weight:600;}
+.log-loading-overlay .log-loading-spinner{width:56px;height:56px;border-radius:50%;border:5px solid rgba(154,90,50,.22);border-top-color:#9a5a32;animation:sp 0.9s linear infinite;}
+@media (prefers-reduced-motion:reduce){.log-loading-overlay .log-loading-spinner{animation-duration:2.4s;}}
 .log-page .log-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px 12px;color:var(--ink-muted);font-size:14px;}
 .log-table-wrap{margin:0;width:100%;max-width:100%;overflow-x:visible;}
 .log-table{width:100%;max-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
