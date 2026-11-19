@@ -51,7 +51,6 @@ import { invalidInputFields, titleCaseName } from "../lib/inputReview.js";
 import {
   GUARDED_FIELDS,
   answerProblem,
-  circularFreeCopy,
   isPlaceholderAnswer,
   reviewInputsGuarded as reviewInputs,
   sanitizeSuggestion,
@@ -69,11 +68,12 @@ import {
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
+import { displayCopy } from "../lib/displayCopy.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
   const copy = rewriteUnmatchedDivisionCopy(text, categoryName);
-  return circularFreeCopy(copy, doc?.f1?.benchmark, doc?.f1?.benchmarkResearchName);
+  return displayCopy(copy, doc);
 }
 import { fallbackFilterNarrative, stripFormAdminNarrative } from "../lib/filterNarrativeText.js";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
@@ -1244,7 +1244,7 @@ function FieldControl({
       <textarea
         id={inputId}
         data-field={fieldPath || undefined}
-        rows={3}
+        rows={SHORT_ANSWER_KEYS.has(field.key) ? 2 : 3}
         value={value ?? ""}
         placeholder={field.placeholder || ""}
         disabled={locked}
@@ -1567,12 +1567,12 @@ export function webCheckSources(item) {
 }
 
 /** "Web check: <what was found>" with the source as a link, for each check item that has a source. */
-function WebCheckList({ items, specKey }) {
+function WebCheckList({ items, specKey, plain = (t) => t }) {
   const rows = (items || [])
     .map((it) => ({
       it,
       sources: webCheckSources(it),
-      text: String(it?.finding || it?.reason || it?.text || "").trim(),
+      text: plain(String(it?.finding || it?.reason || it?.text || "").trim()),
     }))
     .filter((r) => r.sources.length && r.text);
   if (!rows.length) return null;
@@ -1592,7 +1592,7 @@ function WebCheckList({ items, specKey }) {
   );
 }
 
-function FilterStatusCard({ spec, check, narrative, compare }) {
+function FilterStatusCard({ spec, check, narrative, compare, plain = (t) => t }) {
   const tone = filterCardTone(check, spec.key);
   const items = analysisCheckItems(check?.items);
   const judged = items.filter((i) => i.level != null || i.slot);
@@ -1621,7 +1621,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
                   {formatRiskLevel(it.level)}
                 </span>
               ) : null}
-              {it.text}
+              {plain(it.text)}
               {Array.isArray(it.reasons) && it.reasons.length ? (
                 <small style={{ display: "block", opacity: 0.7 }}>{it.reasons.join(" · ")}</small>
               ) : null}
@@ -1642,7 +1642,7 @@ function FilterStatusCard({ spec, check, narrative, compare }) {
       ) : (
         <span className="mono filter-progress-n">—</span>
       )}
-      <WebCheckList items={items} specKey={spec.key} />
+      <WebCheckList items={items} specKey={spec.key} plain={plain} />
     </article>
   );
 }
@@ -1657,6 +1657,9 @@ function InlineFloorFail({ check }) {
     </div>
   );
 }
+
+/** Punch list 2.6 — one-sentence answers get a two-line box so the opening form is shorter. */
+const SHORT_ANSWER_KEYS = new Set(["gapDerivation", "parityExceptions"]);
 
 /** Part 145 D108 — boxes removed from the input form (their data model and saved values stay). */
 const FORM_HIDDEN_FIELD_PATHS = new Set([
@@ -2099,10 +2102,13 @@ export function GoNoGoResultPage({
   const rationale = safeCall(
     "hero rationale",
     () =>
-      rewriteUnmatchedDivisionCopy(
-        result.rationale ||
-          (score.total > 0 && liveRationale ? liveRationale : "No rationale returned."),
-        categoryName
+      displayCopy(
+        rewriteUnmatchedDivisionCopy(
+          result.rationale ||
+            (score.total > 0 && liveRationale ? liveRationale : "No rationale returned."),
+          categoryName
+        ),
+        doc
       ),
     String(result.rationale || "No rationale returned.")
   );
@@ -2132,12 +2138,19 @@ export function GoNoGoResultPage({
     () =>
       computeImprovementPointValues(checks).map((it) => ({
         ...it,
-        text: rewriteUnmatchedDivisionCopy(it.text, categoryName),
+        text: displayCopy(rewriteUnmatchedDivisionCopy(it.text, categoryName), doc),
       })),
     []
   );
   const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
-  const pathActions = annotatePathActions(Array.isArray(pathPlan?.actions) ? pathPlan.actions : [], doc);
+  const pathActions = annotatePathActions(
+    (Array.isArray(pathPlan?.actions) ? pathPlan.actions : []).map((a) => ({
+      ...a,
+      instruction: displayCopy(a?.instruction, doc),
+      text: displayCopy(a?.text, doc),
+    })),
+    doc
+  );
   const pathKind = String(pathPlan?.kind || "path");
   const coverage = safeCall("filter coverage", () => countFiltersWithEvidence(doc || {}), {
     have: 0,
@@ -2355,7 +2368,7 @@ export function GoNoGoResultPage({
                       <span className="mono imp-filter-tag">{it.filter}</span>
                       <span className="path-action-text">
                         <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
-                        {it.why ? <small className="path-why">{it.why}</small> : null}
+                        {it.why ? <small className="path-why">{displayCopy(it.why, doc)}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
                             {ROLE_LABEL.optional} — {it.optionalHint}
@@ -2379,7 +2392,7 @@ export function GoNoGoResultPage({
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
                       <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
-                      {it.why ? <small className="path-why">{it.why}</small> : null}
+                      {it.why ? <small className="path-why">{displayCopy(it.why, doc)}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
                             {ROLE_LABEL.optional} — {it.optionalHint}
@@ -2403,7 +2416,7 @@ export function GoNoGoResultPage({
                         <span className="mono imp-filter-tag">{it.filter}</span>
                         <span className="path-action-text">
                           <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
-                          {it.why ? <small className="path-why">{it.why}</small> : null}
+                          {it.why ? <small className="path-why">{displayCopy(it.why, doc)}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
                             {ROLE_LABEL.optional} — {it.optionalHint}
@@ -2459,7 +2472,7 @@ export function GoNoGoResultPage({
                     <span className="mono imp-filter-tag">{it.filter}</span>
                     <span className="path-action-text">
                       <span>{pathCopy(it.instruction || it.text, categoryName, doc)}</span>
-                      {it.why ? <small className="path-why">{it.why}</small> : null}
+                      {it.why ? <small className="path-why">{displayCopy(it.why, doc)}</small> : null}
                         {it.optionalHint ? (
                           <small className="path-why path-optional-hint" data-role="optional">
                             {ROLE_LABEL.optional} — {it.optionalHint}
@@ -2517,11 +2530,14 @@ export function GoNoGoResultPage({
             String(sealedFilter?.narrative || result.filterNarratives?.[spec.key] || "").trim()
           );
           const awaiting = spec.key === "f6" && (check.checkLabel === "Awaiting panels" || check.infoLine);
-          const narrative = rewriteUnmatchedDivisionCopy(
-            awaiting
-              ? (check.infoLine || "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist.")
-              : stored || (sealedFilter?.narrative ? sealedFilter.narrative : fallbackFilterNarrative(check)),
-            categoryName
+          const narrative = displayCopy(
+            rewriteUnmatchedDivisionCopy(
+              awaiting
+                ? (check.infoLine || "Awaiting prototype panels — Filter 6 is read when lab, consumer and pack results exist.")
+                : stored || (sealedFilter?.narrative ? sealedFilter.narrative : fallbackFilterNarrative(check)),
+              categoryName
+            ),
+            doc
           );
           let compare = null;
           if (spec.key === "f2") {
@@ -2539,6 +2555,7 @@ export function GoNoGoResultPage({
               check={check}
               narrative={narrative}
               compare={compare}
+              plain={(t) => displayCopy(t, doc)}
             />
           );
         })}
@@ -2900,6 +2917,7 @@ export default function PropositionForm({
   const [f4VerifyingKey, setF4VerifyingKey] = useState("");
   const [refreshingField, setRefreshingField] = useState("");
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
+  const [costAdjustOpen, setCostAdjustOpen] = useState(false);
   /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
   const [benefitExtra, setBenefitExtra] = useState(() => {
     const f1 = initial?.f1 || {};
@@ -4683,8 +4701,9 @@ export default function PropositionForm({
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
         // Part 145 D108 / D106 — boxes taken off the form; cost and margin sit behind one button.
-        // Part 152 — COGS and net margin are always on the form (no "Adjust cost and margin" button).
-        const costAdjustVisible = true;
+        // Part 145 D106 — cost and margin sit behind one button; shown when pressed or once the person changed them.
+        const costAdjustVisible =
+          costAdjustOpen || (spec.key === "f2" && (doc.f2?.mrpOverride === true || doc.f2?.netMarginSource === "user"));
         const visibleSpecFields = spec.fields.filter((f) => {
           const path = `${spec.key}.${f.key}`;
           if (FORM_HIDDEN_FIELD_PATHS.has(path)) return false;
@@ -4844,6 +4863,19 @@ export default function PropositionForm({
               <p className="autofill-status">{evidenceF5F6Note}</p>
             ) : null}
 
+            {spec.key === "f2" ? (
+              <div className="cost-adjust-row">
+                <button
+                  type="button"
+                  className="ghost"
+                  data-testid="adjust-cost-margin"
+                  aria-expanded={costAdjustVisible}
+                  onClick={() => setCostAdjustOpen((open) => !open)}
+                >
+                  Adjust cost and margin
+                </button>
+              </div>
+            ) : null}
             <div className="prop-grid card-grid">
               {(spec.key === "f1"
                 ? (() => {
@@ -5320,6 +5352,9 @@ ${IDEA_IMPORT_CSS}
   color:var(--c-placeholder);font-size:var(--fs-placeholder);font-weight:400;opacity:1;}
 .prop-form-page textarea{min-height:calc(var(--h-input) * 2.1);resize:vertical;}
 .prop-form-page textarea{min-height:64px;}
+.prop-form-page textarea[rows="2"]{min-height:46px;}
+.prop-form-page .prop-filter.is-collapsed{--badge-size:34px;--filter-pad-y:10px;}
+.prop-form-page .prop-filter.is-collapsed .prop-filter-sub{line-height:1.3;margin-top:2px;}
 .inline-floor-fail{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--floor-fail-bg);border:1px solid var(--floor-fail-border);}
 .inline-floor-fail .fail-title{font-weight:700;color:var(--floor-fail-text);margin:0 0 6px;font-size:calc(13.5px * var(--ts, 1));}
 .inline-floor-fail p{margin:0;color:var(--floor-fail-body);font-size:calc(13px * var(--ts, 1));line-height:1.45;}
@@ -5405,19 +5440,18 @@ ${FIELD_ROLE_CSS}
 .ai-sourced-tag{display:inline-block;margin-top:4px;font-family:var(--fm);font-size:calc(10.5px * var(--ts, 1));letter-spacing:.04em;
   color:var(--c-link);background:rgba(154,90,50,.12);border:1px solid rgba(154,90,50,.28);
   border-radius:999px;padding:3px 8px;width:fit-content;}
-/* Same teal glow pill on COGS, Net margin, and MRP — never inherit label colour. */
+/* Same brown pill on COGS, Net margin, and MRP (cream-and-brown theme) — never inherit label colour. */
 .prop-form-page .ai-fills-badge,.prop-label .ai-fills-badge,.ai-fills-badge{
   display:inline-block;margin-left:6px;padding:3px 10px;border-radius:999px;
   font:800 12px/1.2 'Sora',system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap;
-  color:#042f2e;background:#2dd4bf;border:1px solid #5eead4;
-  box-shadow:0 0 0 1px rgba(45,212,191,.35),0 0 14px rgba(45,212,191,.45);
-  -webkit-text-fill-color:#042f2e;}
-.autofill-status[data-tone="ai-override"]{color:#0f766e;font-weight:600;}
+  color:var(--c-accent-text);background:var(--c-accent);border:1px solid var(--c-accent);
+  -webkit-text-fill-color:var(--c-accent-text);}
+.autofill-status[data-tone="ai-override"]{color:var(--c-link);font-weight:600;}
 .prop-field.is-ai-expected,.prop-check.is-ai-expected{border-radius:12px;padding:10px 12px;margin:-2px -4px 0;
-  background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.35);}
+  background:rgba(154,90,50,.05);border:1px solid var(--c-border);}
 .prop-field.is-ai-expected input,.prop-field.is-ai-expected select,.prop-field.is-ai-expected textarea,
 .prop-form-page input.is-ai-expected-input{
-  border-color:rgba(45,212,191,.55);background:rgba(45,212,191,.1);}
+  border-color:var(--c-border);background:var(--input-bg);}
 .prop-field.is-required-missing,.prop-form-page input.is-required-missing-input,
 .prop-form-page textarea.is-required-missing-input{
   outline:2px solid rgba(168,67,43,.85);outline-offset:2px;}

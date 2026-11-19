@@ -11,9 +11,7 @@ export function FieldRoleBadge({ path, doc }) {
   if (!path) return null;
   const role = displayRoleKey(path, doc);
   const label = displayRole(path, doc);
-  // Part 152 — the form lists the inputs people must fill, so "Required" is not repeated on every box.
-  // Only the exceptions ("Optional") are labelled.
-  if (role === "required") return null;
+  // Punch list 2.4 — every box says Required or Optional (the owner asked for both).
   return (
     <span className="field-role" data-role-wrap={path}>
       <span className="field-role-badge" data-role-for={path} data-role={role}>
