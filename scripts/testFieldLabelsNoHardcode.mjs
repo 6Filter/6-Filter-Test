@@ -66,7 +66,7 @@ assert.doesNotMatch(badge, /ROLE_LABEL\[/);
 assert.doesNotMatch(badge, /ROLE_MEANING\[/);
 const form = readFileSync(path.join(root, "src/PropositionForm.jsx"), "utf8");
 assert.match(form, /from "\.\.\/lib\/fieldRoles\.js"/);
-assert.match(form, /submitBarMessageTwoLabels\(doc\)/);
+assert.match(form, /submitBarLine\(doc\)/);
 const display = readFileSync(path.join(root, "lib/fieldRoleDisplay.js"), "utf8");
 assert.match(display, /"Required"/);
 assert.match(display, /"Optional"/);
