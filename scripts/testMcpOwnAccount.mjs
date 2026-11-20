@@ -48,6 +48,14 @@ globalThis.fetch = async (url, opts = {}) => {
     slack.dms.push(body);
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
   }
+  if (target === "https://claude.ai/oauth/mcp-oauth-client-metadata") {
+    return new Response(JSON.stringify({
+      client_id: target,
+      client_name: "Claude",
+      redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+      token_endpoint_auth_method: "none",
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  }
   if (target.includes("api.anthropic.com")) {
     anthropic.push(String(opts.headers?.["x-api-key"] || ""));
     return new Response(JSON.stringify({ content: [{ type: "text", text: "{\"reconciliation\":{\"status\":\"INSUFFICIENT\"}}" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }), { status: 200 });
@@ -112,15 +120,14 @@ const adminToken = signSession({ userId: adminRow.id, tokenVersion: Number(admin
 const memberIdea = await db.createProposition({ createdByEmail: memberRow.email, createdByUserId: memberRow.id, submitterName: "Member Mcp", submitterDepartment: "CIA" });
 const otherIdea = await db.createProposition({ createdByEmail: adminRow.email, createdByUserId: adminRow.id, submitterName: "Admin Mcp", submitterDepartment: "R&D" });
 
-const page = await http({ method: "GET", url: "/mcp/oauth/authorize?client_id=x&redirect_uri=http%3A%2F%2F127.0.0.1%2Fcallback&code_challenge=abc&code_challenge_method=S256&state=s" });
-check("the sign-in page asks for a work email and has no key field", page.statusCode === 200 && /name="email"/.test(page.raw) && !/name="(api[_-]?key|password|token)"/i.test(page.raw));
-
 const registered = await http({
   method: "POST",
   url: "/mcp/oauth/register",
   body: { redirect_uris: ["http://127.0.0.1/callback"] },
 });
 const client = JSON.parse(registered.raw);
+const page = await http({ method: "GET", url: `/mcp/oauth/authorize?client_id=${client.client_id}&redirect_uri=${encodeURIComponent("http://127.0.0.1/callback")}&code_challenge=abc&code_challenge_method=S256&state=s` });
+check("the sign-in page asks for a work email and has no key field", page.statusCode === 200 && /name="email"/.test(page.raw) && !/name="(api[_-]?key|password|token)"/i.test(page.raw));
 const verifier = randomBytes(32).toString("base64url");
 const challenge = createHash("sha256").update(verifier).digest("base64url");
 const start = new URLSearchParams({
@@ -218,8 +225,23 @@ const loopAuth = await http({
 check("Claude's loopback callback is accepted", loopAuth.statusCode === 302 && String(loopAuth.headers.location || "").startsWith("http://localhost:4477/callback"));
 const visit = await http({ method: "GET", url: "/mcp", headers: { accept: "text/html,application/xhtml+xml" } });
 const plain = await http({ method: "GET", url: "/mcp/", headers: { accept: "*/*" } });
+const discovered = await http({ method: "GET", url: "/.well-known/oauth-authorization-server" });
+const discoveredJson = JSON.parse(discovered.raw || "{}");
+const claudeId = "https://claude.ai/oauth/mcp-oauth-client-metadata";
+const claudeAuth = await http({
+  method: "GET",
+  url: `/mcp/oauth/authorize?client_id=${encodeURIComponent(claudeId)}&redirect_uri=${encodeURIComponent("https://claude.ai/api/mcp/auth_callback")}&code_challenge=abc&code_challenge_method=S256&state=claude`,
+  headers: { cookie: `primus_session=${encodeURIComponent(adminToken)}` },
+});
+const claudeBad = await http({
+  method: "GET",
+  url: `/mcp/oauth/authorize?client_id=${encodeURIComponent(claudeId)}&redirect_uri=${encodeURIComponent("https://evil.example/callback")}&code_challenge=abc&code_challenge_method=S256&state=claude`,
+  headers: { cookie: `primus_session=${encodeURIComponent(adminToken)}` },
+});
 check("opening the connector address in a browser explains how to add it", visit.statusCode === 200 && /Connectors/.test(visit.raw) && /\/mcp/.test(visit.raw) && !/POST JSON-RPC/.test(visit.raw));
-check("a plain open of the address explains the connector", plain.statusCode === 200 && /Add custom connector/.test(plain.raw));
+check("a connector probe is asked to sign in", plain.statusCode === 401 && /oauth-protected-resource/.test(String(plain.headers["www-authenticate"] || "")));
+check("Claude's published identity can sign in", discoveredJson.client_id_metadata_document_supported === true && claudeAuth.statusCode === 302 && String(claudeAuth.headers.location || "").startsWith("https://claude.ai/api/mcp/auth_callback"));
+check("a published identity cannot redirect elsewhere", claudeBad.statusCode === 400 && !claudeBad.headers.location);
 const stream = await http({ method: "GET", url: "/mcp", headers: { accept: "text/event-stream" } });
 check("a streaming client keeps the connector response", stream.statusCode === 401);
 const anon = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
