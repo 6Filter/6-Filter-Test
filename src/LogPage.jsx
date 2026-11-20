@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, Download, FileDown, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
+import TextSizeControl, { TEXT_SIZE_DEFAULT, readStoredTextSize } from "./TextSizeControl.jsx";
 import {
   exportPropositionsToExcel,
   resolveFullPropositions,
@@ -171,6 +173,16 @@ export default function LogPage({
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const [ideasWipeLabel, setIdeasWipeLabel] = useState("");
+  // Text size (− % +) in the top bar, the same control and the same saved size as the input form.
+  // 78% is what people always saw first, so it changes nothing; the rest zooms the Log page evenly.
+  const [textSize, setTextSize] = useState(() => readStoredTextSize());
+  const [headerSlot, setHeaderSlot] = useState(() =>
+    typeof document !== "undefined" ? document.getElementById("primus-masthead-slot") : null
+  );
+  useEffect(() => {
+    const el = document.getElementById("primus-masthead-slot");
+    if (el !== headerSlot) setHeaderSlot(el);
+  }, [headerSlot]);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
 
@@ -589,8 +601,16 @@ export default function LogPage({
     );
   }
 
+  const textSizeControl = <TextSizeControl value={textSize} onChange={setTextSize} />;
+  const logZoom = textSize / TEXT_SIZE_DEFAULT;
+
   return (
-    <main className="log-page">
+    <main
+      className="log-page"
+      data-text-scale={textSize}
+      style={logZoom === 1 ? undefined : { zoom: logZoom }}
+    >
+      {headerSlot ? createPortal(textSizeControl, headerSlot) : textSizeControl}
       {loading ? <LogLoadingOverlay label="Loading logs…" /> : null}
       <p className="log-export-notice" role="status">
         Kindly export your ideas to make sure you always have a copy — ideas will be wiped out
