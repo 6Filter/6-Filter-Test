@@ -121,17 +121,21 @@ await check("team bars: verdict segments add up to the bar", async () => {
   const seg = Object.fromEntries([...rd.querySelectorAll("rect[data-verdict]")].map((r) => [r.getAttribute("data-verdict"), Number(r.getAttribute("data-count"))]));
   assert.deepEqual(seg, { GO: 6, WATCH: 2, "NO-GO": 3 });
 });
-await check("team bars: drafts are shown beside the total, never inside the bar", async () => {
+await check("team bars: drafts and incomplete ideas are not inside the bar or the total", async () => {
   const host = await mount(h(C.StackedBars, { title: "t", groups: teamSummary.groups }));
   const cia = [...host.querySelectorAll(".log-bar-row")].find((r) => r.textContent.includes("CIA"));
-  assert.match(cia.querySelector(".log-bar-total").textContent, /3\s*\+2 drafts/);
+  assert.equal(cia.querySelector(".log-bar-total").textContent.trim(), "3");
+  assert.doesNotMatch(cia.textContent, /drafts/);
   const filled = [...cia.querySelectorAll("rect[data-verdict]")].reduce((s, r) => s + Number(r.getAttribute("data-count")), 0);
   assert.equal(filled, 3);
+  const mixed = await mount(h(C.StackedBars, { title: "t", groups: [{ key: "X", label: "X", filterValue: "X", submitted: 10, drafts: 4, GO: 2, WATCH: 0, "NO-GO": 0, INCOMPLETE: 8, verdicted: 2 }] }));
+  assert.equal(mixed.querySelector(".log-bar-total").textContent.trim(), "2");
+  assert.equal(mixed.querySelector('rect[data-verdict="INCOMPLETE"]'), null);
 });
 await check("tooltips: every segment and bar has a title with its numbers", async () => {
   const host = await mount(h(C.StackedBars, { title: "t", groups: teamSummary.groups }));
   const titles = [...host.querySelectorAll("svg title")].map((t) => t.textContent);
-  assert.ok(titles.some((t) => /R&D — GO 6, WATCH 2, NO-GO 3, INCOMPLETE 0 \(11 ideas submitted\)/.test(t)));
+  assert.ok(titles.some((t) => /R&D — GO 6, WATCH 2, NO-GO 3 \(11 ideas screened\)/.test(t)));
   assert.ok(titles.some((t) => t === "R&D: NO-GO 3"));
 });
 await check("hidden table and spoken summary carry the same numbers", async () => {
@@ -143,7 +147,7 @@ await check("hidden table and spoken summary carry the same numbers", async () =
   assert.deepEqual(cells[1], ["CIA", "3", "2", "3", "0", "0", "0"]);
   const spoken = host.querySelector("p.sr-only").textContent;
   assert.match(spoken, /R&D 11, CIA 3/);
-  assert.match(spoken, /Total 15 submitted/);
+  assert.match(spoken, /Total 15 screened/);
   assert.equal(host.querySelector("figure").getAttribute("aria-describedby"), host.querySelector("p.sr-only").id);
 });
 await check("click on a bar drills down with the group", async () => {
@@ -224,7 +228,7 @@ await check("month trend: click and keyboard select the month; hidden table has 
 });
 await check("empty states say so instead of drawing empty charts", async () => {
   const a = await mount(h(C.StackedBars, { title: "t", groups: [] }));
-  assert.match(a.textContent, /No ideas in this period yet/);
+  assert.match(a.textContent, /No screened ideas in this period yet/);
   assert.equal(a.querySelectorAll(".log-bar-row").length, 0);
   const b = await mount(h(C.MonthTrendChart, { months: [] }));
   assert.match(b.textContent, /No ideas in this period yet/);
@@ -237,7 +241,7 @@ await check("insights list shows each insight with its icon and the rules panel"
   const host = await mount(h(C.InsightsList, { insights: ins, rules: I.insightRuleLines() }));
   const items = [...host.querySelectorAll("li.log-insight")];
   assert.equal(items.length, ins.length);
-  assert.ok(items[0].textContent.includes("Ideas fell 30% in Oct 2026 (14 vs 20 in Sep 2026)."));
+  assert.ok(items[0].textContent.includes("Screened ideas fell 30% in Oct 2026 (14 vs 20 in Sep 2026)."));
   assert.equal(items[0].querySelector(".log-insight-icon").textContent, "↓");
   assert.match(host.querySelector("details summary").textContent, /How this is worked out/);
   assert.ok(host.querySelectorAll("details li").length >= 8);

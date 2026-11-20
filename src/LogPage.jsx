@@ -615,16 +615,19 @@ export default function LogPage({
               <div className="mono log-stat-kicker">Ideas submitted</div>
               <div className="log-stat-value">{dash.submitted}</div>
               <p>
-                {dash.thisMonth} this month (India time)
-                {dash.lastMonth > 0 || dash.thisMonth > 0
-                  ? `, ${dash.thisMonth >= dash.lastMonth ? "up" : "down"} from ${dash.lastMonth} in ${dash.prevMonthName}`
-                  : ""}
-                . {dash.drafts} {dash.drafts === 1 ? "draft is" : "drafts are"} not yet submitted.
+                {dash.drafts} {dash.drafts === 1 ? "draft is" : "drafts are"} not yet submitted.
               </p>
             </article>
             <article className="log-stat-card" data-testid="dash-screened">
               <div className="mono log-stat-kicker">Screened</div>
               <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.screened}</div>
+              <p>
+                {dash.screenedThisMonth} this month (India time)
+                {dash.screenedLastMonth > 0 || dash.screenedThisMonth > 0
+                  ? `, ${dash.screenedThisMonth >= dash.screenedLastMonth ? "up" : "down"} from ${dash.screenedLastMonth} in ${dash.prevMonthName}`
+                  : ""}
+                . Incomplete ideas are not included.
+              </p>
             </article>
             <article className="log-stat-card" data-testid="dash-go">
               <div className="mono log-stat-kicker">Verdict · GO</div>
@@ -648,25 +651,25 @@ export default function LogPage({
       </div>
 
       {!unavailable ? (
-        <section className="log-dash-charts" data-testid="dash-charts" aria-label="Ideas submitted: by month, top submitters and teams">
+        <section className="log-dash-charts" data-testid="dash-charts" aria-label="Screened ideas: by month, top people and teams">
           <div className="log-dash-main">
-            <MonthTrendChart title="Ideas submitted per month" months={dashMonths} />
+            <MonthTrendChart title="Ideas screened per month" months={dashMonths} />
           </div>
           <div className="log-dash-side">
             <SimpleBars
-              title={`Top 5 submitters in ${dash.monthName || "this month"}`}
-              unit="ideas"
-              items={dash.topPeople.map((g) => ({ key: g.key, label: g.label, value: g.submitted }))}
-              emptyText="No ideas submitted this month yet."
+              title={`Top 5 people by screened ideas in ${dash.monthName || "this month"}`}
+              unit="screened ideas"
+              items={dash.topPeople.map((g) => ({ key: g.key, label: g.label, value: g.verdicted }))}
+              emptyText="No ideas screened this month yet."
             />
             <StackedBars
-              title={`Ideas submitted by team in ${dash.monthName || "this month"}`}
+              title={`Ideas screened by team in ${dash.monthName || "this month"}`}
               groups={dash.teams}
               onSelect={(g) => {
                 setTeamFilter(g.filterValue || "");
                 if (dash.monthKey) setMonthFilter(dash.monthKey);
               }}
-              emptyText="No ideas submitted this month yet."
+              emptyText="No ideas screened this month yet."
             />
           </div>
         </section>
@@ -719,9 +722,9 @@ export default function LogPage({
             </div>
           </div>
           <p className="log-analytics-note">
-            Counts use India time (IST). Submitted ideas are counted on the day of their first Submit; drafts on the day
-            they were created and never inside the submitted figures. Ideas screened before this release may sit in a
-            later month if they were screened again afterwards. Click a row or bar to filter the list below.
+            Counts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO.
+            Drafts and incomplete ideas are left out of those figures. A submitted idea is counted on the day of its
+            first Submit; a draft on the day it was created. Click a row or bar to filter the list below.
           </p>
           {teamFilter || monthFilter || personFilter || period.from || period.to ? (
             <div className="log-active-filters" aria-label="Active analytics filters">
@@ -747,11 +750,11 @@ export default function LogPage({
           <div className="log-analytics-grid">
             <div>
               {activeTab === "team" ? (
-                <StackedBars title="Ideas submitted by team" groups={summary.groups} onSelect={selectGroup} />
+                <StackedBars title="Ideas screened by team" groups={summary.groups} onSelect={selectGroup} />
               ) : null}
               {activeTab === "person" ? (
                 <StackedBars
-                  title="Ideas submitted by person (top 10)"
+                  title="Ideas screened by person (top 10)"
                   groups={topWithOthers(summary.groups, 10)}
                   onSelect={selectGroup}
                 />
