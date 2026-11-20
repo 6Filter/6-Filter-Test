@@ -417,6 +417,43 @@ for (let i = 0; i < 12; i += 1) {
   limited.push(burst.statusCode);
 }
 check("the token endpoint rate-limits repeated failures", limited.filter((status) => status === 429).length >= 1 && limited[0] === 400, limited.join(","));
+process.env.MCP_ALLOWED_EMAILS = ` ${adminRow.email.toUpperCase()} , pilot.two@cavinkare.com`;
+const dmsBefore = slack.dms.length;
+const pilotStart = new URLSearchParams({
+  client_id: client.client_id,
+  redirect_uri: "http://127.0.0.1/callback",
+  code_challenge: challenge,
+  code_challenge_method: "S256",
+  state: "pilot",
+  response_type: "code",
+});
+const pilotRefused = await http({
+  method: "POST",
+  url: `/mcp/oauth/authorize?${pilotStart}`,
+  body: `step=email&email=${encodeURIComponent(memberRow.email)}`,
+  headers: { "content-type": "application/x-www-form-urlencoded" },
+});
+check("a pilot list refuses an unlisted email with a clear message and sends no code", pilotRefused.statusCode === 403 && /limited pilot/.test(pilotRefused.raw) && slack.dms.length === dmsBefore);
+const unlisted = await connectorToken(memberRow.email);
+check("an unlisted email cannot obtain a connector token", !unlisted.access_token);
+const pilotListed = await connectorToken(adminRow.email);
+const listedTools = pilotListed.access_token ? await rpc(pilotListed.access_token, { jsonrpc: "2.0", id: 14, method: "tools/list" }) : { status: 0 };
+check("a listed email can obtain a connector token", Boolean(pilotListed.access_token) && listedTools.status === 200);
+const refusedAudit = await apiCall({ method: "GET", url: "/api/admin/mcp/audit", cookie: signSession({ userId: adminRow.id, tokenVersion: Number((await db.getUserById(adminRow.id)).tokenVersion) || 1 }) });
+check("a refused pilot sign-in is audited", JSON.parse(refusedAudit.raw || "{}").records?.some((row) => row.tool_name === "sign_in_refused" && row.email === memberRow.email));
+process.env.MCP_ALLOWED_EMAILS = "pilot.two@cavinkare.com";
+const removedCall = await rpc(pilotListed.access_token, { jsonrpc: "2.0", id: 15, method: "tools/list" });
+const removedRefresh = await http({
+  method: "POST",
+  url: "/mcp/oauth/token",
+  body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: pilotListed.refresh_token || "missing" }).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "203.0.113.60" },
+});
+process.env.MCP_ALLOWED_EMAILS = adminRow.email;
+const restoredCall = await rpc(pilotListed.access_token, { jsonrpc: "2.0", id: 16, method: "tools/list" });
+check("removing an email revokes that person's existing connector tokens on their next call", removedCall.status === 401 && removedRefresh.statusCode === 400 && restoredCall.status === 401);
+delete process.env.MCP_ALLOWED_EMAILS;
+
 process.env.MCP_ENABLED = "false";
 const off = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
 delete process.env.MCP_ENABLED;
