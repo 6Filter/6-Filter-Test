@@ -1,0 +1,883 @@
+{
+ "version": 1,
+ "phase": 1,
+ "note": "Routes mapped from existing test files that mention the last path segment. Controls filled from inventory.json when that file exists. Exemptions are only for unreachable lock screens.",
+ "routes": {
+  "/api/admin/backup/export": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testExportToBlob.mjs",
+   "testFieldLabelsExport.mjs",
+   "testHardScoreLock.mjs",
+   "testPart103Backup.mjs",
+   "testPart116ManagerReview.mjs",
+   "testPart138FormSide.mjs"
+  ],
+  "/api/admin/db-forensics": [
+   "testAccessMatrix.mjs"
+  ],
+  "/api/admin/mcp/audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testMcpOwnAccount.mjs",
+   "testSequenceDrift.mjs"
+  ],
+  "/api/admin/mcp/revoke": [
+   "testMcpOwnAccount.mjs"
+  ],
+  "/api/admin/research-cache/invalidate": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/admin/research-incomplete": [
+   "testAccessMatrix.mjs",
+   "testResearchIncompleteDiag.mjs"
+  ],
+  "/api/admin/syndicated/import": [
+   "testDbProvider.mjs",
+   "testFieldLabelsExport.mjs",
+   "testFormLayout149.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportApi.mjs",
+   "testIdeaImportMobile.mjs",
+   "testIdeaImportSafety.mjs",
+   "testPart140DraftSaveAndFilter4.mjs"
+  ],
+  "/api/admin/users": [
+   "testAccessMatrix.mjs",
+   "testMcpOwnAccount.mjs",
+   "testOrgRosterVisibility.mjs"
+  ],
+  "/api/auth/logout": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/auth/me": [
+   "testAccessMatrix.mjs",
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/auth/request-code": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/auth/verify-code": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/category-sizing/run": [
+   "testPart91CategorySizingCache.mjs"
+  ],
+  "/api/department-auth/lock": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/department-auth/me": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/department-auth/unlock": [
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/health": [
+   "testAccessMatrix.mjs",
+   "testDbProvider.mjs",
+   "testHttpPerformance.mjs",
+   "testPart70Health.mjs",
+   "testProbeMcpSurface.mjs",
+   "testUnauthenticatedSweep.mjs"
+  ],
+  "/api/ideas/:id": [
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaScaleBadgeFromResearch.mjs",
+   "testIdeaScaleConsistency.mjs",
+   "testLogPage148.mjs",
+   "testOutputVerdictAndGrammage.mjs",
+   "testPart50.mjs",
+   "testPart56.mjs",
+   "testPart58OutputPage.mjs"
+  ],
+  "/api/ideas/:id/export": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testExportToBlob.mjs",
+   "testFieldLabelsExport.mjs",
+   "testHardScoreLock.mjs",
+   "testPart103Backup.mjs",
+   "testPart116ManagerReview.mjs",
+   "testPart138FormSide.mjs"
+  ],
+  "/api/propositions": [
+   "testAccessMatrix.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testHttpPerformance.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportApi.mjs",
+   "testInputReviewSubmit.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart104Reads.mjs"
+  ],
+  "/api/propositions/:id": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testFieldLabelsOnPage.mjs",
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testHardScoreLock.mjs"
+  ],
+  "/api/propositions/:id/check": [
+   "testExportToBlob.mjs",
+   "testPart75.mjs"
+  ],
+  "/api/propositions/:id/concept-card": [
+   "testPart73.mjs"
+  ],
+  "/api/propositions/:id/draft": [
+   "testDraftSaveAndFilter4.mjs",
+   "testInputReviewSubmit.mjs",
+   "testLogCharts.mjs",
+   "testPart140DraftSaveAndFilter4.mjs",
+   "testPart73.mjs",
+   "testProofFlowApi.mjs",
+   "testQueryCount.mjs",
+   "testReportedIssues.mjs"
+  ],
+  "/api/propositions/:id/go-nogo": [
+   "testReportedIssues.mjs"
+  ],
+  "/api/propositions/:id/manager-approve": [
+   "testProofFlowApi.mjs"
+  ],
+  "/api/propositions/:id/manager-reject": [
+   "testPart64ManagerSummary.mjs"
+  ],
+  "/api/propositions/:id/reassess-f4": [
+   "testPart63F4Responses.mjs"
+  ],
+  "/api/propositions/:id/refresh-field": [
+   "testPart73.mjs"
+  ],
+  "/api/propositions/:id/request-manager-review": [
+   "testProofFlowApi.mjs"
+  ],
+  "/api/propositions/:id/retry-step": [
+   "testPart104Reads.mjs"
+  ],
+  "/api/propositions/:id/verify-f4": [
+   "testPart138F4HandVerify.mjs"
+  ],
+  "/api/propositions/cleanup-untouched": [
+   "testPart67LogResearch.mjs"
+  ],
+  "/api/propositions/import": [
+   "testIdeaImport151.mjs",
+   "testIdeaImportApi.mjs"
+  ],
+  "/api/propositions/import-template": [
+   "testIdeaImportApi.mjs"
+  ]
+ },
+ "controls": {
+  "home|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "log|button|button|Delete all": [
+   "testDeleteAllConfirm.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log|button|button|Delete this idea": [
+   "testPart65Log.mjs"
+  ],
+  "log|button|button|Download CSV": [
+   "testLogPage148.mjs"
+  ],
+  "log|button|button|Export Excel": [
+   "testLogPage148.mjs"
+  ],
+  "log|button|button|Export entered input fields to Excel": [
+   "testPart65Log.mjs",
+   "testPart82.mjs"
+  ],
+  "log|button|button|Month Inputs Excel": [
+   "testPart65Log.mjs"
+  ],
+  "log|button|button|Month Inputs PDF": [
+   "testLogPage148.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log|button|button|Month Output PDF": [
+   "testLogPage148.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log|button|button|Refresh": [
+   "testF1OptionalAndPendingResearch.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart107FilterGuard.mjs",
+   "testPart111IgnoredKeys.mjs"
+  ],
+  "log|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "log|button|tab|AI used#": [
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart65Log.mjs",
+   "testPart67LogResearch.mjs"
+  ],
+  "log|button|tab|Date": [
+   "testBlobBackup.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testEvidenceSourceLink.mjs",
+   "testExportToBlob.mjs"
+  ],
+  "log|button|tab|Drafts#": [
+   "testDraftSaveAndFilter4.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportApi.mjs",
+   "testIdeaImportSafety.mjs",
+   "testInputReview.mjs"
+  ],
+  "log|button|tab|INCOMPLETE#": [
+   "testAccessMatrix.mjs",
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testGroundedImprovementFeedback.mjs",
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs"
+  ],
+  "log|button|tab|Ideas submitted#": [
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log|button|tab|Month": [
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs",
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart113ProbeFlag.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log|button|tab|NO-GO#": [
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportSafety.mjs",
+   "testImprovementPathValid.mjs"
+  ],
+  "log|button|tab|Person": [
+   "testAnswerGuard.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testFieldRoles.mjs",
+   "testHardScoreLock.mjs",
+   "testIdeaImport151.mjs"
+  ],
+  "log|button|tab|Team": [
+   "testAccessMatrix.mjs",
+   "testDeepLinkStashRender.mjs",
+   "testFieldLabelsOnPage.mjs",
+   "testFormDeclutter.mjs",
+   "testHttpPerformance.mjs",
+   "testIdeaImport.mjs"
+  ],
+  "log|button|tab|WATCH#": [
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testFreshDatabaseStarts.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaScaleBadgeFromResearch.mjs"
+  ],
+  "log|select|select-one|Filter by submitter": [
+   "testLogPage148.mjs"
+  ],
+  "log|select|select-one|Month-wise ideas submitted": [
+   "testLogPage148.mjs"
+  ],
+  "log|select|select-one|Period": [
+   "testFinalScoring.mjs",
+   "testLogCharts.mjs",
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart114ScoreEvidence.mjs",
+   "testPart76.mjs"
+  ],
+  "log|select|select-one|Team-wise ideas submitted": [
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs"
+  ],
+  "log|select|select-one|View": [
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testFinalScoring.mjs",
+   "testFormLayout149.mjs",
+   "testFormMobileWrap.mjs",
+   "testFormZoom.mjs"
+  ],
+  "log|summary||How this is worked out": [
+   "testLogCharts.mjs",
+   "testLogPage148.mjs"
+  ],
+  "settings|button|button|Refresh": [
+   "testF1OptionalAndPendingResearch.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart107FilterGuard.mjs",
+   "testPart111IgnoredKeys.mjs"
+  ],
+  "settings|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ],
+  "settings|select|select-one|Team filter": [
+   "testLogPage148.mjs",
+   "testPart86.mjs"
+  ],
+  "inputs-new-draft|a||import-template-link": [
+   "testShortForm.mjs"
+  ],
+  "inputs-new-draft|button|button|Re-run this estimate": [
+   "testPart73.mjs"
+  ],
+  "inputs-new-draft|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "inputs-new-draft|button|button|Submit for verdict": [
+   "testDraftSaveAndFilter4.mjs",
+   "testInputPageActions.mjs",
+   "testPart64FormRedesign.mjs",
+   "testPart64Gate.mjs",
+   "testReportedIssues.mjs"
+  ],
+  "inputs-new-draft|button|button|add-another-benefit": [
+   "testFieldLabelsOnPage.mjs",
+   "testFormDeclutter.mjs"
+  ],
+  "inputs-new-draft|button|button|adjust-cost-margin": [
+   "testPart152.mjs",
+   "testPunchList153.mjs",
+   "testShortForm.mjs"
+  ],
+  "inputs-new-draft|button|button|import-upload": [
+   "testIdeaImport151.mjs",
+   "testIdeaImportMobile.mjs",
+   "testShortForm.mjs"
+  ],
+  "inputs-new-draft|button|button|import-upload-bulk": [
+   "testIdeaImport151.mjs"
+  ],
+  "inputs-new-draft|button|button|team-change": [
+   "testShortForm.mjs"
+  ],
+  "inputs-new-draft|button|button|text-size-reset": [
+   "testTextSizeControl.mjs",
+   "testTextSizeLog.mjs"
+  ],
+  "inputs-new-draft|input|text|category": [
+   "testAnswerGuard.mjs",
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testBenefitsExtraExport.mjs",
+   "testCategoryGroupLog.mjs",
+   "testConceptCardOfficeFiles.mjs"
+  ],
+  "inputs-new-draft|input|text|name": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testBenefitsExtraExport.mjs",
+   "testBlobBackup.mjs"
+  ],
+  "inputs-new-draft|select|select-one|team-select": [
+   "testShortForm.mjs"
+  ],
+  "inputs-new-draft|textarea|textarea|ideaDescription": [
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testFieldLabelsOnPage.mjs",
+   "testFieldRoles.mjs"
+  ],
+  "inputs-evaluated|a||import-template-link": [
+   "testShortForm.mjs"
+  ],
+  "inputs-evaluated|button|button|Re-run this estimate": [
+   "testPart73.mjs"
+  ],
+  "inputs-evaluated|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "inputs-evaluated|button|button|Submit for verdict": [
+   "testDraftSaveAndFilter4.mjs",
+   "testInputPageActions.mjs",
+   "testPart64FormRedesign.mjs",
+   "testPart64Gate.mjs",
+   "testReportedIssues.mjs"
+  ],
+  "inputs-evaluated|button|button|add-another-benefit": [
+   "testFieldLabelsOnPage.mjs",
+   "testFormDeclutter.mjs"
+  ],
+  "inputs-evaluated|button|button|adjust-cost-margin": [
+   "testPart152.mjs",
+   "testPunchList153.mjs",
+   "testShortForm.mjs"
+  ],
+  "inputs-evaluated|button|button|import-upload": [
+   "testIdeaImport151.mjs",
+   "testIdeaImportMobile.mjs",
+   "testShortForm.mjs"
+  ],
+  "inputs-evaluated|button|button|import-upload-bulk": [
+   "testIdeaImport151.mjs"
+  ],
+  "inputs-evaluated|button|button|team-change": [
+   "testShortForm.mjs"
+  ],
+  "inputs-evaluated|button|button|text-size-reset": [
+   "testTextSizeControl.mjs",
+   "testTextSizeLog.mjs"
+  ],
+  "inputs-evaluated|input|text|category": [
+   "testAnswerGuard.mjs",
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testBenefitsExtraExport.mjs",
+   "testCategoryGroupLog.mjs",
+   "testConceptCardOfficeFiles.mjs"
+  ],
+  "inputs-evaluated|input|text|name": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testBenefitsExtraExport.mjs",
+   "testBlobBackup.mjs"
+  ],
+  "inputs-evaluated|select|select-one|team-select": [
+   "testShortForm.mjs"
+  ],
+  "inputs-evaluated|textarea|textarea|ideaDescription": [
+   "testAssessmentFailures.mjs",
+   "testBenchmarkVerifyRuns.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testFieldLabelsOnPage.mjs",
+   "testFieldRoles.mjs"
+  ],
+  "output-go|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "output-go|button|button|Submit": [
+   "testAnswerGuard.mjs",
+   "testCategoryGroupLog.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF1OptionalAndPendingResearch.mjs"
+  ],
+  "output-go|button|button|View entered inputs": [
+   "testLogOpenOutput.mjs",
+   "testOutputVerdictAndGrammage.mjs",
+   "testPart50.mjs"
+  ],
+  "output-watch|button|button|Manager Review": [
+   "testOrgRosterVisibility.mjs",
+   "testPart116ManagerReview.mjs",
+   "testPart64ManagerSummary.mjs",
+   "testPart69SlackNotice.mjs",
+   "testPart74.mjs",
+   "testQueryCount.mjs"
+  ],
+  "output-watch|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "output-watch|button|button|Submit": [
+   "testAnswerGuard.mjs",
+   "testCategoryGroupLog.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF1OptionalAndPendingResearch.mjs"
+  ],
+  "output-watch|button|button|View entered inputs": [
+   "testLogOpenOutput.mjs",
+   "testOutputVerdictAndGrammage.mjs",
+   "testPart50.mjs"
+  ],
+  "output-nogo|button|button|Manager Review": [
+   "testOrgRosterVisibility.mjs",
+   "testPart116ManagerReview.mjs",
+   "testPart64ManagerSummary.mjs",
+   "testPart69SlackNotice.mjs",
+   "testPart74.mjs",
+   "testQueryCount.mjs"
+  ],
+  "output-nogo|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "output-nogo|button|button|Submit": [
+   "testAnswerGuard.mjs",
+   "testCategoryGroupLog.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF1OptionalAndPendingResearch.mjs"
+  ],
+  "output-nogo|button|button|View entered inputs": [
+   "testLogOpenOutput.mjs",
+   "testOutputVerdictAndGrammage.mjs",
+   "testPart50.mjs"
+  ],
+  "output-incomplete|button|button|Evaluate": [
+   "testEvaluateOnlyAiControl.mjs",
+   "testFormLayout149.mjs",
+   "testHardScoreLock.mjs",
+   "testHttpPerformance.mjs",
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs"
+  ],
+  "output-incomplete|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "output-incomplete|button|button|View entered inputs": [
+   "testLogOpenOutput.mjs",
+   "testOutputVerdictAndGrammage.mjs",
+   "testPart50.mjs"
+  ],
+  "log-member|button|button|Delete all": [
+   "testDeleteAllConfirm.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log-member|button|button|Download CSV": [
+   "testLogPage148.mjs"
+  ],
+  "log-member|button|button|Export Excel": [
+   "testLogPage148.mjs"
+  ],
+  "log-member|button|button|Export entered input fields to Excel": [
+   "testPart65Log.mjs",
+   "testPart82.mjs"
+  ],
+  "log-member|button|button|Refresh": [
+   "testF1OptionalAndPendingResearch.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart107FilterGuard.mjs",
+   "testPart111IgnoredKeys.mjs"
+  ],
+  "log-member|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "log-member|button|tab|AI used#": [
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart65Log.mjs",
+   "testPart67LogResearch.mjs"
+  ],
+  "log-member|button|tab|Date": [
+   "testBlobBackup.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testEvidenceSourceLink.mjs",
+   "testExportToBlob.mjs"
+  ],
+  "log-member|button|tab|Drafts#": [
+   "testDraftSaveAndFilter4.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportApi.mjs",
+   "testIdeaImportSafety.mjs",
+   "testInputReview.mjs"
+  ],
+  "log-member|button|tab|INCOMPLETE#": [
+   "testAccessMatrix.mjs",
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testGroundedImprovementFeedback.mjs",
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs"
+  ],
+  "log-member|button|tab|Ideas submitted#": [
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log-member|button|tab|Month": [
+   "testLogCharts.mjs",
+   "testLogDashboard150.mjs",
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart113ProbeFlag.mjs",
+   "testPart65Log.mjs"
+  ],
+  "log-member|button|tab|NO-GO#": [
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaImportSafety.mjs",
+   "testImprovementPathValid.mjs"
+  ],
+  "log-member|button|tab|Person": [
+   "testAnswerGuard.mjs",
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testFieldRoles.mjs",
+   "testHardScoreLock.mjs",
+   "testIdeaImport151.mjs"
+  ],
+  "log-member|button|tab|Team": [
+   "testAccessMatrix.mjs",
+   "testDeepLinkStashRender.mjs",
+   "testFieldLabelsOnPage.mjs",
+   "testFormDeclutter.mjs",
+   "testHttpPerformance.mjs",
+   "testIdeaImport.mjs"
+  ],
+  "log-member|button|tab|WATCH#": [
+   "testFieldRoles.mjs",
+   "testFinalScoring.mjs",
+   "testFreshDatabaseStarts.mjs",
+   "testIdeaHistoryBackfill.mjs",
+   "testIdeaImport151.mjs",
+   "testIdeaScaleBadgeFromResearch.mjs"
+  ],
+  "log-member|select|select-one|Filter by submitter": [
+   "testLogPage148.mjs"
+  ],
+  "log-member|select|select-one|Month-wise ideas submitted": [
+   "testLogPage148.mjs"
+  ],
+  "log-member|select|select-one|Period": [
+   "testFinalScoring.mjs",
+   "testLogCharts.mjs",
+   "testLogInsights.mjs",
+   "testLogPage148.mjs",
+   "testPart114ScoreEvidence.mjs",
+   "testPart76.mjs"
+  ],
+  "log-member|select|select-one|Team-wise ideas submitted": [
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs"
+  ],
+  "log-member|select|select-one|View": [
+   "testDivisionDetectionConfirm.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testFinalScoring.mjs",
+   "testFormLayout149.mjs",
+   "testFormMobileWrap.mjs",
+   "testFormZoom.mjs"
+  ],
+  "log-member|summary||How this is worked out": [
+   "testLogCharts.mjs",
+   "testLogPage148.mjs"
+  ],
+  "log|button|button|text-size-reset": [
+   "testTextSizeControl.mjs",
+   "testTextSizeLog.mjs"
+  ],
+  "log-member|button|button|text-size-reset": [
+   "testTextSizeControl.mjs",
+   "testTextSizeLog.mjs"
+  ],
+  "settings-member|button|button|Save": [
+   "testDraftSaveAndFilter4.mjs",
+   "testEvidenceSourceLink.mjs",
+   "testFormNoSidebar.mjs",
+   "testIdeaImport.mjs",
+   "testIdeaImportMobile.mjs",
+   "testInputReview.mjs"
+  ],
+  "settings-member|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-divisions|button|button|Refresh": [
+   "testF1OptionalAndPendingResearch.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart107FilterGuard.mjs",
+   "testPart111IgnoredKeys.mjs"
+  ],
+  "settings-divisions|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-divisions|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings-divisions|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-divisions|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ],
+  "settings-roster|button|button|Preview": [
+   "testOrgRosterVisibility.mjs",
+   "testPart106ResearchSteps.mjs",
+   "testPart114ScoreEvidence.mjs",
+   "testPart115SlackAccess.mjs",
+   "testPart46.mjs",
+   "testPart48Narratives.mjs"
+  ],
+  "settings-roster|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-roster|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings-roster|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-roster|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ],
+  "settings-scoring|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-scoring|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings-scoring|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-scoring|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ],
+  "settings-comparison|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-comparison|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings-comparison|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-comparison|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ],
+  "settings-audit|button|button|Refresh": [
+   "testF1OptionalAndPendingResearch.mjs",
+   "testLogDashboard150.mjs",
+   "testLogPage148.mjs",
+   "testMcpOwnAccount.mjs",
+   "testPart107FilterGuard.mjs",
+   "testPart111IgnoredKeys.mjs"
+  ],
+  "settings-audit|button|button|Settings": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-audit|button|tab|Audit": [
+   "testAccessMatrix.mjs",
+   "testDeleteAllConfirm.mjs",
+   "testDeleteArchiveReplace.mjs",
+   "testMcpOwnAccount.mjs",
+   "testNeverCacheFailure.mjs",
+   "testPart101Retention.mjs"
+  ],
+  "settings-audit|button|tab|Scoring re-score": [
+   "testOrgRosterVisibility.mjs",
+   "testSubmitterFields.mjs"
+  ],
+  "settings-audit|button|tab|Users": [
+   "testAccessMatrix.mjs",
+   "testAnswerGuard.mjs",
+   "testDraftSaveAndFilter4.mjs",
+   "testF3HasEnoughOpenFilters.mjs",
+   "testFieldRoles.mjs",
+   "testManagerReviewFirstTimeHead.mjs"
+  ]
+ },
+ "exemptions": {
+  "lock-member": "Team password gate is off (PLATFORM_TEAM_LOCK_ENABLED=false); the unlock form is not reachable.",
+  "lock-master": "Team password gate is off (PLATFORM_TEAM_LOCK_ENABLED=false); Master unlock is not reachable."
+ }
+}
