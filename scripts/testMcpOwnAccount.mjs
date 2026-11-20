@@ -208,8 +208,18 @@ const uploaded = await rpc(memberToken, { jsonrpc: "2.0", id: 9, method: "tools/
 const uploadBody = JSON.parse(uploaded.json.result.content[0].text);
 check("open, verdict, and evidence do not call Claude", anthropic.length === callsAfterScreen && verdict.json.result.isError !== true && opened.json.result.isError !== true && uploadBody.uploaded === true);
 
+const loop = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["http://localhost/callback", "https://claude.ai/api/mcp/auth_callback"] } });
+const loopClient = JSON.parse(loop.raw);
+const loopAuth = await http({
+  method: "GET",
+  url: `/mcp/oauth/authorize?client_id=${loopClient.client_id}&redirect_uri=${encodeURIComponent("http://localhost:4477/callback")}&code_challenge=abc&code_challenge_method=S256&state=loop`,
+  headers: { cookie: `primus_session=${encodeURIComponent(adminToken)}` },
+});
+check("Claude's loopback callback is accepted", loopAuth.statusCode === 302 && String(loopAuth.headers.location || "").startsWith("http://localhost:4477/callback"));
 const visit = await http({ method: "GET", url: "/mcp", headers: { accept: "text/html,application/xhtml+xml" } });
-check("opening the connector address in a browser explains how to add it", visit.statusCode === 200 && /custom connector/.test(visit.raw) && /\/mcp/.test(visit.raw) && !/POST JSON-RPC/.test(visit.raw));
+const plain = await http({ method: "GET", url: "/mcp/", headers: { accept: "*/*" } });
+check("opening the connector address in a browser explains how to add it", visit.statusCode === 200 && /Connectors/.test(visit.raw) && /\/mcp/.test(visit.raw) && !/POST JSON-RPC/.test(visit.raw));
+check("a plain open of the address explains the connector", plain.statusCode === 200 && /Add custom connector/.test(plain.raw));
 const stream = await http({ method: "GET", url: "/mcp", headers: { accept: "text/event-stream" } });
 check("a streaming client keeps the connector response", stream.statusCode === 401);
 const anon = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
