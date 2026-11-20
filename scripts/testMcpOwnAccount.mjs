@@ -8,6 +8,30 @@ import { createHash, randomBytes } from "node:crypto";
 import { Readable } from "node:stream";
 import assert from "node:assert/strict";
 
+const { installHttpPerformance } = await import("../lib/httpPerformance.js");
+{
+  const sent = [];
+  const req = { method: "GET", url: "/mcp", headers: { "accept-encoding": "gzip" } };
+  const res = {
+    statusCode: 200,
+    headers: {},
+    setHeader(k, v) { this.headers[String(k).toLowerCase()] = v; },
+    getHeader(k) { return this.headers[String(k).toLowerCase()]; },
+    write(chunk) { sent.push(Buffer.from(chunk).toString()); return true; },
+    end(chunk) { if (chunk) sent.push(Buffer.from(chunk).toString()); },
+  };
+  installHttpPerformance(req, res);
+  res.setHeader("Content-Type", "text/event-stream");
+  const chunk = `data: ${"x".repeat(1200)}\n\n`;
+  res.write(chunk);
+  res.write("data: two\n\n");
+  res.end();
+  if (sent.join("") !== chunk + "data: two\n\n" || res.getHeader("content-encoding") || res.getHeader("cache-control") !== "no-store") {
+    console.error("FAIL an event stream on /mcp was buffered, compressed, or cached");
+    process.exit(1);
+  }
+}
+
 const testUrl = String(process.env.TEST_DATABASE_URL || "").trim();
 if (!testUrl) {
   console.log("SKIP MCP: TEST_DATABASE_URL not set");
@@ -172,7 +196,7 @@ check("the connector stores a Primus session and no API key", tokenRes.statusCod
 const memberToken = tokenJson.access_token;
 const listed = await rpc(memberToken, { jsonrpc: "2.0", id: 1, method: "tools/list" });
 const names = (listed.json?.result?.tools || []).map((tool) => tool.name);
-check("the tools are list, open, save, verdict, evidence, and screen", names.join(",") === "list_ideas,open_idea,save_draft,read_verdict,upload_evidence,screen_idea");
+check("the tools are list, open, and verdict", names.join(",") === "list_ideas,open_idea,read_verdict");
 const schemas = JSON.stringify(listed.json?.result?.tools || []);
 check("no tool asks for an API key", !/api[_-]?key|password|secret/i.test(schemas));
 
@@ -184,36 +208,16 @@ const adminIdeas = JSON.parse(adminList.json.result.content[0].text).ideas;
 check("the admin sees both ideas", adminIdeas.some((row) => row.id === memberIdea.id) && adminIdeas.some((row) => row.id === otherIdea.id));
 
 const before = anthropic.length;
-const rejected = await rpc(memberToken, { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "screen_idea", arguments: { ideaId: memberIdea.id, apiKey: DEPT_KEY } } });
+const rejected = await rpc(memberToken, { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "open_idea", arguments: { ideaId: memberIdea.id, apiKey: DEPT_KEY } } });
 const rejectedText = rejected.json.result.content[0].text;
 check("a key typed into the tool is refused", rejected.json.result.isError === true && /not accepted/i.test(rejectedText) && !rejectedText.includes(DEPT_KEY) && anthropic.length === before);
-
-await rpc(memberToken, {
-  jsonrpc: "2.0",
-  id: 5,
-  method: "tools/call",
-  params: {
-    name: "save_draft",
-    arguments: {
-      ideaId: memberIdea.id,
-      name: "Hair growth serum",
-      category: "Serum",
-      ideaDescription: "Leave-on serum that supports visible hair growth",
-      f1: { declaredAttribute: "Hair growth", benchmark: "Dove Scalp Serum 100 ml", declaredGap: 3, gapDerivation: "panel", parityExceptions: "No fragrance", growthRoute: "frequency", growthArgument: "growing" },
-      f2: { grammage: "100 ml", gstRatePct: 18, mrpInr: 295, cogsAtScale: 100, netMarginAtScale: 60 },
-    },
-  },
-});
-const screened = await rpc(memberToken, { jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "screen_idea", arguments: { ideaId: memberIdea.id } } });
-const screenBody = JSON.parse(screened.json.result.content[0].text);
-check("screening is tagged with the team's stored key", screenBody.billingSource === "department_api_keys:CIA" && !screened.raw.includes(DEPT_KEY) && !screened.raw.includes("sk-ant-stub-infra-only"), screenBody.billingSource);
-check("the screening call used that team key", anthropic.length > before && anthropic.every((key) => key === DEPT_KEY));
-const callsAfterScreen = anthropic.length;
+for (const name of ["save_draft", "upload_evidence", "screen_idea"]) {
+  const stopped = await rpc(memberToken, { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name, arguments: { ideaId: memberIdea.id } } });
+  check(`${name} is turned off`, stopped.json.result.isError === true && /turned off/i.test(stopped.json.result.content[0].text) && anthropic.length === before);
+}
 const verdict = await rpc(memberToken, { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "read_verdict", arguments: { ideaId: memberIdea.id } } });
 const opened = await rpc(memberToken, { jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "open_idea", arguments: { ideaId: memberIdea.id } } });
-const uploaded = await rpc(memberToken, { jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "upload_evidence", arguments: { ideaId: memberIdea.id, fileName: "note.csv", mediaType: "text/csv", dataBase64: Buffer.from("column,value\nlab,1").toString("base64") } } });
-const uploadBody = JSON.parse(uploaded.json.result.content[0].text);
-check("open, verdict, and evidence do not call Claude", anthropic.length === callsAfterScreen && verdict.json.result.isError !== true && opened.json.result.isError !== true && uploadBody.uploaded === true);
+check("open and verdict do not call Claude", anthropic.length === before && verdict.json.result.isError !== true && opened.json.result.isError !== true);
 
 const loop = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["http://localhost/callback", "https://claude.ai/api/mcp/auth_callback"] } });
 const loopClient = JSON.parse(loop.raw);
@@ -251,6 +255,12 @@ await db.upsertDepartmentApiKeyCiphertext("Pets Division", encryptApiKey(DEPT_KE
 const pets = await resolveBillingApiKey("Pets Division");
 const sn = await resolveBillingApiKey("SN");
 check("a default team with a stored key is billed to that team", pets.source === "department_api_keys:Pets Division" && pets.apiKey === DEPT_KEY && sn.source === "ANTHROPIC_API_KEY");
+const hostile = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["https://evil.example/steal"] } });
+check("registration refuses a hostile redirect", hostile.statusCode === 400);
+process.env.MCP_ENABLED = "false";
+const off = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
+delete process.env.MCP_ENABLED;
+check("the off switch hides the endpoint", off.statusCode === 404);
 
 globalThis.fetch = realFetch;
 await suite.drop?.();
