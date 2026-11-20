@@ -5,6 +5,7 @@
  * Screening is tagged with that team's stored key.
  */
 import { createHash, randomBytes } from "node:crypto";
+import httpServer from "node:http";
 import { Readable } from "node:stream";
 import assert from "node:assert/strict";
 
@@ -52,6 +53,7 @@ process.env.LOGIN_CODE_SECRET = "mcp-test-login";
 process.env.DEPARTMENT_KEY_ENCRYPTION_SECRET = "mcp-test-department";
 process.env.ANTHROPIC_API_KEY = "sk-ant-stub-infra-only";
 process.env.SLACK_BOT_TOKEN = "xoxb-stub-local-only";
+process.env.MCP_ENABLED = "true";
 const DEPT_KEY = "sk-ant-stub-local-only";
 
 const slack = { dms: [] };
@@ -93,6 +95,7 @@ const { encryptApiKey, resolveBillingApiKey } = await import("../lib/departmentA
 const { SUBMITTER_DEPARTMENTS, billingTeamName } = await import("../lib/propositionFields.js");
 const { unlockedDepartmentOf } = await import("../lib/propositionAccess.js");
 const { handleMcpHttp } = await import("../lib/mcpHttp.js");
+const { handleApiRequest } = await import("../lib/apiRouter.js");
 await db.initDb();
 await db.upsertDepartmentApiKeyCiphertext("CIA", encryptApiKey(DEPT_KEY));
 
@@ -121,6 +124,73 @@ function http({ method, url, body, headers = {} }) {
     end(c) { if (c != null) o.raw += Buffer.isBuffer(c) ? c.toString("utf8") : String(c); },
   };
   return handleMcpHttp(req, res).then(() => o);
+}
+
+function apiCall({ method, url, body, cookie }) {
+  const raw = body == null ? "" : JSON.stringify(body);
+  const req = Object.assign(Readable.from(raw ? [Buffer.from(raw)] : []), {
+    method,
+    url,
+    headers: {
+      host: "127.0.0.1",
+      "content-type": "application/json",
+      ...(cookie ? { cookie: `primus_session=${encodeURIComponent(cookie)}` } : {}),
+    },
+    socket: { remoteAddress: "127.0.0.1" },
+  });
+  const o = { statusCode: 200, headers: {}, raw: "" };
+  const res = {
+    get statusCode() { return o.statusCode; },
+    set statusCode(v) { o.statusCode = v; },
+    setHeader(k, v) { o.headers[String(k).toLowerCase()] = v; },
+    getHeader(k) { return o.headers[String(k).toLowerCase()]; },
+    writeHead(s) { o.statusCode = s; return res; },
+    write(c) { if (c != null) o.raw += Buffer.isBuffer(c) ? c.toString("utf8") : String(c); return true; },
+    end(c) { if (c != null) o.raw += Buffer.isBuffer(c) ? c.toString("utf8") : String(c); },
+  };
+  return handleApiRequest(req, res).then(() => o);
+}
+
+async function connectorToken(email) {
+  const registered = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["http://127.0.0.1/callback"] } });
+  const client = JSON.parse(registered.raw);
+  const verifier = randomBytes(32).toString("base64url");
+  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  const start = new URLSearchParams({
+    client_id: client.client_id,
+    redirect_uri: "http://127.0.0.1/callback",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state: "pilot",
+    response_type: "code",
+  });
+  await http({
+    method: "POST",
+    url: `/mcp/oauth/authorize?${start}`,
+    body: `step=email&email=${encodeURIComponent(email)}`,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  });
+  const code = (slack.dms.at(-1)?.text || "").match(/\b(\d{6})\b/)?.[1] || "";
+  const signed = await http({
+    method: "POST",
+    url: `/mcp/oauth/authorize?${start}`,
+    body: `step=code&email=${encodeURIComponent(email)}&code=${code}`,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  });
+  const oauthCode = new URL(String(signed.headers.location || "http://127.0.0.1/callback")).searchParams.get("code");
+  const tokenRes = await http({
+    method: "POST",
+    url: "/mcp/oauth/token",
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code: oauthCode || "",
+      client_id: client.client_id,
+      redirect_uri: "http://127.0.0.1/callback",
+      code_verifier: verifier,
+    }).toString(),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  });
+  return JSON.parse(tokenRes.raw || "{}");
 }
 
 async function rpc(token, message) {
@@ -192,6 +262,7 @@ const tokenRes = await http({
 });
 const tokenJson = JSON.parse(tokenRes.raw || "{}");
 check("the connector stores a Primus session and no API key", tokenRes.statusCode === 200 && typeof tokenJson.access_token === "string" && !("api_key" in tokenJson));
+check("an MCP access token lasts at most one hour", tokenJson.expires_in > 0 && tokenJson.expires_in <= 3600);
 
 const memberToken = tokenJson.access_token;
 const listed = await rpc(memberToken, { jsonrpc: "2.0", id: 1, method: "tools/list" });
@@ -203,7 +274,8 @@ check("no tool asks for an API key", !/api[_-]?key|password|secret/i.test(schema
 const memberList = await rpc(memberToken, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
 const memberIdeas = JSON.parse(memberList.json.result.content[0].text).ideas;
 check("the member sees their own idea and not the other team's idea", memberIdeas.some((row) => row.id === memberIdea.id) && !memberIdeas.some((row) => row.id === otherIdea.id), memberIdeas.map((row) => row.team).join(","));
-const adminList = await rpc(adminToken, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
+const adminMcp = await connectorToken(adminRow.email);
+const adminList = await rpc(adminMcp.access_token, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
 const adminIdeas = JSON.parse(adminList.json.result.content[0].text).ideas;
 check("the admin sees both ideas", adminIdeas.some((row) => row.id === memberIdea.id) && adminIdeas.some((row) => row.id === otherIdea.id));
 
@@ -218,6 +290,16 @@ for (const name of ["save_draft", "upload_evidence", "screen_idea"]) {
 const verdict = await rpc(memberToken, { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "read_verdict", arguments: { ideaId: memberIdea.id } } });
 const opened = await rpc(memberToken, { jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "open_idea", arguments: { ideaId: memberIdea.id } } });
 check("open and verdict do not call Claude", anthropic.length === before && verdict.json.result.isError !== true && opened.json.result.isError !== true);
+const openedBody = JSON.parse(opened.json.result.content[0].text);
+check("open labels the text as untrusted and returns no file", openedBody.untrusted === true && /untrusted/i.test(openedBody.label) && !openedBody.f1 && !openedBody.dataBase64 && !openedBody.evidenceSourceFile);
+const hiddenOpen = await rpc(memberToken, { jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "open_idea", arguments: { ideaId: otherIdea.id } } });
+const hiddenVerdict = await rpc(memberToken, { jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "read_verdict", arguments: { ideaId: otherIdea.id } } });
+check("a member cannot open or read another team's idea", hiddenOpen.json.result.isError === true && hiddenVerdict.json.result.isError === true);
+const beforeCount = memberIdeas.length;
+await db.createProposition({ createdByEmail: adminRow.email, createdByUserId: adminRow.id, submitterName: "Admin Mcp", submitterDepartment: "Sales & Distribution FMCG" });
+const listedAgain = await rpc(memberToken, { jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
+const again = JSON.parse(listedAgain.json.result.content[0].text).ideas;
+check("ideas the member cannot see do not change the list", again.length === beforeCount && again.every((row) => row.id !== otherIdea.id));
 
 const loop = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["http://localhost/callback", "https://claude.ai/api/mcp/auth_callback"] } });
 const loopClient = JSON.parse(loop.raw);
@@ -255,12 +337,91 @@ await db.upsertDepartmentApiKeyCiphertext("Pets Division", encryptApiKey(DEPT_KE
 const pets = await resolveBillingApiKey("Pets Division");
 const sn = await resolveBillingApiKey("SN");
 check("a default team with a stored key is billed to that team", pets.source === "department_api_keys:Pets Division" && pets.apiKey === DEPT_KEY && sn.source === "ANTHROPIC_API_KEY");
-const hostile = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["https://evil.example/steal"] } });
-check("registration refuses a hostile redirect", hostile.statusCode === 400);
+const hostileForms = [
+  ["javascript:", ["javascript:alert(1)"]],
+  ["plain http", ["http://evil.example/cb"]],
+  ["foreign https", ["https://evil.example/steal"]],
+  ["host suffix", ["https://claude.ai.evil.example/cb"]],
+  ["userinfo", ["https://claude.ai@evil.example/cb"]],
+  ["mixed", ["https://claude.ai/api/mcp/auth_callback", "https://evil.example/steal"]],
+  ["password in address", ["https://user:pass@claude.ai/cb"]],
+  ["localhost lookalike", ["http://127.0.0.1.evil.example/cb"]],
+];
+const hostileStatuses = [];
+for (const [, uris] of hostileForms) {
+  const response = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: uris } });
+  hostileStatuses.push(response.statusCode);
+}
+const allowed = await http({ method: "POST", url: "/mcp/oauth/register", body: { redirect_uris: ["https://claude.ai/api/mcp/auth_callback"] } });
+check("registration refuses all eight hostile redirect forms and still accepts Claude", hostileStatuses.every((status) => status === 400) && allowed.statusCode === 201, hostileStatuses.join(","));
+let metadataHits = 0;
+const metadataServer = httpServer.createServer((req, res) => { metadataHits += 1; res.writeHead(200, { "content-type": "application/json" }); res.end("{}"); });
+await new Promise((resolve) => metadataServer.listen(0, "127.0.0.1", resolve));
+const metadataUrl = `http://127.0.0.1:${metadataServer.address().port}/client`;
+const lookedUp = [];
+const priorFetch = globalThis.fetch;
+globalThis.fetch = async (url, opts) => {
+  const target = String(url);
+  if (target.startsWith("http://127.0.0.1") || target.startsWith("https://evil.example")) lookedUp.push(target);
+  return priorFetch(url, opts);
+};
+await http({ method: "GET", url: `/mcp/oauth/authorize?client_id=${encodeURIComponent(metadataUrl)}&redirect_uri=${encodeURIComponent("http://127.0.0.1/callback")}&code_challenge=abc&code_challenge_method=S256` });
+await http({ method: "GET", url: `/mcp/oauth/authorize?client_id=${encodeURIComponent("https://evil.example/oauth/client")}&redirect_uri=${encodeURIComponent("https://evil.example/cb")}&code_challenge=abc&code_challenge_method=S256` });
+globalThis.fetch = priorFetch;
+metadataServer.close();
+check("a client id URL is not fetched", metadataHits === 0 && lookedUp.length === 0, `hits ${metadataHits}; fetches ${lookedUp.length}`);
+const websiteOnMcp = await rpc(adminToken, { jsonrpc: "2.0", id: 12, method: "tools/list" });
+const listApi = await apiCall({ method: "GET", url: "/api/propositions", cookie: memberToken });
+const createApi = await apiCall({ method: "POST", url: "/api/propositions", cookie: memberToken, body: { name: "nope" } });
+const adminApi = await apiCall({ method: "GET", url: "/api/admin/users", cookie: memberToken });
+check("an MCP token is refused on the website API and a website session is refused on MCP", websiteOnMcp.status === 401 && [listApi.statusCode, createApi.statusCode, adminApi.statusCode].every((status) => status === 401 || status === 403), `${websiteOnMcp.status}/${listApi.statusCode}/${createApi.statusCode}/${adminApi.statusCode}`);
+const audit = await apiCall({ method: "GET", url: "/api/admin/mcp/audit", cookie: adminToken });
+const auditJson = JSON.parse(audit.raw || "{}");
+const auditText = JSON.stringify(auditJson);
+check("an admin can read the tool audit and it holds no token", audit.statusCode === 200 && auditJson.retentionDays === 90 && auditJson.records.some((row) => row.tool_name === "list_ideas" && row.user_id === memberRow.id) && !auditText.includes(memberToken) && !auditText.includes(tokenJson.refresh_token));
+const memberAudit = await apiCall({ method: "GET", url: "/api/admin/mcp/audit", cookie: memberToken });
+check("a member cannot read the tool audit", memberAudit.statusCode === 401 || memberAudit.statusCode === 403);
+const versionBefore = Number((await db.getUserById(memberRow.id)).tokenVersion) || 1;
+const refreshed = await http({
+  method: "POST",
+  url: "/mcp/oauth/token",
+  body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: tokenJson.refresh_token }).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded" },
+});
+const refreshedJson = JSON.parse(refreshed.raw || "{}");
+const replay = await http({
+  method: "POST",
+  url: "/mcp/oauth/token",
+  body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: tokenJson.refresh_token }).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "203.0.113.20" },
+});
+const chained = await http({
+  method: "POST",
+  url: "/mcp/oauth/token",
+  body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshedJson.refresh_token || "missing" }).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "203.0.113.21" },
+});
+const versionAfter = Number((await db.getUserById(memberRow.id)).tokenVersion) || 1;
+check("a reused refresh token revokes the chain and signs the user out", refreshed.statusCode === 200 && replay.statusCode === 400 && chained.statusCode === 400 && versionAfter > versionBefore);
+const revoke = await apiCall({ method: "POST", url: "/api/admin/mcp/revoke", cookie: adminToken, body: { userId: adminRow.id } });
+const afterRevoke = await rpc(adminMcp.access_token, { jsonrpc: "2.0", id: 13, method: "tools/list" });
+check("an admin can revoke MCP tokens", revoke.statusCode === 200 && afterRevoke.status === 401);
+const limited = [];
+for (let i = 0; i < 12; i += 1) {
+  const burst = await http({
+    method: "POST",
+    url: "/mcp/oauth/token",
+    body: "grant_type=authorization_code&code=bogus",
+    headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "203.0.113.50" },
+  });
+  limited.push(burst.statusCode);
+}
+check("the token endpoint rate-limits repeated failures", limited.filter((status) => status === 429).length >= 1 && limited[0] === 400, limited.join(","));
 process.env.MCP_ENABLED = "false";
 const off = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
 delete process.env.MCP_ENABLED;
-check("the off switch hides the endpoint", off.statusCode === 404);
+const unset = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
+check("the connector is off unless MCP_ENABLED is true", off.statusCode === 404 && unset.statusCode === 404);
 
 globalThis.fetch = realFetch;
 await suite.drop?.();
