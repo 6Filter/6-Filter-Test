@@ -208,6 +208,10 @@ const uploaded = await rpc(memberToken, { jsonrpc: "2.0", id: 9, method: "tools/
 const uploadBody = JSON.parse(uploaded.json.result.content[0].text);
 check("open, verdict, and evidence do not call Claude", anthropic.length === callsAfterScreen && verdict.json.result.isError !== true && opened.json.result.isError !== true && uploadBody.uploaded === true);
 
+const visit = await http({ method: "GET", url: "/mcp", headers: { accept: "text/html,application/xhtml+xml" } });
+check("opening the connector address in a browser explains how to add it", visit.statusCode === 200 && /custom connector/.test(visit.raw) && /\/mcp/.test(visit.raw) && !/POST JSON-RPC/.test(visit.raw));
+const stream = await http({ method: "GET", url: "/mcp", headers: { accept: "text/event-stream" } });
+check("a streaming client keeps the connector response", stream.statusCode === 401);
 const anon = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
 check("a connector without a session is sent to sign in", anon.statusCode === 401 && /oauth-protected-resource/.test(String(anon.headers["www-authenticate"] || "")));
 check("all 18 default teams are billing teams", SUBMITTER_DEPARTMENTS.every((team) => billingTeamName(team) === team && unlockedDepartmentOf({ department: team }) === team));
