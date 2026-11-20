@@ -12,6 +12,14 @@ const VERDICT_SEGMENTS = [
   { key: "INCOMPLETE", label: "INCOMPLETE", color: "var(--chart-incomplete)" },
 ];
 
+/** Charts count a screened idea: GO, WATCH or NO-GO. Incomplete ideas and drafts are left out. */
+const SCREENED_SEGMENTS = VERDICT_SEGMENTS.filter((s) => s.key !== "INCOMPLETE");
+
+function screenedCount(g = {}) {
+  if (Number.isFinite(g.verdicted)) return g.verdicted;
+  return SCREENED_SEGMENTS.reduce((sum, s) => sum + (g[s.key] || 0), 0);
+}
+
 function activate(handler) {
   return {
     onClick: handler,
@@ -28,20 +36,17 @@ function plural(n, one, many) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-function verdictText(g) {
-  return VERDICT_SEGMENTS.map((s) => `${s.label} ${g[s.key] || 0}`).join(", ");
-}
-
 /** Top `limit` groups plus one "Others" group that adds up the rest. */
 export function topWithOthers(groups = [], limit = 10, othersLabel = "Others") {
-  const live = groups.filter((g) => g.submitted > 0 || g.drafts > 0);
+  const live = groups.filter((g) => screenedCount(g) > 0);
   if (live.length <= limit) return live.map((g) => ({ ...g }));
   const head = live.slice(0, limit).map((g) => ({ ...g }));
   const rest = live.slice(limit);
-  const others = { key: "__others__", label: othersLabel, submitted: 0, drafts: 0, GO: 0, WATCH: 0, "NO-GO": 0, INCOMPLETE: 0, aiUsed: 0, isOthers: true, count: rest.length };
+  const others = { key: "__others__", label: othersLabel, submitted: 0, drafts: 0, GO: 0, WATCH: 0, "NO-GO": 0, INCOMPLETE: 0, verdicted: 0, aiUsed: 0, isOthers: true, count: rest.length };
   for (const g of rest) {
-    for (const k of ["submitted", "drafts", "GO", "WATCH", "NO-GO", "INCOMPLETE", "aiUsed"]) others[k] += g[k] || 0;
+    for (const k of ["submitted", "drafts", "GO", "WATCH", "NO-GO", "INCOMPLETE", "aiUsed", "verdicted"]) others[k] += g[k] || 0;
   }
+  others.verdicted = others.GO + others.WATCH + others["NO-GO"];
   return [...head, others];
 }
 
@@ -90,15 +95,16 @@ export function ChartLegend() {
 }
 
 /**
- * Horizontal stacked bars by verdict, one row per group, with the submitted total at the end of the bar.
- * Bar length is proportional to submitted ideas (the longest bar fills the track).
+ * Horizontal stacked bars of screened ideas (GO, WATCH, NO-GO). Incomplete ideas and drafts are not in the bar.
+ * Bar length is proportional to screened ideas (the longest bar fills the track).
  */
-export function StackedBars({ title, groups = [], onSelect, unit = "ideas", emptyText = "No ideas in this period yet." }) {
+export function StackedBars({ title, groups = [], onSelect, unit = "ideas", emptyText = "No screened ideas in this period yet." }) {
   const uid = useId();
-  const max = Math.max(0, ...groups.map((g) => g.submitted));
-  const summaryText = groups.length
-    ? `${title}: ${groups.map((g) => `${g.label} ${g.submitted}`).join(", ")}. Total ${groups.reduce((s, g) => s + g.submitted, 0)} submitted.`
-    : `${title}: no ideas.`;
+  const shown = groups.filter((g) => screenedCount(g) > 0);
+  const max = Math.max(0, ...shown.map((g) => screenedCount(g)));
+  const summaryText = shown.length
+    ? `${title}: ${shown.map((g) => `${g.label} ${screenedCount(g)}`).join(", ")}. Total ${shown.reduce((s, g) => s + screenedCount(g), 0)} screened.`
+    : `${title}: no screened ideas.`;
   return (
     <figure className="log-chart" aria-labelledby={`${uid}-t`} aria-describedby={`${uid}-d`}>
       <figcaption id={`${uid}-t`} className="log-chart-title">
@@ -107,18 +113,25 @@ export function StackedBars({ title, groups = [], onSelect, unit = "ideas", empt
       <p id={`${uid}-d`} className="sr-only">
         {summaryText}
       </p>
-      {groups.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="log-chart-empty">{emptyText}</p>
       ) : (
         <>
-          <ChartLegend />
+          <ul className="log-chart-legend" aria-label="Chart colour key">
+            {SCREENED_SEGMENTS.map((s) => (
+              <li key={s.key}>
+                <i style={{ background: s.color }} aria-hidden="true" /> {s.label}
+              </li>
+            ))}
+          </ul>
           <div className="log-bars">
-            {groups.map((g) => {
+            {shown.map((g) => {
               const clickable = typeof onSelect === "function" && !g.isOthers && g.filterValue !== "";
-              const total = g.submitted;
+              const total = screenedCount(g);
               const widthPct = max > 0 ? (100 * total) / max : 0;
               let x = 0;
-              const label = `${g.label}: ${plural(total, "idea submitted", "ideas submitted")}${g.drafts ? `, ${plural(g.drafts, "draft", "drafts")}` : ""}. ${verdictText(g)}.${clickable ? " Press Enter to filter the list." : ""}`;
+              const parts = SCREENED_SEGMENTS.map((s) => `${s.label} ${g[s.key] || 0}`).join(", ");
+              const label = `${g.label}: ${plural(total, "screened idea", "screened ideas")}. ${parts}.${clickable ? " Press Enter to filter the list." : ""}`;
               const interactive = clickable ? { role: "button", tabIndex: 0, ...activate(() => onSelect(g)) } : { role: "group" };
               return (
                 <div key={g.key} className={`log-bar-row${clickable ? " is-clickable" : ""}`} aria-label={label} {...interactive}>
@@ -133,10 +146,10 @@ export function StackedBars({ title, groups = [], onSelect, unit = "ideas", empt
                     aria-hidden="true"
                     focusable="false"
                   >
-                    <title>{`${g.label} — ${verdictText(g)} (${total} ${unit} submitted)`}</title>
+                    <title>{`${g.label} — ${parts} (${total} ${unit} screened)`}</title>
                     <rect x="0" y="0" width="100" height="10" style={{ fill: "var(--chart-track)" }} />
                     {total > 0
-                      ? VERDICT_SEGMENTS.map((s) => {
+                      ? SCREENED_SEGMENTS.map((s) => {
                           const n = g[s.key] || 0;
                           if (!n) return null;
                           const w = (widthPct * n) / total;
@@ -150,10 +163,7 @@ export function StackedBars({ title, groups = [], onSelect, unit = "ideas", empt
                         })
                       : null}
                   </svg>
-                  <span className="log-bar-total mono">
-                    {total}
-                    {g.drafts ? <small> +{g.drafts} drafts</small> : null}
-                  </span>
+                  <span className="log-bar-total mono">{total}</span>
                 </div>
               );
             })}
@@ -162,8 +172,8 @@ export function StackedBars({ title, groups = [], onSelect, unit = "ideas", empt
       )}
       <ChartTable
         caption={title}
-        columns={["Name", "Submitted", "Drafts", "GO", "WATCH", "NO-GO", "INCOMPLETE"]}
-        rows={groups.map((g) => [g.label, g.submitted, g.drafts, g.GO, g.WATCH, g["NO-GO"], g.INCOMPLETE])}
+        columns={["Name", "Screened", "Drafts", "GO", "WATCH", "NO-GO", "INCOMPLETE"]}
+        rows={shown.map((g) => [g.label, screenedCount(g), g.drafts, g.GO, g.WATCH, g["NO-GO"], g.INCOMPLETE])}
       />
     </figure>
   );
@@ -178,10 +188,10 @@ function changeLabel(m) {
 }
 
 /**
- * Submitted ideas per month. Above each bar: the change against the previous month. A dashed line shows the
+ * Screened ideas per month. Above each bar: the change against the previous month. A dashed line shows the
  * three-month average. The month in progress is hatched, labelled "in progress", and shows no change.
  */
-export function MonthTrendChart({ title = "Ideas submitted by month", months = [], onSelect }) {
+export function MonthTrendChart({ title = "Ideas screened by month", months = [], onSelect }) {
   const uid = useId();
   const patternId = `${uid.replace(/[^A-Za-z0-9_-]/g, "")}-hatch`;
   const step = 84;
@@ -191,10 +201,10 @@ export function MonthTrendChart({ title = "Ideas submitted by month", months = [
   const bottom = 30;
   const width = left + Math.max(1, months.length) * step + 12;
   const height = top + plotH + bottom;
-  const max = Math.max(1, ...months.map((m) => m.submitted));
+  const max = Math.max(1, ...months.map((m) => screenedCount(m)));
   const yOf = (v) => top + plotH - (plotH * v) / max;
   const summaryText = months.length
-    ? `${title}: ${months.map((m) => `${m.label} ${m.submitted}${m.inProgress ? " (in progress)" : ""}`).join(", ")}.`
+    ? `${title}: ${months.map((m) => `${m.label} ${screenedCount(m)}${m.inProgress ? " (in progress)" : ""}`).join(", ")}.`
     : `${title}: no ideas.`;
   const avgPoints = months
     .map((m, i) => (m.average == null ? null : `${left + i * step + step / 2},${yOf(m.average)}`))
@@ -214,7 +224,7 @@ export function MonthTrendChart({ title = "Ideas submitted by month", months = [
         <>
           <ul className="log-chart-legend" aria-label="Chart key">
             <li>
-              <i style={{ background: "var(--chart-bar)" }} aria-hidden="true" /> Submitted
+              <i style={{ background: "var(--chart-bar)" }} aria-hidden="true" /> Screened
             </li>
             <li>
               <i className="is-hatched" aria-hidden="true" /> Month in progress
@@ -241,9 +251,10 @@ export function MonthTrendChart({ title = "Ideas submitted by month", months = [
               {months.map((m, i) => {
                 const x = left + i * step + 10;
                 const w = step - 20;
-                const h = (plotH * m.submitted) / max;
+                const count = screenedCount(m);
+                const h = (plotH * count) / max;
                 const y = top + plotH - h;
-                const label = `${m.label}: ${plural(m.submitted, "idea submitted", "ideas submitted")}${m.drafts ? `, ${plural(m.drafts, "draft", "drafts")}` : ""}${changeLabel(m) ? `, ${changeLabel(m)}` : ""}. Press Enter to filter the list to this month.`;
+                const label = `${m.label}: ${plural(count, "screened idea", "screened ideas")}${changeLabel(m) ? `, ${changeLabel(m)}` : ""}. Press Enter to filter the list to this month.`;
                 const handler = typeof onSelect === "function" ? () => onSelect(m) : undefined;
                 return (
                   <g
@@ -253,18 +264,18 @@ export function MonthTrendChart({ title = "Ideas submitted by month", months = [
                     data-partial={m.inProgress ? "true" : undefined}
                     {...(handler ? { role: "button", tabIndex: 0, "aria-label": label, ...activate(handler) } : { role: "group", "aria-label": label })}
                   >
-                    <title>{`${m.label}: ${m.submitted} submitted${m.drafts ? `, ${m.drafts} drafts` : ""}${changeLabel(m) ? ` — ${changeLabel(m)}` : ""}`}</title>
+                    <title>{`${m.label}: ${count} screened${changeLabel(m) ? ` — ${changeLabel(m)}` : ""}`}</title>
                     <rect x={x - 8} y={top - 36} width={w + 16} height={plotH + 36 + bottom - 6} fill="transparent" />
                     <rect
                       x={x}
                       y={y}
                       width={w}
-                      height={Math.max(h, m.submitted > 0 ? 1 : 0)}
-                      data-count={m.submitted}
+                      height={Math.max(h, count > 0 ? 1 : 0)}
+                      data-count={count}
                       style={m.inProgress ? { fill: `url(#${patternId})`, stroke: "var(--chart-bar)", strokeWidth: 1 } : { fill: "var(--chart-bar)" }}
                     />
                     <text x={x + w / 2} y={y - 4} textAnchor="middle" className="log-svg-text is-strong" style={{ fill: "var(--chart-text)" }}>
-                      {m.submitted}
+                      {count}
                     </text>
                     {changeLabel(m) ? (
                       <text
@@ -293,8 +304,8 @@ export function MonthTrendChart({ title = "Ideas submitted by month", months = [
       )}
       <ChartTable
         caption={title}
-        columns={["Month", "Submitted", "Drafts", "Change on previous month", "Three-month average"]}
-        rows={months.map((m) => [m.label, m.submitted, m.drafts, changeLabel(m) || "—", m.average == null ? "—" : m.average])}
+        columns={["Month", "Screened", "Drafts", "Change on previous month", "Three-month average"]}
+        rows={months.map((m) => [m.label, screenedCount(m), m.drafts, changeLabel(m) || "—", m.average == null ? "—" : m.average])}
       />
     </figure>
   );

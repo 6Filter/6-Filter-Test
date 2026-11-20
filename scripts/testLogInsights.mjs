@@ -248,13 +248,13 @@ function seriesRows(counts, { team = "R&D" } = {}) {
 check("insight: month-on-month fall carries its numbers", () => {
   const rows = [...many(20, { at: "2026-09-10T05:00:00Z", team: "A" }), ...many(14, { at: "2026-10-10T05:00:00Z", team: "A" })];
   const i = generateInsights(rows, { now: NOW }).find((x) => x.id === "month-change");
-  assert.equal(i.text, "Ideas fell 30% in Oct 2026 (14 vs 20 in Sep 2026).");
+  assert.equal(i.text, "Screened ideas fell 30% in Oct 2026 (14 vs 20 in Sep 2026).");
   assert.equal(i.icon, "↓");
   assert.deepEqual([i.numbers.current, i.numbers.previous], [14, 20]);
 });
 check("insight: a rise, and no alarm when the previous month is below the minimum or the move is small", () => {
   const rise = generateInsights([...many(10, { at: "2026-09-10T05:00:00Z" }), ...many(15, { at: "2026-10-10T05:00:00Z" })], { now: NOW });
-  assert.match(rise.find((x) => x.id === "month-change").text, /^Ideas rose 50% in Oct 2026 \(15 vs 10 in Sep 2026\)\.$/);
+  assert.match(rise.find((x) => x.id === "month-change").text, /^Screened ideas rose 50% in Oct 2026 \(15 vs 10 in Sep 2026\)\.$/);
   const tiny = generateInsights([...many(4, { at: "2026-09-10T05:00:00Z" }), ...many(1, { at: "2026-10-10T05:00:00Z" })], { now: NOW });
   assert.equal(tiny.find((x) => x.id === "month-change"), undefined);
   const small = generateInsights([...many(20, { at: "2026-09-10T05:00:00Z" }), ...many(18, { at: "2026-10-10T05:00:00Z" })], { now: NOW });
@@ -289,11 +289,11 @@ check("insight: concentration, best GO-or-WATCH rate, quiet team, drafts, busies
   const ins = generateInsights(rows, { now: NOW });
   const ids = ins.map((x) => x.id);
   assert.ok(ids.includes("concentration") && ids.includes("best-rate") && ids.includes("quiet-team") && ids.includes("drafts") && ids.includes("busiest"));
-  assert.match(ins.find((x) => x.id === "concentration").text, /^Submissions are concentrated: R&D accounts for 65.9% of ideas\.$/);
+  assert.match(ins.find((x) => x.id === "concentration").text, /^Screened ideas are concentrated: R&D accounts for 65.9% of screened ideas\.$/);
   assert.match(ins.find((x) => x.id === "best-rate").text, /^CIA: 100% of evaluated ideas read GO or WATCH, against 75\.6% overall\.$/);
-  assert.equal(ins.find((x) => x.id === "quiet-team").text, "FD and Dairy has not submitted since 2026-10-01.");
+  assert.equal(ins.find((x) => x.id === "quiet-team").text, "FD and Dairy has not had a screened idea since 2026-10-01.");
   assert.match(ins.find((x) => x.id === "drafts").text, /^37\.9% of started ideas were never submitted \(25 drafts\)\.$/);
-  assert.equal(ins.find((x) => x.id === "busiest").text, "R&D submitted 27 of 41 ideas (65.9%).");
+  assert.equal(ins.find((x) => x.id === "busiest").text, "R&D screened 27 of 41 ideas (65.9%).");
 });
 check("insights: every insight has numbers and there are at most six", () => {
   const rows = [

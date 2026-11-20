@@ -100,6 +100,20 @@ await check("teams this month: CIA 3, IB 4, PC 2, nothing from October or drafts
   assert.deepEqual(m, { IB: 4, CIA: 3, PC: 2 });
   assert.equal(d.teams.reduce((s, g) => s + g.submitted, 0), d.thisMonth);
 });
+await check("incomplete and unsubmitted ideas stay out of the screened month, people and teams", () => {
+  const extra = [
+    ...rows,
+    row(N(12), "CIA", "", "Nia", { evaluationState: "incomplete", firstSubmittedAt: N(12), researchRunAt: N(12) }),
+  ];
+  const s = dashboardStats(extra, { now: NOW });
+  assert.equal(s.submitted, 12);
+  assert.equal(s.screened, 11);
+  assert.equal(s.thisMonth, 10);
+  assert.equal(s.screenedThisMonth, 9);
+  assert.equal(s.screenedLastMonth, 2);
+  assert.equal(s.topPeople.find((g) => g.label === "Nia"), undefined);
+  assert.equal(s.teams.find((g) => g.label === "CIA").verdicted, 3);
+});
 await check("an empty log gives zeros, not errors", () => {
   const e = dashboardStats([], { now: NOW });
   assert.equal(e.submitted, 0);
@@ -190,9 +204,9 @@ await check("the monthly chart, top 5 submitters and team chart are shown withou
   assert.ok(charts);
   const titles = [...charts.querySelectorAll(".log-chart-title")].map((t) => t.textContent);
   assert.equal(titles.length, 3);
-  assert.equal(titles[0], "Ideas submitted per month");
-  assert.match(titles[1], /^Top 5 submitters in \w+$/);
-  assert.match(titles[2], /^Ideas submitted by team in \w+$/);
+  assert.equal(titles[0], "Ideas screened per month");
+  assert.match(titles[1], /^Top 5 people by screened ideas in \w+$/);
+  assert.match(titles[2], /^Ideas screened by team in \w+$/);
   assert.ok(charts.querySelector("svg.log-month-svg"), "month chart");
   assert.ok(charts.querySelectorAll(".log-bar-row").length >= 2, "bars");
 });
