@@ -12,6 +12,7 @@ import { redactSecrets, sendJson } from "./lib/http.js";
 import { listProvidersForClient } from "./lib/llmContext.js";
 import { applySecurityHeaders } from "./lib/securityHeaders.js";
 import { installHttpPerformance } from "./lib/httpPerformance.js";
+import { handleMcpHttp } from "./lib/mcpHttp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "dist");
@@ -69,6 +70,7 @@ const server = createServer(async (req, res) => {
   applySecurityHeaders(res);
   installHttpPerformance(req, res);
   try {
+    if (await handleMcpHttp(req, res)) return;
     const handled = await handleApiRequest(req, res);
     if (handled) return;
     await serveStatic(req, res);
