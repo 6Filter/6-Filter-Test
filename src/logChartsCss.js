@@ -13,7 +13,8 @@ export const LOG_CHART_CSS = `
 .log-analytics-note{margin:0;font-size:12px;color:var(--ink-muted-2);line-height:1.45;}
 .log-active-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-secondary);}
 .log-active-filters button{border:1px solid var(--card-border);background:transparent;border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--ink);}
-.log-analytics-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;align-items:start;}
+.log-analytics-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;align-items:stretch;}
+.log-analytics-grid > .log-insights{box-sizing:border-box;}
 .log-chart{margin:0;min-width:0;}
 .log-chart-title{margin:0 0 8px;font-size:15px;font-weight:700;color:var(--ink);}
 .log-chart-empty{margin:8px 0;font-size:13px;color:var(--ink-muted);}

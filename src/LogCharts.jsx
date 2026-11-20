@@ -3,7 +3,7 @@
  * (--chart-*), never a hard-coded value. Each chart has a spoken summary and a hidden table with the same numbers,
  * and every bar is reachable and activated from the keyboard (Tab, then Enter or Space).
  */
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const VERDICT_SEGMENTS = [
   { key: "GO", label: "GO", color: "var(--chart-go)" },
@@ -194,12 +194,27 @@ function changeLabel(m) {
 export function MonthTrendChart({ title = "Ideas screened by month", months = [], onSelect }) {
   const uid = useId();
   const patternId = `${uid.replace(/[^A-Za-z0-9_-]/g, "")}-hatch`;
-  const step = 84;
   const left = 36;
   const top = 44;
-  const plotH = 150;
   const bottom = 30;
-  const width = left + Math.max(1, months.length) * step + 12;
+  // The chart fills the space it is given instead of sitting in a corner of a wide card: it measures its box and
+  // widens each month (84 to 150 px) and heightens the plot (150 to 360 px). Without a measurement (a test, a
+  // browser with no ResizeObserver) it keeps the old fixed size.
+  const scrollRef = useRef(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const read = () => setBox((prev) => (prev.w === el.clientWidth && prev.h === el.clientHeight ? prev : { w: el.clientWidth, h: el.clientHeight }));
+    read();
+    const watcher = new ResizeObserver(read);
+    watcher.observe(el);
+    return () => watcher.disconnect();
+  }, [months.length]);
+  const monthCount = Math.max(1, months.length);
+  const step = box.w > 0 ? Math.min(150, Math.max(84, (box.w - left - 12) / monthCount)) : 84;
+  const plotH = box.h > 0 ? Math.min(360, Math.max(150, box.h - top - bottom)) : 150;
+  const width = left + monthCount * step + 12;
   const height = top + plotH + bottom;
   const max = Math.max(1, ...months.map((m) => screenedCount(m)));
   const yOf = (v) => top + plotH - (plotH * v) / max;
@@ -233,7 +248,7 @@ export function MonthTrendChart({ title = "Ideas screened by month", months = []
               <i className="is-dashed" aria-hidden="true" /> Three-month average
             </li>
           </ul>
-          <div className="log-month-scroll">
+          <div className="log-month-scroll" ref={scrollRef}>
             <svg className="log-month-svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="presentation" focusable="false">
               <defs>
                 <pattern id={patternId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">

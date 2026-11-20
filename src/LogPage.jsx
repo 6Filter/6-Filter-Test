@@ -1376,10 +1376,18 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
   font-size:13px;line-height:1.45;font-weight:600;
 }
 .log-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
-.log-dash-charts{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start;}
-.log-dash-main,.log-dash-side{display:flex;flex-direction:column;gap:14px;min-width:0;}
-.log-dash-charts .log-chart{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;margin:0;}
-@media (max-width:1000px){.log-dash-charts{grid-template-columns:minmax(0,1fr);}}
+/* The month chart takes the whole left column and fills it; the people and team charts stack on the right, so the
+   three cards end on the same line and no card has a blank strip beside or below it. */
+.log-dash-charts{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"month people" "month team";gap:14px;align-items:stretch;}
+.log-dash-main,.log-dash-side{display:contents;}
+.log-dash-main > .log-chart{grid-area:month;}
+.log-dash-side > .log-chart:nth-child(1){grid-area:people;}
+.log-dash-side > .log-chart:nth-child(2){grid-area:team;}
+.log-dash-charts .log-chart{display:flex;flex-direction:column;min-width:0;background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:14px 16px;margin:0;}
+.log-dash-charts .log-bars{flex:1 1 auto;justify-content:space-around;}
+.log-dash-charts .log-month-scroll{position:relative;flex:1 1 auto;min-height:190px;overflow-x:auto;overflow-y:hidden;}
+.log-dash-charts .log-month-svg{position:absolute;left:0;top:0;}
+@media (max-width:1000px){.log-dash-charts{grid-template-columns:minmax(0,1fr);grid-template-areas:"month" "people" "team";}}
 .log-stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px 18px;}
 .log-stat-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 6px;}
 .log-stat-value{font-size:32px;font-weight:700;letter-spacing:-.8px;line-height:1.1;}
