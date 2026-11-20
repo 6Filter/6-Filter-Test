@@ -54,6 +54,7 @@ process.env.DEPARTMENT_KEY_ENCRYPTION_SECRET = "mcp-test-department";
 process.env.ANTHROPIC_API_KEY = "sk-ant-stub-infra-only";
 process.env.SLACK_BOT_TOKEN = "xoxb-stub-local-only";
 process.env.MCP_ENABLED = "true";
+process.env.MCP_ALLOWED_EMAILS = "*"; // the allowlist fails closed; the earlier checks run with everyone allowed
 const DEPT_KEY = "sk-ant-stub-local-only";
 
 const slack = { dms: [] };
@@ -452,6 +453,97 @@ const removedRefresh = await http({
 process.env.MCP_ALLOWED_EMAILS = adminRow.email;
 const restoredCall = await rpc(pilotListed.access_token, { jsonrpc: "2.0", id: 16, method: "tools/list" });
 check("removing an email revokes that person's existing connector tokens on their next call", removedCall.status === 401 && removedRefresh.statusCode === 400 && restoredCall.status === 401);
+
+// ---- allowlist matching, fail closed ----
+const emailStep = (email) => http({
+  method: "POST",
+  url: `/mcp/oauth/authorize?${pilotStart}`,
+  body: `step=email&email=${encodeURIComponent(email)}`,
+  headers: { "content-type": "application/x-www-form-urlencoded" },
+});
+process.env.MCP_ALLOWED_EMAILS = "  A@X.COM , b@x.com ";
+const goodForms = [];
+for (const form of ["a@x.com", "  A@X.Com ", "B@x.com"]) goodForms.push((await emailStep(form)).statusCode);
+const badForms = [];
+for (const form of ["aa@x.com", "a@x.com.evil.example", "evil-a@x.com", "a+tag@x.com", "@x.com", "x.com", "a@x.co"]) badForms.push((await emailStep(form)).statusCode);
+check("an email must match exactly: case and spaces do not matter; a longer address, a prefix, a plus-address or a domain does not", goodForms.every((s) => s !== 403) && badForms.every((s) => s === 403), `${goodForms.join(",")} | ${badForms.join(",")}`);
+
+delete process.env.MCP_ALLOWED_EMAILS;
+const unsetStep = await emailStep(memberRow.email);
+const unsetToken = await connectorToken(memberRow.email);
+process.env.MCP_ALLOWED_EMAILS = " , ,";
+const emptyStep = await emailStep(memberRow.email);
+check("unset or empty: nobody can sign in and nobody gets a token (fails closed)", unsetStep.statusCode === 403 && emptyStep.statusCode === 403 && !unsetToken.access_token);
+process.env.MCP_ALLOWED_EMAILS = "a@x.com,*";
+const starInList = await emailStep(memberRow.email);
+process.env.MCP_ALLOWED_EMAILS = "*@cavinkare.com";
+const domainStar = await emailStep(memberRow.email);
+check("a star inside a list, or a domain wildcard, does not open the connector", starInList.statusCode === 403 && domainStar.statusCode === 403);
+process.env.MCP_ALLOWED_EMAILS = "*";
+const everyone = await connectorToken(memberRow.email);
+const everyoneCall = everyone.access_token ? await rpc(everyone.access_token, { jsonrpc: "2.0", id: 17, method: "tools/list" }) : { status: 0 };
+check("a single star lets every signed-in company user in", Boolean(everyone.access_token) && everyoneCall.status === 200);
+
+// ---- the admin panel's endpoints ----
+const memberSession = signSession({ userId: memberRow.id, tokenVersion: Number((await db.getUserById(memberRow.id)).tokenVersion) || 1 });
+const adminSession = signSession({ userId: adminRow.id, tokenVersion: Number((await db.getUserById(adminRow.id)).tokenVersion) || 1 });
+const panelRefusals = [];
+for (const [method, url] of [["GET", "/api/admin/mcp/status"], ["GET", "/api/admin/mcp/audit"], ["POST", "/api/admin/mcp/revoke"]]) {
+  const body = method === "POST" ? { userId: adminRow.id } : undefined;
+  const asMember = await apiCall({ method, url, cookie: memberSession, body });
+  const signedOut = await apiCall({ method, url, body });
+  panelRefusals.push(`${asMember.statusCode}/${signedOut.statusCode}`);
+}
+check("the panel's endpoints refuse a member (403) and a signed-out visitor (401)", panelRefusals.every((pair) => pair === "403/401"), panelRefusals.join(" "));
+const statusRes = await apiCall({ method: "GET", url: "/api/admin/mcp/status", cookie: adminSession });
+const status = JSON.parse(statusRes.raw || "{}");
+check("the panel shows: on or off, the allowlist mode, token counts, who holds a token, and at most 50 audit rows",
+  statusRes.statusCode === 200 && status.enabled === true && status.allowlist?.mode === "everyone" && Number.isInteger(status.tokens?.issued) && status.tokens.valid >= 1 &&
+  Array.isArray(status.people) && status.people.some((p) => p.email === memberRow.email) && status.records.length > 0 && status.records.length <= 50,
+  `mode ${status.allowlist?.mode}; tokens ${status.tokens?.valid}/${status.tokens?.issued}; ${status.records?.length} rows`);
+process.env.MCP_ALLOWED_EMAILS = "one@x.com, two@x.com";
+const listStatus = JSON.parse((await apiCall({ method: "GET", url: "/api/admin/mcp/status", cookie: adminSession })).raw || "{}");
+delete process.env.MCP_ALLOWED_EMAILS;
+const closedStatus = JSON.parse((await apiCall({ method: "GET", url: "/api/admin/mcp/status", cookie: adminSession })).raw || "{}");
+process.env.MCP_ALLOWED_EMAILS = "*";
+check("the panel reports the allowlist as a count, or nobody", listStatus.allowlist?.mode === "list" && listStatus.allowlist?.count === 2 && closedStatus.allowlist?.mode === "nobody" && closedStatus.allowlist?.count === 0);
+
+// ---- audit: email looked up when reading, every refusal and tool call, no token or idea text ----
+const auditNow = JSON.parse((await apiCall({ method: "GET", url: "/api/admin/mcp/audit", cookie: adminSession })).raw || "{}");
+const stored = await db.query(`SELECT email FROM mcp_tool_audit WHERE user_id = $1 AND tool_name = 'list_ideas' LIMIT 1`, [memberRow.id]);
+const listRow = auditNow.records.find((row) => row.tool_name === "list_ideas" && row.user_id === memberRow.id);
+check("audit rows show the person's email, looked up when it is read (the stored email is empty)", stored[0]?.email === "" && listRow?.email === memberRow.email && status.records.some((row) => row.email === memberRow.email));
+const auditTools = new Set(auditNow.records.map((row) => row.tool_name));
+const auditText2 = JSON.stringify(auditNow) + JSON.stringify(status);
+const allowedKeys = new Set(["created_at", "user_id", "email", "tool_name", "idea_id", "result_count", "ok"]);
+check("every refusal and every tool call is audited, and no row holds a token or idea text",
+  ["list_ideas", "open_idea", "read_verdict", "sign_in_refused", "call_refused"].every((name) => auditTools.has(name)) &&
+  auditNow.records.every((row) => Object.keys(row).every((key) => allowedKeys.has(key))) &&
+  ![memberToken, tokenJson.refresh_token, everyone.access_token, everyone.refresh_token, adminMcp.access_token].some((secret) => secret && auditText2.includes(secret)),
+  [...auditTools].sort().join(","));
+
+// ---- revoke, proven: the token works, the admin revokes, the next call fails ----
+const proof = await connectorToken(memberRow.email);
+const proofBefore = await rpc(proof.access_token, { jsonrpc: "2.0", id: 20, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
+const panelBefore = JSON.parse((await apiCall({ method: "GET", url: "/api/admin/mcp/status", cookie: adminSession })).raw || "{}");
+const revokeRes = await apiCall({ method: "POST", url: "/api/admin/mcp/revoke", cookie: adminSession, body: { userId: memberRow.id } });
+const proofAfter = await rpc(proof.access_token, { jsonrpc: "2.0", id: 21, method: "tools/call", params: { name: "list_ideas", arguments: {} } });
+const proofRefresh = await http({
+  method: "POST",
+  url: "/mcp/oauth/token",
+  body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: proof.refresh_token || "missing" }).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "203.0.113.70" },
+});
+check("revoke: the person's token works, the admin presses Revoke, and the same token fails on its next call and cannot refresh",
+  proofBefore.status === 200 && panelBefore.people.some((p) => p.email === memberRow.email) && revokeRes.statusCode === 200 && JSON.parse(revokeRes.raw).email === memberRow.email &&
+  proofAfter.status === 401 && proofRefresh.statusCode === 400,
+  `before ${proofBefore.status}; revoke ${revokeRes.statusCode}; next call ${proofAfter.status}; refresh ${proofRefresh.statusCode}`);
+const panelAfter = JSON.parse((await apiCall({ method: "GET", url: "/api/admin/mcp/status", cookie: adminSession })).raw || "{}");
+check("after a revoke the person is gone from the panel and the audit records it with their email",
+  !panelAfter.people.some((p) => p.email === memberRow.email) && panelAfter.records.some((row) => row.tool_name === "revoked_by_admin" && row.email === memberRow.email));
+const signedInAgain = await connectorToken(memberRow.email);
+const againCall = signedInAgain.access_token ? await rpc(signedInAgain.access_token, { jsonrpc: "2.0", id: 22, method: "tools/list" }) : { status: 0 };
+check("a revoke is not a ban: the person can sign in again and gets a fresh working token", againCall.status === 200 && signedInAgain.access_token !== proof.access_token);
 delete process.env.MCP_ALLOWED_EMAILS;
 
 process.env.MCP_ENABLED = "false";

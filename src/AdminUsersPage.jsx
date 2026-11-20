@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
+import AdminMcpPanel from "./AdminMcpPanel.jsx";
 
 const DEFAULT_ROLES = ["BM", "CMI", "FINANCE", "R&D", "SALES", "PACKAGING", "BH FORUM", "ADMIN"];
 
@@ -11,6 +12,7 @@ const TABS = [
   { id: "scoring", label: "Scoring re-score" },
   { id: "comparison", label: "Scoring comparison" },
   { id: "audit", label: "Audit" },
+  { id: "mcp", label: "MCP connector" },
 ];
 
 export default function AdminUsersPage({ apiFetch }) {
@@ -746,6 +748,8 @@ export default function AdminUsersPage({ apiFetch }) {
           <p className="admin-muted">{rosterRows.filter((r) => r.active).length} active roster rows.</p>
         </section>
       ) : null}
+
+      {tab === "mcp" ? <AdminMcpPanel apiFetch={apiFetch} /> : null}
 
       {tab === "audit" ? (
         <section className="admin-panel">

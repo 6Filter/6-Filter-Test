@@ -54,6 +54,18 @@ Names only. Values stay in Render and in the password manager.
 | `AZURE_BLOB_SAS_URL` | The nightly job’s secret store. Create and Write for the upload. Read and List only for a fetch. Never Delete. |
 | `OPS_ALERT_WEBHOOK_URL` | Render |
 
+## MCP connector settings
+
+Names only. The full how-to is in `docs/MCP_PILOT.md`.
+
+| Name | Meaning |
+| --- | --- |
+| `MCP_ENABLED` | `true` turns the read-only Claude connector on. Anything else, or unset: off (`/mcp` answers 404). |
+| `MCP_ALLOWED_EMAILS` | Who may sign in to the connector. Unset or empty: nobody. A single `*`: every signed-in company user. A comma-separated list: only those emails. Read on every request. |
+| `MCP_ABSOLUTE_SESSION_DAYS` | Optional. Days before a connected person must sign in again. Default 7, at most 30. |
+
+Changing `SESSION_SECRET` signs everyone out of the website and ends every connector token. Settings, MCP connector (Admin only) shows whether the connector is on, the allowlist, token counts, the last 50 audit rows, and a Revoke button per person.
+
 ## Nightly schedule and the alert
 
 Run `backup` every night, and again before a migration or a release. Three places can run it:
