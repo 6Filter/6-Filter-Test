@@ -56,6 +56,67 @@ function slottedPoints(filter, slots, check) {
   return { points, slots: slots.length, exempt: false };
 }
 
+const MARK_DOWN_REASONS = new Set([
+  "MARKED_DOWN",
+  "BELOW_FLOOR",
+  "BELOW_MINIMUM",
+  "CONTRADICTED",
+  "NOT_RELEVANT",
+  "ROUTE_MISMATCH",
+]);
+
+function filterUnfinished(check) {
+  if (!check || typeof check !== "object") return true;
+  const label = String(check.checkLabel || "");
+  if (!label || label === "Not yet run") return true;
+  const items = Array.isArray(check.items) ? check.items : [];
+  if (items.length === 0) return true;
+  if (items.some((it) => /Pending:\s*division not determined/i.test(String(it?.text || "")))) return true;
+  return items.some((it) => /Research failed — retry/.test(String(it?.text || "")));
+}
+
+function markedDown(advisory) {
+  return ["f1", "f2", "f3", "f4"].some(
+    (k) => (advisory[k] || {}).checkLabel === "Marked down" || (advisory[k] || {}).markedDown === true
+  );
+}
+
+function goCapped(advisory) {
+  if (markedDown(advisory)) return true;
+  return ["f1", "f2", "f3", "f4"].some((k) => {
+    const c = advisory[k] || {};
+    if (c.capsGo === true || c.weakPass === true) return true;
+    return (Array.isArray(c.items) ? c.items : []).some((it) => {
+      if (!it || it.formAdmin) return false;
+      if (String(it.level || "") === "weak" && (it.status === "done" || Number(it.credit) > 0)) return true;
+      if (String(it.level || "") === "none" && Number(it.credit || 0) === 0) {
+        return (Array.isArray(it.reasons) ? it.reasons : []).some((r) => MARK_DOWN_REASONS.has(r));
+      }
+      return false;
+    });
+  });
+}
+
+function bandFromPct(pct) {
+  if (pct > GONOGO_SCORE_BANDS.WATCH_MAX) return "GO";
+  if (pct >= GONOGO_SCORE_BANDS.NOGO_MAX) return "WATCH";
+  return "NO-GO";
+}
+
+/**
+ * Verdict oracle: bands, F4 hard stop, INCOMPLETE, mark-downs, GO cap.
+ * Independent of the app: it never imports goNoGo.js, scoreSlots.js or the filter checkers;
+ * it only reads the locked numbers in lockedConstants.js and restates the written rules here.
+ */
+export function oracleVerdict(advisory = {}) {
+  if (String(advisory.f4?.checkLabel || "") === "Below floor") return "NO-GO";
+  const incomplete = ["f1", "f2", "f3", "f4"].some((k) => filterUnfinished(advisory[k]));
+  if (incomplete) return "INCOMPLETE";
+  const band = bandFromPct(oracleScore(advisory).pct);
+  if (goCapped(advisory) && band === "GO") return "WATCH";
+  return band;
+}
+
 export function oracleScore(advisory = {}) {
   const f1 = f1Points(advisory.f1);
   const f2 = slottedPoints("f2", F2_SLOTS, advisory.f2);

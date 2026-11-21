@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "mutate": [
+    "lib/goNoGo.js",
+    "lib/scoreSlots.js",
+    "lib/propositionScoring.js"
+  ],
+  "testRunner": "command",
+  "coverageAnalysis": "off",
+  "tempDirName": "D:/Primus-safety/stryker-tmp-all",
+  "commandRunner": {
+    "command": "node scripts/coverage/runScoringMutation.mjs"
+  },
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": { "fileName": "D:/Primus-safety/stryker-tmp-all/mutation-verdict-all.json" },
+  "thresholds": { "high": 90, "low": 90, "break": 0 },
+  "timeoutMS": 60000,
+  "concurrency": 2,
+  "disableTypeChecks": true
+}
