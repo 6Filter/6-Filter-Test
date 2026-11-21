@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
+import { DISPLAY_TITLES, storedRoleLabel } from "../lib/displayTitle.js";
 
 const DEFAULT_ROLES = ["BM", "CMI", "FINANCE", "R&D", "SALES", "PACKAGING", "BH FORUM", "ADMIN"];
 
@@ -33,6 +34,12 @@ export default function AdminUsersPage({ apiFetch }) {
   const [audit, setAudit] = useState([]);
   const [leadEmail, setLeadEmail] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
+  const [bhRows, setBhRows] = useState([]);
+  const [bhLoaded, setBhLoaded] = useState(false);
+  const [bhEmail, setBhEmail] = useState("");
+  const [bhTeam, setBhTeam] = useState("");
+  const [bhPreview, setBhPreview] = useState(null);
+  const [bhBusy, setBhBusy] = useState(false);
   const [divisionQueue, setDivisionQueue] = useState([]);
   const [divisionBusy, setDivisionBusy] = useState("");
   const [scoringPreview, setScoringPreview] = useState([]);
@@ -69,6 +76,19 @@ export default function AdminUsersPage({ apiFetch }) {
       setNotInRoster(data.notInRoster || []);
     } catch (e) {
       setError(e.message || "Could not load roster.");
+    }
+  }, [apiFetch]);
+
+  const loadBhMapping = useCallback(async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/users/business-head-teams");
+      setBhRows(Array.isArray(data.rows) ? data.rows.map((r) => ({ email: r.email, team: r.team, note: r.note || "" })) : []);
+      setBhLoaded(true);
+      setBhPreview(null);
+    } catch (e) {
+      setBhLoaded(false);
+      setError(e.message || "Could not load business-head mapping.");
     }
   }, [apiFetch]);
 
@@ -134,17 +154,27 @@ export default function AdminUsersPage({ apiFetch }) {
   }, []);
 
   useEffect(() => {
-    if (tab === "roster") loadRoster();
+    if (tab === "roster") {
+      loadRoster();
+      loadBhMapping();
+    }
     if (tab === "audit") loadAudit();
     if (tab === "divisions") loadDivisionQueue();
     if (tab === "scoring" || tab === "comparison") loadScoringPreview();
-  }, [tab, loadRoster, loadAudit, loadDivisionQueue, loadScoringPreview]);
+  }, [tab, loadRoster, loadBhMapping, loadAudit, loadDivisionQueue, loadScoringPreview]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return users.filter((u) => {
       if (teamFilter && String(u.team || "") !== teamFilter) return false;
-      if (roleFilter && String(u.role || "") !== roleFilter) return false;
+      if (
+        roleFilter &&
+        String(u.title || "") !== roleFilter &&
+        String(u.role || "") !== roleFilter &&
+        storedRoleLabel(u.role) !== roleFilter
+      ) {
+        return false;
+      }
       if (rosterFilter === "in" && !u.inRoster) return false;
       if (rosterFilter === "out" && u.inRoster) return false;
       if (!needle) return true;
@@ -226,6 +256,83 @@ export default function AdminUsersPage({ apiFetch }) {
       await loadRoster();
     } catch (e) {
       setError(e.message || "Could not set lead.");
+    }
+  }
+
+  async function downloadRosterTemplate() {
+    setError("");
+    try {
+      const res = await fetch("/api/admin/users/roster/template", { credentials: "include" });
+      if (!res.ok) throw new Error("Could not download the roster template.");
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "Roster_Template.csv";
+      a.click();
+      URL.revokeObjectURL(href);
+    } catch (e) {
+      setError(e.message || "Could not download the roster template.");
+    }
+  }
+
+  function addBhRow() {
+    const email = String(bhEmail || "").trim().toLowerCase();
+    const team = String(bhTeam || "").trim();
+    if (!email || !team) return;
+    if (bhRows.some((r) => r.email === email && r.team === team)) return;
+    setBhRows([...bhRows, { email, team, note: "" }]);
+    setBhEmail("");
+    setBhPreview(null);
+  }
+
+  function removeBhRow(email, team) {
+    setBhRows(bhRows.filter((r) => !(r.email === email && r.team === team)));
+    setBhPreview(null);
+  }
+
+  async function previewBhMapping() {
+    if (!bhLoaded) {
+      setError("Load the current mapping before previewing. Save always sends the complete list.");
+      return;
+    }
+    setBhBusy(true);
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/users/business-head-teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ previewOnly: true, rows: bhRows }),
+      });
+      setBhPreview(data);
+    } catch (e) {
+      setError(e.message || "Could not preview the mapping.");
+    } finally {
+      setBhBusy(false);
+    }
+  }
+
+  async function saveBhMapping() {
+    if (!bhLoaded) {
+      setError("Load the current mapping first. Saving replaces the whole list.");
+      return;
+    }
+    if (!window.confirm(`Save ${bhRows.length} business-head mapping row(s)? This replaces the whole list.`)) return;
+    setBhBusy(true);
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/users/business-head-teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: bhRows }),
+      });
+      setBhRows(Array.isArray(data.rows) ? data.rows : bhRows);
+      setBhPreview(null);
+      await loadUsers();
+    } catch (e) {
+      setError(e.message || "Could not save the mapping.");
+    } finally {
+      setBhBusy(false);
     }
   }
 
@@ -534,13 +641,20 @@ export default function AdminUsersPage({ apiFetch }) {
                 </option>
               ))}
             </select>
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} aria-label="Role filter">
-              <option value="">All roles</option>
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {r}
+            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} aria-label="Title filter">
+              <option value="">All titles</option>
+              {DISPLAY_TITLES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
                 </option>
               ))}
+              {roles
+                .filter((r) => !["BM", "BH FORUM", "ADMIN"].includes(r))
+                .map((r) => (
+                  <option key={r} value={r}>
+                    {storedRoleLabel(r)}
+                  </option>
+                ))}
             </select>
             <select
               value={rosterFilter}
@@ -567,6 +681,7 @@ export default function AdminUsersPage({ apiFetch }) {
                     <th>Name</th>
                     <th>Email</th>
                     <th>Team</th>
+                    <th>Title</th>
                     <th>Role</th>
                     <th>Status</th>
                     <th>Roster</th>
@@ -594,16 +709,17 @@ export default function AdminUsersPage({ apiFetch }) {
                           ))}
                         </select>
                       </td>
+                      <td>{u.title || storedRoleLabel(u.role)}</td>
                       <td>
                         <select
                           value={u.role || "BM"}
                           disabled={busyId === u.id}
                           onChange={(e) => patchUser(u.id, { role: e.target.value })}
-                          aria-label={`Role for ${u.email}`}
+                          aria-label={`Title for ${u.email}`}
                         >
                           {roles.map((r) => (
                             <option key={r} value={r}>
-                              {r}
+                              {storedRoleLabel(r)}
                             </option>
                           ))}
                         </select>
@@ -654,7 +770,10 @@ export default function AdminUsersPage({ apiFetch }) {
           <h2>Import org roster</h2>
           <p>
             CSV columns: <code>email,name,team,org_role,reports_to_email</code>. Preview first; apply only after
-            confirm. Template: <code>Primus-AI_OrgRoster_Template.csv</code>.
+            confirm.{" "}
+            <button type="button" className="ghost" onClick={downloadRosterTemplate}>
+              Download roster template
+            </button>
           </p>
           <textarea
             rows={10}
@@ -729,6 +848,102 @@ export default function AdminUsersPage({ apiFetch }) {
                 </li>
               ))}
             </ul>
+          )}
+
+          <h2>Business head teams</h2>
+          <p>
+            A Business Head has one roster team. Extra teams they cover are mapped here. Saving{" "}
+            <strong>replaces the whole list</strong>, so the screen loads every current row first and sends
+            the complete list.
+          </p>
+          {!bhLoaded ? (
+            <p className="admin-muted">Mapping not loaded. Open this tab again or refresh.</p>
+          ) : (
+            <>
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Team</th>
+                      <th>Signed in</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bhRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>No mapping rows. Business Heads currently see only their own ideas.</td>
+                      </tr>
+                    ) : (
+                      bhRows.map((r) => {
+                        const signed = users.find((u) => String(u.email || "").toLowerCase() === r.email);
+                        const warn = !signed || !signed.lastSignInAt;
+                        return (
+                          <tr key={`${r.email}|${r.team}`}>
+                            <td>{r.email}</td>
+                            <td>{r.team}</td>
+                            <td>
+                              {warn ? (
+                                <em>This Business Head has not signed in yet.</em>
+                              ) : (
+                                new Date(signed.lastSignInAt).toLocaleString()
+                              )}
+                            </td>
+                            <td>
+                              <button type="button" className="ghost" onClick={() => removeBhRow(r.email, r.team)}>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="admin-filters">
+                <input
+                  placeholder="Business Head email"
+                  value={bhEmail}
+                  onChange={(e) => setBhEmail(e.target.value)}
+                  aria-label="Business Head email"
+                />
+                <select value={bhTeam} onChange={(e) => setBhTeam(e.target.value)} aria-label="Mapped team">
+                  <option value="">Team</option>
+                  {teams.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={addBhRow} disabled={!bhEmail.trim() || !bhTeam}>
+                  Add row
+                </button>
+                <button type="button" className="ghost" onClick={previewBhMapping} disabled={bhBusy}>
+                  Preview
+                </button>
+                <button type="button" onClick={saveBhMapping} disabled={bhBusy || !bhLoaded}>
+                  Save mapping
+                </button>
+              </div>
+              {bhPreview ? (
+                <div className="admin-preview">
+                  <p>
+                    Preview {bhPreview.count ?? (bhPreview.preview || []).length} row(s). Invalid teams or
+                    emails are marked not ok.
+                  </p>
+                  <ul>
+                    {(bhPreview.preview || []).map((p, i) => (
+                      <li key={`${p.email}-${p.team}-${i}`}>
+                        {p.email} — {p.team}
+                        {p.ok ? "" : " (not ok)"}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
           )}
 
           <h2>Set lead</h2>

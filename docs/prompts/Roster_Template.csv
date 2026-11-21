@@ -1,0 +1,7 @@
+email,name,team,org_role,reports_to_email
+EXAMPLE.head.rd@cavinkare.com,EXAMPLE Head of R&D,R&D,BUSINESS_HEAD,
+EXAMPLE.lead.rd1@cavinkare.com,EXAMPLE R&D Team Lead One,R&D,TEAM_LEAD,EXAMPLE.head.rd@cavinkare.com
+EXAMPLE.lead.rd2@cavinkare.com,EXAMPLE R&D Team Lead Two,R&D,TEAM_LEAD,EXAMPLE.head.rd@cavinkare.com
+EXAMPLE.member.rd1@cavinkare.com,EXAMPLE R&D Member A,R&D,MEMBER,EXAMPLE.lead.rd1@cavinkare.com
+EXAMPLE.member.rd2@cavinkare.com,EXAMPLE R&D Member B,R&D,MEMBER,EXAMPLE.lead.rd2@cavinkare.com
+EXAMPLE.head.ab@cavinkare.com,EXAMPLE Head of Ambient & Beverages,Ambient & Beverages,BUSINESS_HEAD,
