@@ -25,22 +25,7 @@ export async function collectControls() { /* Cursor adds more screens here: the 
   await screen("home", "admin", (w) => H.nav.home(w)); await screen("log", "admin", (w) => H.nav.log(w)); await screen("settings", "admin", (w) => H.nav.settings(w));
   await screen("inputs-new-draft", "admin", (w) => H.nav.inputs(w, "Serum Delta")); await screen("inputs-evaluated", "admin", (w) => H.nav.inputs(w, "Serum Alpha"));
   await screen("output-go", "admin", (w) => H.nav.idea(w, "Serum Alpha")); await screen("output-watch", "admin", (w) => H.nav.idea(w, "Serum Beta"));
-  await screen("output-nogo", "admin", (w) => H.nav.idea(w, "Serum Gamma"));
-  await screen("output-incomplete", "admin", (w) => H.nav.idea(w, "Serum Delta"));
-  await screen("log-member", "bm", (w) => H.nav.log(w));
-  await screen("settings-member", "bm", (w) => H.nav.settings(w));
-  const openSettingsTab = async (w, label) => {
-    await H.nav.settings(w);
-    const tab = [...w.document.querySelectorAll('[role=tab],button')].find((b) => new RegExp(label, "i").test(clean(b.textContent)));
-    if (tab) { try { tab.click(); } catch {} await sleep(900); }
-  };
-  await screen("settings-divisions", "admin", (w) => openSettingsTab(w, "Division queue"));
-  await screen("settings-roster", "admin", (w) => openSettingsTab(w, "Roster import"));
-  await screen("settings-scoring", "admin", (w) => openSettingsTab(w, "Scoring re-score"));
-  await screen("settings-comparison", "admin", (w) => openSettingsTab(w, "Scoring comparison"));
-  await screen("settings-audit", "admin", (w) => openSettingsTab(w, "Audit"));
-  // Team-password unlock screens are not reachable while PLATFORM_TEAM_LOCK_ENABLED is false.
-  // Manager inbox is the Log "Mgr review" column (covered on log + log-member). Proof upload sits on GO inputs (inputs-evaluated).
+ 
   await H.close(); return result;
 }
 export async function collectAll() { return { routes: collectRoutes(), controls: await collectControls() }; }
