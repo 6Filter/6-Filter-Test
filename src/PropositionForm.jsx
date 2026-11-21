@@ -47,6 +47,7 @@ import { checkNeedsResearchRetry, retryStepCostPreview } from "../lib/retryStep.
 import { missingStepsCostPreview, planResearch } from "../lib/researchProgress.js";
 import { inputCoverage } from "../lib/inputCoverage.js";
 import { isGoScore, INVALID_INPUTS_BLOCK_SUBMIT } from "../lib/lockedConstants.js";
+import { RESEARCH_DID_NOT_FINISH_COPY, SCREENING_VERDICT_LABEL } from "../lib/researchFailureCopy.js";
 import { invalidInputFields, titleCaseName } from "../lib/inputReview.js";
 import {
   GUARDED_FIELDS,
@@ -2064,6 +2065,11 @@ export function GoNoGoResultPage({
   const isGo = classification === "GO";
   const isWatch = classification === "WATCH";
   const isIncomplete = classification === "INCOMPLETE";
+  const researchGapsForOutput =
+    Array.isArray(unfinishedResearch) && unfinishedResearch.length
+      ? unfinishedResearch
+      : listUnfinishedResearch(doc || {});
+  const hideScreeningVerdict = Boolean(researchGapsForOutput.length) || isIncomplete;
   const scoreStatus = String(result.scoreStatus || "").trim();
   const screenedWhen = result.screenedAt || result.at || "";
   const screenedLabel = screenedWhen
@@ -2207,6 +2213,7 @@ export function GoNoGoResultPage({
           return (
             <div className="research-unfinished-block" role="status" data-testid="research-unfinished">
               <h3>Research that did not finish</h3>
+              <p className="research-unfinished-plain">{RESEARCH_DID_NOT_FINISH_COPY}. There is no score and no screening verdict until you Screen again.</p>
               <ul className="evaluation-missing-list">
                 {gaps.map((entry) => (
                   <li key={`${entry.filter}.${entry.field}`}>
@@ -2243,6 +2250,13 @@ export function GoNoGoResultPage({
               {divisionName ? <span className="mono badge-chip">{divisionName}</span> : null}
             </div>
             <div className="gonogo-badge-row">
+              {hideScreeningVerdict ? (
+                <p className="gonogo-verdict-label" data-testid="screening-verdict-hidden">
+                  {SCREENING_VERDICT_LABEL}: none — {RESEARCH_DID_NOT_FINISH_COPY}.
+                </p>
+              ) : (
+                <>
+              <p className="gonogo-verdict-label" data-testid="screening-verdict-label">{SCREENING_VERDICT_LABEL}</p>
               <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{classification}</div>
               {Number.isFinite(Number(score.pct)) ? (
                 <span className="mono badge-chip">
@@ -2253,12 +2267,8 @@ export function GoNoGoResultPage({
                     ? ` · legacy ${score.legacyPct}%`
                     : ""}
                 </span>
-              ) : isIncomplete && Number.isFinite(Number(score.done)) ? (
-                <span className="mono badge-chip">
-                  {score.done} of {score.total || 17} checks
-                </span>
               ) : null}
-              {!isIncomplete && sizeTier ? (
+              {sizeTier ? (
                 <span
                   className="gonogo-scale-chip idea-size-badge"
                   data-provisional={sizeTier.provisional ? "true" : "false"}
@@ -2270,9 +2280,11 @@ export function GoNoGoResultPage({
                   ) : null}
                 </span>
               ) : null}
+                </>
+              )}
             </div>
-            {!isIncomplete && sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
-            <p className="gonogo-rationale">{rationale}</p>
+            {!hideScreeningVerdict && sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
+            {hideScreeningVerdict ? null : <p className="gonogo-rationale">{rationale}</p>}
             {storedVerdictWithoutInputs(savedDoc || doc) ? (
               <p className="gonogo-blocked-note">Stored verdict; inputs for this idea are missing</p>
             ) : null}
