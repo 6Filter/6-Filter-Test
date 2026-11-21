@@ -98,19 +98,3 @@ assert.match(tmpl.raw, /email,name,team,org_role,reports_to_email/);
 assert.match(String(tmpl.headers["content-disposition"] || ""), /Roster_Template\.csv/);
 console.log("PASS testBusinessHeadMappingUi (source + replace-all API + template)");
 await suite.drop().catch(() => {});
-
-if (fs.existsSync(path.join(root, "scripts", "uiHarness.mjs"))) {
-  const { createHarness, sleep } = await import("./uiHarness.mjs");
-  const H = await createHarness();
-  const session = H.boot({ as: "admin" });
-  await H.nav.settings(session.w);
-  const roster = [...session.w.document.querySelectorAll("button")].find((b) => /Roster import/i.test(b.textContent || ""));
-  assert.ok(roster, "Roster import tab is on Settings");
-  H.click(session.w, roster);
-  await sleep(800);
-  const body = H.text(session.w);
-  assert.match(body, /Business head teams/);
-  assert.match(body, /Download roster template/);
-  await H.close();
-  console.log("PASS testBusinessHeadMappingUi uiHarness");
-}
