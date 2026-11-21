@@ -1598,7 +1598,7 @@ export default function App() {
         <div className="session-chip">
           <span>
             {sessionUser.name}
-            <em>{sessionUser.role}</em>
+            <em>{sessionUser.title || sessionUser.role}</em>
             {sessionUser.team ? <em title="Default team">{sessionUser.team}</em> : null}
           </span>
           <button
