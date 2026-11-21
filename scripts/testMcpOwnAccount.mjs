@@ -54,6 +54,7 @@ process.env.DEPARTMENT_KEY_ENCRYPTION_SECRET = "mcp-test-department";
 process.env.ANTHROPIC_API_KEY = "sk-ant-stub-infra-only";
 process.env.SLACK_BOT_TOKEN = "xoxb-stub-local-only";
 process.env.MCP_ENABLED = "true";
+process.env.MCP_ALLOWED_EMAILS = "*"; // the allowlist fails closed; the earlier checks run with everyone allowed
 const DEPT_KEY = "sk-ant-stub-local-only";
 
 const slack = { dms: [] };
@@ -452,7 +453,27 @@ const removedRefresh = await http({
 process.env.MCP_ALLOWED_EMAILS = adminRow.email;
 const restoredCall = await rpc(pilotListed.access_token, { jsonrpc: "2.0", id: 16, method: "tools/list" });
 check("removing an email revokes that person's existing connector tokens on their next call", removedCall.status === 401 && removedRefresh.statusCode === 400 && restoredCall.status === 401);
+const emailStep = (email) => http({
+  method: "POST",
+  url: `/mcp/oauth/authorize?${pilotStart}`,
+  body: `step=email&email=${encodeURIComponent(email)}`,
+  headers: { "content-type": "application/x-www-form-urlencoded" },
+});
 delete process.env.MCP_ALLOWED_EMAILS;
+const unsetStep = await emailStep(memberRow.email);
+const unsetToken = await connectorToken(memberRow.email);
+process.env.MCP_ALLOWED_EMAILS = " , ,";
+const emptyStep = await emailStep(memberRow.email);
+check("unset or empty: nobody can sign in and nobody gets a token (fails closed)", unsetStep.statusCode === 403 && emptyStep.statusCode === 403 && !unsetToken.access_token);
+process.env.MCP_ALLOWED_EMAILS = "a@x.com,*";
+const starInList = await emailStep(memberRow.email);
+process.env.MCP_ALLOWED_EMAILS = "*@cavinkare.com";
+const domainStar = await emailStep(memberRow.email);
+check("a star inside a list, or a domain wildcard, does not open the connector", starInList.statusCode === 403 && domainStar.statusCode === 403);
+process.env.MCP_ALLOWED_EMAILS = "*";
+const everyone = await connectorToken(memberRow.email);
+const everyoneCall = everyone.access_token ? await rpc(everyone.access_token, { jsonrpc: "2.0", id: 17, method: "tools/list" }) : { status: 0 };
+check("a single star lets every signed-in company user in", Boolean(everyone.access_token) && everyoneCall.status === 200);
 
 process.env.MCP_ENABLED = "false";
 const off = await http({ method: "POST", url: "/mcp", body: { jsonrpc: "2.0", id: 1, method: "initialize" } });
