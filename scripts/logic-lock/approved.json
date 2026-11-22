@@ -13,7 +13,8 @@
     "lib/managerReviewServer.js",
     "lib/mcpHttp.js",
     "lib/orgRoster.js",
-    "lib/propositionsApi.js"
+    "lib/propositionsApi.js",
+    "lib/netMarginBlankNotice.js"
   ],
   "words": [
     "src/LogPage.jsx\tINCOMPLETE",
@@ -84,6 +85,9 @@
     "src/AdminUsersPage.jsx\t—",
     "src/LogPage.jsx\tAdmin",
     "src/LogPage.jsx\tBusiness Head",
-    "src/LogPage.jsx\tTeam Lead"
+    "src/LogPage.jsx\tTeam Lead",
+    "src/PropositionForm.jsx\tNet margin is not filled in. Filter 2's margin check earns nothing until you enter it (Adjust cost and margin).",
+    "src/PropositionForm.jsx\tf2",
+    "src/PropositionForm.jsx\tstatus"
   ]
 }
