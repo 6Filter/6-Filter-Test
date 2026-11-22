@@ -37,6 +37,8 @@ for (const key of [
   "REQUIRE_POSTGRES_TESTS",
   "PRIMUS_SCHEMA",
   "PRIMUS_DATA_DIR",
+  "CREDIT_LATCH_TTL_MS",
+  "ANTHROPIC_MAX_CONCURRENT",
 ]) {
   delete cleanEnv[key];
 }

@@ -1,0 +1,62 @@
+{
+  "title": "Fresh-clone regression baseline (no Postgres, no GitHub workflow files)",
+  "rule": "The pre-push hook (ciDryRun → test:regression) must fail with exactly this set. A new failure, a missing name, or a listed test that starts passing is a refused push. Re-pin this file in its own reviewable commit when the set honestly changes.",
+  "failures": [
+    {
+      "name": "testEvidenceReading.mjs",
+      "reason": "Owner fixture pins an old scoring ruleset / evidence wording; left untouched until the owner re-pins."
+    },
+    {
+      "name": "testLockedMinimumMargins.mjs",
+      "reason": "Owner fixture still expects Filter 2 'Below floor' hard-stop; live scoring marks it down instead."
+    },
+    {
+      "name": "testPathToGo.mjs",
+      "reason": "Owner fixture pins 15 slots / old Path-to-GO totals; live is 18 slots (v5.7)."
+    },
+    {
+      "name": "testPathToGoActionCopy.mjs",
+      "reason": "Owner fixture pins pre-v5.7 Path-to-GO copy and a percent-only GO headline."
+    },
+    {
+      "name": "testScoringRules.mjs",
+      "reason": "Owner fixture pins SCORING_RULESET_VERSION and shadow-mode / legacyPct behaviour; live is v5.7 with relevance on."
+    },
+    {
+      "name": "owner-tests/testEvaluationStatus.mjs",
+      "reason": "Owner fixture treats a typed pure-commodity tick as an exemption; live requires a sourced finding."
+    },
+    {
+      "name": "owner-tests/testFilter1Scoring.mjs",
+      "reason": "Owner fixture pins an old Filter 1 version and still credits junk text the invalid-input guard now zeros."
+    },
+    {
+      "name": "owner-tests/testFilter2CogsGstPlan.mjs",
+      "reason": "Owner fixture sums Filter 2 credit as margin-only; live also scores pack size and person-entered GST."
+    },
+    {
+      "name": "owner-tests/testFilter2Scoring.mjs",
+      "reason": "Owner fixture expects one Filter 2 scored item; live has three (margin, pack size, GST)."
+    },
+    {
+      "name": "owner-tests/testFilter3Scoring.mjs",
+      "reason": "Owner fixture asserts a fixed denominator of 15; live is 18 slots."
+    },
+    {
+      "name": "owner-tests/testInputCoverage.mjs",
+      "reason": "Owner fixture expects stored answers to read 'assessed' without searchUsed; v5.6+ requires a web check."
+    },
+    {
+      "name": "owner-tests/testPathCopy.mjs",
+      "reason": "Owner fixture pins screenshot-action worth and 15-slot Path-to-GO weights."
+    },
+    {
+      "name": "owner-tests/testRelevanceScoring.mjs",
+      "reason": "Owner fixture asserts denominator 15 and shadow-mode / legacy verdict; live is 18 slots, relevance on."
+    },
+    {
+      "name": "testPart70Health.mjs",
+      "reason": "Reads .github/workflows/keep-alive.yml, which is not in a fresh clone: the GitHub token has no workflow scope, so that file cannot be pushed."
+    }
+  ]
+}

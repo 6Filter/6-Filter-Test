@@ -8,6 +8,7 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { diffRegressionFailures, formatBaselineMatch, loadRegressionBaseline } from "./regressionBaseline.mjs";
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(scriptsDir, "..");
@@ -116,59 +117,21 @@ if (!files.length) {
  * is NOT edited; it fails solely because a typed tick no longer exempts anything. The new behaviour is covered by
  * testPureCommodityExemption.mjs.
  */
-const EXPECTED_OWNER_FAILURES = new Set([
-  "owner-tests/testEvaluationStatus.mjs",
-  "testEvidenceReading.mjs",
-  "testPathToGo.mjs",
-  "testPathToGoActionCopy.mjs",
-  "testScoringRules.mjs",
-  "testLockedMinimumMargins.mjs",
-  "owner-tests/testPathCopy.mjs",
-  "owner-tests/testEvidenceReading.mjs",
-  "owner-tests/testPathToGo.mjs",
-  "owner-tests/testScoringRules.mjs",
-  "owner-tests/testFilter1Scoring.mjs",
-  "owner-tests/testLockedMinimumMargins.mjs",
-  // Part 138 (v5.6) — fixed 18 slots, F2 three checks, F1 gap mark-down, web-checked input coverage.
-  "owner-tests/testRelevanceScoring.mjs",
-  "owner-tests/testFilter3Scoring.mjs",
-  "owner-tests/testFilter2Scoring.mjs",
-  "owner-tests/testFilter2CogsGstPlan.mjs",
-  "owner-tests/testInputCoverage.mjs",
-  // Part 140 D62 — server-owned writes ignored (no 403).
-  "testTeamAndFieldAccess.mjs",
-  "owner-tests/testTeamAndFieldAccess.mjs",
-]);
-
-const failures = [];
-const expectedOwnerFailures = [];
+const baseline = loadRegressionBaseline(scriptsDir);
+const failedNames = [];
+const childEnv = { ...process.env };
+delete childEnv.CREDIT_LATCH_TTL_MS;
+delete childEnv.ANTHROPIC_MAX_CONCURRENT;
 for (const file of files) {
   const code = await new Promise((resolve) => {
     const child = spawn(process.execPath, [file.full], {
       cwd: root,
       stdio: "inherit",
-      env: process.env,
+      env: childEnv,
     });
     child.on("exit", (status) => resolve(status ?? 1));
   });
-  if (code !== 0) {
-    if (EXPECTED_OWNER_FAILURES.has(file.name)) expectedOwnerFailures.push(file.name);
-    else failures.push(file.name);
-  }
-}
-
-if (expectedOwnerFailures.length) {
-  console.error(
-    `\n${expectedOwnerFailures.length} owner test(s) failed as expected under Parts 134–141 ` +
-      `(old F2 hard-stop / F3 band / 15-slot totals / pinned versions / Below floor / not-web-checked coverage):`
-  );
-  for (const file of expectedOwnerFailures) console.error(`  ${file}`);
-}
-
-if (failures.length) {
-  console.error(`\n${failures.length} test script(s) failed:`);
-  for (const file of failures) console.error(`  ${file}`);
-  process.exit(1);
+  if (code !== 0) failedNames.push(file.name);
 }
 
 const dataAfter = hashTree(dataRoot);
@@ -177,4 +140,12 @@ if (dataBefore !== dataAfter) {
   process.exit(1);
 }
 
-console.log(`\n${files.length} test scripts passed. data/ unchanged.`);
+const diff = diffRegressionFailures(failedNames, baseline.names);
+if (!diff.ok) {
+  console.error(`\nFailing set does not match scripts/regressionBaseline.json.`);
+  if (diff.message) console.error(diff.message);
+  process.exit(1);
+}
+
+console.error(`\n${formatBaselineMatch(baseline)}`);
+console.log(`\n${files.length} test scripts ran. data/ unchanged. failing set matches the 14-name baseline.`);
