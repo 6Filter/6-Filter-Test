@@ -4291,7 +4291,12 @@ export default function PropositionForm({
     const researchRan = Boolean(result.researchRan) || (!hadResearchRunAt && result.suggestions);
     const filled = researchRan && result.suggestions ? applyResearchResult(result, saved) : saved;
     if (result.researchError) {
-      setSubmitMsg(`Your idea was saved, but the research step failed: ${String(result.researchError).replace(/[.\s]+$/, "")}.`);
+      const creditOut = Boolean(result.creditExhausted) || /run out of credit/i.test(String(result.researchError));
+      setSubmitMsg(
+        creditOut
+          ? String(result.researchError)
+          : `Your idea was saved, but the research step failed: ${String(result.researchError).replace(/[.\s]+$/, "")}.`
+      );
       setLocalError(result.researchError);
       setFailedBanner({
         label: result.failedProviderLabel || provider || "Claude",

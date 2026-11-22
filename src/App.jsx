@@ -1057,7 +1057,9 @@ export default function App() {
         verdict,
         pct: Number.isFinite(pct) ? pct : null,
         message: result.researchError
-          ? `Submitted, but research reported a problem: ${result.researchError}`
+          ? result.creditExhausted || /run out of credit/i.test(String(result.researchError))
+            ? String(result.researchError)
+            : `Submitted, but research reported a problem: ${result.researchError}`
           : verdict
             ? `Submitted — ${verdict}.`
             : "Submitted.",
