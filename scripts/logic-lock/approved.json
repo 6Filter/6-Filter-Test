@@ -10,7 +10,8 @@
     "lib/managerReview.js",
     "lib/managerReviewServer.js",
     "lib/mcpHttp.js",
-    "lib/orgRoster.js"
+    "lib/orgRoster.js",
+    "lib/propositionsApi.js"
   ],
   "words": [
     "src/AdminUsersPage.jsx\t${}-${}-${}",
