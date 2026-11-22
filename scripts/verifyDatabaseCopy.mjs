@@ -1,190 +1,71 @@
+#!/usr/bin/env node
 /**
- * Verify that a restored PostgreSQL database is a complete copy of the source.
+ * Did the move lose any data?  Compares a SOURCE and a TARGET PostgreSQL database table by table. READ-ONLY: both sessions are set read-only, nothing is ever written.
  *
- *   node scripts/verifyDatabaseCopy.mjs --source "$SRC" --target "$TGT" --schema public
+ *   node scripts/verifyDatabaseCopy.mjs --source "postgres://user:pw@old-host:5432/db?sslmode=require" --target "postgres://user:pw@new-host:5432/db?sslmode=require" [--schema public] [--no-checksum]
  *
- * Read-only on both sides. Never prints a connection string or a password.
- * Checks, per base table in the schema:
- *   1. the table exists on both sides (and no table exists only on one side);
- *   2. the row counts are equal;
- *   3. an order-independent content checksum is equal (md5 over every row's text form);
- *   4. for propositions and ideas, ids present in the source but missing in the target are named;
- * then, on the target:
- *   5. every serial/identity counter is at or ahead of MAX(column) (a counter left behind makes the
- *      next insert or delete fail with a duplicate key such as deleted_propositions_pkey).
+ * Put it in the repo's scripts/ folder and run it from the repo root (it uses the `pg` package the app already has). Use the EXTERNAL connection strings (Render: database > Connect > External; Azure: the server's connection strings).
+ * For a final answer stop the writes first (suspend the old service), otherwise the two sides legitimately differ by whatever was saved in between.
  *
- * Exit 0 and "RESULT: ALL MATCH" only when every check passes; otherwise exit 1 and a problem list.
- * Ideas saved on the source while the dump ran will show as differences in a dry run; that is expected.
- *
- * Options: --source URL  --target URL  --schema NAME (default public)  --no-checksum  (counts + counters only)
+ * What it checks, for every table in the source:
+ *   rows        the same number of rows
+ *   data        the same content, row for row (an order-independent checksum of every row, bytea files included)
+ *   columns     the same columns and types      key  the same primary key (a different key is how "deleted_propositions_pkey" bites)
+ *   counters    in the TARGET, every serial counter is at or past its largest id (a counter left behind makes the next Delete fail)
+ * and it lists any idea (propositions) that is in the source and missing from the target, by name.
+ * Exit code 0 only when nothing is missing or different; 1 otherwise.
  */
 import pg from "pg";
 
-function parseArgs(argv) {
-  const out = { schema: "public", checksum: true };
-  for (let i = 0; i < argv.length; i += 1) {
-    const a = argv[i];
-    if (a === "--source") out.source = argv[++i];
-    else if (a === "--target") out.target = argv[++i];
-    else if (a === "--schema") out.schema = argv[++i];
-    else if (a === "--no-checksum") out.checksum = false;
-    else if (a === "--help" || a === "-h") out.help = true;
-    else throw new Error(`Unknown option ${a}`);
-  }
+const argv = process.argv.slice(2); const opt = (k, d = "") => { const i = argv.indexOf(`--${k}`); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }; const flag = (k) => argv.includes(`--${k}`);
+const SRC = opt("source"), TGT = opt("target"); const schemaSrc = opt("source-schema", opt("schema", "public")), schemaTgt = opt("target-schema", opt("schema", "public")); const checksum = !flag("no-checksum"); const msOnly = opt("timestamps") === "ms"; const ignoreTables = new Set(opt("ignore-table").split(",").map((x) => x.trim()).filter(Boolean));
+// --timestamps ms : compare timestamps to the MILLISECOND. A restore from the app's own encrypted backup (.bk) carries JavaScript timestamps, so microseconds are lost (.435971 becomes .435): expected, harmless for this app, and reported as such.
+// --ignore-table backup_exports : skip tables that are expected to differ (the app logs each export AFTER building it, so the backup never contains its own log row).
+if (!SRC || !TGT) { console.error('Usage: node scripts/verifyDatabaseCopy.mjs --source "<url>" --target "<url>" [--schema public] [--no-checksum]'); process.exit(2); }
+const provider = (host) => (/azure/i.test(host) ? "Azure Database for PostgreSQL" : /render\.com|dpg-/i.test(host) ? "Render PostgreSQL" : /supabase/i.test(host) ? "Supabase" : /amazonaws|rds\./i.test(host) ? "AWS RDS" : /localhost|127\.0\.0\.1/.test(host) ? "local" : "PostgreSQL (other)");
+async function connect(url) {
+  const u = new URL(url); const wantSsl = /sslmode=(require|verify-full|verify-ca|prefer)/i.test(url) || /azure|render\.com|dpg-|supabase|amazonaws/i.test(u.hostname); u.searchParams.delete("sslmode");
+  const client = new pg.Client({ connectionString: u.toString(), ssl: wantSsl ? { rejectUnauthorized: false } : false, connectionTimeoutMillis: 20000 }); await client.connect();
+  await client.query("SET default_transaction_read_only = on"); await client.query("SET statement_timeout = 300000"); return { client, host: u.hostname, db: u.pathname.slice(1) };
+}
+const q = async (c, sql, p = []) => (await c.client.query(sql, p)).rows;
+const tablesOf = async (c, s) => (await q(c, `SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' ORDER BY 1`, [s])).map((r) => r.table_name);
+const colsOf = async (c, s, t) => (await q(c, `SELECT column_name || ':' || data_type AS x FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`, [s, t])).map((r) => r.x).join(",");
+const pkOf = async (c, s, t) => (await q(c, `SELECT pg_get_constraintdef(k.oid) AS d FROM pg_constraint k JOIN pg_class r ON r.oid = k.conrelid JOIN pg_namespace n ON n.oid = r.relnamespace WHERE k.contype = 'p' AND n.nspname = $1 AND r.relname = $2`, [s, t])).map((r) => r.d).join(";") || "(none)";
+const qi = (x) => `"${String(x).replace(/"/g, '""')}"`;
+const sumOf = async (c, s, t) => {
+  let from = `${qi(s)}.${qi(t)} x`;
+  if (msOnly) { const cs = await q(c, `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`, [s, t]); if (cs.some((k) => /^timestamp/.test(k.data_type))) from = `(SELECT ${cs.map((k) => (/^timestamp/.test(k.data_type) ? `date_trunc('milliseconds', ${qi(k.column_name)}) AS ${qi(k.column_name)}` : qi(k.column_name))).join(", ")} FROM ${qi(s)}.${qi(t)}) x`; }
+  const r = (await q(c, `SELECT count(*)::bigint AS n${checksum ? `, md5(COALESCE(string_agg(h, '' ORDER BY h), '')) AS sum` : ""} FROM (SELECT md5(x::text) AS h FROM ${from}) y`))[0]; return { n: Number(r.n), sum: r.sum || "" };
+};
+async function drift(c, s) {
+  const out = []; const cols = await q(c, `SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = $1 AND column_default LIKE 'nextval(%'`, [s]);
+  for (const k of cols) { const seq = (await q(c, `SELECT pg_get_serial_sequence($1, $2) AS s`, [`${qi(s)}.${qi(k.table_name)}`, k.column_name]))[0]?.s; if (!seq) continue; const max = Number((await q(c, `SELECT COALESCE(MAX(${qi(k.column_name)}), 0) AS m FROM ${qi(s)}.${qi(k.table_name)}`))[0].m); const st = (await q(c, `SELECT last_value, is_called FROM ${seq}`))[0]; const cur = st.is_called ? Number(st.last_value) : Number(st.last_value) - 1; if (cur < max) out.push({ table: k.table_name, column: k.column_name, max, counter: cur }); }
   return out;
 }
-
-function ident(name) {
-  if (!/^[a-z_][a-z0-9_]*$/i.test(String(name || ""))) throw new Error("Refusing an unexpected identifier.");
-  return `"${name}"`;
+const pad = (x, n) => String(x).padEnd(n); const padL = (x, n) => String(x).padStart(n);
+let a, b; try { a = await connect(SRC); b = await connect(TGT); } catch (e) { console.error(`Could not connect: ${e.message}`); process.exit(2); }
+console.log(`SOURCE  ${provider(a.host)}  ${a.host}  database "${a.db}"  schema "${schemaSrc}"`); console.log(`TARGET  ${provider(b.host)}  ${b.host}  database "${b.db}"  schema "${schemaTgt}"`);
+if (a.host === b.host && a.db === b.db && schemaSrc === schemaTgt) console.log("WARNING: source and target are the same database; this proves nothing.");
+const srcTables = (await tablesOf(a, schemaSrc)).filter((t) => !ignoreTables.has(t)), tgtTables = new Set(await tablesOf(b, schemaTgt)); const problems = []; const rows = [];
+for (const t of srcTables) {
+  if (!tgtTables.has(t)) { rows.push([t, "-", "MISSING", "", "", "", ""]); problems.push(`table ${t} is missing in the target`); continue; }
+  const [sa, sb] = [await sumOf(a, schemaSrc, t), await sumOf(b, schemaTgt, t)]; const [ca, cb] = [await colsOf(a, schemaSrc, t), await colsOf(b, schemaTgt, t)]; const [ka, kb] = [await pkOf(a, schemaSrc, t), await pkOf(b, schemaTgt, t)];
+  const okRows = sa.n === sb.n, okData = !checksum || sa.sum === sb.sum, okCols = ca === cb, okKey = ka === kb;
+  if (!okRows) problems.push(`${t}: ${sa.n} rows in the source, ${sb.n} in the target (${sa.n - sb.n > 0 ? sa.n - sb.n + " missing" : sb.n - sa.n + " extra"})`);
+  if (okRows && !okData) problems.push(`${t}: same number of rows but the content differs`);
+  if (!okCols) problems.push(`${t}: the columns differ`); if (!okKey) problems.push(`${t}: the primary key differs (${ka} vs ${kb})`);
+  rows.push([t, sa.n, sb.n, okRows ? "ok" : "DIFFERENT", checksum ? (okData ? "ok" : "DIFFERENT") : "skipped", okCols ? "ok" : "DIFFERENT", okKey ? "ok" : "DIFFERENT"]);
 }
-
-function sslFor(url) {
-  let mode = "";
-  let host = "";
-  try {
-    const u = new URL(url);
-    mode = (u.searchParams.get("sslmode") || "").toLowerCase();
-    host = u.hostname;
-  } catch {
-    /* handled by pg */
-  }
-  const on = mode !== "disable" && (["require", "verify-ca", "verify-full"].includes(mode) || /render\.com$|azure\.com$|neon\.tech$/.test(host));
-  return on ? { rejectUnauthorized: false } : false;
+console.log(`\n${pad("table", 26)}${padL("source", 9)}${padL("target", 9)}  ${pad("rows", 10)}${pad("data", 10)}${pad("columns", 10)}key`); for (const r of rows) console.log(`${pad(r[0], 26)}${padL(r[1], 9)}${padL(r[2], 9)}  ${pad(r[3], 10)}${pad(r[4], 10)}${pad(r[5], 10)}${r[6]}`);
+const dr = await drift(b, schemaTgt); if (dr.length) { for (const d of dr) problems.push(`counter behind in the target: ${d.table}.${d.column} is at ${d.counter} but its largest id is ${d.max} (the next insert will fail)`); }
+console.log(`\nSerial counters in the target: ${dr.length ? "BEHIND for " + dr.map((d) => d.table).join(", ") : "all at or past their largest id"}`);
+if (srcTables.includes("propositions") && tgtTables.has("propositions")) {
+  const si = await q(a, `SELECT id, name FROM ${qi(schemaSrc)}.propositions`), ti = new Set((await q(b, `SELECT id FROM ${qi(schemaTgt)}.propositions`)).map((r) => r.id)); const sIds = new Set(si.map((r) => r.id));
+  const missing = si.filter((r) => !ti.has(r.id)); const extra = [...ti].filter((id) => !sIds.has(id)).length;
+  console.log(`\nIdeas: ${si.length} in the source, ${ti.size} in the target.`); if (missing.length) { console.log(`MISSING from the target (${missing.length}):`); for (const m of missing.slice(0, 25)) console.log(`  ${m.id}  ${m.name || "(untitled)"}`); if (missing.length > 25) console.log(`  ...and ${missing.length - 25} more`); problems.push(`${missing.length} idea(s) in the source are missing from the target`); }
+  if (extra) console.log(`${extra} idea(s) are in the target but not in the source (saved after the copy; not a loss).`);
 }
-
-function stripSslMode(url) {
-  // pg would otherwise apply its own (stricter) reading of sslmode; we pass ssl explicitly.
-  try {
-    const u = new URL(url);
-    u.searchParams.delete("sslmode");
-    return u.toString();
-  } catch {
-    return url;
-  }
-}
-
-async function connect(url, label) {
-  const client = new pg.Client({ connectionString: stripSslMode(url), ssl: sslFor(url), connectionTimeoutMillis: 20000 });
-  try {
-    await client.connect();
-  } catch (e) {
-    throw new Error(`Cannot connect to the ${label} database: ${String(e.message || e).replace(/postgres(ql)?:\/\/\S+/gi, "[url hidden]")}`);
-  }
-  await client.query("SET default_transaction_read_only = on");
-  return client;
-}
-
-async function listTables(client, schema) {
-  const r = await client.query(
-    `SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' ORDER BY table_name`,
-    [schema]
-  );
-  return r.rows.map((x) => x.table_name);
-}
-
-async function tableStats(client, schema, table, withChecksum) {
-  const t = `${ident(schema)}.${ident(table)}`;
-  if (!withChecksum) {
-    const r = await client.query(`SELECT count(*)::bigint AS n FROM ${t}`);
-    return { n: Number(r.rows[0].n), sum: null };
-  }
-  const r = await client.query(
-    `SELECT count(*)::bigint AS n,
-            COALESCE(md5(string_agg(h, '' ORDER BY h)), '') AS sum
-       FROM (SELECT md5(x::text) AS h FROM ${t} x) s`
-  );
-  return { n: Number(r.rows[0].n), sum: r.rows[0].sum };
-}
-
-async function idsOf(client, schema, table) {
-  const r = await client.query(`SELECT id::text AS id FROM ${ident(schema)}.${ident(table)}`);
-  return new Set(r.rows.map((x) => x.id));
-}
-
-async function counters(client, schema) {
-  const cols = await client.query(
-    `SELECT c.relname AS table_name, a.attname AS column_name,
-            pg_get_serial_sequence(format('%I.%I', n.nspname, c.relname), a.attname) AS seq_name
-       FROM pg_class c
-       JOIN pg_namespace n ON n.oid = c.relnamespace
-       JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
-       LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
-      WHERE n.nspname = $1 AND c.relkind = 'r'
-        AND (pg_get_expr(ad.adbin, ad.adrelid) LIKE 'nextval(%' OR a.attidentity <> '')
-      ORDER BY c.relname, a.attname`,
-    [schema]
-  );
-  const behind = [];
-  let checked = 0;
-  for (const row of cols.rows) {
-    if (!row.seq_name) continue;
-    const max = await client.query(
-      `SELECT COALESCE(MAX(${ident(row.column_name)}), 0)::bigint AS max FROM ${ident(schema)}.${ident(row.table_name)}`
-    );
-    const m = Number(max.rows[0].max);
-    checked += 1;
-    if (m <= 0) continue;
-    const seq = await client.query(`SELECT last_value::bigint AS last_value FROM ${row.seq_name}`);
-    const cur = Number(seq.rows[0].last_value);
-    if (cur < m) behind.push({ table: row.table_name, column: row.column_name, max: m, counter: cur });
-  }
-  return { checked, behind };
-}
-
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.help || !args.source || !args.target) {
-    console.log('Usage: node scripts/verifyDatabaseCopy.mjs --source "$SRC" --target "$TGT" [--schema public] [--no-checksum]');
-    process.exit(args.help ? 0 : 2);
-  }
-  const problems = [];
-  const src = await connect(args.source, "source");
-  const tgt = await connect(args.target, "target");
-  try {
-    const [srcTables, tgtTables] = await Promise.all([listTables(src, args.schema), listTables(tgt, args.schema)]);
-    for (const t of srcTables) if (!tgtTables.includes(t)) problems.push(`table ${t}: missing on the target`);
-    for (const t of tgtTables) if (!srcTables.includes(t)) problems.push(`table ${t}: exists only on the target (restore into an EMPTY database)`);
-
-    console.log(`schema ${args.schema}: ${srcTables.length} tables on the source, ${tgtTables.length} on the target`);
-    for (const table of srcTables.filter((t) => tgtTables.includes(t))) {
-      const [a, b] = await Promise.all([
-        tableStats(src, args.schema, table, args.checksum),
-        tableStats(tgt, args.schema, table, args.checksum),
-      ]);
-      const countOk = a.n === b.n;
-      const sumOk = !args.checksum || a.sum === b.sum;
-      console.log(`  ${countOk && sumOk ? "ok  " : "DIFF"} ${table.padEnd(28)} source ${String(a.n).padStart(7)}  target ${String(b.n).padStart(7)}${args.checksum ? (sumOk ? "  content equal" : "  CONTENT DIFFERS") : ""}`);
-      if (!countOk) problems.push(`table ${table}: ${a.n} rows on the source, ${b.n} on the target`);
-      else if (!sumOk) problems.push(`table ${table}: same row count but the content differs`);
-      if (!countOk && ["propositions", "ideas"].includes(table)) {
-        const [sa, sb] = await Promise.all([idsOf(src, args.schema, table), idsOf(tgt, args.schema, table)]);
-        const missing = [...sa].filter((id) => !sb.has(id));
-        if (missing.length) problems.push(`table ${table}: ${missing.length} id(s) missing on the target, e.g. ${missing.slice(0, 5).join(", ")}`);
-      }
-    }
-
-    const c = await counters(tgt, args.schema);
-    console.log(`counters: ${c.checked} serial/identity counter(s) checked on the target`);
-    for (const x of c.behind) {
-      problems.push(`counter ${x.table}.${x.column}: at ${x.counter}, behind MAX ${x.max} (run the sequence repair)`);
-    }
-  } finally {
-    await src.end().catch(() => {});
-    await tgt.end().catch(() => {});
-  }
-
-  if (problems.length) {
-    console.log("\nPROBLEMS:");
-    for (const p of problems) console.log(`  - ${p}`);
-    console.log("\nRESULT: DIFFERENCES FOUND");
-    process.exit(1);
-  }
-  console.log("\nRESULT: ALL MATCH");
-  process.exit(0);
-}
-
-main().catch((e) => {
-  console.error(String(e?.message || e).replace(/postgres(ql)?:\/\/\S+/gi, "[url hidden]"));
-  process.exit(2);
-});
+await a.client.end(); await b.client.end();
+if (problems.length) { console.log(`\nRESULT: DATA DIFFERS. ${problems.length} problem(s):`); for (const p of problems) console.log(`  - ${p}`); process.exit(1); }
+console.log(`\nRESULT: ALL MATCH. Every table has the same rows, the same content, the same structure and healthy counters. No data was lost.${checksum ? "" : " (Content was not compared: --no-checksum.)"}${msOnly ? " Timestamps were compared to the millisecond (--timestamps ms): a restore from the app's encrypted backup loses the microseconds." : ""}${ignoreTables.size ? ` Not compared by request: ${[...ignoreTables].join(", ")}.` : ""}`);

@@ -1,0 +1,104 @@
+# REFERENCE ONLY: the scratch fix that makes testQueryCount.mjs (5 checks) pass: 262 database calls for 36 ideas become 7 (constant); 16.5 s becomes 1.8 s with the database 250 ms away. Not production quality: the memo key should come from the db module, not the environment.
+--- a/lib/managerReviewEvents.js
++++ b/lib/managerReviewEvents.js
+@@ -19,9 +19,20 @@
+   "reroute-failed",
+ ]);
+ 
++let schemaReady = null;
++let schemaKey = "";
++/** Set-up runs ONCE per process and database, never on a read: each CREATE is a round trip to the database. */
+ export async function ensureManagerReviewEventsSchema() {
+   await initDb();
+   if (!usingPostgres()) return;
++  const key = `${process.env.DATABASE_URL || process.env.TEST_DATABASE_URL || ""}|${process.env.PRIMUS_SCHEMA || ""}`;
++  if (schemaReady && schemaKey === key) return schemaReady;
++  schemaKey = key;
++  schemaReady = createManagerReviewEventsSchema().catch((e) => { schemaReady = null; throw e; });
++  return schemaReady;
++}
++
++async function createManagerReviewEventsSchema() {
+   await query(`
+     CREATE TABLE IF NOT EXISTS manager_review_events (
+       id TEXT PRIMARY KEY,
+@@ -88,6 +99,19 @@
+   );
+ }
+ 
++/** All review events for many ideas in ONE query, grouped by idea (oldest first), so a list of N ideas costs one call, not N. */
++export async function listManagerReviewEventsForIdeas(ideaIds = [], { limitPerIdea = 100 } = {}) {
++  await ensureManagerReviewEventsSchema();
++  const out = new Map();
++  if (!usingPostgres()) return out;
++  const ids = [...new Set((ideaIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
++  for (const id of ids) out.set(id, []);
++  if (!ids.length) return out;
++  const rows = await query(`SELECT * FROM manager_review_events WHERE idea_id = ANY($1::text[]) ORDER BY idea_id, created_at ASC`, [ids]);
++  for (const r of rows) { const list = out.get(r.idea_id); if (list && list.length < limitPerIdea) list.push(r); }
++  return out;
++}
++
+ export async function listLatestReviewEventsByIdea(ideaIds = []) {
+   await ensureManagerReviewEventsSchema();
+   if (!usingPostgres()) return new Map();
+--- a/lib/managerReviewServer.js
++++ b/lib/managerReviewServer.js
+@@ -63,10 +63,19 @@
+   return rows.map((r) => normalizeEmail(r.email)).filter(Boolean);
+ }
+ 
+-export async function hydrateReviewOnDoc(doc) {
++/** Hydrate a whole list with ONE query for the review events of all its ideas. */
++export async function hydrateReviewOnDocs(docs = []) {
++  const list = Array.isArray(docs) ? docs : [];
++  if (!list.length) return list;
++  const { listManagerReviewEventsForIdeas } = await import("./managerReviewEvents.js");
++  const byIdea = usingPostgres() ? await listManagerReviewEventsForIdeas(list.map((d) => d?.id)) : new Map();
++  return Promise.all(list.map((d) => hydrateReviewOnDoc(d, d?.id ? byIdea.get(String(d.id)) || [] : null)));
++}
++
++export async function hydrateReviewOnDoc(doc, preloadedEvents = null) {
+   if (!doc?.id) return doc;
+   await ensureManagerReviewEventsSchema();
+-  const events = usingPostgres() ? await listManagerReviewEvents(doc.id) : [];
++  const events = preloadedEvents ?? (usingPostgres() ? await listManagerReviewEvents(doc.id) : []);
+   const state = reviewStateFromEvents(events, doc.managerReview, doc.managerApproval);
+   const derivedApproval =
+     doc.managerApproval ||
+--- a/lib/propositionsApi.js
++++ b/lib/propositionsApi.js
+@@ -905,8 +905,8 @@
+       const rawList = await filterAccessibleIdeas(req.user, await listPropositions(limit));
+       let propositions = rawList;
+       try {
+-        const { hydrateReviewOnDoc } = await import("./managerReviewServer.js");
+-        propositions = await Promise.all(rawList.map((p) => hydrateReviewOnDoc(p)));
++        const { hydrateReviewOnDocs } = await import("./managerReviewServer.js");
++        propositions = await hydrateReviewOnDocs(rawList);
+       } catch {
+         propositions = rawList;
+       }
+--- a/lib/orgRoster.js
++++ b/lib/orgRoster.js
+@@ -32,9 +32,20 @@
+   }
+ }
+ 
++let rosterSchemaReady = null;
++let rosterSchemaKey = "";
++/** Set-up runs ONCE per process and database, never on a read. */
+ export async function ensureOrgRosterSchema() {
+   await initDb();
+   requirePg();
++  const key = `${process.env.DATABASE_URL || process.env.TEST_DATABASE_URL || ""}|${process.env.PRIMUS_SCHEMA || ""}`;
++  if (rosterSchemaReady && rosterSchemaKey === key) return rosterSchemaReady;
++  rosterSchemaKey = key;
++  rosterSchemaReady = createOrgRosterSchema().catch((e) => { rosterSchemaReady = null; throw e; });
++  return rosterSchemaReady;
++}
++
++async function createOrgRosterSchema() {
+   await query(`
+     CREATE TABLE IF NOT EXISTS org_roster (
+       email TEXT PRIMARY KEY,
