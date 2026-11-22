@@ -8,17 +8,18 @@ import {
   CREDIT_EXHAUSTED_USER_COPY,
   creditMessageForViewer,
   isCreditExhaustedError,
-  isPlatformCreditExhausted,
+  isCreditLatched,
   noteCreditExhausted,
   resetCreditExhaustedForTests,
 } from "../lib/creditFailureCopy.js";
 
 resetCreditExhaustedForTests();
-assert.equal(isPlatformCreditExhausted(), false);
-noteCreditExhausted();
-assert.equal(isPlatformCreditExhausted(), true);
+assert.equal(isCreditLatched("k1"), false);
+noteCreditExhausted("k1");
+assert.equal(isCreditLatched("k1"), true);
+assert.equal(isCreditLatched("k2"), false);
 resetCreditExhaustedForTests();
-assert.equal(isPlatformCreditExhausted(), false);
+assert.equal(isCreditLatched("k1"), false);
 
 assert.match(CREDIT_EXHAUSTED_USER_COPY, /run out of credit/i);
 assert.match(CREDIT_EXHAUSTED_USER_COPY, /tell your admin/i);
@@ -30,7 +31,7 @@ assert.equal(isCreditExhaustedError(billed), true);
 assert.equal(isCreditExhaustedError(new Error("timeout")), false);
 
 const callSrc = readFileSync(new URL("../lib/callAnthropic.js", import.meta.url), "utf8");
-assert.match(callSrc, /isPlatformCreditExhausted/);
+assert.match(callSrc, /isCreditLatched/);
 assert.match(callSrc, /noteCreditExhausted/);
 assert.match(callSrc, /maybeAlertCreditExhausted/);
 
