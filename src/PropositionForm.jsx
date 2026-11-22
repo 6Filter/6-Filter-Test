@@ -98,6 +98,7 @@ import {
   applyDivisionMinimumMargin,
   divisionMinimumStatusEntry,
 } from "../lib/netMarginDefault.js";
+import { NET_MARGIN_BLANK_NOTICE, netMarginBlankNotice } from "../lib/netMarginBlankNotice.js";
 import { priceCrossings } from "../lib/priceResilience.js";
 import {
   DIMENSION_LABELS,
@@ -2572,19 +2573,26 @@ export function GoNoGoResultPage({
             const pair = f2ActualVsFloor(doc, check);
             if (pair) compare = { label: "Net margin", actual: pair.actual, target: pair.floor, unit: pair.unit };
           }
+          const marginNotice = spec.key === "f2" ? netMarginBlankNotice(doc?.f2) : "";
           if (spec.key === "f3") {
             const pair = f3ActualVsCeiling(doc);
             if (pair) compare = { label: "Implied MRP", actual: pair.actual, target: pair.ceiling, unit: pair.unit };
           }
           return (
-            <FilterStatusCard
-              key={spec.key}
-              spec={spec}
-              check={check}
-              narrative={narrative}
-              compare={compare}
-              plain={(t) => displayCopy(t, doc)}
-            />
+            <div key={spec.key}>
+              {marginNotice ? (
+                <p className="net-margin-blank-notice" data-testid="net-margin-blank-notice-output" role="status">
+                  {marginNotice}
+                </p>
+              ) : null}
+              <FilterStatusCard
+                spec={spec}
+                check={check}
+                narrative={narrative}
+                compare={compare}
+                plain={(t) => displayCopy(t, doc)}
+              />
+            </div>
           );
         })}
       </div>
@@ -4884,13 +4892,6 @@ export default function PropositionForm({
                 ) : null}
               </div>
             </div>
-            {filterExpanded ? (
-            <>
-            <InlineFloorFail check={check} />
-            {(spec.key === "f5" || spec.key === "f6") && evidenceF5F6Note ? (
-              <p className="autofill-status">{evidenceF5F6Note}</p>
-            ) : null}
-
             {spec.key === "f2" ? (
               <div className="cost-adjust-row">
                 <button
@@ -4902,7 +4903,18 @@ export default function PropositionForm({
                 >
                   Adjust cost and margin
                 </button>
+                {netMarginBlankNotice(values) || netMarginBlankNotice(doc.f2) ? (
+                  <p className="net-margin-blank-notice" data-testid="net-margin-blank-notice" role="status">
+                    {NET_MARGIN_BLANK_NOTICE}
+                  </p>
+                ) : null}
               </div>
+            ) : null}
+            {filterExpanded ? (
+            <>
+            <InlineFloorFail check={check} />
+            {(spec.key === "f5" || spec.key === "f6") && evidenceF5F6Note ? (
+              <p className="autofill-status">{evidenceF5F6Note}</p>
             ) : null}
             <div className="prop-grid card-grid">
               {(spec.key === "f1"
@@ -5367,6 +5379,7 @@ ${IDEA_IMPORT_CSS}
 .prop-identity-cell select{min-height:44px;max-width:100%;}
 .cost-adjust-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 10px;}
 .cost-adjust-row .ghost{min-height:44px;padding:8px 14px;font-size:calc(13px * var(--ts, 1));}
+.net-margin-blank-notice{margin:0;font-size:calc(13px * var(--ts, 1));line-height:1.4;color:var(--c-watch);max-width:36rem;}
 .prop-identity-cell .prop-field{width:100%;margin:0;}
 .prop-identity-cell .prop-label{min-height:28px;align-items:center;}
 .prop-identity-cell .prop-field-inner{width:100%;}
