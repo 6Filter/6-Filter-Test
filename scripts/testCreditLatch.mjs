@@ -1,11 +1,28 @@
 /**
  * Credit latch: per billing key, 60s TTL, in memory only. Fake Anthropic, no real key.
+ * Sets the env it needs and restores the caller's values so a polluted shell cannot fail it.
  */
+const savedEnv = {
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  CREDIT_LATCH_TTL_MS: process.env.CREDIT_LATCH_TTL_MS,
+  ANTHROPIC_MAX_CONCURRENT: process.env.ANTHROPIC_MAX_CONCURRENT,
+  DATABASE_URL: process.env.DATABASE_URL,
+  PRIMUS_SCHEMA: process.env.PRIMUS_SCHEMA,
+  TEST_DATABASE_URL: process.env.TEST_DATABASE_URL,
+};
+function restoreEnv() {
+  for (const [key, value] of Object.entries(savedEnv)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+}
 process.env.ANTHROPIC_API_KEY = "sk-ant-api03-LATCHKEYAAAAAAAAAAAAAAAA";
 process.env.CREDIT_LATCH_TTL_MS = "80";
+delete process.env.ANTHROPIC_MAX_CONCURRENT;
 delete process.env.DATABASE_URL;
 delete process.env.PRIMUS_SCHEMA;
 delete process.env.TEST_DATABASE_URL;
+process.on("exit", restoreEnv);
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -118,9 +135,13 @@ plan = [{ status: 429, body: { type: "error", error: { message: "rate limited, t
 const r429 = await call("c4");
 check(
   "L4",
-  "a 429 that is not about credit does not latch",
-  !r429.ok && r429.e?.code !== "BILLING_CREDIT_EXHAUSTED" && fetches === 1,
-  `code=${r429.e?.code}`
+  "a 429 that is not about credit is retried (up to the attempts limit) and never latches",
+  r429.ok &&
+    r429.e?.code !== "BILLING_CREDIT_EXHAUSTED" &&
+    fetches >= 2 &&
+    fetches <= 4 &&
+    !isCreditLatched(process.env.ANTHROPIC_API_KEY),
+  `fetches=${fetches} ok=${r429.ok} code=${r429.e?.code}`
 );
 fetches = 0;
 plan = ["ok"];
@@ -153,4 +174,5 @@ check(
 );
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : "\nPASS testCreditLatch");
+restoreEnv();
 process.exitCode = failed ? 1 : 0;
