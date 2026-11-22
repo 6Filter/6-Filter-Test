@@ -2222,7 +2222,7 @@ export function GoNoGoResultPage({
                   </li>
                 ))}
               </ul>
-              {hasF4 ? (
+              {hasF4 && !hideScreeningVerdict ? (
                 <p className="research-unfinished-share">
                   Filter 4 is 7 of the 18 checks (39% of the score)
                 </p>
@@ -2319,6 +2319,7 @@ export function GoNoGoResultPage({
               </div>
             ) : null}
           </div>
+          {hideScreeningVerdict ? null : (
           <div
             className="score-ring"
             style={{ background: `conic-gradient(${arc} ${ringPct}%, var(--c-border) 0)` }}
@@ -2328,8 +2329,22 @@ export function GoNoGoResultPage({
               <strong className="mono gonogo-score">{score.pct}%</strong>
             </div>
           </div>
+          )}
         </section>
 
+        {hideScreeningVerdict ? (
+          <aside className="research-did-not-finish-only" data-testid="incomplete-no-path">
+            <p>
+              Research did not finish
+              {researchGapsForOutput[0]?.reason
+                ? `: ${String(researchGapsForOutput[0].reason).replace(/\.$/, "")}`
+                : researchGapsForOutput[0]?.label
+                  ? `: ${researchGapsForOutput[0].label}`
+                  : ""}
+              . Screen again.
+            </p>
+          </aside>
+        ) : (
         <ErrorBoundary
           fallback={
             <aside className="path-panel">
@@ -2513,6 +2528,7 @@ export function GoNoGoResultPage({
           )}
         </aside>
         </ErrorBoundary>
+        )}
       </div>
 
       <ErrorBoundary

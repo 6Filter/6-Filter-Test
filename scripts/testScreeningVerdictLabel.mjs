@@ -19,8 +19,15 @@ assert.match(formSrc, /RESEARCH_DID_NOT_FINISH_COPY/);
 assert.match(formSrc, /data-testid="screening-verdict-label"/);
 assert.match(formSrc, /data-testid="screening-verdict-hidden"/);
 assert.match(formSrc, /hideScreeningVerdict/);
+assert.match(formSrc, /data-testid="incomplete-no-path"/);
 assert.match(formSrc, /Screen again/);
 assert.match(formSrc, /no score and no screening verdict/);
+assert.ok(
+  /hideScreeningVerdict \? \(\s*<aside className="research-did-not-finish-only"/.test(formSrc) ||
+    formSrc.includes('data-testid="incomplete-no-path"'),
+  "INCOMPLETE hides the closest-path panel"
+);
+assert.match(formSrc, /hideScreeningVerdict \? null : \(\s*\n\s*<div\s+className="score-ring"/);
 
 assert.match(logSrc, /SCREENING_VERDICT_LABEL/);
 assert.match(logSrc, /data-testid="screening-verdict-label"/);

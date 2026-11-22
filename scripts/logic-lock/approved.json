@@ -12,6 +12,9 @@
     "src/PropositionForm.jsx\tchecks",
     "src/PropositionForm.jsx\tof",
     "src/PropositionForm.jsx\t. There is no score and no screening verdict until you Screen again.",
-    "src/PropositionForm.jsx\t: none —"
+    "src/PropositionForm.jsx\t: none —",
+    "src/PropositionForm.jsx\t. Screen again.",
+    "src/PropositionForm.jsx\t: ${}",
+    "src/PropositionForm.jsx\tResearch did not finish"
   ]
 }
