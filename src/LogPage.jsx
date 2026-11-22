@@ -232,8 +232,12 @@ export default function LogPage({
   }, [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter, period]);
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
   const isAdminUser = String(currentUser?.role || "").trim() === "ADMIN";
+  const viewerTitle = String(currentUser?.title || "").trim();
   const showCreatedBy =
     isAdminUser ||
+    viewerTitle === "Admin" ||
+    viewerTitle === "Business Head" ||
+    viewerTitle === "Team Lead" ||
     String(currentUser?.role || "").trim() === "BH FORUM" ||
     viewScope === "team" ||
     viewScope === "all";
