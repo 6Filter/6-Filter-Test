@@ -14,7 +14,9 @@
     "lib/mcpHttp.js",
     "lib/orgRoster.js",
     "lib/propositionsApi.js",
-    "lib/netMarginBlankNotice.js"
+    "lib/netMarginBlankNotice.js",
+    "lib/callAnthropic.js",
+    "lib/creditFailureCopy.js"
   ],
   "words": [
     "src/LogPage.jsx\tINCOMPLETE",
