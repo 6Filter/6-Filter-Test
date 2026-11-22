@@ -3,15 +3,21 @@
  * Uses the restored backup and TEST_DATABASE_URL. Never prints the response text.
  */
 import assert from "node:assert/strict";
-import { createReadStream, readdirSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync } from "node:fs";
 import { createInterface } from "node:readline";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const backupsDir = path.join(root, "data", "backups");
 const testUrl = String(process.env.TEST_DATABASE_URL || "").trim();
 if (!testUrl) {
   console.log("PASS Part 111 mitigation retry skipped — TEST_DATABASE_URL is not set");
+  process.exit(0);
+}
+if (!existsSync(backupsDir)) {
+  console.log("SKIP Part 111 mitigation retry — data/backups is not present");
   process.exit(0);
 }
 
@@ -23,8 +29,7 @@ process.env.DATABASE_URL = suite.url;
 process.env.PRIMUS_SCHEMA = suite.name;
 process.env.PRIMUS_DATA_DIR = path.join(os.tmpdir(), `primus-f4-${process.pid}`);
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const backup = readdirSync(path.join(root, "data", "backups"))
+const backup = readdirSync(backupsDir)
   .filter((name) => /^\d{8}T\d{6}Z$/.test(name))
   .sort()
   .at(-1);

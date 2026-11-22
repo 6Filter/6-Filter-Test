@@ -16,7 +16,24 @@ export function loadRegressionBaseline(scriptsDir) {
       `regressionBaseline.json must list exactly 14 unique names (got ${names.length}).`
     );
   }
-  return { file, doc, names, byName: Object.fromEntries(failures.map((row) => [row.name, row.reason || ""])) };
+  const postgresRows = Array.isArray(doc?.postgresOnlyFailures) ? doc.postgresOnlyFailures : [];
+  const postgresNames = postgresRows.map((row) => String(row?.name || "").trim()).filter(Boolean);
+  if (new Set(postgresNames).size !== postgresNames.length) {
+    throw new Error("regressionBaseline.json postgresOnlyFailures must be unique names.");
+  }
+  for (const name of postgresNames) {
+    if (names.includes(name)) {
+      throw new Error(`postgresOnlyFailures ${name} is already in the clone-14; keep those lists disjoint.`);
+    }
+  }
+  const byName = Object.fromEntries(
+    [...failures, ...postgresRows].map((row) => [row.name, row.reason || ""])
+  );
+  return { file, doc, names, postgresNames, byName };
+}
+
+export function expectedRegressionFailures(baseline, { postgres } = {}) {
+  return postgres ? [...baseline.names, ...baseline.postgresNames] : [...baseline.names];
 }
 
 export function diffRegressionFailures(actualFailed, baselineNames) {
@@ -37,9 +54,10 @@ export function diffRegressionFailures(actualFailed, baselineNames) {
   return { ok, extra, missing, message: lines.join("\n") };
 }
 
-export function formatBaselineMatch(baseline) {
-  const lines = [`${baseline.names.length} known failure(s) matched ${path.basename(baseline.file)}:`];
-  for (const name of baseline.names) {
+export function formatBaselineMatch(baseline, expectedNames) {
+  const names = expectedNames || baseline.names;
+  const lines = [`${names.length} known failure(s) matched ${path.basename(baseline.file)}:`];
+  for (const name of names) {
     const reason = baseline.byName[name] || "";
     lines.push(`  ${name}${reason ? ` — ${reason}` : ""}`);
   }

@@ -8,7 +8,12 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { diffRegressionFailures, formatBaselineMatch, loadRegressionBaseline } from "./regressionBaseline.mjs";
+import {
+  diffRegressionFailures,
+  expectedRegressionFailures,
+  formatBaselineMatch,
+  loadRegressionBaseline,
+} from "./regressionBaseline.mjs";
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(scriptsDir, "..");
@@ -140,12 +145,16 @@ if (dataBefore !== dataAfter) {
   process.exit(1);
 }
 
-const diff = diffRegressionFailures(failedNames, baseline.names);
+const postgres = Boolean(String(process.env.TEST_DATABASE_URL || "").trim());
+const expectedNames = expectedRegressionFailures(baseline, { postgres });
+const diff = diffRegressionFailures(failedNames, expectedNames);
 if (!diff.ok) {
   console.error(`\nFailing set does not match scripts/regressionBaseline.json.`);
   if (diff.message) console.error(diff.message);
   process.exit(1);
 }
 
-console.error(`\n${formatBaselineMatch(baseline)}`);
-console.log(`\n${files.length} test scripts ran. data/ unchanged. failing set matches the 14-name baseline.`);
+console.error(`\n${formatBaselineMatch(baseline, expectedNames)}`);
+console.log(
+  `\n${files.length} test scripts ran. data/ unchanged. failing set matches the ${expectedNames.length}-name baseline${postgres ? " (clone-14 plus Postgres-only owner fixtures)" : " (fresh clone, no Postgres)"}.`
+);

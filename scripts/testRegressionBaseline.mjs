@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { diffRegressionFailures, loadRegressionBaseline } from "./regressionBaseline.mjs";
+import { diffRegressionFailures, expectedRegressionFailures, loadRegressionBaseline } from "./regressionBaseline.mjs";
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const baseline = loadRegressionBaseline(scriptsDir);
@@ -45,6 +45,29 @@ check(
 
 assert.equal(typeof baseline.byName[baseline.names[0]], "string");
 check("G5", "every baseline row carries a one-line reason", baseline.names.every((n) => String(baseline.byName[n] || "").length > 8));
+
+const pgExpected = expectedRegressionFailures(baseline, { postgres: true });
+check(
+  "G6",
+  "the Postgres half keeps the clone-14 and only the documented Postgres-only extras",
+  pgExpected.length === baseline.names.length + baseline.postgresNames.length &&
+    baseline.postgresNames.includes("testTeamAndFieldAccess.mjs") &&
+    !baseline.names.includes("testTeamAndFieldAccess.mjs")
+);
+
+const pgExtra = diffRegressionFailures([...pgExpected, "testDeliberateFail.mjs"], pgExpected);
+check(
+  "G7",
+  "NEGATIVE on the Postgres half: an extra failing name is still refused",
+  !pgExtra.ok && pgExtra.extra.length === 1 && pgExtra.extra[0] === "testDeliberateFail.mjs"
+);
+
+const pgSilent = diffRegressionFailures(pgExpected.filter((n) => n !== "testTeamAndFieldAccess.mjs"), pgExpected);
+check(
+  "G8",
+  "a Postgres-only baseline row that starts passing silently is a refused push",
+  !pgSilent.ok && pgSilent.missing.length === 1 && pgSilent.missing[0] === "testTeamAndFieldAccess.mjs"
+);
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : "\nPASS regression baseline gate (including the negative extra-failure case)");
 process.exitCode = failed ? 1 : 0;

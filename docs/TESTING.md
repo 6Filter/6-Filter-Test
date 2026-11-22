@@ -18,7 +18,7 @@ git config core.hooksPath .githooks
 
 `.githooks/pre-push` runs `scripts/ciDryRun.mjs` (fresh clone, `npm ci`, `npm run test:regression`) and then `npm run test:regression` again with `REQUIRE_POSTGRES_TESTS=1`. In that mode the skip line is a failure and the push is refused.
 
-The fresh-clone half must fail with **exactly** the 14 names in `scripts/regressionBaseline.json` (13 owner scoring fixtures plus `testPart70Health`, whose keep-alive workflow file cannot live in the clone because the GitHub token has no `workflow` scope). A new failure, a listed test that starts passing, or a grown set is a refused push. Re-pin that file in its own reviewable commit when the set honestly changes. `scripts/testRegressionBaseline.mjs` checks the gate, including a negative case (an extra failing name is refused).
+The fresh-clone half must fail with **exactly** the 14 names in `scripts/regressionBaseline.json` → `failures` (13 owner scoring fixtures plus `testPart70Health`, whose keep-alive workflow file cannot live in the clone because the GitHub token has no `workflow` scope). The hook's Postgres half (`REQUIRE_POSTGRES_TESTS=1` plus `TEST_DATABASE_URL`) must still fail those 14, and may fail only the extra names in `postgresOnlyFailures` (today: `testTeamAndFieldAccess`, which skips on a clone so it cannot live in the 14). A new failure, a listed test that starts passing, or a grown set is a refused push. Re-pin that file in its own reviewable commit when the set honestly changes. `scripts/testRegressionBaseline.mjs` checks the gate, including a negative case (an extra failing name is refused).
 
 Start the scratch database with one command. It binds to `127.0.0.1:5433` and ignores `DATABASE_URL`:
 

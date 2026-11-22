@@ -58,5 +58,11 @@
       "name": "testPart70Health.mjs",
       "reason": "Reads .github/workflows/keep-alive.yml, which is not in a fresh clone: the GitHub token has no workflow scope, so that file cannot be pushed."
     }
+  ],
+  "postgresOnlyFailures": [
+    {
+      "name": "testTeamAndFieldAccess.mjs",
+      "reason": "Owner fixture expects firstForbiddenField('techShiftRisk') / a 403; Part 140 ignores server-owned keys. Skips on a fresh clone (no TEST_DATABASE_URL), so it is not in the clone-14. The hook's Postgres half still refuses any other extra name, and refuses a silent pass of this row."
+    }
   ]
 }
