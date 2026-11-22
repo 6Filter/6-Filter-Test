@@ -1,0 +1,9 @@
+{
+  "files": [
+    "lib/db.js",
+    "lib/healthApi.js",
+    "lib/propositionAiFirstPass.js",
+    "lib/screeningsInFlight.js"
+  ],
+  "words": []
+}
