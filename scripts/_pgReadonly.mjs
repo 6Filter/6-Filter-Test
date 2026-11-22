@@ -1,0 +1,12 @@
+import pg from "pg";
+const c = new pg.Client({ connectionString: "postgresql://postgres:postgres@127.0.0.1:5433/postgres" });
+await c.connect();
+const show = await c.query("SHOW default_transaction_read_only");
+console.log("session", show.rows[0].default_transaction_read_only);
+const settings = await c.query("SELECT setconfig FROM pg_db_role_setting");
+console.log("db_role_setting", JSON.stringify(settings.rows));
+await c.query("SET default_transaction_read_only = off");
+await c.query("CREATE SCHEMA IF NOT EXISTS vdc_write_probe");
+await c.query("DROP SCHEMA vdc_write_probe CASCADE");
+console.log("write ok");
+await c.end();

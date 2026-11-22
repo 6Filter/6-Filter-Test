@@ -1,0 +1,22 @@
+# REFERENCE ONLY: the one-line reorder that lets a brand-new empty database start. Passes testFreshDatabaseStarts.mjs (5 checks); the build as delivered fails it (column "go_nogo_json" does not exist).
+--- a/lib/db.js	2026-11-19 04:39:32.285250810 +0000
++++ b/lib/db.js
+@@ -1152,15 +1152,15 @@
+   // Part 148 D120 — date of the first successful Submit. Additive, nullable, set once; the backfill only touches
+   // rows that have never had a value (so re-running initDb never changes a date).
+   await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS first_submitted_at TIMESTAMPTZ`);
++  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS research_findings_json TEXT`);
++  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS proof_json TEXT`);
++  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS go_nogo_json TEXT`);
+   await query(
+     `UPDATE propositions
+         SET first_submitted_at = COALESCE(research_run_at, created_at)
+       WHERE first_submitted_at IS NULL
+         AND (research_run_at IS NOT NULL OR (go_nogo_json IS NOT NULL AND go_nogo_json <> ''))`
+   );
+-  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS research_findings_json TEXT`);
+-  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS proof_json TEXT`);
+-  await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS go_nogo_json TEXT`);
+   await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS research_duration_ms INTEGER`);
+   await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS submitter_name TEXT`);
+   await query(`ALTER TABLE propositions ADD COLUMN IF NOT EXISTS submitter_department TEXT`);
