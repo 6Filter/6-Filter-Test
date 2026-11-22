@@ -38,6 +38,7 @@ import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
+import { RESEARCH_DID_NOT_FINISH_COPY, SCREENING_VERDICT_LABEL } from "../lib/researchFailureCopy.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
 import { inRange, istParts } from "../lib/istTime.js";
@@ -649,6 +650,7 @@ export default function LogPage({
                 . Incomplete ideas are not included.
               </p>
             </article>
+            <p className="mono log-stat-kicker" data-testid="screening-verdict-label">{SCREENING_VERDICT_LABEL}</p>
             <article className="log-stat-card" data-testid="dash-go">
               <div className="mono log-stat-kicker">Verdict · GO</div>
               <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.GO}</div>
@@ -1181,21 +1183,16 @@ export default function LogPage({
                                       : "used"
                                 }`}
                                 title={
-                                  evalPill.state === "not-evaluated"
-                                    ? "Research steps not finished — Evaluate to score"
-                                    : evalPill.state === "incomplete"
-                                      ? "Some evaluation steps still missing"
-                                      : "Stored gate verdict"
+                                  evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
+                                    ? RESEARCH_DID_NOT_FINISH_COPY
+                                    : SCREENING_VERDICT_LABEL
                                 }
                               >
-                                {evalPill.label}
-                                {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
-                                {lockedVerdict === "INCOMPLETE" &&
-                                Number.isFinite(Number(h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done))
-                                  ? ` · ${h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done} of ${
-                                      h.goNoGo?.score?.total ?? h.goNoGo?.output?.score?.total ?? 15
-                                    }`
-                                  : ""}
+                                {evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
+                                  ? RESEARCH_DID_NOT_FINISH_COPY
+                                  : `${SCREENING_VERDICT_LABEL}: ${evalPill.label}${
+                                      Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""
+                                    }`}
                               </span>
                             ) : null}
                             {evalPill.legacy ? (

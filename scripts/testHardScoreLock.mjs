@@ -232,8 +232,8 @@ assert.equal(
 
 const logSrc = readFileSync(new URL("../src/LogPage.jsx", import.meta.url), "utf8");
 assert.match(logSrc, /lockedVerdict/);
-assert.match(logSrc, /goNoGo\?\.score\?\.done|goNoGo\?\.output\?\.score/);
-assert.match(logSrc, /Stored gate verdict/);
+assert.match(logSrc, /SCREENING_VERDICT_LABEL/);
+assert.match(logSrc, /lockedPct/);
 
 const stabilitySrc = readFileSync(new URL("../lib/analysisStability.js", import.meta.url), "utf8");
 assert.match(stabilitySrc, /export function hardLockGoNoGo/);

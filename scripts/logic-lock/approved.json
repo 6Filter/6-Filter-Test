@@ -1,0 +1,20 @@
+{
+  "files": ["lib/logExport.js", "lib/researchFailureCopy.js"],
+  "words": [
+    "src/LogPage.jsx\tINCOMPLETE",
+    "src/LogPage.jsx\tResearch steps not finished — Evaluate to score",
+    "src/LogPage.jsx\tSome evaluation steps still missing",
+    "src/LogPage.jsx\tStored gate verdict",
+    "src/LogPage.jsx\t· ${} of ${}",
+    "src/LogPage.jsx\t${}: ${}${}",
+    "src/LogPage.jsx\tincomplete",
+    "src/LogPage.jsx\tnot-evaluated",
+    "src/PropositionForm.jsx\tchecks",
+    "src/PropositionForm.jsx\tof",
+    "src/PropositionForm.jsx\t. There is no score and no screening verdict until you Screen again.",
+    "src/PropositionForm.jsx\t: none —",
+    "src/PropositionForm.jsx\t. Screen again.",
+    "src/PropositionForm.jsx\t: ${}",
+    "src/PropositionForm.jsx\tResearch did not finish"
+  ]
+}
