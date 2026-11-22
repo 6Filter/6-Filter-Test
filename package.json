@@ -15,7 +15,8 @@
     "test:regression": "node scripts/checkNoDuplicateThresholds.mjs && node scripts/scanCommittedSecrets.mjs && npm run build && node scripts/checkClientBundle.mjs && node scripts/run-all-tests.mjs && node scripts/testPostgresNoClobber.mjs",
     "test:postgres": "node scripts/testPostgresNoClobber.mjs",
     "scratch-postgres": "node scripts/startScratchPostgres.mjs",
-    "verify:all": "node scripts/verifyAll.mjs"
+    "verify:all": "node scripts/verifyAll.mjs",
+    "install:prod": "npm ci --include=dev --omit=optional"
   },
   "engines": {
     "node": "22.x"
@@ -36,14 +37,16 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.1",
-    "@stryker-mutator/core": "^10.1.1",
     "@vitejs/plugin-react": "^4.3.1",
-    "axe-core": "^4.14.1",
-    "c8": "^12.0.0",
-    "fast-check": "^4.10.3",
     "jsdom": "29.1.1",
     "vite": "^5.3.4"
+  },
+  "optionalDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@stryker-mutator/core": "^10.1.1",
+    "axe-core": "^4.14.1",
+    "c8": "^12.0.0",
+    "fast-check": "^4.10.3"
   },
   "overrides": {
     "uuid": "^11.1.0"

@@ -1,12 +1,15 @@
 # Live database is created and upgraded by hand.
 # This file must not create or repoint a database — DATABASE_URL is set in the dashboard (sync: false).
+# Web plan re-read 2026-11-22 from Render CLI (service id only; no environment values): 0.5c-512mb.
+# install:prod / --omit=optional skips Playwright, Stryker, c8, axe and fast-check.
+# healthCheckPath is still / (it returns 200). /api/health is a stronger check; switch on the next named deploy if the owner agrees.
 services:
   - type: web
     name: ck-6-filter-test
     runtime: node
-    plan: free
+    plan: 0.5c-512mb
     region: oregon
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm ci --include=dev --omit=optional && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
@@ -49,4 +52,10 @@ services:
       - key: DEPT_API_KEY_NPD
         sync: false
       - key: DEPARTMENT_KEY_ENCRYPTION_SECRET
+        sync: false
+      - key: BACKUP_TOKEN
+        sync: false
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+      - key: OPS_ALERT_WEBHOOK_URL
         sync: false

@@ -1,8 +1,17 @@
 node_modules
 dist
 .env
+.env.*
 .env.local
 .env*.local
+*.dump
+*.dump.enc
+*.dump.aes
+*-database-url.txt
+scripts/_*
+.cursor/
+docs/RENDER_ENV_CHANGES.md
+docs/GITHUB_RENDER_CHANGES.md
 .department-passwords.local
 data/
 *BusinessHeads*.csv
