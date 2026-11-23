@@ -133,9 +133,12 @@ async function fetchPropositionById(id, { signal } = {}) {
   return attachAdvisory(data);
 }
 
+/** Submit/Evaluate must outlast the model queue (240s) plus Filter 3 research. */
+const PROPOSITION_SAVE_TIMEOUT_MS = 600000;
+
 async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false, confirmMissingSteps = false } = {}) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 180000);
+  const timer = setTimeout(() => ctrl.abort(), PROPOSITION_SAVE_TIMEOUT_MS);
   try {
     const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}`, {
       method: "PUT",
@@ -171,12 +174,15 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       failedProvider: data.failedProvider || null,
       failedProviderLabel: data.failedProviderLabel || null,
       researchRan: Boolean(data.researchRan),
+      needsConfirm: Boolean(data.needsConfirm),
       forked: Boolean(data.forked),
       forkedFrom: data.forkedFrom || null,
     };
   } catch (e) {
     if (e?.name === "AbortError") {
-      throw new Error("Submit timed out while running research. Try a shorter description, or Submit again.");
+      throw new Error(
+        "Research is still running on the server. Wait a minute, then click Evaluate again to seal the score."
+      );
     }
     throw e;
   } finally {

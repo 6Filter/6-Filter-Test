@@ -1465,7 +1465,8 @@ function formShowsCheckLabel(label) {
 function evaluationStepFilterKey(step) {
   const s = String(step || "").trim();
   if (s === "filter4") return "f4";
-  if (s === "cogsGst" || s === "priceEvents") return "f2";
+  if (s === "priceEvents") return "f3";
+  if (s === "cogsGst") return "f2";
   return "f1";
 }
 
@@ -1844,6 +1845,7 @@ function EvaluationPendingPage({
   onConfirmField,
   onEditField,
   progressLabel = "",
+  error = "",
 }) {
   const heading =
     evaluationState === "incomplete" ? "Evaluation incomplete" : "Not evaluated yet";
@@ -1878,6 +1880,11 @@ function EvaluationPendingPage({
             filter cards are shown.
           </p>
           {progress ? <p className="gonogo-blocked-note">{progress}</p> : null}
+          {error ? (
+            <p className="gonogo-blocked-note" role="alert" data-testid="evaluate-error">
+              {error}
+            </p>
+          ) : null}
           {formGaps.length ? (
             <div className="missing-inputs-block" role="status">
               <h3>Values still to enter</h3>
@@ -3748,10 +3755,21 @@ export default function PropositionForm({
         setLocalError(data.error || "Could not retry that filter.");
         return;
       }
-      if (data.proposition) setDoc((prev) => ({ ...prev, ...data.proposition }));
-      if (data.advisoryChecks) {
-        setAdvisoryChecks(data.advisoryChecks);
-        setSummaryChecks(data.advisoryChecks);
+      if (data.proposition) {
+        const merged = {
+          ...data.proposition,
+          evaluationState: data.evaluationState ?? data.proposition.evaluationState,
+          evaluationMissing: data.evaluationMissing ?? data.proposition.evaluationMissing,
+          goNoGo: data.goNoGo !== undefined ? data.goNoGo : data.proposition.goNoGo,
+          output: data.output ?? data.proposition.output,
+          sealedChecks: data.sealedChecks ?? data.proposition.sealedChecks,
+        };
+        setDoc((prev) => ({ ...prev, ...merged }));
+        if (merged.goNoGo) setGoNoGo(merged.goNoGo);
+      }
+      if (data.advisoryChecks || data.sealedChecks) {
+        setAdvisoryChecks(data.advisoryChecks || data.sealedChecks);
+        setSummaryChecks(data.advisoryChecks || data.sealedChecks);
       }
     } catch (e) {
       setLocalError(e.message || "Could not retry that filter.");
@@ -4207,15 +4225,34 @@ export default function PropositionForm({
   }
 
   async function handleSubmit(providerOverride, submitOpts = {}) {
-    if (saving || f3Filling || f4Reassessing || marginElasticityLoading) return;
+    const fromPending = Boolean(submitOpts.fromPending || submitOpts.skipConfirm);
+    if (saving || f3Filling || f4Reassessing || marginElasticityLoading) {
+      if (fromPending) setLocalError("Evaluate is already running.");
+      return;
+    }
+    // Pending-page Evaluate runs remaining research; do not treat empty GST/research boxes as a silent block.
     // Button stays pressable when Required boxes are empty so the press can show field errors.
-    if (!hasIdentity || !canSubmit) {
+    if (!hasIdentity || inputBlocking || (!fromPending && !canSubmit)) {
       setPressedBlocked(true);
       setSubmitMsg("");
       setSubmitFailed(false);
+      const missing = requiredEmpty(doc);
+      const pendingMsg = !hasIdentity
+        ? "Choose the team with Change before Evaluate."
+        : inputBlocking
+          ? liveInputReview.fields
+              .filter((f) => f.status === "invalid")
+              .map((f) => f.message)
+              .join(" ") || "Fix invalid inputs before Evaluate."
+          : progress.missingFieldLabels.length
+            ? `Enter required values before Evaluate: ${progress.missingFieldLabels.join(", ")}.`
+            : "Enter all required values before Evaluate.";
+      if (fromPending) {
+        setLocalError(pendingMsg);
+        return;
+      }
       setWhyBlockedOpen(true);
       focusFirstBlockingBox();
-      const missing = requiredEmpty(doc);
       if (missing.some((item) => String(item.path).startsWith("f2."))) {
         setFilterOpen((prev) => ({ ...prev, f2: true }));
       }
@@ -4251,7 +4288,8 @@ export default function PropositionForm({
     const repairPlan = planResearch(doc);
     const repairing =
       repairPlan.researchState === "incomplete" && !ideaChanged && !asNew && !submitOpts.forceResearch;
-    if (repairing && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
+    // Evaluate on the pending page is the confirmation. A native confirm here looked like a no-op when cancelled or blocked.
+    if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
     setJustSubmitted(true);
     setSummaryStale(false);
     const persistDuration = Boolean(
@@ -4270,11 +4308,21 @@ export default function PropositionForm({
     result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch),
       asNew,
-      confirmMissingSteps: repairing,
+      confirmMissingSteps: repairing || fromPending,
     });
+    if (result?.needsConfirm && fromPending) {
+      result = await onSave(doc, provider, {
+        forceResearch: Boolean(submitOpts.forceResearch),
+        asNew,
+        confirmMissingSteps: true,
+      });
+    }
     if (!result?.proposition) {
       // onSave returns null on failure and has already set the error; say so in the Submit bar too.
       setSubmitFailed(true);
+      if (fromPending) {
+        setLocalError("Evaluate did not finish. Try again.");
+      }
       return;
     }
     savedOk = true;
@@ -4397,8 +4445,9 @@ export default function PropositionForm({
             category={formCategoryLabel(doc)}
             saving={saving || readingGoNoGo || Boolean(refreshingField)}
             progressLabel={evalProgressLabel}
+            error={error || localError || ""}
             onBack={() => setCurrentView("propositionForm")}
-            onEvaluate={() => handleSubmit()}
+            onEvaluate={() => handleSubmit(undefined, { fromPending: true, skipConfirm: true })}
             onRetryStep={(entry) => handleRetryFilter(evaluationStepFilterKey(entry?.step))}
             onConfirmField={(fieldPath) => {
               const [filterKey, fieldKey] = String(fieldPath || "").split(".");
