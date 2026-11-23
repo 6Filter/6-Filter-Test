@@ -21,13 +21,18 @@ assert.match(formSrc, /data-testid="screening-verdict-hidden"/);
 assert.match(formSrc, /hideScreeningVerdict/);
 assert.match(formSrc, /data-testid="incomplete-no-path"/);
 assert.match(formSrc, /Screen again/);
-assert.match(formSrc, /no score and no screening verdict/);
+assert.match(formSrc, /The verdict and score below use the values entered|no score and no screening verdict/);
 assert.ok(
   /hideScreeningVerdict \? \(\s*<aside className="research-did-not-finish-only"/.test(formSrc) ||
     formSrc.includes('data-testid="incomplete-no-path"'),
-  "INCOMPLETE hides the closest-path panel"
+  "INCOMPLETE hides the closest-path panel when there is still no band"
 );
 assert.match(formSrc, /hideScreeningVerdict \? null : \(\s*\n\s*<div\s+className="score-ring"/);
+assert.match(formSrc, /forceResearch: true/);
+assert.match(
+  readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8"),
+  /finishResearchForSeal/
+);
 
 assert.match(logSrc, /SCREENING_VERDICT_LABEL/);
 assert.match(logSrc, /data-testid="screening-verdict-label"/);
