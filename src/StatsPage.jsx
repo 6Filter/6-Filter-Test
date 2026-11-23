@@ -24,6 +24,7 @@ import {
   dashboardStats,
 } from "../lib/logInsights.js";
 import { InsightsList, MonthTrendChart, SimpleBars, StackedBars, SummaryTable, topWithOthers } from "./LogCharts.jsx";
+import { LIST_PROPOSITIONS_CAP } from "../lib/lockedConstants.js";
 
 function applyViewScope(rows, viewScope, myEmail, myTeam) {
   const ownerOf = (row) =>
@@ -93,13 +94,40 @@ export default function StatsPage({
   }, [headerSlot]);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
+  const [fetchedRows, setFetchedRows] = useState(null);
+  const [fetchError, setFetchError] = useState("");
+  const [fetching, setFetching] = useState(false);
+  const injectedRows = Array.isArray(rows) && rows.length > 0;
+
+  async function loadOrganisationStats() {
+    setFetching(true);
+    setFetchError("");
+    try {
+      const res = await fetch(`/api/stats/ideas?limit=${LIST_PROPOSITIONS_CAP}`, { credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not load stats.");
+      setFetchedRows(Array.isArray(data.propositions) ? data.propositions : []);
+    } catch (e) {
+      setFetchError(e.message || "Could not load stats.");
+      setFetchedRows([]);
+    } finally {
+      setFetching(false);
+    }
+  }
+
+  useEffect(() => {
+    if (injectedRows) return undefined;
+    loadOrganisationStats();
+    return undefined;
+  }, [injectedRows]);
 
   const unlockedDepartment =
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
-  const logRows = useMemo(() => rows.filter((row) => !row.probe), [rows]);
+  const sourceRows = injectedRows ? rows : fetchedRows || [];
+  const logRows = useMemo(() => sourceRows.filter((row) => !row.probe), [sourceRows]);
   const dash = useMemo(() => dashboardStats(logRows), [logRows]);
   const dashMonths = useMemo(() => monthlyTrend(logRows), [logRows]);
-  const unavailable = databaseUnavailableMessage(error);
+  const unavailable = databaseUnavailableMessage(error || fetchError);
   const period = useMemo(
     () => periodRange(periodId, Date.now(), { from: customFrom, to: customTo }),
     [periodId, customFrom, customTo]
@@ -300,7 +328,7 @@ export default function StatsPage({
       style={pageZoom === 1 ? undefined : { zoom: pageZoom }}
     >
       {headerSlot ? createPortal(textSizeControl, headerSlot) : textSizeControl}
-      {loading ? <StatsLoadingOverlay label="Loading stats…" /> : null}
+      {loading || (fetching && !injectedRows) ? <StatsLoadingOverlay label="Loading stats…" /> : null}
 
       <header className="stats-head">
         <div>
@@ -308,7 +336,8 @@ export default function StatsPage({
           <h1 className="stats-title">Stats</h1>
           <p className="log-sub">
             Counts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO.
-            Drafts and incomplete ideas are left out of those figures.
+            Drafts and incomplete ideas are left out of those figures. Everyone in the organisation sees these
+            figures.
           </p>
         </div>
         <div className="stats-head-actions">
@@ -324,8 +353,16 @@ export default function StatsPage({
           <button type="button" className="log-btn" onClick={handleSwitchDepartment}>
             Switch department
           </button>
-          <button type="button" className="log-btn" onClick={onRefresh} disabled={loading}>
-            {loading ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
+          <button
+            type="button"
+            className="log-btn"
+            onClick={() => {
+              if (injectedRows) onRefresh?.();
+              else loadOrganisationStats();
+            }}
+            disabled={loading || fetching}
+          >
+            {loading || fetching ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
             Refresh
           </button>
         </div>

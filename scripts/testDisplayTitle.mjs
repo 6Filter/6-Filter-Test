@@ -2,14 +2,19 @@
  * Display titles are labels only. Stored roles stay BM / BH FORUM / ADMIN / CMI / …
  */
 import assert from "node:assert/strict";
-import { displayTitle, storedRoleLabel, DISPLAY_TITLES } from "../lib/displayTitle.js";
+import { assignedLogView, displayTitle, storedRoleLabel, DISPLAY_TITLES } from "../lib/displayTitle.js";
 import { ownerLabel, usuallyProvidedByHint } from "../lib/fieldOwnership.js";
 
 assert.deepEqual([...DISPLAY_TITLES], ["Admin", "Business Head", "Team Lead", "Individual contributor"]);
 assert.equal(displayTitle({ role: "ADMIN" }), "Admin");
 assert.equal(displayTitle({ role: "BH FORUM" }), "Business Head");
 assert.equal(displayTitle({ role: "BM", orgRole: "TEAM_LEAD" }), "Team Lead");
+assert.equal(displayTitle({ role: "BM", orgRole: "BUSINESS_HEAD" }), "Business Head");
 assert.equal(displayTitle({ role: "BM" }), "Individual contributor");
+assert.equal(assignedLogView({ role: "BM" }), "mine");
+assert.equal(assignedLogView({ role: "BM", orgRole: "TEAM_LEAD", title: "Team Lead" }), "team");
+assert.equal(assignedLogView({ role: "BH FORUM" }), "all");
+assert.equal(assignedLogView({ role: "ADMIN" }), "all");
 assert.equal(displayTitle({ role: "BM" }, { mappedBusinessHead: true }), "Business Head");
 assert.equal(displayTitle({ role: "CMI" }), "Individual contributor");
 assert.equal(storedRoleLabel("ADMIN"), "Admin");

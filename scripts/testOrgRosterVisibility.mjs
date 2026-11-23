@@ -117,6 +117,7 @@ await replaceBusinessHeadTeams(
   [
     { email: "bh.rd@cavinkare.com", team: "R&D" },
     { email: "bh.cc@cavinkare.com", team: "CC" },
+    { email: "bh.sn@cavinkare.com", team: "SN" },
   ],
   { actorUserId: "test" }
 );
@@ -125,12 +126,15 @@ const csv = [
   "email,name,team,org_role,reports_to_email",
   "bh.rd@cavinkare.com,BH R&D,R&D,BUSINESS_HEAD,",
   "bh.cc@cavinkare.com,BH CC,CC,BUSINESS_HEAD,",
+  "bh.sn@cavinkare.com,BH SN,SN,BUSINESS_HEAD,",
   "lead.a@cavinkare.com,Lead A,R&D,TEAM_LEAD,bh.rd@cavinkare.com",
   "lead.b@cavinkare.com,Lead B,CC,TEAM_LEAD,bh.cc@cavinkare.com",
+  "lead.sn@cavinkare.com,Lead SN,SN,TEAM_LEAD,bh.sn@cavinkare.com",
   "m.a1@cavinkare.com,Member A1,R&D,MEMBER,lead.a@cavinkare.com",
   "m.a2@cavinkare.com,Member A2,R&D,MEMBER,lead.a@cavinkare.com",
   "m.b1@cavinkare.com,Member B1,CC,MEMBER,lead.b@cavinkare.com",
   "m.b2@cavinkare.com,Member B2,CC,MEMBER,lead.b@cavinkare.com",
+  "m.sn@cavinkare.com,Member SN,SN,MEMBER,lead.sn@cavinkare.com",
 ].join("\n");
 
 const preview = await previewOrgRosterImport(csv);
@@ -154,6 +158,9 @@ for (const email of [
   "m.a2@cavinkare.com",
   "m.b1@cavinkare.com",
   "m.b2@cavinkare.com",
+  "bh.sn@cavinkare.com",
+  "lead.sn@cavinkare.com",
+  "m.sn@cavinkare.com",
   "admin@cavinkare.com",
 ]) {
   const role = email.startsWith("bh.") ? "BH FORUM" : email.startsWith("admin") ? "ADMIN" : "BM";
@@ -173,6 +180,9 @@ for (const [email, team] of [
   ["m.a2@cavinkare.com", "R&D"],
   ["m.b1@cavinkare.com", "CC"],
   ["m.b2@cavinkare.com", "CC"],
+  ["bh.sn@cavinkare.com", "SN"],
+  ["lead.sn@cavinkare.com", "SN"],
+  ["m.sn@cavinkare.com", "SN"],
 ]) {
   await setUserTeam(users[email].id, team);
   const synced = await syncUserTeamFromRoster(await getUserByEmail(email));
@@ -193,6 +203,7 @@ const ideaA1 = await idea("m.a1@cavinkare.com", "R&D");
 const ideaA2 = await idea("m.a2@cavinkare.com", "R&D");
 const ideaB1 = await idea("m.b1@cavinkare.com", "CC");
 const ideaA1OnCc = await idea("m.a1@cavinkare.com", "CC"); // member picks other team
+const ideaSn = await idea("m.sn@cavinkare.com", "SN");
 
 const as = async (email) => {
   const u = await getUserByEmail(email);
@@ -218,6 +229,11 @@ assert.equal(await sees("bh.rd@cavinkare.com", ideaA1OnCc), true, "D1 home-team 
 assert.equal(await sees("bh.cc@cavinkare.com", ideaA1OnCc), true, "idea-team BH sees it");
 assert.equal(await sees("bh.cc@cavinkare.com", ideaA1), false);
 assert.equal(await sees("admin@cavinkare.com", ideaB1), true);
+assert.equal(await sees("bh.sn@cavinkare.com", ideaSn), true, "roster BUSINESS_HEAD sees their division without mapping");
+assert.equal(await sees("bh.sn@cavinkare.com", ideaA1), false);
+assert.equal(await sees("lead.sn@cavinkare.com", ideaSn), true);
+assert.equal(await sees("lead.sn@cavinkare.com", ideaA1), false);
+assert.equal(await sees("m.a1@cavinkare.com", ideaSn), false);
 
 const listForLeadA = await filterAccessibleIdeas(await as("lead.a@cavinkare.com"), [
   ideaA1,

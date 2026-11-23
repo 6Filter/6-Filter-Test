@@ -18,6 +18,7 @@
     "lib/mcpHttp.js",
     "lib/netMarginBlankNotice.js",
     "lib/orgRoster.js",
+    "lib/propositionAccess.js",
     "lib/propositionsApi.js",
     "lib/researchFailureCopy.js",
     "lib/slackAuth.js"
@@ -292,6 +293,9 @@
     "src/StatsPage.jsx\tthis-fy",
     "src/StatsPage.jsx\ttrue",
     "src/StatsPage.jsx\tup",
-    "src/StatsPage.jsx\t✕"
+    "src/StatsPage.jsx\t✕",
+    "src/StatsPage.jsx\t/api/stats/ideas?limit=${}",
+    "src/StatsPage.jsx\tCould not load stats.",
+    "src/StatsPage.jsx\tCounts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO. Drafts and incomplete ideas are left out of those figures. Everyone in the organisation sees these figures."
   ]
 }

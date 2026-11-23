@@ -1718,10 +1718,6 @@ export default function App() {
 
       {view === "stats" && (
         <StatsPage
-          rows={logHistory}
-          loading={logLoading}
-          error={logError}
-          onRefresh={loadLogRows}
           unlockedDepartment={teamSession?.department}
           onSwitchDepartment={lockTeamSession}
           currentUser={sessionUser}

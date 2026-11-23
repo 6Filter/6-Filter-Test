@@ -40,6 +40,7 @@ import { RESEARCH_DID_NOT_FINISH_COPY, SCREENING_VERDICT_LABEL } from "../lib/re
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
 import { LOG_CHART_CSS } from "./logChartsCss.js";
+import { assignedLogView, logViewUsesAssignedScope } from "../lib/displayTitle.js";
 
 const STATUS_PILLS = [
   { id: "SUBMITTED", label: "Ideas submitted" },
@@ -59,14 +60,24 @@ const CHIP = {
 };
 
 /** Mine / My team's / All I can see — shared by the list and the analytics so their numbers always agree. */
-function applyViewScope(rows, viewScope, myEmail, myTeam) {
+function applyViewScope(rows, viewScope, currentUser) {
+  const myEmail = String(currentUser?.email || "")
+    .trim()
+    .toLowerCase();
   const ownerOf = (row) =>
     String(row.createdByEmail || row.created_by_email || "")
       .trim()
       .toLowerCase();
   if (viewScope === "mine" && myEmail) return rows.filter((row) => ownerOf(row) && ownerOf(row) === myEmail);
-  if (viewScope === "team" && myTeam) {
-    return rows.filter((row) => (ownerOf(row) && ownerOf(row) === myEmail) || rowTeam(row) === myTeam);
+  if (viewScope === "team") {
+    if (logViewUsesAssignedScope(currentUser)) return rows;
+    const myTeams = [currentUser?.team, currentUser?.rosterTeam]
+      .map((t) => String(t || "").trim())
+      .filter(Boolean);
+    if (!myEmail && !myTeams.length) return rows;
+    return rows.filter(
+      (row) => (ownerOf(row) && ownerOf(row) === myEmail) || myTeams.includes(rowTeam(row))
+    );
   }
   return rows;
 }
@@ -122,7 +133,8 @@ export default function LogPage({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [viewScope, setViewScope] = useState("all"); // mine | team | all
+  const [viewScope, setViewScope] = useState(() => assignedLogView(currentUser)); // mine | team | all
+  const [viewChosen, setViewChosen] = useState(false);
   const [personFilter, setPersonFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
@@ -199,14 +211,15 @@ export default function LogPage({
     String(currentUser?.role || "").trim() === "BH FORUM" ||
     viewScope === "team" ||
     viewScope === "all";
-  const myEmail = String(currentUser?.email || "")
-    .trim()
-    .toLowerCase();
-  const myTeam = String(currentUser?.team || "").trim();
+
+  useEffect(() => {
+    if (viewChosen) return;
+    setViewScope(assignedLogView(currentUser));
+  }, [currentUser, viewChosen]);
 
   const viewRows = useMemo(
-    () => applyViewScope(scopedRows, viewScope, myEmail, myTeam),
-    [scopedRows, viewScope, myEmail, myTeam]
+    () => applyViewScope(scopedRows, viewScope, currentUser),
+    [scopedRows, viewScope, currentUser]
   );
   const filteredRows = useMemo(() => {
     const rowsForView = viewRows;
@@ -747,7 +760,10 @@ export default function LogPage({
               <span className="sr-only">View</span>
               <select
                 value={viewScope}
-                onChange={(e) => setViewScope(e.target.value)}
+                onChange={(e) => {
+                  setViewChosen(true);
+                  setViewScope(e.target.value);
+                }}
                 aria-label="View"
               >
                 <option value="mine">Mine</option>
