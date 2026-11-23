@@ -17,6 +17,8 @@ check("the marker does not change which idea or page the address means", () => {
   assert.deepEqual(parseAppLocation("/propositions/abc-1"), { kind: "proposition", ideaId: "abc-1" });
   assert.equal(pathForView("form", "abc-1"), "/propositions/abc-1");
   assert.equal(pathForView("log"), "/log");
+  assert.equal(pathForView("stats"), "/stats");
+  assert.deepEqual(parseAppLocation("/stats"), { kind: "stats", ideaId: "" });
 });
 const app = readFileSync("src/App.jsx", "utf8");
 const form = readFileSync("src/PropositionForm.jsx", "utf8");

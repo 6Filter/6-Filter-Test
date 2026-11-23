@@ -190,5 +190,12 @@ await check("source: the Log page uses the shared control and the top-bar slot",
   assert.match(src, /createPortal\(textSizeControl, headerSlot\)/);
 });
 
+await check("source: the Stats page uses the same shared control and top-bar slot", () => {
+  const src = read("src/StatsPage.jsx");
+  assert.match(src, /import TextSizeControl\b/);
+  assert.match(src, /primus-masthead-slot/);
+  assert.match(src, /createPortal\(textSizeControl, headerSlot\)/);
+});
+
 console.log(`PASS testTextSizeLog — ${checks} checks`);
 process.exit(0);

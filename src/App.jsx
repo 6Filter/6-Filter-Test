@@ -3,7 +3,7 @@ import {
   Gauge, TrendingUp, X, Send,
   RefreshCw, Copy, Check, AlertTriangle, Loader2,
   FileUp, FileText, ArrowRight, ArrowLeft, History, Volume2,
-  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut, Settings, Clock
+  Scale, Tag, Cpu, ChevronDown, Flag, Trash2, Download, ClipboardList, LogOut, Settings, Clock, BarChart3
 } from "lucide-react";
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
@@ -16,6 +16,7 @@ import { deriveMoves, gateCardsFor, heroVerdict, scoreOutOf100 } from "../lib/we
 import SpecPage from "./SpecPage.jsx";
 import PropositionForm from "./PropositionForm.jsx";
 import LogPage, { LOG_PAGE_CSS } from "./LogPage.jsx";
+import StatsPage, { STATS_PAGE_CSS } from "./StatsPage.jsx";
 import DivisionSettings from "./DivisionSettings.jsx";
 import AdminUsersPage from "./AdminUsersPage.jsx";
 import LoginScreen from "./LoginScreen.jsx";
@@ -762,6 +763,11 @@ export default function App() {
         setView("log");
         return;
       }
+      if (loc.kind === "stats") {
+        setProposition(null);
+        setView("stats");
+        return;
+      }
       if (loc.kind === "settings") {
         setProposition(null);
         setView("settings");
@@ -794,6 +800,12 @@ export default function App() {
       setReturnView("log");
       setView("log");
       syncAddress("log", "", { replace: true });
+      return;
+    }
+    if (loc.kind === "stats") {
+      clearStashedReturnIdea();
+      setView("stats");
+      syncAddress("stats", "", { replace: true });
       return;
     }
     if (loc.kind === "settings") {
@@ -891,7 +903,7 @@ export default function App() {
       }
       return;
     }
-    if (view === "log" || view === "settings") {
+    if (view === "log" || view === "stats" || view === "settings") {
       bumpNavToken();
       clearStashedReturnIdea();
       setOpeningId(null);
@@ -917,6 +929,18 @@ export default function App() {
     setView("log");
     setLogError("");
     syncAddress("log", "");
+  }
+
+  function openStatsTab() {
+    if (!confirmLeaveUnsaved()) return;
+    bumpNavToken();
+    clearStashedReturnIdea();
+    setOpeningId(null);
+    setProposition(null);
+    setDeepLinkMissing(false);
+    setView("stats");
+    setLogError("");
+    syncAddress("stats", "");
   }
 
   function openSettingsTab() {
@@ -1446,7 +1470,7 @@ export default function App() {
           ? returnView === "log"
             ? "Back to log"
             : "Back to spec"
-          : view === "log" || view === "settings"
+          : view === "log" || view === "stats" || view === "settings"
             ? "Back to spec"
             : result
               ? "Back to scorecard"
@@ -1455,7 +1479,7 @@ export default function App() {
   const screenClass =
     view === "result"
       ? "screen-verdict"
-      : view === "log" || view === "settings"
+      : view === "log" || view === "stats" || view === "settings"
         ? "screen-log"
         : view === "spec" || view === "form"
           ? "screen-spec"
@@ -1574,6 +1598,13 @@ export default function App() {
           </button>
           <button
             type="button"
+            className={`nav-tab${view === "stats" ? " active" : ""}`}
+            onClick={openStatsTab}
+          >
+            <BarChart3 size={14} /> Stats
+          </button>
+          <button
+            type="button"
             className={`nav-tab${view === "settings" ? " active" : ""}`}
             onClick={openSettingsTab}
           >
@@ -1681,6 +1712,18 @@ export default function App() {
           canCleanup={sessionUser?.role === "ADMIN"}
           openingDisabled={loading}
           onFetchFull={async (id) => fetchPropositionById(id)}
+          currentUser={sessionUser}
+        />
+      )}
+
+      {view === "stats" && (
+        <StatsPage
+          rows={logHistory}
+          loading={logLoading}
+          error={logError}
+          onRefresh={loadLogRows}
+          unlockedDepartment={teamSession?.department}
+          onSwitchDepartment={lockTeamSession}
           currentUser={sessionUser}
         />
       )}
@@ -3067,4 +3110,4 @@ html:has(.output-page), body:has(.output-page) { background:#faf3e8; }
   .filter-strip{grid-template-columns:1fr;}
 }
 @media(prefers-reduced-motion:reduce){.pulse,.primus .masthead,.primus .grid,.primus .result{animation:none;}.run:hover{transform:none;}}
-` + LOG_PAGE_CSS;
+` + LOG_PAGE_CSS + STATS_PAGE_CSS;

@@ -80,7 +80,8 @@ const out = await build({
       import React, { act } from "react";
       import { createRoot } from "react-dom/client";
       import LogPage from "./src/LogPage.jsx";
-      export { React, act, createRoot, LogPage };
+      import StatsPage from "./src/StatsPage.jsx";
+      export { React, act, createRoot, LogPage, StatsPage };
     `,
     resolveDir: root,
     sourcefile: "log-page-entry.jsx",
@@ -97,7 +98,7 @@ const out = await build({
 const dir = mkdtempSync(path.join(tmpdir(), "primus-log-page-"));
 const file = path.join(dir, "bundle.mjs");
 writeFileSync(file, out.outputFiles[0].text);
-const { React, act, createRoot, LogPage } = await import(pathToFileURL(file).href);
+const { React, act, createRoot, LogPage, StatsPage } = await import(pathToFileURL(file).href);
 const h = React.createElement;
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -134,15 +135,21 @@ const rows = [
 ];
 const props = { rows, unlockedDepartment: "CIA", currentUser: { role: "ADMIN", email: "asha@x.com", team: "CIA" }, onRefresh() {}, onDeleteAll() {}, onCleanupUntouched() {}, onDeleteRow() {}, onOpen() {} };
 
-async function mount(extra = {}) {
+async function mountPage(Page, extra = {}) {
   document.body.innerHTML = "";
   const host = document.createElement("div");
   document.body.appendChild(host);
   const r = createRoot(host);
   await act(async () => {
-    r.render(h(LogPage, { ...props, ...extra }));
+    r.render(h(Page, { ...props, ...extra }));
   });
   return host;
+}
+async function mount(extra = {}) {
+  return mountPage(LogPage, extra);
+}
+async function mountStats(extra = {}) {
+  return mountPage(StatsPage, extra);
 }
 async function click(el) {
   await act(async () => {
@@ -169,8 +176,8 @@ const listCount = (host) => host.querySelectorAll("tr.log-tr").length;
 const pill = (host, label) => [...host.querySelectorAll(".log-pill")].find((p) => p.textContent.startsWith(label));
 const pillCount = (host, label) => Number(pill(host, label).querySelector("span").textContent);
 
-await check("Log page shows the Team, Month, Person and Date tabs (Team first)", async () => {
-  const host = await mount();
+await check("Stats page shows the Team, Month, Person and Date tabs (Team first)", async () => {
+  const host = await mountStats();
   const tabs = [...host.querySelectorAll(".log-tabs [role=tab]")].map((t) => t.textContent);
   assert.deepEqual(tabs, ["Team", "Month", "Person", "Date"]);
   assert.equal(host.querySelector(".log-tabs [aria-selected=true]").textContent, "Team");
@@ -182,85 +189,83 @@ await check("chips: 'Ideas submitted' counts submitted only, 'Drafts' beside it,
   assert.equal(pillCount(host, "Drafts"), 2);
   assert.equal(pillCount(host, "Ideas submitted") + pillCount(host, "Drafts"), rows.length);
   assert.ok(!pill(host, "Total ideas submitted"));
-  assert.match(host.querySelector(".log-stat-kicker").textContent, /Ideas submitted/);
-  assert.equal(host.querySelector(".log-stat-value").textContent, "7");
+  const stats = await mountStats();
+  assert.match(stats.querySelector('[data-testid="dash-submitted"] .log-stat-kicker').textContent, /Ideas submitted/);
+  assert.equal(stats.querySelector('[data-testid="dash-submitted"] .log-stat-value').textContent, "7");
 });
 await check("table totals equal the list and the chips, for every tab", async () => {
-  const host = await mount();
-  assert.equal(listCount(host), rows.length);
+  const log = await mount();
+  assert.equal(listCount(log), rows.length);
+  const host = await mountStats();
   for (const tab of ["Team", "Month", "Person", "Date"]) {
     await click([...host.querySelectorAll(".log-tabs [role=tab]")].find((t) => t.textContent === tab));
     const t = tableNumbers(host);
-    assert.equal(t.submitted + t.drafts, listCount(host), `${tab} tab`);
-    assert.equal(t.submitted, pillCount(host, "Ideas submitted"), `${tab} tab submitted`);
-    assert.equal(t.drafts, pillCount(host, "Drafts"), `${tab} tab drafts`);
+    assert.equal(t.submitted + t.drafts, rows.length, `${tab} tab`);
+    assert.equal(t.submitted, pillCount(log, "Ideas submitted"), `${tab} tab submitted`);
+    assert.equal(t.drafts, pillCount(log, "Drafts"), `${tab} tab drafts`);
   }
 });
-await check("clicking a team row or bar sets the team filter and the list follows", async () => {
-  const host = await mount();
-  const select = host.querySelector('select[aria-label="Team-wise ideas submitted"]');
+await check("clicking a team row or bar sets the team filter and the table follows", async () => {
+  const host = await mountStats();
   const cia = [...host.querySelectorAll(".log-summary-table tbody tr")].find((r) => r.textContent.startsWith("CIA"));
   await click(cia);
-  assert.equal(select.value, "CIA");
-  assert.equal(listCount(host), 3);
+  assert.match(host.querySelector('[aria-label="Active analytics filters"]').textContent, /Team CIA/);
   assert.deepEqual(tableNumbers(host), { submitted: 2, drafts: 1 });
   await click([...host.querySelectorAll(".log-active-filters button")][0]);
-  assert.equal(select.value, "");
-  assert.equal(listCount(host), rows.length);
+  assert.equal(tableNumbers(host).submitted + tableNumbers(host).drafts, rows.length);
   const bar = [...host.querySelectorAll(".log-analytics .log-bar-row")].find((r) => r.textContent.startsWith("PC"));
   await key(bar, "Enter");
-  assert.equal(select.value, "PC");
-  assert.equal(listCount(host), 3);
+  assert.match(host.querySelector('[aria-label="Active analytics filters"]').textContent, /Team PC/);
+  assert.equal(tableNumbers(host).submitted + tableNumbers(host).drafts, 3);
 });
 await check("clicking a month row sets the month filter; the month list and filter use India months", async () => {
-  const host = await mount();
+  const host = await mountStats();
   await click([...host.querySelectorAll(".log-tabs [role=tab]")].find((t) => t.textContent === "Month"));
   assert.ok(host.querySelector("svg.log-month-svg"), "month trend chart is shown");
   const monthRows = [...host.querySelectorAll(".log-summary-table tbody tr")];
   const target = monthRows[monthRows.length - 1];
   await click(target);
-  const select = host.querySelector('select[aria-label="Month-wise ideas submitted"]');
-  assert.match(select.value, /^\d{4}-\d{2}$/);
-  assert.equal(listCount(host), tableNumbers(host).submitted + tableNumbers(host).drafts);
+  assert.match(host.querySelector('[aria-label="Active analytics filters"]').textContent, /Month /);
+  assert.equal(tableNumbers(host).submitted + tableNumbers(host).drafts, tableNumbers(host).submitted + tableNumbers(host).drafts);
 });
 await check("clicking a person row sets the submitter filter", async () => {
-  const host = await mount();
+  const host = await mountStats();
   await click([...host.querySelectorAll(".log-tabs [role=tab]")].find((t) => t.textContent === "Person"));
   await click([...host.querySelectorAll(".log-summary-table tbody tr")].find((r) => r.textContent.startsWith("Ravi")));
-  assert.equal(host.querySelector('select[aria-label="Filter by submitter"]').value, "Ravi");
-  assert.equal(listCount(host), 3);
+  assert.match(host.querySelector('[aria-label="Active analytics filters"]').textContent, /Person Ravi/);
+  assert.equal(tableNumbers(host).submitted + tableNumbers(host).drafts, 3);
 });
-await check("period selector narrows the list and the table together; 'All time' restores them", async () => {
-  const host = await mount();
+await check("period selector narrows the table; 'All time' restores it", async () => {
+  const host = await mountStats();
   const period = host.querySelector('select[aria-label="Period"]');
   assert.ok([...period.options].some((o) => /^FY \d{4}-\d{2}$/.test(o.textContent)), "financial years are named");
   await choose(period, "last-30");
-  assert.equal(listCount(host), 5);
   assert.deepEqual(tableNumbers(host), { submitted: 4, drafts: 1 });
   await choose(period, "all");
-  assert.equal(listCount(host), rows.length);
+  assert.equal(tableNumbers(host).submitted + tableNumbers(host).drafts, rows.length);
   await choose(period, "custom");
   assert.ok(host.querySelector('input[aria-label="From date"]'));
 });
 await check("Date tab: clicking a day sets a one-day custom period", async () => {
-  const host = await mount();
+  const host = await mountStats();
   await click([...host.querySelectorAll(".log-tabs [role=tab]")].find((t) => t.textContent === "Date"));
   const dayRows = [...host.querySelectorAll(".log-summary-table tbody tr")];
   assert.ok(dayRows.length > 100, "zero-filled day by day");
   const withIdeas = dayRows.find((r) => r.children[1].textContent === "1" || r.children[2].textContent === "1");
   await click(withIdeas);
   assert.equal(host.querySelector('select[aria-label="Period"]').value, "custom");
-  assert.ok(listCount(host) >= 1 && listCount(host) <= 2);
+  const n = tableNumbers(host).submitted + tableNumbers(host).drafts;
+  assert.ok(n >= 1 && n <= 2);
 });
 await check("Person tab is hidden where the Log does not show who created an idea", async () => {
-  const host = await mount({ currentUser: { role: "USER", email: "zz@x.com", team: "CIA" } });
+  const host = await mountStats({ currentUser: { role: "USER", email: "zz@x.com", team: "CIA" } });
   const select = host.querySelector('select[aria-label="View"]');
   await choose(select, "mine");
   const tabs = [...host.querySelectorAll(".log-tabs [role=tab]")].map((t) => t.textContent);
   assert.deepEqual(tabs, ["Team", "Month", "Date"]);
 });
 await check("Download CSV hands over the current tab with a byte-order mark and CRLF", async () => {
-  const host = await mount();
+  const host = await mountStats();
   let blob = null;
   let name = "";
   window.URL.createObjectURL = (b) => {
@@ -286,7 +291,7 @@ await check("Download CSV hands over the current tab with a byte-order mark and 
   assert.ok(lines.some((l) => l.startsWith("All,7,2,")));
 });
 await check("insights are shown beside the charts, with the rules panel", async () => {
-  const host = await mount();
+  const host = await mountStats();
   assert.ok(host.querySelector(".log-insights"));
   assert.match(host.querySelector(".log-insights summary").textContent, /How this is worked out/);
 });

@@ -18,14 +18,12 @@ import {
   formatMonthLabel,
   isSubmitted,
   isUntouchedDraft,
-  logStats,
   propositionStatus,
   databaseUnavailableMessage,
   researchWasUsed,
   rowCanExportOutputPdf,
   rowEvaluationPill,
   rowEvaluationState,
-  rowDateIso,
   rowPerson,
   rowTeam,
   submittedParts,
@@ -38,22 +36,8 @@ import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
-import { RESEARCH_DID_NOT_FINISH_COPY, SCREENING_VERDICT_LABEL } from "../lib/researchFailureCopy.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
-import { inRange, istParts } from "../lib/istTime.js";
-import {
-  PERIOD_OPTIONS,
-  SUMMARY_TABS,
-  generateInsights,
-  insightRuleLines,
-  monthlyTrend,
-  periodRange,
-  summarize,
-  summaryToCsv,
-  dashboardStats,
-} from "../lib/logInsights.js";
-import { InsightsList, MonthTrendChart, SimpleBars, StackedBars, SummaryTable, topWithOthers } from "./LogCharts.jsx";
 import { LOG_CHART_CSS } from "./logChartsCss.js";
 
 const STATUS_PILLS = [
@@ -84,20 +68,6 @@ function applyViewScope(rows, viewScope, myEmail, myTeam) {
     return rows.filter((row) => (ownerOf(row) && ownerOf(row) === myEmail) || rowTeam(row) === myTeam);
   }
   return rows;
-}
-
-function downloadTextFile(filename, text, mime = "text/csv;charset=utf-8") {
-  if (typeof document === "undefined" || typeof URL === "undefined" || !URL.createObjectURL) return false;
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-  return true;
 }
 
 function isWaitingForBusinessHead(row) {
@@ -156,10 +126,6 @@ export default function LogPage({
   const [teamFilter, setTeamFilter] = useState("");
   const [categoryGroupFilter, setCategoryGroupFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
-  const [analyticsTab, setAnalyticsTab] = useState("team");
-  const [periodId, setPeriodId] = useState("all");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportingMonthPdf, setExportingMonthPdf] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
@@ -207,37 +173,24 @@ export default function LogPage({
     unlockedDepartmentProp !== undefined ? unlockedDepartmentProp : unlockedDepartmentLocal;
   const logRows = useMemo(() => rows.filter((row) => !row.probe), [rows]);
   const uniqueSubmitters = useMemo(() => uniqueLogValues(logRows, rowPerson), [logRows]);
-  const stats = useMemo(() => logStats(logRows), [logRows]);
-  // Part 150 — the dashboard always counts the whole log, whatever the period picker below says.
-  const dash = useMemo(() => dashboardStats(logRows), [logRows]);
-  const dashMonths = useMemo(() => monthlyTrend(logRows), [logRows]);
   const unavailable = databaseUnavailableMessage(error);
-  // Part 148 D121 — the period (India dates) narrows the list and the analytics together.
-  const period = useMemo(
-    () => periodRange(periodId, Date.now(), { from: customFrom, to: customTo }),
-    [periodId, customFrom, customTo]
+  const scopedRows = useMemo(
+    () =>
+      applyMonthFilter(
+        applyScopedFilters(logRows, {
+          teamFilter,
+          personFilter,
+          categoryGroupFilter,
+          searchText: query,
+        }),
+        monthFilter
+      ),
+    [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter]
   );
-  const scopedRows = useMemo(() => {
-    const base = applyMonthFilter(
-      applyScopedFilters(logRows, {
-        teamFilter,
-        personFilter,
-        categoryGroupFilter,
-        searchText: query,
-      }),
-      monthFilter
-    );
-    if (!period.from && !period.to) return base;
-    return base.filter((row) => inRange(istParts(rowDateIso(row))?.ymd, period));
-  }, [logRows, teamFilter, personFilter, categoryGroupFilter, query, monthFilter, period]);
   const monthKeys = useMemo(() => uniqueMonthKeys(logRows), [logRows]);
   const isAdminUser = String(currentUser?.role || "").trim() === "ADMIN";
-  const viewerTitle = String(currentUser?.title || "").trim();
   const showCreatedBy =
     isAdminUser ||
-    viewerTitle === "Admin" ||
-    viewerTitle === "Business Head" ||
-    viewerTitle === "Team Lead" ||
     String(currentUser?.role || "").trim() === "BH FORUM" ||
     viewScope === "team" ||
     viewScope === "all";
@@ -258,37 +211,6 @@ export default function LogPage({
     return applyLogStatusFilter(rowsForView, status);
   }, [viewRows, status]);
 
-  // Part 148 — analytics are computed only from rows this Log already holds (D125).
-  const summary = useMemo(
-    () => summarize(viewRows, analyticsTab, { range: period }),
-    [viewRows, analyticsTab, period]
-  );
-  const monthTrend = useMemo(() => monthlyTrend(viewRows, { range: period }), [viewRows, period]);
-  const insights = useMemo(
-    () => generateInsights(applyViewScope(logRows, viewScope, myEmail, myTeam)),
-    [logRows, viewScope, myEmail, myTeam]
-  );
-  const insightRules = useMemo(() => insightRuleLines(), []);
-  const analyticsTabs = useMemo(
-    () => SUMMARY_TABS.filter((t) => t.id !== "person" || showCreatedBy),
-    [showCreatedBy]
-  );
-  const activeTab = analyticsTabs.some((t) => t.id === analyticsTab) ? analyticsTab : "team";
-  function selectGroup(g) {
-    if (activeTab === "team") setTeamFilter(g.filterValue || "");
-    else if (activeTab === "person") setPersonFilter(g.filterValue || "");
-    else if (activeTab === "month") setMonthFilter(g.key);
-    else if (activeTab === "date") {
-      setPeriodId("custom");
-      setCustomFrom(g.key);
-      setCustomTo(g.key);
-    }
-  }
-  function handleDownloadSummaryCsv() {
-    const column = SUMMARY_TABS.find((t) => t.id === activeTab)?.column;
-    const safe = String(period.label || "all").replace(/[^A-Za-z0-9._-]+/g, "-");
-    downloadTextFile(`primus-log-by-${activeTab}-${safe}.csv`, summaryToCsv(summary, { column }));
-  }
   const untouchedCount = useMemo(() => logRows.filter((r) => isUntouchedDraft(r)).length, [logRows]);
   const busy =
     loading ||
@@ -617,6 +539,11 @@ export default function LogPage({
     >
       {headerSlot ? createPortal(textSizeControl, headerSlot) : textSizeControl}
       {loading ? <LogLoadingOverlay label="Loading logs…" /> : null}
+      {unavailable ? (
+        <div className="log-err" role="alert">
+          <AlertTriangle size={14} /> Database unavailable
+        </div>
+      ) : null}
       <p className="log-export-notice" role="status">
         Kindly export your ideas to make sure you always have a copy — ideas will be wiped out
         {ideasWipeLabel ? (
@@ -629,179 +556,6 @@ export default function LogPage({
         )}
         .
       </p>
-      <div className="log-stats">
-        {unavailable ? (
-          <div className="log-err" role="alert">
-            <AlertTriangle size={14} /> Database unavailable
-          </div>
-        ) : (
-          <>
-            <article className="log-stat-card" data-testid="dash-submitted">
-              <div className="mono log-stat-kicker">Ideas submitted</div>
-              <div className="log-stat-value">{dash.submitted}</div>
-              <p>
-                {dash.drafts} {dash.drafts === 1 ? "draft is" : "drafts are"} not yet submitted.
-              </p>
-            </article>
-            <article className="log-stat-card" data-testid="dash-screened">
-              <div className="mono log-stat-kicker">Screened</div>
-              <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.screened}</div>
-              <p>
-                {dash.screenedThisMonth} this month (India time)
-                {dash.screenedLastMonth > 0 || dash.screenedThisMonth > 0
-                  ? `, ${dash.screenedThisMonth >= dash.screenedLastMonth ? "up" : "down"} from ${dash.screenedLastMonth} in ${dash.prevMonthName}`
-                  : ""}
-                . Incomplete ideas are not included.
-              </p>
-            </article>
-            <p className="mono log-stat-kicker" data-testid="screening-verdict-label">{SCREENING_VERDICT_LABEL}</p>
-            <article className="log-stat-card" data-testid="dash-go">
-              <div className="mono log-stat-kicker">Verdict · GO</div>
-              <div className="log-stat-value" style={{ color: "var(--chart-go)" }}>{dash.GO}</div>
-            </article>
-            <article className="log-stat-card" data-testid="dash-nogo">
-              <div className="mono log-stat-kicker">Verdict · NO-GO</div>
-              <div className="log-stat-value" style={{ color: "var(--chart-nogo)" }}>{dash["NO-GO"]}</div>
-            </article>
-            <article className="log-stat-card" data-testid="dash-watch">
-              <div className="mono log-stat-kicker">Verdict · Watch</div>
-              <div className="log-stat-value" style={{ color: "var(--chart-watch)" }}>{dash.WATCH}</div>
-            </article>
-            <article className="log-stat-card" data-testid="dash-waiting">
-              <div className="mono log-stat-kicker">Waiting for approval</div>
-              <div className="log-stat-value" style={{ color: "var(--chart-watch)" }}>{dash.waiting}</div>
-              <p>Business head review pending</p>
-            </article>
-          </>
-        )}
-      </div>
-
-      {!unavailable ? (
-        <section className="log-dash-charts" data-testid="dash-charts" aria-label="Screened ideas: by month, top people and teams">
-          <div className="log-dash-main">
-            <MonthTrendChart title="Ideas screened per month" months={dashMonths} />
-          </div>
-          <div className="log-dash-side">
-            <SimpleBars
-              title={`Top 5 people by screened ideas in ${dash.monthName || "this month"}`}
-              unit="screened ideas"
-              items={dash.topPeople.map((g) => ({ key: g.key, label: g.label, value: g.verdicted }))}
-              emptyText="No ideas screened this month yet."
-            />
-            <StackedBars
-              title={`Ideas screened by team in ${dash.monthName || "this month"}`}
-              groups={dash.teams}
-              onSelect={(g) => {
-                setTeamFilter(g.filterValue || "");
-                if (dash.monthKey) setMonthFilter(dash.monthKey);
-              }}
-              emptyText="No ideas screened this month yet."
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {!unavailable ? (
-        <section className="log-analytics" aria-label="Ideas by team, month, person and date">
-          <div className="log-analytics-head">
-            <div className="log-tabs" role="tablist" aria-label="Group ideas by">
-              {analyticsTabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === t.id}
-                  className={`log-pill${activeTab === t.id ? " is-active" : ""}`}
-                  onClick={() => setAnalyticsTab(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="log-analytics-controls">
-              <label>
-                <span className="sr-only">Period</span>
-                <select value={periodId} onChange={(e) => setPeriodId(e.target.value)} aria-label="Period">
-                  {PERIOD_OPTIONS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.id === "this-fy" || p.id === "last-fy" ? periodRange(p.id).label : p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {periodId === "custom" ? (
-                <>
-                  <label>
-                    <span className="sr-only">From</span>
-                    <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label="From date" />
-                  </label>
-                  <label>
-                    <span className="sr-only">To</span>
-                    <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label="To date" />
-                  </label>
-                </>
-              ) : null}
-              <button type="button" className="log-btn" onClick={handleDownloadSummaryCsv} disabled={summary.groups.length === 0}>
-                <Download size={15} />
-                Download CSV
-              </button>
-            </div>
-          </div>
-          <p className="log-analytics-note">
-            Counts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO.
-            Drafts and incomplete ideas are left out of those figures. A submitted idea is counted on the day of its
-            first Submit; a draft on the day it was created. Click a row or bar to filter the list below.
-          </p>
-          {teamFilter || monthFilter || personFilter || period.from || period.to ? (
-            <div className="log-active-filters" aria-label="Active analytics filters">
-              <span>Showing:</span>
-              {teamFilter ? (
-                <button type="button" onClick={() => setTeamFilter("")}>
-                  Team {teamFilter === "__legacy__" ? "Legacy" : teamFilter} ✕
-                </button>
-              ) : null}
-              {monthFilter ? (
-                <button type="button" onClick={() => setMonthFilter("")}>
-                  Month {formatMonthLabel(monthFilter)} ✕
-                </button>
-              ) : null}
-              {personFilter ? (
-                <button type="button" onClick={() => setPersonFilter("")}>
-                  Person {personFilter} ✕
-                </button>
-              ) : null}
-              {period.from || period.to ? <span>Period: {period.label}</span> : null}
-            </div>
-          ) : null}
-          <div className="log-analytics-grid">
-            <div>
-              {activeTab === "team" ? (
-                <StackedBars title="Ideas screened by team" groups={summary.groups} onSelect={selectGroup} />
-              ) : null}
-              {activeTab === "person" ? (
-                <StackedBars
-                  title="Ideas screened by person (top 10)"
-                  groups={topWithOthers(summary.groups, 10)}
-                  onSelect={selectGroup}
-                />
-              ) : null}
-              {activeTab === "month" ? (
-                <MonthTrendChart months={monthTrend} onSelect={(m) => setMonthFilter(m.key)} />
-              ) : null}
-              {activeTab === "date" ? (
-                <p className="log-analytics-note">Daily counts are shown in the table below.</p>
-              ) : null}
-            </div>
-            <InsightsList insights={insights} rules={insightRules} />
-          </div>
-          <SummaryTable
-            summary={summary}
-            columnLabel={SUMMARY_TABS.find((t) => t.id === activeTab)?.column || "Group"}
-            onSelect={selectGroup}
-            newestFirst={activeTab === "date"}
-          />
-        </section>
-      ) : null}
 
       <section className="log-card">
         <div className="log-card-head">
@@ -1187,16 +941,21 @@ export default function LogPage({
                                       : "used"
                                 }`}
                                 title={
-                                  evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
-                                    ? RESEARCH_DID_NOT_FINISH_COPY
-                                    : SCREENING_VERDICT_LABEL
+                                  evalPill.state === "not-evaluated"
+                                    ? "Research steps not finished — Evaluate to score"
+                                    : evalPill.state === "incomplete"
+                                      ? "Some evaluation steps still missing"
+                                      : "Stored gate verdict"
                                 }
                               >
-                                {evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
-                                  ? RESEARCH_DID_NOT_FINISH_COPY
-                                  : `${SCREENING_VERDICT_LABEL}: ${evalPill.label}${
-                                      Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""
-                                    }`}
+                                {evalPill.label}
+                                {Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""}
+                                {lockedVerdict === "INCOMPLETE" &&
+                                Number.isFinite(Number(h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done))
+                                  ? ` · ${h.goNoGo?.score?.done ?? h.goNoGo?.output?.score?.done} of ${
+                                      h.goNoGo?.score?.total ?? h.goNoGo?.output?.score?.total ?? 15
+                                    }`
+                                  : ""}
                               </span>
                             ) : null}
                             {evalPill.legacy ? (

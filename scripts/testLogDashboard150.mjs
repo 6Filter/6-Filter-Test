@@ -146,8 +146,8 @@ const out = await build({
     contents: `
       import React, { act } from "react";
       import { createRoot } from "react-dom/client";
-      import LogPage from "./src/LogPage.jsx";
-      export { React, act, createRoot, LogPage };
+      import StatsPage from "./src/StatsPage.jsx";
+      export { React, act, createRoot, StatsPage };
     `,
     resolveDir: root,
     sourcefile: "log-dash-entry.jsx",
@@ -164,7 +164,7 @@ const out = await build({
 const dir = mkdtempSync(path.join(tmpdir(), "primus-log-dash-"));
 const file = path.join(dir, "bundle.mjs");
 writeFileSync(file, out.outputFiles[0].text);
-const { React, act, createRoot, LogPage } = await import(pathToFileURL(file).href);
+const { React, act, createRoot, StatsPage } = await import(pathToFileURL(file).href);
 const h = React.createElement;
 
 // Page uses the real clock, so the fixture is rebuilt relative to it (verdict counts do not depend on the month).
@@ -183,7 +183,7 @@ document.body.innerHTML = "";
 const host = document.createElement("div");
 document.body.appendChild(host);
 await act(async () => {
-  createRoot(host).render(h(LogPage, props));
+  createRoot(host).render(h(StatsPage, props));
 });
 const tile = (id) => host.querySelector(`[data-testid="${id}"]`);
 const tileValue = (id) => Number(tile(id).querySelector(".log-stat-value").textContent);
@@ -210,14 +210,17 @@ await check("the monthly chart, top 5 submitters and team chart are shown withou
   assert.ok(charts.querySelector("svg.log-month-svg"), "month chart");
   assert.ok(charts.querySelectorAll(".log-bar-row").length >= 2, "bars");
 });
-await check("clicking a team bar in the dashboard filters the list to that team and month", async () => {
+await check("clicking a team bar in the dashboard filters the breakdown to that team and month", async () => {
   const charts = host.querySelector('[data-testid="dash-charts"]');
   const bar = [...charts.querySelectorAll(".log-bar-row")].find((r) => r.textContent.startsWith("PC"));
   await act(async () => {
     bar.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
   });
-  assert.equal(host.querySelector('select[aria-label="Team-wise ideas submitted"]').value, "PC");
-  assert.equal(host.querySelectorAll("tr.log-tr").length, 3);
+  const chips = host.querySelector('[aria-label="Active analytics filters"]').textContent;
+  assert.match(chips, /Team PC/);
+  const tableRows = [...host.querySelectorAll(".log-summary-table tbody tr")].map((r) => r.textContent);
+  assert.ok(tableRows.some((t) => t.startsWith("PC")));
+  assert.equal(tableRows.filter((t) => t.startsWith("CIA") || t.startsWith("IB")).length, 0);
 });
 
 await check("Part 153 a centred spinner overlay shows while the log is loading, and only then", async () => {
@@ -225,12 +228,12 @@ await check("Part 153 a centred spinner overlay shows while the log is loading, 
   const host2 = document.createElement("div");
   document.body.appendChild(host2);
   await act(async () => {
-    createRoot(host2).render(h(LogPage, { ...props, loading: true }));
+    createRoot(host2).render(h(StatsPage, { ...props, loading: true }));
   });
   const ov = host2.querySelector('[data-testid="log-loading-overlay"]');
   assert.ok(ov, "overlay while loading");
   assert.ok(ov.querySelector(".log-loading-spinner"), "spinner");
-  assert.match(ov.textContent, /Loading logs/);
+  assert.match(ov.textContent, /Loading stats/);
   assert.equal(ov.getAttribute("role"), "status");
 });
 
