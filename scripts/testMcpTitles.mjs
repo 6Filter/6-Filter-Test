@@ -149,6 +149,7 @@ await db.setUserTeam(ic.id, "R&D", { onlyIfEmpty: true });
 await db.setUserTeam(lead.id, "R&D", { onlyIfEmpty: true });
 await db.setUserTeam(head.id, "R&D", { onlyIfEmpty: true });
 await db.setUserTeam(admin.id, "CIA", { onlyIfEmpty: true });
+process.env.MCP_ALLOWED_EMAILS = [admin, ic, lead, head].map((row) => row.email).join(",");
 
 const icIdea = await db.createProposition({ createdByEmail: ic.email, createdByUserId: ic.id, submitterName: "Ic", submitterDepartment: "R&D", name: "Ic idea" });
 const otherIdea = await db.createProposition({ createdByEmail: admin.email, createdByUserId: admin.id, submitterName: "Admin", submitterDepartment: "PC", name: "Pc idea" });

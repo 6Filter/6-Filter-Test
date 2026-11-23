@@ -209,6 +209,7 @@ const member = await db.findOrCreateSlackUser({ email: "member.mcp@cavinkare.com
 await db.setUserTeam(member.id, "CIA", { onlyIfEmpty: true });
 const adminRow = await db.getUserByEmail("admin.mcp@cavinkare.com");
 const memberRow = await db.getUserByEmail("member.mcp@cavinkare.com");
+process.env.MCP_ALLOWED_EMAILS = `${adminRow.email},${memberRow.email}`;
 const adminToken = signSession({ userId: adminRow.id, tokenVersion: Number(adminRow.tokenVersion) || 1 });
 
 const memberIdea = await db.createProposition({ createdByEmail: memberRow.email, createdByUserId: memberRow.id, submitterName: "Member Mcp", submitterDepartment: "CIA" });
