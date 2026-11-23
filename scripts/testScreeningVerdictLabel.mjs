@@ -21,7 +21,7 @@ assert.match(formSrc, /data-testid="screening-verdict-hidden"/);
 assert.match(formSrc, /hideScreeningVerdict/);
 assert.match(formSrc, /data-testid="incomplete-no-path"/);
 assert.match(formSrc, /Screen again/);
-assert.match(formSrc, /The verdict and score below use the values entered|no score and no screening verdict/);
+assert.match(formSrc, /The verdict and score above use the values entered|no score and no screening verdict/);
 assert.ok(
   /hideScreeningVerdict \? \(\s*<aside className="research-did-not-finish-only"/.test(formSrc) ||
     formSrc.includes('data-testid="incomplete-no-path"'),

@@ -83,6 +83,6 @@ const formSrc = await import("node:fs").then((fs) =>
   fs.readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8")
 );
 assert.match(formSrc, /forceResearch: true/);
-assert.match(formSrc, /The verdict and score below use the values entered/);
+assert.match(formSrc, /The verdict and score above use the values entered/);
 
 console.log("PASS testFinishResearchForSeal");

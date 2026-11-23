@@ -2206,6 +2206,65 @@ export function GoNoGoResultPage({
   const ringPct = Math.max(0, Math.min(100, scorePct));
   const sizeTier = safeCall("gram badge", () => ideaSizeForResult(doc || {}), null);
 
+  const outputMissingInputs =
+    Array.isArray(missingFormInputs) && missingFormInputs.length
+      ? missingFormInputs
+      : listMissingFormInputs(doc || {});
+  // Output first, then explain what was missing. Inputs can be corrected in the input form and re-submitted.
+  const gapsExplanation = (
+    <>
+      {outputMissingInputs.length ? (
+        <div className="missing-inputs-block" role="status">
+          <h3>Values you have not entered yet</h3>
+          <ul className="evaluation-missing-list">
+            {outputMissingInputs.map((entry) => (
+              <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
+            ))}
+          </ul>
+          <p className="missing-inputs-note">
+            Enter these in the input form and re-submit — the verdict and score update.
+          </p>
+        </div>
+      ) : null}
+      {researchGapsForOutput.length ? (
+        <div className="research-unfinished-block" role="status" data-testid="research-unfinished">
+          <h3>Research that did not finish</h3>
+          <p className="research-unfinished-plain">
+            {hideScreeningVerdict
+              ? `${RESEARCH_DID_NOT_FINISH_COPY}. Screen again to finish research and seal the score.`
+              : "Some research did not finish — what was missing is listed here. The verdict and score above use the values entered on the form. Correct the inputs in the input form and re-submit to update the verdict."}
+          </p>
+          <ul className="evaluation-missing-list">
+            {researchGapsForOutput.map((entry) => (
+              <li key={`${entry.filter}.${entry.field}`}>
+                <strong>{entry.label}</strong>
+                {entry.reason ? <span className="research-unfinished-reason"> — {entry.reason}</span> : null}
+              </li>
+            ))}
+          </ul>
+          {researchGapsForOutput.some((g) => g.filter === "f4" || g.field === "techShiftRisk") &&
+          !hideScreeningVerdict ? (
+            <p className="research-unfinished-share">
+              Filter 4 is 7 of the 18 checks (39% of the score)
+            </p>
+          ) : null}
+          {typeof onSubmit === "function" ? (
+            <button
+              type="button"
+              className="prop-save pdf-hide"
+              data-testid="research-unfinished-screen-again"
+              disabled={saving}
+              onClick={onSubmit}
+            >
+              {saving ? <Loader2 size={14} className="spin" /> : null}
+              Screen again
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="gonogo-result-page" ref={pageRef}>
       <header className="output-meta">
@@ -2224,66 +2283,7 @@ export function GoNoGoResultPage({
             {scoreStatusBanner}
           </p>
         ) : null}
-        {(() => {
-          const gaps =
-            Array.isArray(missingFormInputs) && missingFormInputs.length
-              ? missingFormInputs
-              : listMissingFormInputs(doc || {});
-          if (!gaps.length) return null;
-          return (
-            <div className="missing-inputs-block" role="status">
-              <h3>Values you have not entered yet</h3>
-              <ul className="evaluation-missing-list">
-                {gaps.map((entry) => (
-                  <li key={`${entry.filter}.${entry.field}`}>{entry.label}</li>
-                ))}
-              </ul>
-            </div>
-          );
-        })()}
-        {(() => {
-          const gaps =
-            Array.isArray(unfinishedResearch) && unfinishedResearch.length
-              ? unfinishedResearch
-              : listUnfinishedResearch(doc || {});
-          if (!gaps.length) return null;
-          const hasF4 = gaps.some((g) => g.filter === "f4" || g.field === "techShiftRisk");
-          return (
-            <div className="research-unfinished-block" role="status" data-testid="research-unfinished">
-              <h3>Research that did not finish</h3>
-              <p className="research-unfinished-plain">
-                {hideScreeningVerdict
-                  ? `${RESEARCH_DID_NOT_FINISH_COPY}. Screen again to finish research and seal the score.`
-                  : "Some research did not finish — gaps are listed here. The verdict and score below use the values entered on the form."}
-              </p>
-              <ul className="evaluation-missing-list">
-                {gaps.map((entry) => (
-                  <li key={`${entry.filter}.${entry.field}`}>
-                    <strong>{entry.label}</strong>
-                    {entry.reason ? <span className="research-unfinished-reason"> — {entry.reason}</span> : null}
-                  </li>
-                ))}
-              </ul>
-              {hasF4 && !hideScreeningVerdict ? (
-                <p className="research-unfinished-share">
-                  Filter 4 is 7 of the 18 checks (39% of the score)
-                </p>
-              ) : null}
-              {typeof onSubmit === "function" ? (
-                <button
-                  type="button"
-                  className="prop-save pdf-hide"
-                  data-testid="research-unfinished-screen-again"
-                  disabled={saving}
-                  onClick={onSubmit}
-                >
-                  {saving ? <Loader2 size={14} className="spin" /> : null}
-                  Screen again
-                </button>
-              ) : null}
-            </div>
-          );
-        })()}
+        {hideScreeningVerdict ? gapsExplanation : null}
         <section className={`gonogo-hero tone-${tone}`} data-tone={tone}>
           <div className="gonogo-hero-copy">
             {idea ? <h1 className="gonogo-idea">{idea}</h1> : <h1 className="gonogo-idea">Untitled idea</h1>}
@@ -2381,6 +2381,8 @@ export function GoNoGoResultPage({
           </div>
           )}
         </section>
+
+        {hideScreeningVerdict ? null : gapsExplanation}
 
         {hideScreeningVerdict ? (
           <aside className="research-did-not-finish-only" data-testid="incomplete-no-path">

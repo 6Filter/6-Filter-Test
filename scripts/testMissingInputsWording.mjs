@@ -112,6 +112,33 @@ check("Values you have not entered yet stays for typed boxes only", () => {
   assert.doesNotMatch(block, /research-unfinished/);
 });
 
+check("sealed-from-entered research still shows what was missing (F1 checks, COGS, price research)", () => {
+  const sealed = listUnfinishedResearch({
+    ...typedFilled,
+    researchRunAt: "2026-11-23T00:00:00Z",
+    f4: { techShiftRisk: { dimensions: { functionalCoreStability: { risk: "Low" } } } },
+    researchFindings: {
+      f1: { assessments: { derivation: { status: "ok", finishedEmpty: true, raw: { relevance: "none" } } } },
+      f2: { costEstimate: { status: "ok", finishedEmpty: true } },
+      f3: { priceEventsFound: true, priceEvents: { status: "ok", events: [], finishedEmpty: true } },
+    },
+  });
+  const byField = Object.fromEntries(sealed.map((u) => [u.field, u]));
+  assert.ok(byField.claimChecks, "Filter 1 finished-empty checks are listed");
+  assert.ok(byField.costEstimate, "COGS finished-empty is listed");
+  assert.ok(byField.priceEvents, "Filter 3 finished-empty is listed");
+  assert.match(byField.claimChecks.reason, /scored from the values entered on the form/);
+  assert.match(byField.costEstimate.reason, /scored from the values entered on the form/);
+  assert.match(byField.priceEvents.reason, /scored from the values entered on the form/);
+});
+
+check("the verdict hero comes before the what-was-missing explanation", () => {
+  const heroAt = formSrc.indexOf('className={`gonogo-hero tone-');
+  const gapsAfter = formSrc.indexOf("hideScreeningVerdict ? null : gapsExplanation");
+  assert.ok(heroAt > 0 && gapsAfter > heroAt, "gaps explanation renders after the verdict hero");
+  assert.match(formSrc, /Correct the inputs in the input form and re-submit to update the verdict/);
+});
+
 check("a typed idea with finished Filter 4 research and a cost estimate has no unfinished research", () => {
   const done = listUnfinishedResearch({
     ...typedFilled,

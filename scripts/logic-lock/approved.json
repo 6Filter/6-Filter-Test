@@ -9,18 +9,19 @@
     "lib/creditFailureCopy.js",
     "lib/db.js",
     "lib/displayTitle.js",
-    "lib/evaluateRemaining.js",
     "lib/displayTitleServer.js",
+    "lib/evaluateRemaining.js",
+    "lib/f1Research.js",
     "lib/fieldOwnership.js",
+    "lib/filterUnlock.js",
+    "lib/finishResearchForSeal.js",
     "lib/logExport.js",
+    "lib/logStatus.js",
     "lib/managerReview.js",
     "lib/managerReviewServer.js",
     "lib/mcpAccess.js",
     "lib/mcpHttp.js",
     "lib/netMarginBlankNotice.js",
-    "lib/f1Research.js",
-    "lib/finishResearchForSeal.js",
-    "lib/logStatus.js",
     "lib/orgHierarchy.js",
     "lib/orgRoster.js",
     "lib/propositionAccess.js",
@@ -354,6 +355,8 @@
     "src/StatsPage.jsx\t✕",
     "src/StatsPage.jsx\t/api/stats/ideas?limit=${}",
     "src/StatsPage.jsx\tCould not load stats.",
-    "src/StatsPage.jsx\tCounts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO. Drafts and incomplete ideas are left out of those figures. Everyone in the organisation sees these figures."
+    "src/StatsPage.jsx\tCounts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO. Drafts and incomplete ideas are left out of those figures. Everyone in the organisation sees these figures.",
+    "src/PropositionForm.jsx\tEnter these in the input form and re-submit — the verdict and score update.",
+    "src/PropositionForm.jsx\tSome research did not finish — what was missing is listed here. The verdict and score above use the values entered on the form. Correct the inputs in the input form and re-submit to update the verdict."
   ]
 }
