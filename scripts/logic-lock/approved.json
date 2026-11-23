@@ -11,6 +11,7 @@
     "lib/displayTitle.js",
     "lib/displayTitleServer.js",
     "lib/evaluateRemaining.js",
+    "lib/evaluationResponse.js",
     "lib/f1Research.js",
     "lib/fieldOwnership.js",
     "lib/filterUnlock.js",
@@ -364,6 +365,16 @@
     "src/PropositionForm.jsx\tbutton",
     "src/PropositionForm.jsx\tf4",
     "src/PropositionForm.jsx\ttechShiftRisk",
-    "src/PropositionForm.jsx\t—"
+    "src/PropositionForm.jsx\t—",
+    "src/LogPage.jsx\t${}%",
+    "src/LogPage.jsx\tresearch-badge ${}",
+    "src/LogPage.jsx\tused",
+    "src/LogPage.jsx\t%",
+    "src/LogPage.jsx\tGO",
+    "src/LogPage.jsx\tScore",
+    "src/LogPage.jsx\tWATCH",
+    "src/LogPage.jsx\tevaluated",
+    "src/LogPage.jsx\tlegacy",
+    "src/LogPage.jsx\tresearch-badge log-verdict used tone-${}"
   ]
 }

@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import { evaluationStatus } from "../lib/evaluationStatus.js";
 import { canSealOutput } from "../lib/sealOutput.js";
 import { bandFromIncompleteGoNoGo, finishResearchForSeal } from "../lib/finishResearchForSeal.js";
+import { annotateEvaluationOnListRow } from "../lib/evaluationResponse.js";
+import { rowEvaluationPill } from "../lib/logStatus.js";
 import { classifyGoNoGoFromBands } from "../lib/lockedConstants.js";
 
 const incomplete = {
@@ -84,5 +86,21 @@ const formSrc = await import("node:fs").then((fs) =>
 );
 assert.match(formSrc, /forceResearch: true/);
 assert.match(formSrc, /Enter these in the input form and re-submit/);
+
+const pastIncomplete = annotateEvaluationOnListRow({
+  id: "past",
+  name: "Morning oats",
+  researchRunAt: "2026-11-01T00:00:00.000Z",
+  f2: { cogsAtScale: 40, gstRatePct: 18, netMarginAtScale: 25, grammage: "100g" },
+  goNoGo: { classification: "INCOMPLETE", score: { pct: 41, total: 18, points: 7 } },
+});
+assert.ok(["GO", "WATCH", "NO-GO"].includes(pastIncomplete.goNoGo.classification), pastIncomplete.goNoGo.classification);
+assert.equal(pastIncomplete.goNoGo.score.pct, 41);
+const pill = rowEvaluationPill(pastIncomplete);
+assert.equal(pill.verdict, pastIncomplete.goNoGo.classification);
+assert.equal(pill.pct, 41);
+
+const empty = annotateEvaluationOnListRow({ id: "y", name: "n2", goNoGo: null });
+assert.equal(empty.goNoGo, null);
 
 console.log("PASS testFinishResearchForSeal");

@@ -36,6 +36,7 @@ assert.match(
 
 assert.match(logSrc, /SCREENING_VERDICT_LABEL/);
 assert.match(logSrc, /data-testid="screening-verdict-label"/);
+assert.match(logSrc, /data-testid="log-row-score"/);
 assert.match(logSrc, /RESEARCH_DID_NOT_FINISH_COPY/);
 
 assert.equal(CLASSIFICATION_EXPORT_LABEL, SCREENING_VERDICT_LABEL);

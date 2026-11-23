@@ -260,9 +260,14 @@ export default function LogPage({
       else base.DRAFTS += 1;
       if (researchWasUsed(row)) base["ai-used"] += 1;
       const evalState = rowEvaluationState(row);
-      if (evalState === "evaluated" || evalState === "legacy") {
-        const cls = classificationOf(row);
-        if (cls === "GO" || cls === "NO-GO" || cls === "WATCH" || cls === "INCOMPLETE") base[cls] += 1;
+      const cls = classificationOf(row);
+      if (
+        (cls === "GO" || cls === "NO-GO" || cls === "WATCH") &&
+        (evalState === "evaluated" || evalState === "legacy" || evalState === "incomplete")
+      ) {
+        base[cls] += 1;
+      } else if ((evalState === "evaluated" || evalState === "legacy") && cls === "INCOMPLETE") {
+        base.INCOMPLETE += 1;
       }
       if (isWaitingForBusinessHead(row)) base["bh-waiting"] += 1;
     }
@@ -937,7 +942,11 @@ export default function LogPage({
                   const screened = rowCanExportOutputPdf(h);
                   const lockedVerdict = evalPill.verdict;
                   const lockedPct = evalPill.pct;
-                  const sizeTier = screened ? ideaSizeForResult(h) : null;
+                  const bandVerdict =
+                    lockedVerdict === "GO" || lockedVerdict === "NO-GO" || lockedVerdict === "WATCH"
+                      ? lockedVerdict
+                      : "";
+                  const sizeTier = bandVerdict ? ideaSizeForResult(h) : null;
                   const wipeLabel = formatIdeaWipeLabel(ideaWipeAt(h));
                   const categoryGroup = rowCategoryGroup(h);
                   return (
@@ -953,26 +962,28 @@ export default function LogPage({
                             <span className={`log-chip ${chip.cls}`}>
                               {isOpening ? <Loader2 size={12} className="spin" /> : chip.label}
                             </span>
-                            {evalPill.label ? (
+                            {bandVerdict ? (
                               <span
-                                className={`research-badge ${
-                                  evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
-                                    ? "incomplete"
-                                    : lockedVerdict === "INCOMPLETE"
-                                      ? "incomplete"
-                                      : "used"
-                                }`}
-                                title={
-                                  evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
-                                    ? RESEARCH_DID_NOT_FINISH_COPY
-                                    : SCREENING_VERDICT_LABEL
-                                }
+                                className={`research-badge log-verdict used tone-${bandVerdict}`}
+                                data-testid="screening-verdict-label"
+                                title={SCREENING_VERDICT_LABEL}
+                              >
+                                {bandVerdict}
+                              </span>
+                            ) : evalPill.label ? (
+                              <span
+                                className="research-badge incomplete"
+                                data-testid="screening-verdict-label"
+                                title={SCREENING_VERDICT_LABEL}
                               >
                                 {evalPill.state === "not-evaluated" || evalPill.state === "incomplete"
                                   ? RESEARCH_DID_NOT_FINISH_COPY
-                                  : `${SCREENING_VERDICT_LABEL}: ${evalPill.label}${
-                                      Number.isFinite(lockedPct) ? ` ${lockedPct}%` : ""
-                                    }`}
+                                  : evalPill.label}
+                              </span>
+                            ) : null}
+                            {bandVerdict && Number.isFinite(lockedPct) ? (
+                              <span className="log-score-chip" data-testid="log-row-score">
+                                Score {lockedPct}%
                               </span>
                             ) : null}
                             {evalPill.legacy ? (
@@ -1020,7 +1031,8 @@ export default function LogPage({
                             data-provisional={sizeTier.provisional ? "true" : "false"}
                             title={sizeTier.derivation || sizeTier.label}
                           >
-                            {sizeTier.tier}
+                            <span>{sizeTier.tier}</span>
+                            {sizeTier.label ? <span className="log-scale-label">{sizeTier.label}</span> : null}
                           </span>
                         ) : (
                           <span className="log-scale-empty">—</span>
@@ -1213,9 +1225,9 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
 .log-table{width:100%;max-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
 .log-table th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--table-header-bg);padding:8px 6px;border-bottom:1px solid var(--table-border);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
 .log-table td{padding:8px 6px;border-bottom:1px solid var(--table-border);vertical-align:top;background:var(--card-bg);overflow:hidden;}
-.log-table th:nth-child(1),.log-table td:nth-child(1){width:9%;}
-.log-table th:nth-child(2),.log-table td:nth-child(2){width:20%;}
-.log-table th:nth-child(3),.log-table td:nth-child(3){width:5%;}
+.log-table th:nth-child(1),.log-table td:nth-child(1){width:12%;overflow:visible;}
+.log-table th:nth-child(2),.log-table td:nth-child(2){width:17%;}
+.log-table th:nth-child(3),.log-table td:nth-child(3){width:8%;}
 .log-table th:nth-child(4),.log-table td:nth-child(4){width:8%;}
 .log-table th:nth-child(5),.log-table td:nth-child(5){width:10%;}
 .log-table th:nth-child(6),.log-table td:nth-child(6){width:10%;}
@@ -1237,9 +1249,15 @@ export const LOG_PAGE_CSS = LOG_CHART_CSS + `
 .log-chip.chip-review{background:var(--chip-review-bg);color:var(--chip-review-fg);}
 .log-scale-cell{vertical-align:middle;}
 .log-scale-chip{
-  display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.04em;
-  padding:4px 8px;border-radius:999px;background:#E8E4D6;color:#3A3428;
+  display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;font-size:11px;font-weight:700;letter-spacing:.02em;
+  padding:4px 8px;border-radius:10px;background:#E8E4D6;color:#3A3428;white-space:normal;line-height:1.25;
 }
+.log-scale-label{font-size:9px;font-weight:600;letter-spacing:0;color:#5c5346;}
+.log-score-chip{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;}
+.log-verdict{font-size:12px;font-weight:800;letter-spacing:.04em;white-space:nowrap;overflow:visible;}
+.log-verdict.tone-GO{background:var(--chip-cleared-bg);color:var(--chip-cleared-fg);}
+.log-verdict.tone-WATCH{background:var(--chip-watch-bg, #f3e7c3);color:var(--chip-watch-fg, #6b4e00);}
+.log-verdict.tone-NO-GO{background:var(--chip-stopped-bg);color:var(--chip-stopped-fg);}
 .log-scale-chip[data-provisional="true"]{opacity:.9;}
 .log-scale-empty{color:var(--ink-muted);font-size:12px;}
 .log-status-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;}
