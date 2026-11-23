@@ -12,6 +12,7 @@ const TABS = [
   { id: "scoring", label: "Scoring re-score" },
   { id: "comparison", label: "Scoring comparison" },
   { id: "audit", label: "Audit" },
+  { id: "connector", label: "Connector" },
 ];
 
 export default function AdminUsersPage({ apiFetch }) {
@@ -51,6 +52,8 @@ export default function AdminUsersPage({ apiFetch }) {
   const [scoringWeightNote, setScoringWeightNote] = useState("");
   const [sequencesOk, setSequencesOk] = useState(true);
   const [sequenceDrift, setSequenceDrift] = useState([]);
+  const [mcpRequests, setMcpRequests] = useState([]);
+  const [mcpBusy, setMcpBusy] = useState("");
 
   const loadUsers = useCallback(async () => {
     setError("");
@@ -113,6 +116,17 @@ export default function AdminUsersPage({ apiFetch }) {
     }
   }, [apiFetch]);
 
+  const loadMcpRequests = useCallback(async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/admin/mcp/access-requests");
+      setMcpRequests(data.requests || []);
+    } catch (e) {
+      setError(e.message || "Could not load connector requests.");
+      setMcpRequests([]);
+    }
+  }, [apiFetch]);
+
   const loadScoringPreview = useCallback(async () => {
     setError("");
     setScoringBusy(true);
@@ -161,7 +175,8 @@ export default function AdminUsersPage({ apiFetch }) {
     if (tab === "audit") loadAudit();
     if (tab === "divisions") loadDivisionQueue();
     if (tab === "scoring" || tab === "comparison") loadScoringPreview();
-  }, [tab, loadRoster, loadBhMapping, loadAudit, loadDivisionQueue, loadScoringPreview]);
+    if (tab === "connector") loadMcpRequests();
+  }, [tab, loadRoster, loadBhMapping, loadAudit, loadDivisionQueue, loadScoringPreview, loadMcpRequests]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -959,6 +974,95 @@ export default function AdminUsersPage({ apiFetch }) {
             </button>
           </div>
           <p className="admin-muted">{rosterRows.filter((r) => r.active).length} active roster rows.</p>
+        </section>
+      ) : null}
+
+      {tab === "connector" ? (
+        <section className="admin-panel">
+          <h2>Claude connector requests</h2>
+          <p>
+            The MCP link does not let anyone in. A person who tries to connect is held here until you approve. Slack is
+            notified once per email per day when a request arrives.
+          </p>
+          <button type="button" className="ghost" onClick={loadMcpRequests}>
+            Refresh
+          </button>
+          {mcpRequests.length === 0 ? <p className="admin-muted">No requests yet.</p> : null}
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Decided by</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {mcpRequests.map((row) => (
+                  <tr key={row.email}>
+                    <td>{row.email}</td>
+                    <td>{row.status}</td>
+                    <td>{row.requestedAt ? new Date(row.requestedAt).toLocaleString() : "—"}</td>
+                    <td>{row.decidedBy || "—"}</td>
+                    <td>
+                      {row.status !== "approved" ? (
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={mcpBusy === row.email}
+                          onClick={async () => {
+                            setMcpBusy(row.email);
+                            setError("");
+                            try {
+                              await apiFetch("/api/admin/mcp/access-requests", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ email: row.email, action: "approve" }),
+                              });
+                              await loadMcpRequests();
+                            } catch (e) {
+                              setError(e.message || "Could not approve.");
+                            } finally {
+                              setMcpBusy("");
+                            }
+                          }}
+                        >
+                          Approve
+                        </button>
+                      ) : null}{" "}
+                      {row.status !== "denied" ? (
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={mcpBusy === row.email}
+                          onClick={async () => {
+                            setMcpBusy(row.email);
+                            setError("");
+                            try {
+                              await apiFetch("/api/admin/mcp/access-requests", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ email: row.email, action: "deny" }),
+                              });
+                              await loadMcpRequests();
+                            } catch (e) {
+                              setError(e.message || "Could not refuse.");
+                            } finally {
+                              setMcpBusy("");
+                            }
+                          }}
+                        >
+                          Refuse
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 

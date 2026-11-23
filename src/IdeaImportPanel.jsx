@@ -205,6 +205,9 @@ export default function IdeaImportPanel({ result, setResult, llmProvider = "clau
           <Download size={14} /> Download the Excel template
         </a>
       </div>
+      <p className="import-bulk-cap" data-testid="import-bulk-cap">
+        Cap: 200 ideas and 5 MB per file
+      </p>
       {error ? (
         <div className="prop-err" role="alert" data-testid="import-error">
           <AlertTriangle size={14} /> {error}
@@ -376,6 +379,7 @@ export const IDEA_IMPORT_CSS = `
 .import-summary-table{width:100%;border-collapse:collapse;font-size:calc(13.5px * var(--ts, 1));}
 .import-summary-table th,.import-summary-table td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--card-border,var(--c-border));overflow-wrap:anywhere;}
 .import-template-link{display:inline-flex;align-items:center;gap:6px;font-size:calc(14px * var(--ts, 1));color:var(--ink-secondary,#a9a3b8);text-decoration:underline;min-height:44px;}
+.import-bulk-cap{margin:0;font-size:calc(11.5px * var(--ts, 1));font-weight:400;line-height:1.35;color:var(--ink-secondary,#a9a3b8);}
 .import-help{margin:0;}
 .import-review{border:1px solid var(--card-border,var(--c-border));border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;overflow-wrap:anywhere;}
 .import-review-title{margin:0;font-size:calc(17px * var(--ts, 1));}

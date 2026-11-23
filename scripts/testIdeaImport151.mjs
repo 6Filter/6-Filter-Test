@@ -365,6 +365,9 @@ await check("two upload buttons: one idea, and bulk; the bulk one sends mode=bul
   assert.match(panel, /mode: modeRef\.current/);
   assert.match(panel, /modeRef\.current = "bulk"/);
   assert.match(panel, /modeRef\.current = "single"/);
+  assert.match(panel, /data-testid="import-bulk-cap"/);
+  assert.match(panel, /Cap: 200 ideas and 5 MB per file/);
+  assert.match(panel, /\.import-bulk-cap\{[^}]*font-size:calc\(11\.5px/);
 });
 await check("one idea opens straight into the form; bulk shows Submit all, progress and a verdict/score table", () => {
   assert.match(panel, /modeRef\.current === "single" && createdIdeas\.length === 1/);

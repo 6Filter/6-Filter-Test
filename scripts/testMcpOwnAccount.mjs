@@ -433,7 +433,7 @@ const pilotRefused = await http({
   body: `step=email&email=${encodeURIComponent(memberRow.email)}`,
   headers: { "content-type": "application/x-www-form-urlencoded" },
 });
-check("a pilot list refuses an unlisted email with a clear message and sends no code", pilotRefused.statusCode === 403 && /limited pilot/.test(pilotRefused.raw) && slack.dms.length === dmsBefore);
+check("a pilot list refuses an unlisted email with a clear message and sends no code", pilotRefused.statusCode === 403 && /request was sent to the admin|limited pilot|waiting for the admin/.test(pilotRefused.raw) && slack.dms.length === dmsBefore);
 const unlisted = await connectorToken(memberRow.email);
 check("an unlisted email cannot obtain a connector token", !unlisted.access_token);
 const pilotListed = await connectorToken(adminRow.email);
