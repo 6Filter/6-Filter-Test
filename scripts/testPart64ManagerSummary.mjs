@@ -123,11 +123,11 @@ assert.equal(
 );
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /Manager Review/);
-assert.match(formSrc, /Approve/);
-assert.match(formSrc, /Reject/);
-assert.match(formSrc, /NO-GO has no manager override/);
-assert.doesNotMatch(formSrc, /Manager Review[\s\S]*NO-GO" && \(/);
+assert.match(formSrc, /Ask business head to override|Manager Review/);
+assert.match(formSrc, /Override to GO|Approve/);
+assert.match(formSrc, /Override to NO-GO|Reject/);
+assert.match(formSrc, /sealed NO-GO cannot be overridden|NO-GO has no manager override/);
+assert.doesNotMatch(formSrc, /Ask business head to override[\s\S]*NO-GO" && \(/);
 
 const apiSrc = readFileSync(new URL("../lib/managerReviewApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /NO-GO has no manager-review path/);

@@ -12,7 +12,7 @@ import {
   SUBMITTER_DEPARTMENTS,
   isCanonicalTeam,
 } from "../lib/propositionFields.js";
-import { managerReviewRequestedOn } from "../lib/logStatus.js";
+import { classificationOf, managerReviewRequestedOn } from "../lib/logStatus.js";
 import TextSizeControl, { readStoredTextSize } from "./TextSizeControl.jsx";
 import { patchIgnoredKeys } from "../lib/ignoredKeyRefresh.js";
 import {
@@ -1716,12 +1716,21 @@ function ManagerReviewPanel({
     ? new Date(requestedAt).toISOString().slice(0, 10)
     : "";
 
-  if (approved) {
+  const overrideClass = String(
+    review?.overrideClassification || live.managerApproval?.overrideClassification || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (approved || overrideClass === "GO") {
     return (
       <div className="manager-review-panel is-approved">
         <p>
-          Manager approved {review?.approvedAt || state?.decision?.created_at ? timeAgo(review?.approvedAt || state?.decision?.created_at) : ""}. Upload proof to unlock
-          Filters 5–6, the same as a GO read.
+          Business head overrode WATCH to GO
+          {review?.approvedAt || state?.decision?.created_at
+            ? ` ${timeAgo(review?.approvedAt || state?.decision?.created_at)}`
+            : ""}
+          . Upload proof to unlock Filters 5–6.
         </p>
         {(review?.comment || state?.decision?.comment) ? (
           <blockquote className="manager-comment">{review?.comment || state?.decision?.comment}</blockquote>
@@ -1730,10 +1739,13 @@ function ManagerReviewPanel({
     );
   }
 
-  if (rejected && !canRequest) {
+  if ((rejected || overrideClass === "NO-GO") && !canRequest) {
     return (
       <div className="manager-review-panel">
-        <p>Manager review was rejected{review?.rejectedAt ? ` ${timeAgo(review.rejectedAt)}` : ""}.</p>
+        <p>
+          Business head overrode WATCH to NO-GO
+          {review?.rejectedAt ? ` ${timeAgo(review.rejectedAt)}` : ""}.
+        </p>
         {review?.rejectReason ? <blockquote className="manager-comment">{review.rejectReason}</blockquote> : null}
       </div>
     );
@@ -1741,7 +1753,10 @@ function ManagerReviewPanel({
 
   return (
     <div className="manager-review-panel">
-      <p>This idea is WATCH. A manager review can unlock proof upload the same way a GO would.</p>
+      <p>
+        This idea is WATCH. Ask the business head to override the verdict to GO or NO-GO. They get a Slack
+        message with a link to this idea.
+      </p>
       {/* Part 145 D108 — the Finance sign-off tick lives here, not on the input form. */}
       {typeof onFinanceSigned === "function" ? (
         <label className="prop-check finance-signoff" data-testid="finance-signoff" htmlFor="fld-f2-financeSigned">
@@ -1767,14 +1782,14 @@ function ManagerReviewPanel({
         canRequest ? (
           <button type="button" className="prop-save run" disabled={busy} onClick={onRequest}>
             {busy ? <Loader2 size={15} className="spin" /> : null}
-            Manager Review
+            Ask business head to override
           </button>
         ) : null
       ) : null}
       {requestedAt && canDecide ? (
         <div className="manager-review-form">
           <textarea
-            placeholder="Approve comment (min 10 characters)"
+            placeholder="Comment for overriding to GO (min 10 characters)"
             value={comment}
             onChange={(e) => onComment(e.target.value)}
             rows={3}
@@ -1786,10 +1801,10 @@ function ManagerReviewPanel({
             onClick={onApprove}
           >
             {busy ? <Loader2 size={15} className="spin" /> : null}
-            Approve
+            Override to GO
           </button>
           <textarea
-            placeholder="Reject reason (min 10 characters)"
+            placeholder="Comment for overriding to NO-GO (min 10 characters)"
             value={rejectReason}
             onChange={(e) => onRejectReason(e.target.value)}
             rows={3}
@@ -1801,11 +1816,11 @@ function ManagerReviewPanel({
             onClick={onReject}
           >
             {busy ? <Loader2 size={15} className="spin" /> : null}
-            Reject
+            Override to NO-GO
           </button>
         </div>
       ) : requestedAt && !canDecide && !rejected ? (
-        <p className="manager-wait">Waiting for the business head or an admin to decide.</p>
+        <p className="manager-wait">Waiting for the business head or an admin to override to GO or NO-GO.</p>
       ) : null}
       {slackNotice ? (
         <div className="prop-notice" role="status">
@@ -2062,7 +2077,17 @@ export function GoNoGoResultPage({
   // Single resolver: screened ideas always show the sealed snapshot (Part 128).
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
-  const classification = result.classification;
+  const sealedClassification = result.classification;
+  const classification =
+    classificationOf({
+      ...(doc || {}),
+      goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
+      classification: sealedClassification,
+    }) || sealedClassification;
+  const overrideNote =
+    classification !== sealedClassification && (classification === "GO" || classification === "NO-GO")
+      ? `Business head overrode WATCH to ${classification}. Sealed score stays ${scorePct}%.`
+      : "";
   // Part 141 D72 — path panel follows the sealed verdict, not a live recompute.
   const score = {
     ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}),
@@ -2265,12 +2290,18 @@ export function GoNoGoResultPage({
               ) : (
                 <>
               <p className="gonogo-verdict-label" data-testid="screening-verdict-label">{SCREENING_VERDICT_LABEL}</p>
-              <div className={`gonogo-badge gonogo-classification tone-${tone}`}>{classification}</div>
+              <div
+                className={`gonogo-badge gonogo-classification gonogo-verdict-main tone-${tone}`}
+                data-testid="screening-verdict-main"
+              >
+                {classification}
+              </div>
               {Number.isFinite(Number(score.pct)) ? (
-                <span className="mono badge-chip">
+                <span className="mono badge-chip gonogo-score-chip" data-testid="screening-score">
+                  Score {score.pct}%
                   {Number.isFinite(Number(score.points))
-                    ? `${score.points} of ${score.total || 17} relevance points · ${score.pct}%`
-                    : `${score.pct}% relevance`}
+                    ? ` · ${score.points} of ${score.total || 18}`
+                    : ""}
                   {score.shadowMode && Number.isFinite(Number(score.legacyPct))
                     ? ` · legacy ${score.legacyPct}%`
                     : ""}
@@ -2281,6 +2312,7 @@ export function GoNoGoResultPage({
                   className="gonogo-scale-chip idea-size-badge"
                   data-provisional={sizeTier.provisional ? "true" : "false"}
                   title={sizeTier.derivation}
+                  data-testid="screening-grammage"
                 >
                   {sizeTier.tier} · {sizeTier.label}
                   {sizeTier.provisional ? (
@@ -2291,6 +2323,7 @@ export function GoNoGoResultPage({
                 </>
               )}
             </div>
+            {overrideNote ? <p className="gonogo-override-note">{overrideNote}</p> : null}
             {!hideScreeningVerdict && sizeTier ? <p className="gonogo-scale-derivation">{sizeTier.derivation}</p> : null}
             {hideScreeningVerdict ? null : <p className="gonogo-rationale">{rationale}</p>}
             {storedVerdictWithoutInputs(savedDoc || doc) ? (
@@ -2695,7 +2728,7 @@ export function GoNoGoResultPage({
       ) : (
         <p className="gonogo-blocked-note">
           {isWatch
-            ? "WATCH — a manager can approve this forward with a comment, or close the remaining Filter 1–4 gaps and Submit again. NO-GO (floor failure) cannot be overridden."
+            ? "WATCH — ask the business head to override to GO or NO-GO on Slack, or close the remaining Filter 1–4 gaps and Evaluate again. A sealed NO-GO cannot be overridden."
             : goNoGoIsFloorFailure(checks)
               ? "Revise the filters and Submit again — upload and Filters 5–6 stay locked. NO-GO has no manager override."
               : "Fill the remaining Filter 1–4 parameters and Submit again. This is incomplete, not a rejected idea. Upload and Filters 5–6 unlock only on GO."}
@@ -5760,6 +5793,12 @@ ${FIELD_ROLE_CSS}
   display:inline-block;font-size:calc(13px * var(--ts, 1));font-weight:700;letter-spacing:.08em;
   padding:6px 12px;border-radius:999px;margin:0;
 }
+.gonogo-badge.gonogo-verdict-main{
+  font-size:calc(40px * var(--ts, 1));font-weight:800;letter-spacing:.04em;line-height:1.05;
+  padding:12px 20px;border-radius:14px;margin:4px 0 8px;
+}
+.gonogo-score-chip{font-size:calc(13px * var(--ts, 1));font-weight:700;}
+.gonogo-override-note{margin:0 0 10px;font-size:calc(13px * var(--ts, 1));line-height:1.4;color:var(--ink-muted);}
 .gonogo-badge.tone-pass{background:rgba(63,107,47,.16);color:var(--pass);}
 .gonogo-badge.tone-watch{background:rgba(138,97,0,.16);color:var(--watch);}
 .gonogo-badge.tone-incomplete{background:rgba(138,97,0,.18);color:var(--c-watch);border:1px solid rgba(138,97,0,.35);}
