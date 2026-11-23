@@ -16,6 +16,8 @@ assert.equal(assignedLogView({ role: "BM", orgRole: "TEAM_LEAD", title: "Team Le
 assert.equal(assignedLogView({ role: "BH FORUM" }), "all");
 assert.equal(assignedLogView({ role: "ADMIN" }), "all");
 assert.equal(displayTitle({ role: "BM" }, { mappedBusinessHead: true }), "Business Head");
+assert.equal(displayTitle({ role: "BM" }, { orgChartKind: "department_head" }), "Business Head");
+assert.equal(displayTitle({ role: "BM" }, { orgChartKind: "team_lead" }), "Team Lead");
 assert.equal(displayTitle({ role: "CMI" }), "Individual contributor");
 assert.equal(storedRoleLabel("ADMIN"), "Admin");
 assert.equal(storedRoleLabel("BH FORUM"), "Business Head");

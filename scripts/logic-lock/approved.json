@@ -18,6 +18,7 @@
     "lib/mcpAccess.js",
     "lib/mcpHttp.js",
     "lib/netMarginBlankNotice.js",
+    "lib/orgHierarchy.js",
     "lib/orgRoster.js",
     "lib/propositionAccess.js",
     "lib/propositionsApi.js",

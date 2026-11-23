@@ -30,18 +30,17 @@ Break-glass: `node scripts/issueLoginCode.mjs <email>` (ADMIN only, audited). Ro
 
 ## Visibility
 
-Keyed on `propositions.created_by_email` (normalised), with an additional **R&D org chart** in `lib/orgHierarchy.js`. At login, the viewer’s **email** is matched to the chart first (then Slack/display name as fallback). Idea owners are matched the same way (`created_by_email`, then `submitterName`).
+Keyed on `propositions.created_by_email` (normalised), with an additional **R&D org chart** in `lib/orgHierarchy.js` (R&D exception). The chart follows **Team Lead → Team Member 1 → Team Member 2**. At login, the viewer’s **email** is matched to the chart first (then Slack/display name as fallback). Idea owners are matched the same way (`created_by_email`, then `submitterName`).
 
-| Actor | Sees |
-|-------|------|
-| Individual / team member | Ideas where `created_by_email` equals their email |
-| Team lead (org chart) | Own ideas + ideas submitted by their charted reportees |
-| Unit head (e.g. CQM / K Kavitha) | Own ideas + ideas from everyone under that unit on the chart |
-| Department business head (org chart / Sridhar Rajam) | Own ideas + every idea on team **R&D**, and everyone under them on the chart |
-| BH FORUM (email in `business_head_teams`) | Own ideas + ideas whose team is in that mapping (legacy names via `legacy_team_map`). Decided from the table, not only the stored role. |
-| ADMIN | Every idea (including legacy NPD / Marketing until reassigned) |
+| Actor | Log default | Sees |
+|-------|-------------|------|
+| Individual contributor (no charted reports) | Mine | Ideas where `created_by_email` equals their email |
+| Team lead (named lead, or Team Member 1 with Team Member 2 under them) | My team's | Own ideas + the full reporting line under them (Member 1 and Member 2) |
+| Department business head (org chart / Sridhar Rajam) | All I can see | Own ideas + every idea on team **R&D**, and everyone under them on the chart |
+| BH FORUM (email in `business_head_teams`) | All I can see | Own ideas + ideas whose team is in that mapping (legacy names via `legacy_team_map`). Decided from the table, not only the stored role. |
+| ADMIN | All I can see | Every idea (including legacy NPD / Marketing until reassigned) |
 
-Distinct ABC leads: Navin Kumar (`navin.d@…`, Corporate Quality Assurance – ABC), Naveen Kumar S (`naveenkumar.s@…`, Product Development – ABC), Soumen Bera (`soumen.s@…`, Product Development – ABC). Navin’s three CQA ABC reportees are still unnamed on the deck.
+Ten R&D team leads report to Sridhar Rajam (`sridhar.r@cavinkare.com`). K Kavitha’s line includes Navin Kumar, G Ingarsal (with C Harshini and Sanjai Kumar Sathiyamoorthy as Team Member 2), and Roopan D. Naveen Kumar S and Soumen Bera remain distinct Product Development leads.
 
 Unassigned ideas (no creator email): ADMIN, and the business head of the idea’s team after `legacy_team_map`.
 

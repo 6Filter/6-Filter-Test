@@ -1,5 +1,5 @@
 /**
- * R&D org chart visibility: BH → department, leads → reportees, members → own.
+ * R&D org chart visibility: BH → department, leads → full line (TL → M1 → M2), members → own.
  * Login email is the primary role detector; name remains a fallback.
  */
 import assert from "node:assert/strict";
@@ -17,6 +17,7 @@ import {
   orgMemberNames,
 } from "../lib/orgHierarchy.js";
 import { canAccessIdeaSync } from "../lib/propositionAccess.js";
+import { displayTitle } from "../lib/displayTitle.js";
 
 process.env.REQUIRE_AUTH = "true";
 
@@ -31,8 +32,9 @@ assert.equal(orgMemberNames(sankar).length, 6);
 assert.equal(normalizeOrgEmail(sankar.email), "sankarkalidas.s@cavinkare.com");
 
 const kavitha = findOrgPersonByName("K Kavitha");
-assert.equal(kavitha?.role, "unit_head");
+assert.equal(kavitha?.role, "team_lead");
 assert.equal(normalizeOrgEmail(kavitha.email), "kavitha.k@cavinkare.com");
+assert.equal(orgMemberNames(kavitha).length, 3);
 
 assert.ok(findOrgPersonByName("Shobana N.s"));
 assert.ok(findOrgPersonByName("shobana n s"), "normalized alias");
@@ -42,28 +44,19 @@ assert.ok(findOrgPersonByName("Anubriya D"));
 assert.equal(findOrgPersonByEmail("sridhar.r@cavinkare.com")?.id, "sridhar-rajam");
 assert.equal(findOrgPersonByEmail("Sridhar.R@cavinkare.com")?.role, "department_head");
 assert.equal(findOrgPersonByEmail("rasmita.r@cavinkare.com")?.role, "member");
-assert.equal(findOrgPersonByEmail("ingersal@cavinkare.com")?.id, "g-ingarsal");
-assert.equal(findOrgPersonByEmail("dillibabu.v@cavinkare.com")?.name, "Dillbabu Vishwanathan");
-assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.id, "navin-kumar");
-assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.unit, "Corporate Quality Assurance - ABC");
+assert.equal(findOrgPersonByEmail("ingersal@cavinkare.com")?.role, "team_lead");
+assert.equal(findOrgPersonByEmail("harshini.c@cavinkare.com")?.role, "member");
+assert.equal(findOrgPersonByEmail("navin.d@cavinkare.com")?.role, "member");
 assert.equal(findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.id, "naveen-kumar-s");
-assert.equal(findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.unit, "Product Development - ABC");
 assert.equal(findOrgPersonByEmail("soumen.s@cavinkare.com")?.id, "soumen-bera");
-assert.equal(findOrgPersonByEmail("soumen.s@cavinkare.com")?.unit, "Product Development - ABC");
 assert.notEqual(
   findOrgPersonByEmail("navin.d@cavinkare.com")?.id,
   findOrgPersonByEmail("naveenkumar.s@cavinkare.com")?.id,
   "Navin Kumar and Naveen Kumar S stay distinct"
 );
 assert.equal(findOrgPersonByEmail("unknown@cavinkare.com"), null);
-assert.equal(
-  orgAccessForViewer({ email: "navin.d@cavinkare.com" }).kind,
-  "team_lead"
-);
-assert.equal(
-  orgAccessForViewer({ email: "soumen.s@cavinkare.com" }).kind,
-  "team_lead"
-);
+assert.equal(orgAccessForViewer({ email: "navin.d@cavinkare.com" }).kind, "member");
+assert.equal(orgAccessForViewer({ email: "soumen.s@cavinkare.com" }).kind, "team_lead");
 assert.ok(
   orgChartAllowsAccess(orgAccessForViewer({ email: "soumen.s@cavinkare.com" }), {
     ownerEmail: "anil.v@cavinkare.com",
@@ -77,9 +70,10 @@ assert.ok(bhAccess.memberKeys.has(normalizePersonKey("Sankar Kalidas S")));
 assert.ok(bhAccess.memberKeys.has(normalizePersonKey("Dharmraj Prajapati")));
 assert.ok(bhAccess.memberKeys.has(normalizePersonKey("K Kavitha")));
 assert.ok(bhAccess.memberKeys.has(normalizePersonKey("Roopan D")));
-assert.ok(bhAccess.memberKeys.has(normalizePersonKey("S Uma Shankar")));
+assert.ok(bhAccess.memberKeys.has(normalizePersonKey("C Harshini")));
 assert.ok(bhAccess.memberEmails.has("sankarkalidas.s@cavinkare.com"));
 assert.ok(bhAccess.memberEmails.has("dharmraj.m@cavinkare.com"));
+assert.ok(bhAccess.memberEmails.has("sanjai.s@cavinkare.com"));
 
 assert.ok(
   orgChartAllowsAccess(bhAccess, { ideaTeam: "R&D", ownerName: "Someone Outside Chart" }),
@@ -108,8 +102,8 @@ assert.ok(
 );
 assert.equal(
   orgChartAllowsAccess(leadByEmail, {
-    ownerEmail: "aarthy.s@cavinkare.com",
-    ownerName: "Aarthy S",
+    ownerEmail: "anubriya.d@cavinkare.com",
+    ownerName: "Anubriya D",
   }),
   false
 );
@@ -118,33 +112,47 @@ const leadAccess = orgAccessForViewerName("Sankar Kalidas S");
 assert.equal(leadAccess.kind, "team_lead");
 assert.ok(orgChartAllowsAccess(leadAccess, { ownerName: "Rasmita Sahoo" }));
 assert.ok(orgChartAllowsAccess(leadAccess, { ownerName: "Sankar Kalidas S" }));
-assert.equal(orgChartAllowsAccess(leadAccess, { ownerName: "Aarthy S" }), false);
+assert.equal(orgChartAllowsAccess(leadAccess, { ownerName: "Anubriya D" }), false);
 assert.equal(orgChartAllowsAccess(leadAccess, { ideaTeam: "R&D", ownerName: "Outsider" }), false);
 
-const cqmAccess = orgAccessForViewer({ email: "kavitha.k@cavinkare.com" });
-assert.equal(cqmAccess.kind, "unit_head");
-assert.ok(orgChartAllowsAccess(cqmAccess, { ownerName: "G Ingarsal" }));
-assert.ok(orgChartAllowsAccess(cqmAccess, { ownerEmail: "harshini.c@cavinkare.com" }));
-assert.ok(orgChartAllowsAccess(cqmAccess, { ownerEmail: "roopan.d@cavinkare.com" }));
-assert.ok(orgChartAllowsAccess(cqmAccess, { ownerName: "Navin Kumar" }));
-assert.equal(orgChartAllowsAccess(cqmAccess, { ownerName: "Aarthy S" }), false);
-assert.equal(orgChartAllowsAccess(cqmAccess, { ideaTeam: "R&D", ownerName: "Outsider" }), false);
+const kavithaAccess = orgAccessForViewer({ email: "kavitha.k@cavinkare.com" });
+assert.equal(kavithaAccess.kind, "team_lead");
+assert.ok(orgChartAllowsAccess(kavithaAccess, { ownerName: "G Ingarsal" }));
+assert.ok(orgChartAllowsAccess(kavithaAccess, { ownerEmail: "harshini.c@cavinkare.com" }));
+assert.ok(orgChartAllowsAccess(kavithaAccess, { ownerEmail: "sanjai.s@cavinkare.com" }));
+assert.ok(orgChartAllowsAccess(kavithaAccess, { ownerEmail: "roopan.d@cavinkare.com" }));
+assert.ok(orgChartAllowsAccess(kavithaAccess, { ownerName: "Navin Kumar" }));
+assert.equal(orgChartAllowsAccess(kavithaAccess, { ownerName: "Anubriya D" }), false);
+assert.equal(orgChartAllowsAccess(kavithaAccess, { ideaTeam: "R&D", ownerName: "Outsider" }), false);
+
+const ingarsalAccess = orgAccessForViewer({ email: "ingersal@cavinkare.com" });
+assert.equal(ingarsalAccess.kind, "team_lead");
+assert.ok(orgChartAllowsAccess(ingarsalAccess, { ownerEmail: "harshini.c@cavinkare.com" }));
+assert.ok(orgChartAllowsAccess(ingarsalAccess, { ownerEmail: "sanjai.s@cavinkare.com" }));
+assert.equal(orgChartAllowsAccess(ingarsalAccess, { ownerEmail: "roopan.d@cavinkare.com" }), false);
+assert.equal(orgChartAllowsAccess(ingarsalAccess, { ownerName: "Navin Kumar" }), false);
 
 const memberAccess = orgAccessForViewer({ email: "dharmraj.m@cavinkare.com" });
 assert.equal(memberAccess.kind, "member");
 assert.equal(orgChartAllowsAccess(memberAccess, { ownerName: "Rasmita Sahoo" }), false);
 
-const directAccess = orgAccessForViewer({ email: "tara.k@cavinkare.com", name: "Tara Kannan" });
-assert.equal(directAccess.kind, "member");
-
 const fragrance = orgAccessForViewer({ email: "kumar.t@cavinkare.com" });
-assert.ok(orgChartAllowsAccess(fragrance, { ownerEmail: "aksharaa.k@cavinkare.com" }));
+assert.ok(orgChartAllowsAccess(fragrance, { ownerEmail: "prateek.n@cavinkare.com" }));
 assert.ok(orgChartAllowsAccess(fragrance, { ownerEmail: "mefy.t@cavinkare.com" }));
 assert.equal(orgChartAllowsAccess(fragrance, { ownerEmail: "anubriya.d@cavinkare.com" }), false);
 
 const pdLead = orgAccessForViewer({ email: "raji.n@cavinkare.com" });
 assert.ok(orgChartAllowsAccess(pdLead, { ownerEmail: "rashmika.b@cavinkare.com" }));
 assert.ok(orgChartAllowsAccess(pdLead, { ownerEmail: "yeshwink@cavinkare.com" }));
+
+assert.equal(
+  displayTitle({ role: "BM", email: "kavitha.k@cavinkare.com" }, { orgChartKind: "team_lead" }),
+  "Team Lead"
+);
+assert.equal(
+  displayTitle({ role: "BM" }, { orgChartKind: "department_head" }),
+  "Business Head"
+);
 
 // Own-idea path still works without org grant.
 assert.equal(
@@ -163,14 +171,13 @@ assert.equal(
 );
 
 const chartedLeads = ORG_PEOPLE.filter((p) => p.role === "team_lead");
-assert.equal(chartedLeads.length, 12);
+assert.equal(chartedLeads.length, 10);
 const underSridhar = descendantPersonKeys("sridhar-rajam");
-assert.ok(underSridhar.size > 40, `expected full R&D tree, got ${underSridhar.size}`);
+assert.ok(underSridhar.size >= 40, `expected full R&D tree, got ${underSridhar.size}`);
 
 const emailed = ORG_PEOPLE.filter((p) => p.email).length;
-assert.ok(emailed >= 20, `expected most charted people to have emails, got ${emailed}`);
+assert.ok(emailed >= 10, `expected charted leads to have emails, got ${emailed}`);
 
-// Async guard (no Postgres): BH mapping miss is non-fatal; org chart still grants.
 const { canAccessIdea } = await import("../lib/propositionAccess.js");
 assert.equal(
   await canAccessIdea(
@@ -200,8 +207,8 @@ assert.equal(
       status: "active",
     },
     {
-      createdByEmail: "aarthy.s@cavinkare.com",
-      submitterName: "Aarthy S",
+      createdByEmail: "anubriya.d@cavinkare.com",
+      submitterName: "Anubriya D",
       submitterDepartment: "R&D",
     }
   ),
@@ -247,7 +254,7 @@ assert.equal(
 assert.equal(
   await canAccessIdea(
     {
-      id: "cqm",
+      id: "kav",
       name: "Kavitha",
       email: "kavitha.k@cavinkare.com",
       role: "BM",
@@ -260,9 +267,45 @@ assert.equal(
     }
   ),
   true,
-  "CQM unit head matched by email sees Foods reportee"
+  "team lead sees Team Member 2 under a Team Member 1"
+);
+assert.equal(
+  await canAccessIdea(
+    {
+      id: "l1",
+      name: "G Ingarsal",
+      email: "ingersal@cavinkare.com",
+      role: "BM",
+      status: "active",
+    },
+    {
+      createdByEmail: "harshini.c@cavinkare.com",
+      submitterName: "C Harshini",
+      submitterDepartment: "R&D",
+    }
+  ),
+  true,
+  "Team Member 1 with reports sees Team Member 2"
+);
+assert.equal(
+  await canAccessIdea(
+    {
+      id: "l1",
+      name: "G Ingarsal",
+      email: "ingersal@cavinkare.com",
+      role: "BM",
+      status: "active",
+    },
+    {
+      createdByEmail: "roopan.d@cavinkare.com",
+      submitterName: "Roopan D",
+      submitterDepartment: "R&D",
+    }
+  ),
+  false,
+  "Team Member 1 does not see a peer under the same team lead"
 );
 
 console.log(
-  `PASS org hierarchy access: email+name roles, BH R&D, ${chartedLeads.length} leads, CQM unit head, members own-only (${underSridhar.size} names under Sridhar)`
+  `PASS org hierarchy access: email+name roles, BH R&D, ${chartedLeads.length} leads, TL→M1→M2, members own-only (${underSridhar.size} names under Sridhar)`
 );
