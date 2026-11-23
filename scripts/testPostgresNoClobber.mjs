@@ -245,7 +245,11 @@ try {
 } catch {
   /* no model spend in this proof */
 }
-assertOnly(before, await snapshot(created.id), ["research_findings_json", "research_run_at"]);
+assertOnly(before, await snapshot(created.id), [
+  "research_findings_json",
+  "research_run_at",
+  "go_nogo_json",
+]);
 
 before = await snapshot(created.id);
 try {
@@ -258,7 +262,11 @@ try {
 } catch {
   /* retry stops before a model call */
 }
-assertOnly(before, await snapshot(created.id), ["research_findings_json", "research_run_at"]);
+assertOnly(before, await snapshot(created.id), [
+  "research_findings_json",
+  "research_run_at",
+  "go_nogo_json",
+]);
 
 before = await snapshot(created.id);
 try {
