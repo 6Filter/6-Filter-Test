@@ -357,6 +357,13 @@
     "src/StatsPage.jsx\tCould not load stats.",
     "src/StatsPage.jsx\tCounts use India time (IST). Charts and insights count screened ideas only: a GO, WATCH or NO-GO. Drafts and incomplete ideas are left out of those figures. Everyone in the organisation sees these figures.",
     "src/PropositionForm.jsx\tEnter these in the input form and re-submit — the verdict and score update.",
-    "src/PropositionForm.jsx\tSome research did not finish — what was missing is listed here. The verdict and score above use the values entered on the form. Correct the inputs in the input form and re-submit to update the verdict."
+    "src/PropositionForm.jsx\tSome research did not finish — what was missing is listed here. The verdict and score above use the values entered on the form. Correct the inputs in the input form and re-submit to update the verdict.",
+    "src/PropositionForm.jsx\t${}.${}",
+    "src/PropositionForm.jsx\tFilter 4 is 7 of the 18 checks (39% of the score)",
+    "src/PropositionForm.jsx\tResearch that did not finish",
+    "src/PropositionForm.jsx\tbutton",
+    "src/PropositionForm.jsx\tf4",
+    "src/PropositionForm.jsx\ttechShiftRisk",
+    "src/PropositionForm.jsx\t—"
   ]
 }

@@ -92,13 +92,10 @@ check("Filter 5 is not listed as unfinished research before a proof file", () =>
   assert.ok(!unfinished.some((u) => /households|Filter 5/i.test(u.label || "")));
 });
 
-check("the output page has research-unfinished with Screen again and the Filter 4 share line", () => {
-  assert.match(formSrc, /data-testid="research-unfinished"/);
-  assert.match(formSrc, /Research that did not finish/);
-  assert.match(formSrc, /Filter 4 is 7 of the 18 checks \(39% of the score\)/);
-  assert.match(formSrc, /data-testid="research-unfinished-screen-again"/);
-  assert.match(formSrc, /Screen again/);
-  assert.match(formSrc, /research-unfinished-screen-again/);
+check("the output page no longer shows the research-unfinished card or its Screen again button", () => {
+  assert.doesNotMatch(formSrc, /data-testid="research-unfinished"/);
+  assert.doesNotMatch(formSrc, /Research that did not finish/);
+  assert.doesNotMatch(formSrc, /research-unfinished-screen-again/);
   assert.match(formSrc, /listUnfinishedResearch/);
 });
 
@@ -132,11 +129,11 @@ check("sealed-from-entered research still shows what was missing (F1 checks, COG
   assert.match(byField.priceEvents.reason, /scored from the values entered on the form/);
 });
 
-check("the verdict hero comes before the what-was-missing explanation", () => {
+check("the verdict hero comes before the not-entered-values note", () => {
   const heroAt = formSrc.indexOf('className={`gonogo-hero tone-');
   const gapsAfter = formSrc.indexOf("hideScreeningVerdict ? null : gapsExplanation");
-  assert.ok(heroAt > 0 && gapsAfter > heroAt, "gaps explanation renders after the verdict hero");
-  assert.match(formSrc, /Correct the inputs in the input form and re-submit to update the verdict/);
+  assert.ok(heroAt > 0 && gapsAfter > heroAt, "not-entered-values note renders after the verdict hero");
+  assert.match(formSrc, /Enter these in the input form and re-submit — the verdict and score update/);
 });
 
 check("a typed idea with finished Filter 4 research and a cost estimate has no unfinished research", () => {
