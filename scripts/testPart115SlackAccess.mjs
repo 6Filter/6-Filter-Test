@@ -109,6 +109,9 @@ const slackFetch = async (url, opts = {}) => {
     if (email === "unknown@cavinkare.com") {
       return { ok: true, headers, json: async () => ({ ok: false, error: "users_not_found" }) };
     }
+    if (email === "scope.fail@cavinkare.com") {
+      return { ok: true, headers, json: async () => ({ ok: false, error: "missing_scope" }) };
+    }
     return {
       ok: true,
       headers,
@@ -122,6 +125,10 @@ const slackFetch = async (url, opts = {}) => {
     };
   }
   if (String(url).includes("conversations.open")) {
+    const body = JSON.parse(opts.body || "{}");
+    if (body.users === "U_NODM") {
+      return { ok: true, headers, json: async () => ({ ok: false, error: "cannot_dm" }) };
+    }
     return { ok: true, headers, json: async () => ({ ok: true, channel: { id: "D1" } }) };
   }
   if (String(url).includes("chat.postMessage")) {
@@ -163,15 +170,39 @@ async function verifyCode(email, code) {
   return res;
 }
 
-// End-to-end request-code: outsider / unknown / guest / gone → same message, no DM
+// End-to-end request-code: outsider / unknown / deactivated → same message, no DM
 calls.length = 0;
-for (const email of ["outsider@gmail.com", "unknown@cavinkare.com", "guest@cavinkare.com", "gone@cavinkare.com"]) {
+for (const email of ["outsider@gmail.com", "unknown@cavinkare.com", "gone@cavinkare.com"]) {
   const before = calls.filter((c) => String(c.url).includes("chat.postMessage")).length;
   const res = await requestCode(email);
   assert.equal(res.out.statusCode, 200);
   assert.equal(res.out.body?.message, REQUEST_CODE_SAME_MESSAGE);
   assert.equal(calls.filter((c) => String(c.url).includes("chat.postMessage")).length, before);
 }
+
+await clearDurableRateLimits();
+calls.length = 0;
+const guestRes = await requestCode("guest@cavinkare.com");
+assert.equal(guestRes.out.statusCode, 200, "a Slack guest with a work email can request a code");
+assert.ok(calls.some((c) => String(c.url).includes("chat.postMessage")), "guest receives a Slack DM");
+
+await clearDurableRateLimits();
+calls.length = 0;
+const scopeRes = await requestCode("scope.fail@cavinkare.com");
+assert.equal(scopeRes.out.statusCode, 503, "a Slack bot-token/scope failure is 503, not a fake send");
+assert.equal(calls.filter((c) => String(c.url).includes("chat.postMessage")).length, 0);
+
+await clearDurableRateLimits();
+calls.length = 0;
+const nodmRes = await requestCode("nodm@cavinkare.com");
+assert.equal(nodmRes.out.statusCode, 200, "when conversations.open fails the code is still posted to the user id");
+assert.ok(
+  calls.some(
+    (c) =>
+      String(c.url).includes("chat.postMessage") &&
+      String(c.body || "").includes("U_NODM")
+  )
+);
 
 // Issue + verify code once via handlers
 const aliceEmail = "alice@cavinkare.com";

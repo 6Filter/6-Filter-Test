@@ -18,7 +18,8 @@
     "lib/callAnthropic.js",
     "lib/creditFailureCopy.js",
     "lib/apiRouter.js",
-    "lib/mcpAccess.js"
+    "lib/mcpAccess.js",
+    "lib/slackAuth.js"
   ],
   "words": [
     "src/LogPage.jsx\tINCOMPLETE",
@@ -107,6 +108,12 @@
     "src/AdminUsersPage.jsx\tdenied",
     "src/AdminUsersPage.jsx\tdeny",
     "src/IdeaImportPanel.jsx\tCap: 200 ideas and 5 MB per file",
+    "src/LoginScreen.jsx\tOpen the Slack app on your phone or computer and check Direct Messages for 6 Filter Test. Do not enter this code on slack.com.",
+    "src/LoginScreen.jsx\tEnter the 6-digit code from the Slack app Direct Message.",
+    "src/LoginScreen.jsx\tWe send a 6-digit code as a Slack Direct Message. Open the Slack app — not slack.com in the browser.",
+    "src/LoginScreen.jsx\tWe sent a code to your Slack.",
+    "src/LoginScreen.jsx\tEnter the 6-digit code from Slack.",
+    "src/LoginScreen.jsx\tWe will send a one-time code to your CavinKare Slack.",
     "src/LogPage.jsx\tAdmin",
     "src/LogPage.jsx\tBusiness Head",
     "src/LogPage.jsx\tTeam Lead",

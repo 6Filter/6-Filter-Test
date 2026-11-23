@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { SUBMITTER_DEPARTMENTS } from "../lib/propositionFields.js";
 
-const SAME_HINT = "We sent a code to your Slack.";
+const SAME_HINT =
+  "Open the Slack app on your phone or computer and check Direct Messages for 6 Filter Test. Do not enter this code on slack.com.";
 
 function digitsFromText(raw) {
   return String(raw || "").replace(/\D/g, "").slice(0, 6);
@@ -70,7 +71,7 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
   async function verify(codeOverride) {
     const code = String(codeOverride || digitsRef.current.join("")).replace(/\D/g, "").slice(0, 6);
     if (code.length !== 6) {
-      setError("Enter the 6-digit code from Slack.");
+      setError("Enter the 6-digit code from the Slack app Direct Message.");
       return;
     }
     setError("");
@@ -214,7 +215,7 @@ export default function LoginScreen({ onLogin, onSignedIn, initialUser = null, s
         <p className="login-lede">
           {step === "team"
             ? "Choose your team once. Only an admin can change it later."
-            : "We will send a one-time code to your CavinKare Slack."}
+            : "We send a 6-digit code as a Slack Direct Message. Open the Slack app — not slack.com in the browser."}
         </p>
 
         {step === "email" ? (
