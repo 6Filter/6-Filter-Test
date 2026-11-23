@@ -2102,7 +2102,12 @@ export function GoNoGoResultPage({
     Array.isArray(unfinishedResearch) && unfinishedResearch.length
       ? unfinishedResearch
       : listUnfinishedResearch(doc || {});
-  const hideScreeningVerdict = Boolean(researchGapsForOutput.length) || isIncomplete;
+  // Gaps stay visible as notes; do not hide a sealed GO/WATCH/NO-GO or score/grammage.
+  const hideScreeningVerdict =
+    isIncomplete &&
+    classification !== "GO" &&
+    classification !== "WATCH" &&
+    classification !== "NO-GO";
   const scoreStatus = String(result.scoreStatus || "").trim();
   const screenedWhen = result.screenedAt || result.at || "";
   const screenedLabel = screenedWhen
@@ -2246,7 +2251,11 @@ export function GoNoGoResultPage({
           return (
             <div className="research-unfinished-block" role="status" data-testid="research-unfinished">
               <h3>Research that did not finish</h3>
-              <p className="research-unfinished-plain">{RESEARCH_DID_NOT_FINISH_COPY}. There is no score and no screening verdict until you Screen again.</p>
+              <p className="research-unfinished-plain">
+                {hideScreeningVerdict
+                  ? `${RESEARCH_DID_NOT_FINISH_COPY}. Screen again to finish research and seal the score.`
+                  : "Some research did not finish — gaps are listed here. The verdict and score below use the values entered on the form."}
+              </p>
               <ul className="evaluation-missing-list">
                 {gaps.map((entry) => (
                   <li key={`${entry.filter}.${entry.field}`}>
@@ -4532,8 +4541,10 @@ export default function PropositionForm({
             savedDoc={initial}
             saving={saving || readingGoNoGo}
             onBack={() => setCurrentView("propositionForm")}
-            onSubmit={() => handleSubmit()}
-            submitLabel={outputEvalState === "legacy" ? "Evaluate" : "Submit"}
+            onSubmit={() =>
+              handleSubmit(undefined, { fromPending: true, skipConfirm: true, forceResearch: true })
+            }
+            submitLabel={outputEvalState === "legacy" ? "Evaluate" : "Screen again"}
             legacyView={outputEvalState === "legacy"}
             hideFilterCards={outputEvalState === "legacy"}
             allowPdfExport={outputEvalState === "evaluated" || outputEvalState === "legacy"}
