@@ -118,8 +118,12 @@ export default function StatsPage({
     return base.filter((row) => inRange(istParts(rowDateIso(row))?.ymd, period));
   }, [logRows, teamFilter, personFilter, monthFilter, period]);
   const isAdminUser = String(currentUser?.role || "").trim() === "ADMIN";
+  const viewerTitle = String(currentUser?.title || "").trim();
   const showCreatedBy =
     isAdminUser ||
+    viewerTitle === "Admin" ||
+    viewerTitle === "Business Head" ||
+    viewerTitle === "Team Lead" ||
     String(currentUser?.role || "").trim() === "BH FORUM" ||
     viewScope === "team" ||
     viewScope === "all";
