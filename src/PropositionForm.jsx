@@ -4398,6 +4398,20 @@ export default function PropositionForm({
     } else {
       setGoNoGo(null);
       setCurrentView("goNoGoResult");
+      if (fromPending) {
+        const leftover = (
+          Array.isArray(mergedProp.evaluationMissing) && mergedProp.evaluationMissing.length
+            ? mergedProp.evaluationMissing
+            : computeEvaluationStatus(mergedProp).missing || []
+        )
+          .map((m) => m.label || m.step)
+          .filter(Boolean);
+        setLocalError(
+          leftover.length
+            ? `Still unfinished: ${leftover.join("; ")}. Click Evaluate again to finish and seal the score.`
+            : "Evaluate ran, but the score was not sealed. Click Evaluate again."
+        );
+      }
     }
     setJustSubmitted(true);
     setSummaryStale(false);
