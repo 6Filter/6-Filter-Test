@@ -10,8 +10,9 @@ import { displayRole, displayRoleKey, requiredEmpty } from "../lib/fieldRoleDisp
 export function FieldRoleBadge({ path, doc }) {
   if (!path) return null;
   const role = displayRoleKey(path, doc);
+  // Every typed box is required, so the Required chip is not shown. Optional stays, so a box that is not required is still marked.
+  if (role !== "optional") return null;
   const label = displayRole(path, doc);
-  // Punch list 2.4 — every box says Required or Optional (the owner asked for both).
   return (
     <span className="field-role" data-role-wrap={path}>
       <span className="field-role-badge" data-role-for={path} data-role={role}>

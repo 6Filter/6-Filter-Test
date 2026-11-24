@@ -17,7 +17,8 @@ check("Punch list 2.5 — cost and margin sit behind one Adjust cost and margin 
 check("Screened tile no longer prints the GO / NO-GO / WATCH breakdown", () => {
   assert.doesNotMatch(log, /NO-GO\} NO-GO|\} GO · /);
 });
-check("Punch list 2.4 — the Required badge is rendered again on every Required box", () => {
-  assert.doesNotMatch(badge, /if \(role === "required"\) return null;/);
+check("Required chips are not shown; Optional chips still render", () => {
+  assert.match(badge, /role !== "optional"\) return null/);
+  assert.match(badge, /field-role-badge/);
 });
 console.log(`PASS Part 152 (${n} checks)`);

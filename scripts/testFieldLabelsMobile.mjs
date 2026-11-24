@@ -37,16 +37,18 @@ await check("the form and the spec page both ship the shared CSS", () => {
   assert.match(spec, /<style>\{FIELD_ROLE_CSS\}<\/style>/);
 });
 
-await check("badge shows Required/Optional words as visible text", async () => {
-  const m = await mount(h(FieldRoleBadge, { path: "f1.declaredGap", doc }));
-  const badge = m.host.querySelector('[data-role-for="f1.declaredGap"]');
-  assert.ok(badge, "badge rendered");
+await check("a Required box has no chip; an Optional box still shows the word", async () => {
+  const required = await mount(h(FieldRoleBadge, { path: "f1.declaredGap", doc }));
+  assert.equal(required.host.querySelector('[data-role-for="f1.declaredGap"]'), null);
+  assert.equal(displayRole("f1.declaredGap", doc), "Required");
+  await required.unmount();
+  const optional = await mount(h(FieldRoleBadge, { path: "f2.mrpInr", doc }));
+  const badge = optional.host.querySelector('[data-role-for="f2.mrpInr"]');
+  assert.ok(badge, "optional badge rendered");
   assert.equal(badge.className, "field-role-badge");
-  assert.equal(badge.getAttribute("data-role"), "required");
-  assert.equal(badge.textContent, displayRole("f1.declaredGap", doc));
-  assert.equal(m.host.querySelector("button.field-role-toggle"), null);
-  assert.equal(m.host.querySelector(".field-role-note"), null);
-  await m.unmount();
+  assert.equal(badge.textContent, "Optional");
+  assert.equal(optional.host.querySelector("button.field-role-toggle"), null);
+  await optional.unmount();
 });
 
 await check("New market makes Benchmark Optional on the badge", async () => {

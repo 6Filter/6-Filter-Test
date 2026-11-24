@@ -189,15 +189,15 @@ async function click(el) {
   await act(async () => el.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true })));
 }
 
-await check("2.4 every shown box carries Required or Optional, and the twelve Required boxes say Required", async () => {
+await check("2.4 Required chips are hidden; Optional chips remain", async () => {
   const m = await mountForm(emptyDoc);
   for (const header of m.qa('[data-filter-open="no"] .prop-filter-h')) await click(header);
-  const required = new Set(m.qa('[data-role="required"][data-role-for]').map((b) => b.getAttribute("data-role-for")));
+  const required = m.qa('[data-role="required"][data-role-for]');
   const optional = m.qa('[data-role="optional"][data-role-for]');
-  assert.ok(required.size >= 10, `Required labels: ${required.size}`);
+  assert.equal(required.length, 0, "no Required chips");
   assert.ok(optional.length >= 1, "Optional labels");
   for (const p of ["name", "category", "ideaDescription", "f1.benchmark", "f1.gapDerivation", "f2.grammage", "f2.gstRatePct"]) {
-    assert.ok(required.has(p), `${p} says Required`);
+    assert.equal(m.q(`[data-role="required"][data-role-for="${p}"]`), null, `${p} does not say Required`);
   }
   assert.match(read("src/FieldRoleBadge.jsx"), /displayRoleKey/);
   await m.unmount();

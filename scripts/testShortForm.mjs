@@ -128,15 +128,20 @@ await check("D105 the Change button opens the team picker", async () => {
 });
 
 // ───────────── the twelve typed Required boxes ─────────────
-await check("D105 the typed Required boxes are exactly the twelve (Filter 2 opened with its header)", async () => {
+await check("D105 the twelve typed boxes are on the form and none of them says Required", async () => {
   for (const header of qa('[data-filter-open="no"] .prop-filter-h')) await click(header);
-  const required = new Set(qa('[data-role="required"][data-role-for]').map((b) => b.getAttribute("data-role-for")));
   const want = [
     "name", "category", "ideaDescription",
     "f1.declaredAttribute", "f1.benchmark", "f1.declaredGap", "f1.gapDerivation", "f1.parityExceptions",
     "f1.growthRoute", "f1.growthArgument", "f2.grammage", "f2.gstRatePct",
   ];
-  assert.deepEqual([...required].sort(), want.sort());
+  assert.equal(qa('[data-role="required"]').length, 0, "no Required chips");
+  for (const path of want) {
+    assert.ok(
+      q(`[data-field="${path}"]`) || q(`#fld-${path.replace(".", "-")}`),
+      `${path} is on the form`
+    );
+  }
 });
 
 // ───────────── D108 what is gone ─────────────

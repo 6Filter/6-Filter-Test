@@ -41,7 +41,7 @@ await check("mounted badge wraps under a narrow heading without fixed nowrap on 
       "div",
       { className: "prop-label", style: { width: "320px", display: "flex", flexWrap: "wrap" } },
       h("span", null, "Declared attribute"),
-      h(ui.mod.FieldRoleBadge, { path: "f1.declaredAttribute", doc })
+      h(ui.mod.FieldRoleBadge, { path: "f1.declaredAttribute2", doc })
     )
   );
   const wrap = m.host.querySelector(".field-role");

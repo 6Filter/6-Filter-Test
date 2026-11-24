@@ -375,6 +375,7 @@
     "src/LogPage.jsx\tWATCH",
     "src/LogPage.jsx\tevaluated",
     "src/LogPage.jsx\tlegacy",
-    "src/LogPage.jsx\tresearch-badge log-verdict used tone-${}"
+    "src/LogPage.jsx\tresearch-badge log-verdict used tone-${}",
+    "src/FieldRoleBadge.jsx\toptional"
   ]
 }

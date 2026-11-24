@@ -86,17 +86,20 @@ const { h, mount } = ui;
 const { FieldRoleBadge } = ui.mod;
 const doc = emptyPropositionDoc("x");
 
-await check("a badge renders for EVERY form box as Required or Optional only", async () => {
+await check("Required boxes show no chip; Optional boxes still say Optional", async () => {
   const paths = formFieldPaths();
   assert.equal(paths.length, 40);
   for (const path of paths) {
     const m = await mount(h(FieldRoleBadge, { path, doc }));
     const badge = m.host.querySelector(`span.field-role-badge[data-role-for="${path}"]`);
-    assert.ok(badge, `badge for ${path}`);
     const want = displayRole(path, doc);
-    assert.equal(badge.textContent, want, `label text for ${path}`);
-    assert.ok(want === "Required" || want === "Optional");
-    assert.equal(badge.getAttribute("data-role"), displayRoleKey(path, doc));
+    if (want === "Required") {
+      assert.equal(badge, null, `no Required chip for ${path}`);
+    } else {
+      assert.ok(badge, `Optional chip for ${path}`);
+      assert.equal(badge.textContent, "Optional");
+      assert.equal(badge.getAttribute("data-role"), "optional");
+    }
     await m.unmount();
   }
 });
