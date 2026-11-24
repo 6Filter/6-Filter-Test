@@ -4,10 +4,31 @@ import { displayCopy } from "../lib/displayCopy.js";
 import { researchHashFor } from "../lib/researchCache.js";
 import { researchStepFields, stepFingerprint as stepFp } from "../lib/researchStepCache.js";
 import { parseIdeaAnalysis, buildIdeaAnalysisUser } from "../lib/ideaWorkAnalysis.js";
+import { typedResearchBrief } from "../lib/propositionAiFirstPass.js";
 
 const none = displayCopy("Gap derivation none", {});
 assert.match(none, /Write a full sentence/);
 assert.equal(none.includes("Gap derivation none"), false);
+const nas = "For health conscious people RTD options are usually considered as bad since it has lot of sugar. But with our NAS range we are bridging the gap for health conscious people";
+const readBack = displayCopy("Gap derivation none", {
+  f1: { benchmark: "Tropicana 200ml PET Bottles", gapDerivation: nas },
+});
+assert.match(readBack, /You entered/);
+assert.match(readBack, /NAS range/);
+assert.equal(/does not count in this box/.test(readBack), false);
+assert.match(
+  displayCopy("Parity exceptions none", { f1: { parityExceptions: "taste matches the bottle, colour does not" } }),
+  /taste matches the bottle/
+);
+assert.match(displayCopy("Growth argument none", { f1: { growthArgument: "none" } }), /one paragraph/);
+const brief = typedResearchBrief("Fruit drink in a tetra pack", {
+  f1: { benchmark: "Tropicana 200ml PET Bottles", gapDerivation: nas, growthArgument: "9.5 Mn households" },
+});
+assert.match(brief, /What the team will beat that benchmark on: For health conscious/);
+assert.match(brief, /Named benchmark: Tropicana 200ml PET Bottles/);
+const claimSrc = readFileSync(new URL("../lib/f1Research.js", import.meta.url), "utf8");
+assert.match(claimSrc, /A filled sentence is never a missing field/);
+assert.match(claimSrc, /gapDerivation:/);
 assert.match(displayCopy("Parity exceptions none", {}), /type none if you are not giving anything up/i);
 assert.match(displayCopy("Growth argument none", {}), /one paragraph/);
 assert.match(displayCopy("Growth argument weak", {}), /too vague/);
