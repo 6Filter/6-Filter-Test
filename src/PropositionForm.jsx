@@ -4799,7 +4799,7 @@ export default function PropositionForm({
             onClick={async () => {
               const idea = String(doc.ideaDescription || "").trim();
               setIdeaAnalysisError("");
-              if (idea.length < 12) {
+              if (idea.length < 12) { // lock-ok: idea sentence
                 setIdeaAnalysis(null);
                 setIdeaAnalysisError("Describe the idea in a sentence first, then ask for AI analysis.");
                 return;
