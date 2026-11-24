@@ -3381,7 +3381,8 @@ export default function PropositionForm({
     setInputReviewKept((prev) => ({ ...prev, [field]: true }));
   }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
-  const livePreviewChecks = previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc));
+  const livePreviewChecks =
+    previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc)) || previewAdvisoryChecks(liveDoc);
   // Filters 1–4 stay open; Filters 5–6 need GO/manager + proof.
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
