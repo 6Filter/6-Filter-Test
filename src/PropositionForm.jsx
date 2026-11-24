@@ -5132,7 +5132,7 @@ export default function PropositionForm({
                   value={values.volumeLossJustification || ""}
                   onChange={(e) => setFilter("f3", "volumeLossJustification", e.target.value)}
                 />
-                <p className="field-helper">This note is not marked down. It records how the 10% volume-loss rule is met.</p>
+                <p className="derived-note">This note is not marked down. It records how the 10% volume-loss rule is met.</p>
               </div>
             ) : null}
 
