@@ -354,4 +354,74 @@ const stubChecks = easeScreeningChecks(
 assert.equal(stubChecks.f1.items.find((it) => it.slot === "derivation").credit, 0);
 assert.equal(stubChecks.f1.items.find((it) => it.slot === "parity").credit, 0);
 
+const noFile = easeScreeningChecks(
+  {
+    f1: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          slot: "attributes",
+          status: "pending",
+          credit: 0,
+          code: "F1_ATTRIBUTES_NO_EVIDENCE",
+          text: "Upload a study or paste a link in Evidence Source",
+          reasons: ["NO_EVIDENCE"],
+        },
+        {
+          slot: "gap",
+          status: "pending",
+          credit: 0,
+          code: "F1_GAP_BELOW_FLOOR",
+          text: "Declared gap 1 is marked down",
+          reasons: ["BELOW_FLOOR", "MARKED_DOWN"],
+        },
+      ],
+    },
+    f3: {
+      checkLabel: "Marked down",
+      markedDown: true,
+      capsGo: true,
+      items: [
+        {
+          slot: "resilience",
+          status: "pending",
+          credit: 0,
+          code: "F3_RESILIENCE_CANNOT_ASSESS",
+          text: "Cannot assess: no verified volume evidence when comparable packs crossed ₹10.",
+          reasons: ["NO_EVIDENCE_FOR_POINT_10"],
+        },
+      ],
+    },
+  },
+  { f1: { declaredGap: 1 } }
+).checks;
+assert.equal(noFile.f1.items.find((it) => it.slot === "attributes").credit, 1);
+assert.equal(noFile.f1.items.find((it) => it.slot === "gap").credit, 0);
+assert.equal(noFile.f1.markedDown, true);
+assert.equal(noFile.f3.items[0].credit, 1);
+assert.equal(noFile.f3.markedDown, false);
+assert.equal(noFile.f3.checkLabel, "Cleared");
+
+const lossStill = easeScreeningChecks(
+  {
+    f3: {
+      checkLabel: "Marked down",
+      markedDown: true,
+      items: [
+        {
+          slot: "resilience",
+          status: "pending",
+          credit: 0,
+          code: "F3_RESILIENCE_FAIL",
+          text: "Crossing ₹10 models about 18% volume loss — above the 10% limit.",
+          reasons: ["ABOVE_CEILING"],
+        },
+      ],
+    },
+  },
+  {}
+).checks;
+assert.equal(lossStill.f3.items[0].credit, 0);
+assert.equal(lossStill.f3.markedDown, true);
+
 console.log("user fixes ok");
