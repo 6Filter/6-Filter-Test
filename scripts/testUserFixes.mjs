@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { displayCopy } from "../lib/displayCopy.js";
 import { checkF2Sync } from "../lib/filter2Check.js";
+import { checkF4 } from "../lib/filterChecks.js";
 import { previewAdvisoryChecks } from "../lib/goNoGo.js";
 import { lockedFloorForProposition } from "../lib/divisionMargin.js";
-import { liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
+import { f4Improvement, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 import { researchHashFor } from "../lib/researchCache.js";
 import { researchStepFields, stepFingerprint as stepFp } from "../lib/researchStepCache.js";
 import { parseIdeaAnalysis, buildIdeaAnalysisUser } from "../lib/ideaWorkAnalysis.js";
@@ -240,5 +241,45 @@ assert.match(
   displayCopy("The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence", aiDoc),
   /does not ask for more evidence/
 );
+
+const finding = "The tetra-pack format faces growing pressure from chilled PET and cup formats favoured by q-commerce.";
+const f4Doc = {
+  f4: {
+    userInputs: { functionalCoreStability: { rating: "Medium", pov: finding } },
+    techShiftRisk: {
+      dimensions: {
+        functionalCoreStability: { risk: "Medium", reason: finding },
+      },
+    },
+  },
+  researchFindings: {
+    f4: {
+      assessments: {
+        functionalCoreStability: {
+          status: "ok",
+          searchUsed: true,
+          raw: { rating: "Medium", supported: false, quote: finding, contradicted: true },
+          returnedSources: ["https://example.com/f4"],
+        },
+      },
+    },
+  },
+};
+const f4Credited = scoringDocForEnteredCredit(f4Doc);
+const f4Check = checkF4(f4Credited.f4, f4Credited.researchFindings.f4);
+const f4Item = f4Check.items.find((it) => /functional core stability/i.test(it.text));
+assert.equal(f4Item.status, "done");
+assert.doesNotMatch(f4Item.text, /Still open/);
+assert.match(displayCopy(`Clear the open Filter 4 dimension "Functional core stability" with a mitigation response`, f4Doc), /not marked down/);
+const other = {
+  ...f4Doc,
+  f4: {
+    ...f4Doc.f4,
+    userInputs: { functionalCoreStability: { rating: "Medium", pov: "We already signed a pack contract for the year." } },
+  },
+};
+assert.match(f4Improvement(other, "functionalCoreStability"), /Put that finding in this box/);
+assert.doesNotMatch(form, /data-f4-block="web-check"/);
+assert.doesNotMatch(form, /Respond on Medium/);
 
 console.log("user fixes ok");

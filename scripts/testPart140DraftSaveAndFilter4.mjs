@@ -350,25 +350,21 @@ await check("PropositionForm: Submit bar error, Why can't I submit?, button stay
   assert.match(form, /id: `invalid-\$\{f\.field\}`/);
 });
 
-await check("PropositionForm: two blocks per Filter 4 dimension, bound to f4.userInputs", () => {
+await check("PropositionForm: one box per Filter 4 point, no web-check panel and no second response list", () => {
   assert.match(form, /Your rating and view/);
   assert.match(form, /data-f4-block="your-view"/);
-  assert.match(form, /data-f4-block="web-check"/);
-  assert.match(form, /Web check/);
-  assert.match(form, /supports your rating/);
-  assert.match(form, /contradicts your rating/);
+  assert.doesNotMatch(form, /data-f4-block="web-check"/);
+  assert.doesNotMatch(form, /Web check rating/);
+  assert.doesNotMatch(form, /Respond on Medium/);
   assert.match(form, /onUserInputChange/);
   assert.match(form, /ideaDoc\?\.f4\?\.userInputs/);
   assert.match(form, /setFilter\("f4", "userInputs", nextInputs\)/);
   assert.match(form, /userInputs: normalizeF4UserInputs\(/);
-  assert.match(form, /assessment\?\.raw\?\.source_url/);
-  assert.match(form, /assessment\?\.raw\?\.quote/);
-  // The old hand-edit path into techShiftRisk is gone.
   assert.doesNotMatch(form, /patchDimension\(key, \{ risk:/);
   assert.doesNotMatch(form, /patchDimension\(key, \{ reason:/);
-  // Existing F4 contracts stay.
   assert.match(form, /className="f4-dimension-editor"/);
   assert.match(form, /Select risk/);
+  assert.match(form, /onMitigationChange\(key, patch\.pov\)/);
 });
 
 console.log(`PASS testPart140DraftSaveAndFilter4 (${checks} checks)`);

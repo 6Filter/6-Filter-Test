@@ -5,10 +5,12 @@ const log = readFileSync("src/LogPage.jsx", "utf8");
 const badge = readFileSync("src/FieldRoleBadge.jsx", "utf8");
 let n = 0;
 const check = (name, fn) => { fn(); n += 1; console.log("  ok", n, "-", name); };
-check("no 'not checked yet' placeholder and no empty Web check panel on Filter 4", () => {
+check("Filter 4 has one box per point and no web-check panel", () => {
   assert.doesNotMatch(form, /not checked yet/);
-  assert.match(form, /showWebCheck \? \(/);
-  assert.match(form, /\{webRating \? \(/);
+  assert.doesNotMatch(form, /showWebCheck/);
+  assert.doesNotMatch(form, /data-f4-block="web-check"/);
+  assert.doesNotMatch(form, /Respond on Medium/);
+  assert.match(form, /data-f4-block="your-view"/);
 });
 check("Punch list 2.5 — cost and margin sit behind one Adjust cost and margin button again", () => {
   assert.match(form, /data-testid="adjust-cost-margin"/);

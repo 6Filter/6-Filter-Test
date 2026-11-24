@@ -116,7 +116,6 @@ import {
   patchF4UserInput,
   userInputFor,
 } from "../lib/techShiftRisk.js";
-import { f4WebCheckRelation } from "../lib/f4Assessment.js";
 import { plainDraftSaveError } from "../lib/clientSavePayload.js";
 import { FMCG_CATEGORIES } from "../lib/fmcgCategories.js";
 import { formatMinimumMarginHint, marginBelowFloorWarning } from "../lib/divisionMargin.js";
@@ -696,33 +695,14 @@ function FieldControl({
           ? aggregateTechShiftRiskWithResponses(dimensions)
           : aggregateTechShiftRisk(dimensions) || effectiveOverallRisk(risk)
         : "";
-    const respondable = TECH_SHIFT_DIMENSIONS.filter((key) => {
-      const d = dimensions[key];
-      const level = normalizeRiskLevel(d?.reassessedRisk) || normalizeRiskLevel(d?.risk);
-      return level === "Medium" || level === "High";
-    });
-    const hasResponseText = respondable.some((key) => {
-      const d = dimensions[key];
-      return String((mitigationResponses && mitigationResponses[key]) || d?.userResponse || "").trim();
-    });
-    // Part 140 C (D63) — the person's rating and view go to f4.userInputs only. techShiftRisk is
-    // research output: it is shown below as the Web check and is never edited from this form.
+    // One box per point. The view is also the mitigation, so the same point is not asked again below.
     const storedUserInputs = ideaDoc?.f4?.userInputs;
     const patchUserInput = (key, patch) => {
       const nextInputs = patchF4UserInput(storedUserInputs, key, patch);
       if (typeof onUserInputChange === "function") onUserInputChange(nextInputs, key);
-      // Part 138 F (D56) — a hand-entered rating is web-checked; until that check supports it, it earns nothing.
-      if (
-        Object.prototype.hasOwnProperty.call(patch, "rating") &&
-        normalizeRiskLevel(patch.rating) &&
-        typeof onVerifyDimension === "function"
-      ) {
-        onVerifyDimension(key, nextInputs);
+      if (typeof patch.pov === "string" && typeof onMitigationChange === "function") {
+        onMitigationChange(key, patch.pov);
       }
-    };
-    const f4Assessments = ideaDoc?.researchFindings?.f4?.assessments || {};
-    const patchDimensionResponse = (key, userResponse) => {
-      if (typeof onMitigationChange === "function") onMitigationChange(key, userResponse);
     };
     return (
       <div
@@ -744,22 +724,13 @@ function FieldControl({
           {TECH_SHIFT_DIMENSIONS.map((key) => {
             const d = dimensions[key] || { risk: "", reason: "" };
             const mine = userInputFor(storedUserInputs, key);
-            const assessment = f4Assessments[key] || null;
-            const aiRating = normalizeRiskLevel(d.risk) || "";
-            const checkedRating = normalizeRiskLevel(assessment?.raw?.rating) || "";
-            const checkedOk = assessment && assessment.status === "ok" && assessment.searchUsed === true;
-            const relation = f4WebCheckRelation(mine.rating, assessment);
-            const finding = String(assessment?.raw?.quote || d.reason || "").trim();
-            const sourceUrl = String(assessment?.raw?.source_url || "").trim();
-            // Part 152 — no empty "Web check" panel: it appears only when there is something to show.
-            const webRating = checkedOk && checkedRating ? checkedRating : aiRating;
-            const showWebCheck = Boolean(
-              verifyingDimension === key || webRating || finding || sourceUrl || assessment || mine.rating
-            );
+            const typed =
+              String(mine.pov || "").trim() ||
+              String((mitigationResponses && mitigationResponses[key]) || d.userResponse || "").trim();
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                <div className="f4c-body" data-web-check={showWebCheck ? "yes" : "no"}>
+                <div className="f4c-body">
                 <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
                   <div className="f4-block-title">Your rating and view</div>
                   <select
@@ -777,113 +748,21 @@ function FieldControl({
                   </select>
                   <textarea
                     data-field={fieldPath || undefined}
-                    rows={2}
-                    placeholder="Your view: why this rating (optional for Low; required evidence for Medium/High mitigation below)"
-                    value={mine.pov}
+                    rows={3}
+                    placeholder="Your view on this point. What you type here is what the screen scores."
+                    value={typed}
                     disabled={locked || reassessing}
                     title={lockTitle}
                     aria-label={`Your view on ${DIMENSION_LABELS[key] || key}`}
                     onChange={(e) => patchUserInput(key, { pov: e.target.value })}
                   />
                 </div>
-                {showWebCheck ? (
-                <div className="f4-dimension-block f4-web-check" data-f4-block="web-check">
-                  <div className="f4-block-title">Web check</div>
-                  {verifyingDimension === key ? (
-                    <div className="dimension-finding original">Web-checking your rating…</div>
-                  ) : (
-                    <>
-                      {webRating ? (
-                        <div className="dimension-finding original" data-f4-web-rating={checkedRating || aiRating || ""}>
-                          Web check rating: {webRating}
-                        </div>
-                      ) : null}
-                      {finding ? <div className="dimension-finding original">{finding}</div> : null}
-                      {sourceUrl ? (
-                        <div className="dimension-finding original">
-                          Source:{" "}
-                          <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-                            {sourceUrl}
-                          </a>
-                        </div>
-                      ) : null}
-                      {assessment && assessment.status === "failed" ? (
-                        <div className="dimension-finding original" data-f4-verification="failed">
-                          Web check did not complete ({assessment.error || "no answer"}) — earns nothing until it does
-                        </div>
-                      ) : null}
-                      {relation ? (
-                        <div className="dimension-finding original" data-f4-verification={relation}>
-                          {relation === "supports"
-                            ? "Web check supports your rating — it earns its point"
-                            : "Web check contradicts your rating — marked down"}
-                        </div>
-                      ) : mine.rating && !assessment ? (
-                        <div className="dimension-finding original" data-f4-verification="unchecked">
-                          Not web-checked yet — earns nothing until a web check supports it
-                        </div>
-                      ) : null}
-                      {typeof onVerifyDimension === "function" && mine.rating ? (
-                        <button
-                          type="button"
-                          className="ghost f4-check-again"
-                          disabled={locked || reassessing}
-                          onClick={() => onVerifyDimension(key, normalizeF4UserInputs(storedUserInputs))}
-                        >
-                          Check my rating on the web
-                        </button>
-                      ) : null}
-                    </>
-                  )}
                 </div>
-                ) : null}
-                </div>
-                {d.reassessedRisk ? (
-                  <div className="dimension-finding reassessed">
-                    After response: {d.reassessedRisk} risk — {d.reassessedReason}
-                  </div>
-                ) : null}
               </div>
             );
           })}
           </div>
         </div>
-        {respondable.length ? (
-          <div className="f4-response-list">
-            <p className="autofill-status">Respond on Medium / High points to clear them</p>
-            {respondable.map((key) => {
-              const d = dimensions[key];
-              return (
-                <div key={key} className="dimension-response">
-                  <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                  <div className="dimension-finding original">
-                    Original: {normalizeRiskLevel(d.risk) || d.risk} risk — {d.reason || "no reason yet"}
-                  </div>
-                  <textarea
-                    data-field={fieldPath || undefined}
-                    rows={3}
-                    placeholder="Respond with specific, verifiable evidence — a signed contract, a lab report, a certification timeline. Vague reassurance won't move the rating."
-                    value={(mitigationResponses && mitigationResponses[key]) || d.userResponse || ""}
-                    disabled={locked || reassessing}
-                    title={lockTitle}
-                    onChange={(e) => patchDimensionResponse(key, e.target.value)}
-                  />
-                </div>
-              );
-            })}
-            {typeof onReassess === "function" ? (
-              <button
-                type="button"
-                className="ghost f4-reassess"
-                disabled={locked || reassessing || !hasResponseText}
-                onClick={onReassess}
-              >
-                {reassessing ? <Loader2 size={15} className="spin" /> : null}
-                {reassessing ? "Re-assessing…" : "Re-assess Filter 4 with responses"}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
         <AutofillProvenance
           fieldPath={fieldPath}
           doc={ideaDoc}
