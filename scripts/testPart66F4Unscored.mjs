@@ -15,8 +15,8 @@ assert.match(formSrc, /Select risk/);
 assert.match(formSrc, /className="f4-dimension-editor"/);
 assert.match(formSrc, /AI fills this/);
 assert.match(formSrc, /data-f4-risk="tech-shift"/);
-assert.match(formSrc, /level === "Medium" \|\| level === "High"/);
-assert.match(formSrc, /className="dimension-response"/);
+assert.match(formSrc, /data-f4-block="your-view"/);
+assert.doesNotMatch(formSrc, /className="dimension-response"/);
 
 const empty = checkF4({});
 assert.equal(empty.checkLabel, "Not yet run");

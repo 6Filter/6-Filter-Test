@@ -152,11 +152,10 @@ assert.equal(batch.dimensions.consumptionContextStability.reassessedRisk, undefi
 assert.equal(batch.overallRisk, "Medium");
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /className="dimension-response"/);
-assert.match(formSrc, /level === "Medium" \|\| level === "High"/);
-assert.match(formSrc, /Original: \{normalizeRiskLevel\(d\.risk\) \|\| d\.risk\} risk/);
-assert.match(formSrc, /After response: \{d\.reassessedRisk\} risk/);
-assert.match(formSrc, /Re-assess Filter 4 with responses/);
+assert.match(formSrc, /data-f4-block="your-view"/);
+assert.match(formSrc, /onMitigationChange\(key, patch\.pov\)/);
+assert.doesNotMatch(formSrc, /className="dimension-response"/);
+assert.doesNotMatch(formSrc, /Respond on Medium/);
 assert.match(formSrc, /\/reassess-f4/);
 assert.match(formSrc, /f4-dimension-editor/);
 
