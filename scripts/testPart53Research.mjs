@@ -198,7 +198,7 @@ assert.equal(
   }),
   "whitespace and casing must not bust the research cache"
 );
-assert.equal(
+assert.notEqual(
   researchHashFor({
     name: "Hair oil",
     ideaDescription: "herbal cooling hair oil",
@@ -211,7 +211,7 @@ assert.equal(
     category: "Hair oils",
     f1: { benchmark: "Indulekha", declaredAttribute: "Hair strengthening", growthArgument: "rewritten after AI fill" },
   }),
-  "growth-argument prose must not bust the research cache"
+  "a changed growth argument is a new entry and must be researched again"
 );
 
 const schemaDefaultFalse = resolveFilter1Verdict(

@@ -1,6 +1,8 @@
 {
   "files": [
+    "lib/aiOutputQuality.js",
     "lib/adminUsersApi.js",
+    "lib/propositionAiFirstPass.js",
     "lib/apiRouter.js",
     "lib/appRoutes.js",
     "lib/auth.js",
@@ -8,7 +10,11 @@
     "lib/callAnthropic.js",
     "lib/creditFailureCopy.js",
     "lib/db.js",
+    "lib/displayCopy.js",
     "lib/displayTitle.js",
+    "lib/ideaWorkAnalysis.js",
+    "lib/researchCache.js",
+    "lib/researchStepCache.js",
     "lib/displayTitleServer.js",
     "lib/evaluateRemaining.js",
     "lib/evaluationResponse.js",
@@ -376,6 +382,17 @@
     "src/LogPage.jsx\tevaluated",
     "src/LogPage.jsx\tlegacy",
     "src/LogPage.jsx\tresearch-badge log-verdict used tone-${}",
-    "src/FieldRoleBadge.jsx\toptional"
+    "src/FieldRoleBadge.jsx\toptional",
+    "src/PropositionForm.jsx\t${}|${}|${}|${}|${}",
+    "src/PropositionForm.jsx\t/api/idea-analysis",
+    "src/PropositionForm.jsx\tAI analysis",
+    "src/PropositionForm.jsx\tAI analysis did not finish. Try again.",
+    "src/PropositionForm.jsx\tContent-Type",
+    "src/PropositionForm.jsx\tDescribe the idea in a sentence first, then ask for AI analysis.",
+    "src/PropositionForm.jsx\tLooking at the idea…",
+    "src/PropositionForm.jsx\tPOST",
+    "src/PropositionForm.jsx\tWhat can make this idea work",
+    "src/PropositionForm.jsx\tapplication/json",
+    "src/PropositionForm.jsx\tinclude"
   ]
 }

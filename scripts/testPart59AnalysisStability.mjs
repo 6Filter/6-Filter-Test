@@ -115,10 +115,25 @@ assert.equal(
   researchHashFor(baseHashDoc),
   researchHashFor({
     ...baseHashDoc,
-    f1: { ...baseHashDoc.f1, growthArgument: "rewritten after AI fill" },
     f2: { cogsAtScale: 999, netMarginAtScale: 5 },
   }),
-  "COGS, margin, and growth-argument prose must not bust the research cache"
+  "COGS and margin must not bust the research cache"
+);
+assert.notEqual(
+  researchHashFor(baseHashDoc),
+  researchHashFor({
+    ...baseHashDoc,
+    f1: { ...baseHashDoc.f1, growthArgument: "rewritten after AI fill" },
+  }),
+  "a changed growth argument is a new entry"
+);
+assert.notEqual(
+  researchHashFor(baseHashDoc),
+  researchHashFor({
+    ...baseHashDoc,
+    f1: { ...baseHashDoc.f1, gapDerivation: "stays cold two hours longer than the named oil" },
+  }),
+  "a changed gap derivation is a new entry"
 );
 assert.notEqual(
   researchHashFor(baseHashDoc),
@@ -154,6 +169,7 @@ assert.equal(
     division: "Personal Care",
     isPureCommodity: false,
     attachmentHash: "",
+    growthArgument: "first draft",
   }),
   researchHashFor(baseHashDoc)
 );
@@ -172,7 +188,8 @@ assert.match(fingerprintFn, /attribute3/);
 assert.match(fingerprintFn, /division/);
 assert.match(fingerprintFn, /isPureCommodity/);
 assert.match(fingerprintFn, /attachmentHash/);
-assert.doesNotMatch(fingerprintFn, /growthArgument/);
+assert.match(fingerprintFn, /growthArgument/);
+assert.match(fingerprintFn, /gapDerivation/);
 assert.doesNotMatch(fingerprintFn, /cogsAtScale/);
 assert.doesNotMatch(fingerprintFn, /netMarginAtScale/);
 

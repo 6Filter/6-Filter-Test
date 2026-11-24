@@ -2832,10 +2832,26 @@ function researchInputKey(doc) {
       ? `name:${attach.name}`
       : "";
   const f1 = doc?.f1 && typeof doc.f1 === "object" ? doc.f1 : {};
-  const attrs = [f1.declaredAttribute, f1.declaredAttribute2, f1.declaredAttribute3, f1.benchmark]
-    .map((v) => String(v || "").trim().toLowerCase())
-    .join("|");
-  return `${String(doc?.name || "").trim().toLowerCase()}|${String(doc?.ideaDescription || "").trim().toLowerCase()}|${String(doc?.category || "").trim().toLowerCase()}|${attrs}|${attachSig}`;
+  const f2 = doc?.f2 && typeof doc.f2 === "object" ? doc.f2 : {};
+  const bits = [
+    doc?.name,
+    doc?.ideaDescription,
+    doc?.category,
+    f1.declaredAttribute,
+    f1.declaredAttribute2,
+    f1.declaredAttribute3,
+    f1.benchmark,
+    f1.declaredGap,
+    f1.gapDerivation,
+    f1.parityExceptions,
+    f1.growthRoute,
+    f1.growthArgument,
+    f2.grammage,
+    f2.gstRatePct,
+    f2.mrpInr,
+    attachSig,
+  ].map((v) => String(v || "").trim().toLowerCase());
+  return bits.join("|");
 }
 
 function preferOutputView(doc = null) {
@@ -2903,6 +2919,9 @@ export default function PropositionForm({
   /** field → true once the user clicked Keep as typed for that review issue. */
   const [inputReviewKept, setInputReviewKept] = useState({});
   const [localError, setLocalError] = useState("");
+  const [ideaAnalysis, setIdeaAnalysis] = useState(null);
+  const [ideaAnalysisBusy, setIdeaAnalysisBusy] = useState(false);
+  const [ideaAnalysisError, setIdeaAnalysisError] = useState("");
   const [slackNotice, setSlackNotice] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
   const [justSubmitted, setJustSubmitted] = useState(false);
@@ -4301,7 +4320,7 @@ export default function PropositionForm({
     );
     const startedAt = Date.now();
     const expectedMs = expectedProcessMs({
-      forceResearch: Boolean(submitOpts.forceResearch),
+      forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
       researchRunAt: asNew ? null : doc.researchRunAt,
       ideaChanged: ideaChanged || asNew,
     });
@@ -4310,13 +4329,13 @@ export default function PropositionForm({
     let result = null;
     try {
     result = await onSave(doc, provider, {
-      forceResearch: Boolean(submitOpts.forceResearch),
+      forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
       asNew,
       confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && fromPending) {
       result = await onSave(doc, provider, {
-        forceResearch: Boolean(submitOpts.forceResearch),
+        forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
         asNew,
         confirmMissingSteps: true,
       });
@@ -4772,6 +4791,56 @@ export default function PropositionForm({
           aria-label="Idea / insight description"
           rows={4}
         />
+        <div className="idea-analysis">
+          <button
+            type="button"
+            className="ghost"
+            disabled={ideaAnalysisBusy}
+            onClick={async () => {
+              const idea = String(doc.ideaDescription || "").trim();
+              setIdeaAnalysisError("");
+              if (idea.length < 12) {
+                setIdeaAnalysis(null);
+                setIdeaAnalysisError("Describe the idea in a sentence first, then ask for AI analysis.");
+                return;
+              }
+              setIdeaAnalysisBusy(true);
+              try {
+                const res = await fetch("/api/idea-analysis", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ proposition: doc, provider: llmProvider }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  setIdeaAnalysis(null);
+                  setIdeaAnalysisError(data.error || "AI analysis did not finish. Try again.");
+                  return;
+                }
+                setIdeaAnalysis(data.analysis || null);
+              } catch {
+                setIdeaAnalysis(null);
+                setIdeaAnalysisError("AI analysis did not finish. Try again.");
+              } finally {
+                setIdeaAnalysisBusy(false);
+              }
+            }}
+          >
+            {ideaAnalysisBusy ? "Looking at the idea…" : "AI analysis"}
+          </button>
+          {ideaAnalysisError ? <p className="idea-analysis-error">{ideaAnalysisError}</p> : null}
+          {ideaAnalysis?.suggestions?.length ? (
+            <aside className="idea-analysis-panel" aria-label="What can make this idea work">
+              <p className="idea-analysis-summary">{ideaAnalysis.summary}</p>
+              <ul>
+                {ideaAnalysis.suggestions.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </aside>
+          ) : null}
+        </div>
         {heroRequiredError("ideaDescription")}
         <InputReviewHint
           issue={inputReviewIssue("ideaDescription")}
@@ -5645,6 +5714,12 @@ ${FIELD_ROLE_CSS}
 .prop-helper{display:block;font-size:calc(11.5px * var(--ts, 1));color:var(--c-text-muted);line-height:1.4;white-space:normal;}
 .prop-attach{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px;}
 .prop-attach .ghost{padding:8px 12px;font-size:calc(12.5px * var(--ts, 1));}
+.idea-analysis{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin:8px 0 4px;}
+.idea-analysis-panel{width:100%;background:rgba(154,90,50,.08);border:1px solid rgba(154,90,50,.22);border-radius:12px;padding:12px 14px;}
+.idea-analysis-summary{margin:0 0 8px;font-size:calc(14px * var(--ts, 1));line-height:1.45;}
+.idea-analysis-panel ul{margin:0;padding-left:18px;}
+.idea-analysis-panel li{margin:4px 0;font-size:calc(13.5px * var(--ts, 1));line-height:1.45;}
+.idea-analysis-error{margin:0;color:#8C3A2A;font-size:calc(13px * var(--ts, 1));}
 .prop-file-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
   background:rgba(154,90,50,.12);border:1px solid rgba(154,90,50,.28);font-size:calc(13px * var(--ts, 1));}
 .prop-file-chip img{width:22px;height:22px;object-fit:cover;border-radius:4px;}

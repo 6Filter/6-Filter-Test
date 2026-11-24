@@ -49,8 +49,10 @@ const batch = [
 ];
 
 const hashes = batch.map((doc) => researchHashFor(doc));
-const firstSixSame = hashes.slice(0, 6).every((h) => h === hashes[0]);
-assert.equal(firstSixSame, true, "near-identical herbal-stick submissions must share a hash");
+const firstFiveSame = hashes.slice(0, 5).every((h) => h === hashes[0]);
+assert.equal(firstFiveSame, true, "near-identical herbal-stick submissions must share a hash");
+assert.notEqual(hashes[0], hashes[5], "a changed growth argument is a new entry");
+assert.notEqual(hashes[5], hashes[6], "two different growth arguments are two entries");
 assert.notEqual(hashes[0], hashes[7], "naming a benchmark still busts the cache");
 
 function legacyHash(doc) {
