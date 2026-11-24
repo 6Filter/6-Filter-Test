@@ -350,11 +350,11 @@ await check("PropositionForm: Submit bar error, Why can't I submit?, button stay
   assert.match(form, /id: `invalid-\$\{f\.field\}`/);
 });
 
-await check("PropositionForm: one box per Filter 4 point, no web-check panel and no second response list", () => {
+await check("PropositionForm: one box per Filter 4 point, web-check suggestion beside it, no second response list", () => {
   assert.match(form, /Your rating and view/);
   assert.match(form, /data-f4-block="your-view"/);
-  assert.doesNotMatch(form, /data-f4-block="web-check"/);
-  assert.doesNotMatch(form, /Web check rating/);
+  assert.match(form, /data-f4-block="web-check"/);
+  assert.match(form, /Web check rating/);
   assert.doesNotMatch(form, /Respond on Medium/);
   assert.match(form, /onUserInputChange/);
   assert.match(form, /ideaDoc\?\.f4\?\.userInputs/);

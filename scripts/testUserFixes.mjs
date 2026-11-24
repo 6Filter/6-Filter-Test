@@ -5,7 +5,7 @@ import { checkF2Sync } from "../lib/filter2Check.js";
 import { checkF4 } from "../lib/filterChecks.js";
 import { previewAdvisoryChecks } from "../lib/goNoGo.js";
 import { lockedFloorForProposition } from "../lib/divisionMargin.js";
-import { f4Improvement, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
+import { easeScreeningChecks, f4Improvement, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 import { researchHashFor } from "../lib/researchCache.js";
 import { researchStepFields, stepFingerprint as stepFp } from "../lib/researchStepCache.js";
 import { parseIdeaAnalysis, buildIdeaAnalysisUser } from "../lib/ideaWorkAnalysis.js";
@@ -34,7 +34,7 @@ assert.match(brief, /Named benchmark: Tropicana 200ml PET Bottles/);
 const claimSrc = readFileSync(new URL("../lib/f1Research.js", import.meta.url), "utf8");
 assert.match(claimSrc, /A filled sentence is never a missing field/);
 assert.match(claimSrc, /gapDerivation:/);
-assert.match(displayCopy("Parity exceptions none", {}), /type none if you are not giving anything up/i);
+assert.match(displayCopy("Parity exceptions none", {}), /no, none or yes do not count/i);
 assert.match(displayCopy("Growth argument none", {}), /one paragraph/);
 assert.match(displayCopy("Growth argument weak", {}), /too vague/);
 assert.match(displayCopy('Growth route "new market" — none', {}), /new set of buyers/);
@@ -99,7 +99,11 @@ const keyFn = form.slice(form.indexOf("function researchInputKey"), form.indexOf
 for (const field of ["gapDerivation", "parityExceptions", "growthRoute", "growthArgument", "grammage", "mrpInr"]) {
   assert.match(keyFn, new RegExp(field));
 }
-assert.match(form, /AI analysis/);
+assert.doesNotMatch(form, /AI analysis/);
+assert.match(form, /How the 10% volume-loss rule is met/);
+assert.match(form, /data-f4-block="web-check"/);
+assert.match(form, /Web check rating/);
+assert.doesNotMatch(form, /Respond on Medium/);
 assert.match(form, /forceResearch: Boolean\(submitOpts\.forceResearch\) \|\| ideaChanged/);
 
 const parsed = parseIdeaAnalysis(
@@ -191,7 +195,7 @@ assert.equal(belowCheck.items.find((it) => it.slot === "margin").credit, 0);
 assert.equal(belowCheck.items.find((it) => it.slot === "gst").reasons.includes("CONTRADICTED"), true);
 
 const suggestedOnly = scoringDocForEnteredCredit({
-  f1: { gapDerivation: "none", parityExceptions: "", growthArgument: "none" },
+  f1: { gapDerivation: "", parityExceptions: "", growthArgument: "" },
   researchFindings: {
     autofillStatus: {
       "f1.gapDerivation": { aiSuggested: suggestion, confirmed: false },
@@ -200,6 +204,15 @@ const suggestedOnly = scoringDocForEnteredCredit({
 });
 assert.equal(suggestedOnly.f1.gapDerivation, suggestion);
 assert.equal(suggestedOnly.researchFindings.autofillStatus["f1.gapDerivation"].confirmed, true);
+const stubbed = scoringDocForEnteredCredit({
+  f1: { gapDerivation: "none", parityExceptions: "yes" },
+  researchFindings: {
+    autofillStatus: {
+      "f1.gapDerivation": { aiSuggested: suggestion, confirmed: false },
+    },
+  },
+});
+assert.equal(stubbed.f1.gapDerivation, "none");
 
 const sealed = {
   f1: {
@@ -279,7 +292,66 @@ const other = {
   },
 };
 assert.match(f4Improvement(other, "functionalCoreStability"), /Put that finding in this box/);
-assert.doesNotMatch(form, /data-f4-block="web-check"/);
-assert.doesNotMatch(form, /Respond on Medium/);
+assert.equal(f4Improvement(f4Doc, "functionalCoreStability"), "");
+
+const easy = {
+  division: "Personal Care",
+  f1: {
+    declaredAttribute: "soft hair",
+    benchmark: "Dove",
+    declaredGap: 1.5,
+    gapDerivation: "stays cold longer than the bottle",
+    parityExceptions: "no added sugar versus the named drink",
+    growthRoute: "penetration",
+    growthArgument: "none",
+  },
+  f2: { cogsAtScale: 30, netMarginAtScale: 40, gstRatePct: 18, grammage: "100 ml" },
+  f3: { volumeLossJustification: "Price stays flat for five years and inflation still leaves volume loss inside the rule." },
+};
+const easyChecks = easeScreeningChecks(previewAdvisoryChecks(scoringDocForEnteredCredit(easy)), easy).checks;
+for (const slot of ["attributes", "benchmark", "gap", "derivation", "parity", "route", "argument"]) {
+  const item = easyChecks.f1.items.find((it) => it.slot === slot);
+  assert.equal(item.status, "done", slot);
+  assert.equal(item.credit, 1, slot);
+}
+assert.equal(easyChecks.f2.markedDown, true);
+assert.equal(easyChecks.f2.items.find((it) => it.slot === "margin").credit, 0);
+assert.equal(easyChecks.f2.items.find((it) => it.slot === "packSize").credit, 1);
+assert.equal(easyChecks.f2.items.find((it) => it.slot === "gst").credit, 1);
+assert.equal(easyChecks.f3.markedDown, false);
+assert.equal(easyChecks.f3.items.find((it) => it.slot === "resilience").credit, 1);
+
+const gapOne = easeScreeningChecks(previewAdvisoryChecks({ division: "Personal Care", f1: { declaredGap: 1, benchmark: "Dove", growthRoute: "penetration" } }), {
+  division: "Personal Care",
+  f1: { declaredGap: 1, benchmark: "Dove", growthRoute: "penetration" },
+}).checks;
+assert.equal(gapOne.f1.items.find((it) => it.slot === "gap").credit, 0);
+assert.equal(gapOne.f1.markedDown, true);
+
+const gapZero = easeScreeningChecks(
+  previewAdvisoryChecks({ division: "Personal Care", f1: { declaredGap: 0, growthRoute: "new market", benchmark: "Dove" } }),
+  { division: "Personal Care", f1: { declaredGap: 0, growthRoute: "new market", benchmark: "Dove" } }
+).checks;
+assert.equal(gapZero.f1.items.find((it) => it.slot === "gap").credit, 1);
+
+const gapZeroOld = easeScreeningChecks(
+  previewAdvisoryChecks({ division: "Personal Care", f1: { declaredGap: 0, growthRoute: "penetration", benchmark: "Dove" } }),
+  { division: "Personal Care", f1: { declaredGap: 0, growthRoute: "penetration", benchmark: "Dove" } }
+).checks;
+assert.equal(gapZeroOld.f1.items.find((it) => it.slot === "gap").credit, 0);
+
+const stubChecks = easeScreeningChecks(
+  {
+    f1: {
+      items: [
+        { slot: "derivation", status: "done", credit: 1, text: "Gap derivation none", level: "strong" },
+        { slot: "parity", status: "done", credit: 1, text: "Parity exceptions yes", level: "strong" },
+      ],
+    },
+  },
+  { f1: { gapDerivation: "no", parityExceptions: "yes" } }
+).checks;
+assert.equal(stubChecks.f1.items.find((it) => it.slot === "derivation").credit, 0);
+assert.equal(stubChecks.f1.items.find((it) => it.slot === "parity").credit, 0);
 
 console.log("user fixes ok");

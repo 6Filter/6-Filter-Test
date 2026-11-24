@@ -5,10 +5,10 @@ const log = readFileSync("src/LogPage.jsx", "utf8");
 const badge = readFileSync("src/FieldRoleBadge.jsx", "utf8");
 let n = 0;
 const check = (name, fn) => { fn(); n += 1; console.log("  ok", n, "-", name); };
-check("Filter 4 has one box per point and no web-check panel", () => {
+check("Filter 4 has one box per point and the web-check suggestion beside it", () => {
   assert.doesNotMatch(form, /not checked yet/);
-  assert.doesNotMatch(form, /showWebCheck/);
-  assert.doesNotMatch(form, /data-f4-block="web-check"/);
+  assert.match(form, /showWebCheck/);
+  assert.match(form, /data-f4-block="web-check"/);
   assert.doesNotMatch(form, /Respond on Medium/);
   assert.match(form, /data-f4-block="your-view"/);
 });

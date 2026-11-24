@@ -70,7 +70,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
-import { liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
+import { easeScreeningChecks, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
@@ -170,7 +170,9 @@ const AI_FILLS_KEYS = new Set(["cogsAtScale", "netMarginAtScale", "mrpInr"]);
 
 function fieldAiFills(field) {
   if (!field) return false;
-  return AI_FILLS_KEYS.has(field.key);
+  // Filter 2 is typed by the person. The division floor is the only check.
+  if (AI_FILLS_KEYS.has(field.key)) return false;
+  return false;
 }
 
 function accountDisplayName(user) {
@@ -727,10 +729,17 @@ function FieldControl({
             const typed =
               String(mine.pov || "").trim() ||
               String((mitigationResponses && mitigationResponses[key]) || d.userResponse || "").trim();
+            const assessment = ideaDoc?.researchFindings?.f4?.assessments?.[key] || null;
+            const aiRating = normalizeRiskLevel(d.risk) || "";
+            const checkedRating = normalizeRiskLevel(assessment?.raw?.rating) || "";
+            const webRating = checkedRating || aiRating;
+            const finding = String(assessment?.raw?.quote || assessment?.raw?.reason || d.reason || "").trim();
+            const sourceUrl = String(assessment?.raw?.source_url || "").trim();
+            const showWebCheck = Boolean(verifyingDimension === key || webRating || finding || sourceUrl);
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
-                <div className="f4c-body">
+                <div className="f4c-body" data-web-check={showWebCheck ? "yes" : "no"}>
                 <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
                   <div className="f4-block-title">Your rating and view</div>
                   <select
@@ -748,8 +757,8 @@ function FieldControl({
                   </select>
                   <textarea
                     data-field={fieldPath || undefined}
-                    rows={3}
-                    placeholder="Your view on this point. What you type here is what the screen scores."
+                    rows={2}
+                    placeholder="Your view: why this rating (optional for Low; required evidence for Medium/High mitigation below)"
                     value={typed}
                     disabled={locked || reassessing}
                     title={lockTitle}
@@ -757,6 +766,31 @@ function FieldControl({
                     onChange={(e) => patchUserInput(key, { pov: e.target.value })}
                   />
                 </div>
+                {showWebCheck ? (
+                <div className="f4-dimension-block f4-web-check" data-f4-block="web-check">
+                  <div className="f4-block-title">Web check</div>
+                  {verifyingDimension === key ? (
+                    <div className="dimension-finding original">Web-checking your rating…</div>
+                  ) : (
+                    <>
+                      {webRating ? (
+                        <div className="dimension-finding original" data-f4-web-rating={webRating}>
+                          Web check rating: {webRating}
+                        </div>
+                      ) : null}
+                      {finding ? <div className="dimension-finding original">{finding}</div> : null}
+                      {sourceUrl ? (
+                        <div className="dimension-finding original">
+                          Source:{" "}
+                          <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                            {sourceUrl}
+                          </a>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+                ) : null}
                 </div>
               </div>
             );
@@ -1186,20 +1220,15 @@ function FieldControl({
         onConfirmAi={onConfirmAi}
       />
       {requiredErr}
-      {aiSourced && !editedName ? <span className="ai-sourced-tag">Filled by AI, check it</span> : null}
+      {aiSourced && !editedName && !AI_FILLS_KEYS.has(field.key) ? (
+        <span className="ai-sourced-tag">Filled by AI, check it</span>
+      ) : null}
       {aiWillFill && (field.key === "cogsAtScale" || field.key === "netMarginAtScale") ? (
         <p className="autofill-status" data-tone="ai-override">
           Type over to use your own figure
         </p>
       ) : null}
       {gstFocusHint && gstFocused ? <p className="autofill-status">{gstFocusHint}</p> : null}
-      {fieldPath === "f2.cogsAtScale" && (ideaDoc?.f2?.cogsLowInr != null || ideaDoc?.f2?.cogsHighInr != null) ? (
-        <p className="autofill-status" data-tone="ai">
-          AI estimate range ₹{ideaDoc.f2.cogsLowInr ?? "—"}–₹{ideaDoc.f2.cogsHighInr ?? "—"}
-          {ideaDoc.f2.cogsConfidenceNote ? ` — ${ideaDoc.f2.cogsConfidenceNote}` : ""}
-          {ideaDoc.f2.cogsBasis ? `. ${ideaDoc.f2.cogsBasis}` : ""}
-        </p>
-      ) : null}
       {fieldPath === "f2.gstRatePct" && ideaDoc?.f2?.gstBasis ? (
         <p className="autofill-status" data-tone="ai">{ideaDoc.f2.gstBasis}</p>
       ) : null}
@@ -2809,9 +2838,6 @@ export default function PropositionForm({
   /** field → true once the user clicked Keep as typed for that review issue. */
   const [inputReviewKept, setInputReviewKept] = useState({});
   const [localError, setLocalError] = useState("");
-  const [ideaAnalysis, setIdeaAnalysis] = useState(null);
-  const [ideaAnalysisBusy, setIdeaAnalysisBusy] = useState(false);
-  const [ideaAnalysisError, setIdeaAnalysisError] = useState("");
   const [slackNotice, setSlackNotice] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
   const [justSubmitted, setJustSubmitted] = useState(false);
@@ -3261,7 +3287,8 @@ export default function PropositionForm({
   }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
   const livePreviewChecks =
-    previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc)) || previewAdvisoryChecks(liveDoc);
+    easeScreeningChecks(previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc)), liveDoc).checks ||
+    previewAdvisoryChecks(liveDoc);
   // Filters 1–4 stay open; Filters 5–6 need GO/manager + proof.
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;
@@ -4682,56 +4709,6 @@ export default function PropositionForm({
           aria-label="Idea / insight description"
           rows={4}
         />
-        <div className="idea-analysis">
-          <button
-            type="button"
-            className="ghost"
-            disabled={ideaAnalysisBusy}
-            onClick={async () => {
-              const idea = String(doc.ideaDescription || "").trim();
-              setIdeaAnalysisError("");
-              if (idea.length < 12) { // lock-ok: idea sentence
-                setIdeaAnalysis(null);
-                setIdeaAnalysisError("Describe the idea in a sentence first, then ask for AI analysis.");
-                return;
-              }
-              setIdeaAnalysisBusy(true);
-              try {
-                const res = await fetch("/api/idea-analysis", {
-                  method: "POST",
-                  credentials: "include",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ proposition: doc, provider: llmProvider }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                  setIdeaAnalysis(null);
-                  setIdeaAnalysisError(data.error || "AI analysis did not finish. Try again.");
-                  return;
-                }
-                setIdeaAnalysis(data.analysis || null);
-              } catch {
-                setIdeaAnalysis(null);
-                setIdeaAnalysisError("AI analysis did not finish. Try again.");
-              } finally {
-                setIdeaAnalysisBusy(false);
-              }
-            }}
-          >
-            {ideaAnalysisBusy ? "Looking at the idea…" : "AI analysis"}
-          </button>
-          {ideaAnalysisError ? <p className="idea-analysis-error">{ideaAnalysisError}</p> : null}
-          {ideaAnalysis?.suggestions?.length ? (
-            <aside className="idea-analysis-panel" aria-label="What can make this idea work">
-              <p className="idea-analysis-summary">{ideaAnalysis.summary}</p>
-              <ul>
-                {ideaAnalysis.suggestions.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </aside>
-          ) : null}
-        </div>
         {heroRequiredError("ideaDescription")}
         <InputReviewHint
           issue={inputReviewIssue("ideaDescription")}
@@ -5085,7 +5062,7 @@ export default function PropositionForm({
                           ? String(values.gstBasis || "").trim()
                           : ""
                       }
-                      {...suggestionProps(spec.key, field, values[field.key])}
+                      {...(spec.key === "f2" ? {} : suggestionProps(spec.key, field, values[field.key]))}
                       {...fieldControlExtras(spec.key, field)}
                     />
                     <InputReviewHint
@@ -5141,6 +5118,23 @@ export default function PropositionForm({
                 return nodes;
               })}
             </div>
+
+            {spec.key === "f3" ? (
+              <div className="prop-field-wrap span-2">
+                <label className="prop-label" htmlFor="volume-loss-justification">
+                  How the 10% volume-loss rule is met
+                </label>
+                <textarea
+                  id="volume-loss-justification"
+                  rows={3}
+                  data-field="f3.volumeLossJustification"
+                  placeholder="If the shelf price stays the same for five years and inflation is included, explain why volume loss stays inside the 10% rule."
+                  value={values.volumeLossJustification || ""}
+                  onChange={(e) => setFilter("f3", "volumeLossJustification", e.target.value)}
+                />
+                <p className="field-helper">This note is not marked down. It records how the 10% volume-loss rule is met.</p>
+              </div>
+            ) : null}
 
             {(justSubmitted || goNoGo) && spec.key !== "f4" && visibleItems.length ? (
               <ul className="filter-check-list">
