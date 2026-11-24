@@ -53,15 +53,16 @@ assert.equal(gateInputKey(scored), gateInputKey({ ...scored, goNoGo: { classific
 
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(apiSrc, /shouldForkLogResubmit/);
-assert.match(apiSrc, /const asNew = Boolean\(body\?\.asNew\)/);
-assert.match(apiSrc, /forkedFrom = opened\.id/);
+assert.match(apiSrc, /const asNew = false/);
+assert.match(apiSrc, /let targetId = id/);
+assert.doesNotMatch(apiSrc, /forkedFrom = opened\.id/);
 assert.match(apiSrc, /id: _openedId/);
 assert.match(apiSrc, /let outProposition = annotateEvaluationOnProposition\(\{/);
 assert.match(apiSrc, /\.\.\.advisory\.proposition,\s*id: targetId/);
 assert.match(apiSrc, /withAdvisory\(derivedProposition, \{\s*attachGate: true/s);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-assert.match(formSrc, /shouldForkLogResubmit\(sourceDocRef\.current, doc\)/);
+assert.match(formSrc, /shouldForkLogResubmit\(sourceDocRef\.current, doc\) && false/);
 assert.match(formSrc, /asNew,/);
 assert.match(formSrc, /isScoredProposition\(sourceDocRef\.current\)/);
 assert.match(formSrc, /evalState === "evaluated" \|\| evalState === "legacy"/);
@@ -71,4 +72,4 @@ const appSrc = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 assert.match(appSrc, /asNew: Boolean\(asNew\)/);
 assert.match(appSrc, /asNew: Boolean\(saveOpts\?\.asNew\)/);
 
-console.log("PASS Log resubmit fork: changed scored values become a new entry");
+console.log("PASS Log resubmit: changed scored values stay on the same entry");

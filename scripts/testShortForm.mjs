@@ -180,15 +180,12 @@ await check("D107 one upload, and the template link sits inside it", () => {
 });
 
 // ───────────── D106 cost and margin ─────────────
-await check("D106 cost, margin and MRP sit behind 'Adjust cost and margin' and open on press", async () => {
-  const btn = q('[data-testid="adjust-cost-margin"]');
-  assert.ok(btn, "button present");
-  for (const path of ["f2.cogsAtScale", "f2.netMarginAtScale", "f2.mrpInr"]) {
-    assert.equal(q(`[data-field="${path}"]`), null, `${path} hidden at first`);
+await check("D106 cost, margin and MRP are on the form with no Adjust button", async () => {
+  assert.equal(q('[data-testid="adjust-cost-margin"]'), null, "button gone");
+  for (const path of ["f2.cogsAtScale", "f2.netMarginAtScale"]) {
+    assert.ok(q(`[data-field="${path}"]`), `${path} shown`);
   }
-  await click(btn);
-  const opened = ["f2.cogsAtScale", "f2.netMarginAtScale"].filter((p) => q(`[data-field="${p}"]`));
-  assert.equal(opened.length, 2, "COGS and net margin show after the press");
+  assert.ok(q('[data-f2-mrp="derived"]'), "MRP after tax shown");
   assert.equal(q('[data-field="f2.cogsAtScale"] [data-role="required"]'), null, "never Required");
 });
 
@@ -209,7 +206,8 @@ await check("phone width: the form's own CSS wraps rows and keeps tap targets", 
   assert.match(form, /@media \(max-width:760px\)/);
   assert.match(form, /\.prop-label\{[^}]*flex-wrap:wrap/s);
   assert.match(form, /\.team-chip/);
-  assert.match(form, /\.cost-adjust-row|adjust-cost-margin/);
+  assert.match(form, /\.cost-adjust-row/);
+  assert.doesNotMatch(form, /adjust-cost-margin/);
   assert.equal(window.innerWidth, 360);
 });
 

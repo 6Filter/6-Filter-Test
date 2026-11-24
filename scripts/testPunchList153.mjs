@@ -203,17 +203,15 @@ await check("2.4 Required chips are hidden; Optional chips remain", async () => 
   await m.unmount();
 });
 
-await check("2.5 cost and margin sit behind one Adjust cost and margin button; pack size and GST stay shown", async () => {
+await check("2.5 cost, margin and MRP are shown with pack size and GST, and there is no Adjust button", async () => {
   const m = await mountForm(emptyDoc);
   for (const header of m.qa('[data-filter-open="no"] .prop-filter-h')) await click(header);
-  const btn = m.q('[data-testid="adjust-cost-margin"]');
-  assert.ok(btn, "button");
-  for (const p of ["f2.cogsAtScale", "f2.netMarginAtScale", "f2.mrpInr"]) assert.equal(m.q(`[data-field="${p}"]`), null, `${p} hidden`);
-  assert.equal(m.qa('[data-ai-fills]').length, 0, "no AI fills this panel before the press");
+  assert.equal(m.q('[data-testid="adjust-cost-margin"]'), null, "no adjust button");
+  assert.ok(m.q('[data-field="f2.cogsAtScale"]') && m.q('[data-field="f2.netMarginAtScale"]'), "cost and margin shown");
+  assert.ok(m.q('[data-f2-mrp="derived"]'), "MRP shown");
+  assert.equal(m.qa('[data-ai-fills]').length, 0, "no AI fills this panel");
   assert.ok(m.q('[data-field="f2.grammage"]') || m.q("#fld-f2-grammage"), "pack size shown");
   assert.ok(m.q('[data-field="f2.gstRatePct"]') || m.q("#fld-f2-gstRatePct"), "GST shown");
-  await click(btn);
-  assert.ok(m.q('[data-field="f2.cogsAtScale"]') && m.q('[data-field="f2.netMarginAtScale"]'), "open on press");
   await m.unmount();
 });
 

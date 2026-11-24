@@ -434,6 +434,10 @@
     "src/PropositionForm.jsx\t. ${}",
     "src/PropositionForm.jsx\tf2.cogsAtScale",
     "src/PropositionForm.jsx\t–₹",
-    "src/PropositionForm.jsx\t— ${}"
+    "src/PropositionForm.jsx\t— ${}",
+    "src/PropositionForm.jsx\tAdjust cost and margin",
+    "src/PropositionForm.jsx\tf2.mrpInr",
+    "src/PropositionForm.jsx\tf2.netMarginAtScale",
+    "src/PropositionForm.jsx\tuser"
   ]
 }

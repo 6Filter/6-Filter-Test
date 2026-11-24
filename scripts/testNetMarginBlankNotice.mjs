@@ -27,7 +27,7 @@ assert.equal(netMarginBlankNotice({}), NET_MARGIN_BLANK_NOTICE);
 assert.equal(netMarginBlankNotice({ netMarginAtScale: 35 }), "");
 assert.equal(netMarginBlankNotice({ netMarginAtScale: "40" }), "");
 
-assert.match(form, /data-testid="adjust-cost-margin"/);
+assert.doesNotMatch(form, /data-testid="adjust-cost-margin"/);
 assert.match(form, /data-testid="net-margin-blank-notice"/);
 assert.match(form, /data-testid="net-margin-blank-notice-output"/);
 assert.match(form, /netMarginBlankNotice/);

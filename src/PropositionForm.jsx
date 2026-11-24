@@ -1582,8 +1582,6 @@ const FORM_HIDDEN_FIELD_PATHS = new Set([
   "f2.financeSigned",
   "f3.plannedAnnualIncreasePct",
 ]);
-/** Part 145 D106 — filled by the system; shown only after "Adjust cost and margin". */
-const COST_ADJUST_FIELD_PATHS = new Set(["f2.cogsAtScale", "f2.netMarginAtScale", "f2.mrpInr"]);
 
 function ManagerReviewPanel({
   classification,
@@ -2899,7 +2897,6 @@ export default function PropositionForm({
   const [f4VerifyingKey, setF4VerifyingKey] = useState("");
   const [refreshingField, setRefreshingField] = useState("");
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
-  const [costAdjustOpen, setCostAdjustOpen] = useState(false);
   /** Part 143 D87 — extra benefit boxes revealed by "+ Add another benefit" (0–2). */
   const [benefitExtra, setBenefitExtra] = useState(() => {
     const f1 = initial?.f1 || {};
@@ -4224,7 +4221,8 @@ export default function PropositionForm({
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
-    const asNew = shouldForkLogResubmit(sourceDocRef.current, doc);
+    // A changed scored idea is submitted again on this same log row. It does not open a second entry.
+    const asNew = shouldForkLogResubmit(sourceDocRef.current, doc) && false;
     const hadResearchRunAt = Boolean(doc.researchRunAt);
     const repairPlan = planResearch(doc);
     const repairing =
@@ -4747,14 +4745,9 @@ export default function PropositionForm({
         const f5Sizing = spec.key === "f5"
           ? (check.items || []).find((it) => /Year-3 revenue|Sizing incomplete/i.test(it.text))
           : null;
-        // Part 145 D108 / D106 — boxes taken off the form; cost and margin sit behind one button.
-        // Part 145 D106 — cost and margin sit behind one button; shown when pressed or once the person changed them.
-        const costAdjustVisible =
-          costAdjustOpen || (spec.key === "f2" && (doc.f2?.mrpOverride === true || doc.f2?.netMarginSource === "user"));
         const visibleSpecFields = spec.fields.filter((f) => {
           const path = `${spec.key}.${f.key}`;
           if (FORM_HIDDEN_FIELD_PATHS.has(path)) return false;
-          if (COST_ADJUST_FIELD_PATHS.has(path)) return costAdjustVisible;
           return true;
         });
         const collapsible = spec.key === "f2" || spec.key === "f3" || spec.key === "f4";
@@ -4905,15 +4898,6 @@ export default function PropositionForm({
             </div>
             {spec.key === "f2" ? (
               <div className="cost-adjust-row">
-                <button
-                  type="button"
-                  className="ghost"
-                  data-testid="adjust-cost-margin"
-                  aria-expanded={costAdjustVisible}
-                  onClick={() => setCostAdjustOpen((open) => !open)}
-                >
-                  Adjust cost and margin
-                </button>
                 {netMarginBlankNotice(values) || netMarginBlankNotice(doc.f2) ? (
                   <p className="net-margin-blank-notice" data-testid="net-margin-blank-notice" role="status">
                     {NET_MARGIN_BLANK_NOTICE}

@@ -12,9 +12,9 @@ check("Filter 4 has one box per point and the web-check suggestion beside it", (
   assert.doesNotMatch(form, /Respond on Medium/);
   assert.match(form, /data-f4-block="your-view"/);
 });
-check("Punch list 2.5 — cost and margin sit behind one Adjust cost and margin button again", () => {
-  assert.match(form, /data-testid="adjust-cost-margin"/);
-  assert.doesNotMatch(form, /const costAdjustVisible = true;/);
+check("Punch list 2.5 — cost and margin are on the form, with no Adjust cost and margin button", () => {
+  assert.doesNotMatch(form, /data-testid="adjust-cost-margin"/);
+  assert.doesNotMatch(form, /Adjust cost and margin/);
 });
 check("Screened tile no longer prints the GO / NO-GO / WATCH breakdown", () => {
   assert.doesNotMatch(log, /NO-GO\} NO-GO|\} GO · /);
