@@ -70,6 +70,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
+import { liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
@@ -2068,22 +2069,32 @@ export function GoNoGoResultPage({
     sealedOutput?.filters && typeof sealedOutput.filters === "object"
       ? advisoryChecksFromOutput(sealedOutput) || {}
       : null;
-  const checks =
+  const sealedChecks =
     checksFromSeal && Object.keys(checksFromSeal).length
       ? checksFromSeal
       : advisoryChecks && typeof advisoryChecks === "object"
         ? advisoryChecks
         : {};
+  const lifted = liftSealedChecks(sealedChecks, doc);
+  const checks = lifted.checks;
   // Single resolver: screened ideas always show the sealed snapshot (Part 128).
+  // A filled claim or a clearing margin raises the shown score by the slots it just passed.
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
-  const scorePct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
+  const sealedPct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
+  const liftedScore = lifted.creditRaised ? scoreAdvisoryChecks(checks) : null;
+  const liftedPct = liftedScore && Number.isFinite(Number(liftedScore.pct)) ? Number(liftedScore.pct) : sealedPct;
+  const scorePct = liftedPct > sealedPct ? liftedPct : sealedPct;
   const sealedClassification = result.classification;
+  const liftedBand =
+    scorePct > sealedPct && !goNoGoIsFloorFailure(checks) ? computeGoNoGo(checks) : "";
   const classification =
-    classificationOf({
-      ...(doc || {}),
-      goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
-      classification: sealedClassification,
-    }) || sealedClassification;
+    liftedBand === "GO" || liftedBand === "WATCH" || liftedBand === "NO-GO"
+      ? liftedBand
+      : classificationOf({
+          ...(doc || {}),
+          goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
+          classification: sealedClassification,
+        }) || sealedClassification;
   const overrideNote =
     classification !== sealedClassification && (classification === "GO" || classification === "NO-GO")
       ? `Business head overrode WATCH to ${classification}. Sealed score stays ${scorePct}%.`
@@ -3370,7 +3381,7 @@ export default function PropositionForm({
     setInputReviewKept((prev) => ({ ...prev, [field]: true }));
   }
   const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
-  const livePreviewChecks = previewAdvisoryChecks(liveDoc);
+  const livePreviewChecks = previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc));
   // Filters 1–4 stay open; Filters 5–6 need GO/manager + proof.
   const proofGateReady = isFilterUnlocked("proof-gate", liveDoc);
   const mayUploadProof = canProceedToProofUpload(liveDoc) && proofGateReady;

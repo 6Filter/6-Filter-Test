@@ -11,6 +11,7 @@
     "lib/creditFailureCopy.js",
     "lib/db.js",
     "lib/displayCopy.js",
+    "lib/enteredFieldCredit.js",
     "lib/displayTitle.js",
     "lib/ideaWorkAnalysis.js",
     "lib/researchCache.js",

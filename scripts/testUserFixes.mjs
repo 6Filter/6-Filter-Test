@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { displayCopy } from "../lib/displayCopy.js";
+import { checkF2Sync } from "../lib/filter2Check.js";
+import { previewAdvisoryChecks } from "../lib/goNoGo.js";
+import { lockedFloorForProposition } from "../lib/divisionMargin.js";
+import { liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 import { researchHashFor } from "../lib/researchCache.js";
 import { researchStepFields, stepFingerprint as stepFp } from "../lib/researchStepCache.js";
 import { parseIdeaAnalysis, buildIdeaAnalysisUser } from "../lib/ideaWorkAnalysis.js";
@@ -103,5 +107,138 @@ const parsed = parseIdeaAnalysis(
 assert.equal(parsed.suggestions.length, 2);
 assert.match(buildIdeaAnalysisUser({ ideaDescription: "a daily electrolyte drink" }), /daily electrolyte/);
 assert.throws(() => parseIdeaAnalysis("not json"), /did not return a suggestion/);
+
+const suggestion = "stays cold for two hours longer than the named drink";
+const aiDoc = {
+  division: "Personal Care",
+  f1: {
+    benchmark: "Electral",
+    gapDerivation: suggestion,
+    parityExceptions: "taste matches the bottle",
+    growthRoute: "penetration",
+    growthArgument: "9.5 Mn households will try it in year one",
+  },
+  f2: {
+    cogsAtScale: 30,
+    netMarginAtScale: 55,
+    gstRatePct: 18,
+    grammage: "100 ml",
+    mrpInr: 10,
+    mrpOverride: true,
+  },
+  researchFindings: {
+    autofillStatus: {
+      "f1.gapDerivation": { aiSuggested: suggestion, confirmed: false },
+      "f1.parityExceptions": { aiSuggested: "taste matches the bottle", confirmed: false },
+      "f1.growthArgument": { aiSuggested: "9.5 Mn households will try it in year one", confirmed: false },
+      "f1.growthRoute": { aiSuggested: "penetration", confirmed: false },
+    },
+    f1: {
+      assessments: {
+        argument: {
+          status: "ok",
+          searchUsed: true,
+          raw: {
+            relevance: "none",
+            specific: true,
+            contradicted: true,
+            supported: false,
+            source_url: "https://example.com/study",
+            quote: "category is flat",
+          },
+          returnedSources: ["https://example.com/study"],
+        },
+      },
+    },
+    f2: {
+      assessments: {
+        gst: { contradicted: true, raw: { contradicted: true, verdict: "contradicted" } },
+      },
+    },
+  },
+};
+const credited = scoringDocForEnteredCredit(aiDoc);
+const preview = previewAdvisoryChecks(credited);
+for (const slot of ["derivation", "parity", "argument", "route"]) {
+  const item = preview.f1.items.find((it) => it.slot === slot);
+  assert.equal(item.status, "done", slot);
+  assert.equal(item.credit, 1, slot);
+}
+const floor = lockedFloorForProposition(credited);
+const f2 = checkF2Sync(credited.f2, {
+  floor,
+  divisionLabel: "Personal Care",
+  findings: credited.researchFindings,
+});
+assert.equal(f2.markedDown, false);
+assert.equal(f2.checkLabel, "Cleared");
+assert.equal(f2.items.find((it) => it.slot === "margin").credit, 1);
+assert.equal(f2.items.find((it) => it.slot === "gst").credit, 1);
+assert.equal(credited.f2.mrpOverride, false);
+assert.equal(aiDoc.f2.mrpOverride, true);
+
+const below = scoringDocForEnteredCredit({
+  ...aiDoc,
+  f2: { ...aiDoc.f2, netMarginAtScale: 40, mrpOverride: false },
+});
+const belowCheck = checkF2Sync(below.f2, {
+  floor: lockedFloorForProposition(below),
+  divisionLabel: "Personal Care",
+  findings: below.researchFindings,
+});
+assert.equal(belowCheck.items.find((it) => it.slot === "margin").credit, 0);
+assert.equal(belowCheck.items.find((it) => it.slot === "gst").reasons.includes("CONTRADICTED"), true);
+
+const suggestedOnly = scoringDocForEnteredCredit({
+  f1: { gapDerivation: "none", parityExceptions: "", growthArgument: "none" },
+  researchFindings: {
+    autofillStatus: {
+      "f1.gapDerivation": { aiSuggested: suggestion, confirmed: false },
+    },
+  },
+});
+assert.equal(suggestedOnly.f1.gapDerivation, suggestion);
+assert.equal(suggestedOnly.researchFindings.autofillStatus["f1.gapDerivation"].confirmed, true);
+
+const sealed = {
+  f1: {
+    items: [
+      { slot: "derivation", status: "pending", credit: 0, text: "Gap derivation none", level: "none" },
+      { slot: "parity", status: "pending", credit: 0, text: "Parity exceptions none", level: "none" },
+      {
+        slot: "argument",
+        status: "pending",
+        credit: 0,
+        text: "A claim in growth argument was contradicted",
+        level: "none",
+        reasons: ["CONTRADICTED"],
+      },
+    ],
+  },
+  f2: {
+    checkLabel: "Marked down",
+    markedDown: true,
+    items: [
+      { slot: "margin", status: "pending", credit: 0, text: "Net margin 10% is below the 50% minimum", reasons: ["BELOW_MINIMUM"] },
+      { slot: "packSize", status: "done", credit: 1, text: "Pack size 100 ml entered with a unit" },
+      { slot: "gst", status: "pending", credit: 0, text: "GST rate 18% is marked down — the web check contradicts it", reasons: ["CONTRADICTED", "MARKED_DOWN"] },
+      { slot: "finance", status: "pending", credit: 0, formAdmin: true, text: "The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence" },
+    ],
+  },
+};
+const lifted = liftSealedChecks(sealed, aiDoc);
+assert.equal(lifted.creditRaised, true);
+assert.equal(lifted.checks.f1.items.every((it) => it.credit === 1 && it.status === "done"), true);
+assert.equal(lifted.checks.f2.markedDown, false);
+assert.equal(lifted.checks.f2.checkLabel, "Cleared");
+assert.match(lifted.checks.f2.items.find((it) => it.slot === "finance").text, /does not change this score/);
+assert.match(
+  displayCopy("Correct the contradicted data in the growth argument, or attach Evidence Source proof", aiDoc),
+  /not marked down/
+);
+assert.match(
+  displayCopy("The margin computation hasn't been confirmed by Finance yet — until it is, this number can't count as verified evidence", aiDoc),
+  /does not ask for more evidence/
+);
 
 console.log("user fixes ok");
