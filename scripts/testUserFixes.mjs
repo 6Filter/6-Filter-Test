@@ -494,4 +494,98 @@ assert.equal(alignedScore.points, 17);
 assert.equal(computeGoNoGo(aligned), "WATCH");
 assert.equal(computeGoNoGo(aligned) === "NO-GO", false);
 
+// Level 2 — Apprentice: tighten gap, argument, pack, GST, volume-loss note, and F4 views.
+const apprenticeDoc = {
+  screeningDifficulty: 2,
+  division: "Personal Care",
+  f1: {
+    declaredAttribute: "soft hair",
+    benchmark: "Dove",
+    declaredGap: 1.5,
+    gapDerivation: "stays cold longer than the bottle",
+    parityExceptions: "no added sugar versus the named drink",
+    growthRoute: "penetration",
+    growthArgument: "none",
+  },
+  f2: { cogsAtScale: 30, netMarginAtScale: 55, gstRatePct: 7, grammage: "100" },
+  f3: { volumeLossJustification: "Price stays flat for five years." },
+  f4: {
+    userInputs: { functionalCoreStability: { rating: "Medium", pov: "" } },
+    techShiftRisk: {
+      dimensions: {
+        functionalCoreStability: { risk: "Medium", reason: "Pack format may shift" },
+      },
+    },
+  },
+};
+const apprentice = easeScreeningChecks(
+  {
+    ...previewAdvisoryChecks(scoringDocForEnteredCredit(apprenticeDoc)),
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "done",
+          credit: 1,
+          level: "strong",
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  apprenticeDoc
+).checks;
+assert.equal(apprentice.f1.items.find((it) => it.slot === "gap").credit, 0);
+assert.equal(apprentice.f1.items.find((it) => it.slot === "argument").credit, 0);
+assert.equal(apprentice.f2.items.find((it) => it.slot === "packSize").credit, 0);
+assert.equal(apprentice.f2.items.find((it) => it.slot === "gst").credit, 0);
+assert.equal(apprentice.f3.items.find((it) => it.slot === "resilience").credit, 0);
+assert.equal(apprentice.f4.items[0].credit, 0);
+
+const apprenticePass = easeScreeningChecks(
+  previewAdvisoryChecks(
+    scoringDocForEnteredCredit({
+      screeningDifficulty: 2,
+      division: "Personal Care",
+      f1: {
+        declaredAttribute: "soft hair",
+        benchmark: "Dove",
+        declaredGap: 2,
+        gapDerivation: "stays cold longer than the bottle",
+        parityExceptions: "no added sugar versus the named drink",
+        growthRoute: "penetration",
+        growthArgument: "buyers add a second pack each month from the summer lift",
+      },
+      f2: { cogsAtScale: 30, netMarginAtScale: 55, gstRatePct: 18, grammage: "100 ml" },
+      f3: {
+        volumeLossJustification:
+          "Shelf price is held flat for five years including inflation so volume loss stays inside 10%.",
+      },
+    })
+  ),
+  {
+    screeningDifficulty: 2,
+    division: "Personal Care",
+    f1: {
+      declaredAttribute: "soft hair",
+      benchmark: "Dove",
+      declaredGap: 2,
+      gapDerivation: "stays cold longer than the bottle",
+      parityExceptions: "no added sugar versus the named drink",
+      growthRoute: "penetration",
+      growthArgument: "buyers add a second pack each month from the summer lift",
+    },
+    f2: { cogsAtScale: 30, netMarginAtScale: 55, gstRatePct: 18, grammage: "100 ml" },
+    f3: {
+      volumeLossJustification:
+        "Shelf price is held flat for five years including inflation so volume loss stays inside 10%.",
+    },
+  }
+).checks;
+assert.equal(apprenticePass.f1.items.find((it) => it.slot === "gap").credit, 1);
+assert.equal(apprenticePass.f1.items.find((it) => it.slot === "argument").credit, 1);
+assert.equal(apprenticePass.f2.items.find((it) => it.slot === "packSize").credit, 1);
+assert.equal(apprenticePass.f2.items.find((it) => it.slot === "gst").credit, 1);
+assert.equal(apprenticePass.f3.items.find((it) => it.slot === "resilience").credit, 1);
+
 console.log("user fixes ok");

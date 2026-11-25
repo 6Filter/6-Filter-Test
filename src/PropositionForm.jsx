@@ -69,6 +69,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
+import { withScreeningDifficulty } from "../lib/difficultyLevel.js";
 import { easeScreeningChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
@@ -2787,6 +2788,7 @@ export default function PropositionForm({
   onOpenImportedDraft,
   onSubmitImportedIdea,
   onOpenImportedLog,
+  screeningDifficulty = 1,
 }) {
   const [doc, setDoc] = useState(() => {
     const merged = mergeProposition(initial);
@@ -3274,7 +3276,10 @@ export default function PropositionForm({
   function keepInputTyped(field) {
     setInputReviewKept((prev) => ({ ...prev, [field]: true }));
   }
-  const liveDoc = { ...doc, goNoGo: goNoGo || doc.goNoGo };
+  const liveDoc = withScreeningDifficulty(
+    { ...doc, goNoGo: goNoGo || doc.goNoGo },
+    screeningDifficulty
+  );
   const livePreviewChecks =
     easeScreeningChecks(previewAdvisoryChecks(scoringDocForEnteredCredit(liveDoc)), liveDoc).checks ||
     previewAdvisoryChecks(liveDoc);

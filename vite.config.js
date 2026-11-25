@@ -34,7 +34,8 @@ function apiPlugin(env) {
       applyEnv(env);
 
       server.middlewares.use(async (req, res, next) => {
-        applySecurityHeaders(res);
+        // Vite needs inline preamble + HMR websocket; keep production CSP on server.js.
+        applySecurityHeaders(res, { viteDev: true });
         try {
           const handled = await handleApiRequest(req, res);
           if (handled) return;
@@ -48,7 +49,7 @@ function apiPlugin(env) {
     },
     configurePreviewServer(server) {
       server.middlewares.use((req, res, next) => {
-        applySecurityHeaders(res);
+        applySecurityHeaders(res, { viteDev: true });
         next();
       });
     },
