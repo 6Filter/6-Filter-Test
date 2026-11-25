@@ -108,6 +108,8 @@
     "src/AdminUsersPage.jsx\treplaces the whole list",
     "src/AdminUsersPage.jsx\trow(s). Invalid teams or emails are marked not ok.",
     "src/AdminUsersPage.jsx\t—",
+    "src/App.jsx\tDifficulty Level1 - Rookie",
+    "src/App.jsx\tform",
     "src/App.jsx\tResearch is still running on the server. Wait a minute, then click Evaluate again to seal the score.",
     "src/App.jsx\tStats",
     "src/App.jsx\tSubmit timed out while running research. Try a shorter description, or Submit again.",

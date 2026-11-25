@@ -1661,6 +1661,9 @@ export default function App() {
           <button type="button" className="page-back" onClick={goBack}>
             <ArrowLeft size={15} /> {backLabel}
           </button>
+          {view === "form" ? (
+            <p className="difficulty-level" data-testid="difficulty-level">Difficulty Level1 - Rookie</p>
+          ) : null}
         </div>
       )}
 
@@ -2588,7 +2591,8 @@ html:has(.output-page), body:has(.output-page) { background:#faf3e8; }
 .primus h1 .dot{color:var(--ink-deep);}
 .eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-3);}
 .masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 24px;}
-.page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;}
+.page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;}
+.difficulty-level{flex:1;min-width:240px;margin:0;min-height:42px;display:flex;align-items:center;justify-content:center;padding:8px 18px;border-radius:14px;background:#fffaf3;border:1px solid #e9dcc5;color:#3b2a1e;font-family:'Sora',system-ui,sans-serif;font-size:15px;font-weight:700;letter-spacing:.01em;}
 .screen-spec .page-back-bar,
 .screen-log .page-back-bar{max-width:none;width:100%;margin:0;padding:8px 28px 0;}
 .screen-log .masthead{
