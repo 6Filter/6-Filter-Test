@@ -125,6 +125,74 @@ assert.doesNotMatch(
   formSrc,
   /f2\.grammage,\s*\r?\n\s*f2\.gstRatePct,\s*\r?\n\s*f2\.mrpInr/
 );
+assert.doesNotMatch(formSrc, /Select risk/);
+assert.doesNotMatch(formSrc, /Web check rating/);
+assert.match(formSrc, /Your view/);
+
+const { f4AnswerPasses, easeScreeningChecks, scoringDocForEnteredCredit } = await import(
+  "../lib/enteredFieldCredit.js"
+);
+const { previewAdvisoryChecks } = await import("../lib/goNoGo.js");
+const finding = "Pack format stays on shelf with no substitute format growing in search.";
+const pasteDoc = {
+  screeningDifficulty: 1,
+  division: "Personal Care",
+  f4: {
+    userInputs: { functionalCoreStability: { pov: finding } },
+    techShiftRisk: {
+      dimensions: {
+        functionalCoreStability: { risk: "Medium", reason: finding },
+      },
+    },
+  },
+  researchFindings: {
+    f4: {
+      techShiftFound: true,
+      assessments: {
+        functionalCoreStability: {
+          status: "ok",
+          searchUsed: true,
+          raw: { rating: "Medium", quote: finding, reason: finding, supported: true },
+        },
+      },
+    },
+  },
+};
+assert.equal(f4AnswerPasses(pasteDoc, "functionalCoreStability"), true);
+const l1 = easeScreeningChecks(
+  {
+    ...previewAdvisoryChecks(scoringDocForEnteredCredit(pasteDoc)),
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "pending",
+          credit: 0,
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  pasteDoc
+).checks;
+assert.equal(l1.f4.items[0].credit, 1, "Level 1 paste of the AI finding must clear the point");
+const l2Doc = { ...pasteDoc, screeningDifficulty: 2 };
+const l2 = easeScreeningChecks(
+  {
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "pending",
+          credit: 0,
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  l2Doc
+).checks;
+assert.equal(l2.f4.items[0].credit, 1, "same paste clears at Level 2 too");
 
 void resolveHardLockedGoNoGo;
 console.log("PASS testF4ResubmitStability");

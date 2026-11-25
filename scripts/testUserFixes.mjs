@@ -105,7 +105,9 @@ assert.doesNotMatch(keyFn, /\bgstRatePct\b/);
 assert.doesNotMatch(form, /AI analysis/);
 assert.match(form, /How the 10% volume-loss rule is met/);
 assert.match(form, /data-f4-block="web-check"/);
-assert.match(form, /Web check rating/);
+assert.doesNotMatch(form, /Select risk/);
+assert.doesNotMatch(form, /Web check rating/);
+assert.match(form, /Your view/);
 assert.doesNotMatch(form, /Respond on Medium/);
 assert.match(form, /forceResearch: Boolean\(submitOpts\.forceResearch\) \|\| ideaChanged/);
 

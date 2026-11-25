@@ -11,7 +11,7 @@ assert.match(apiSrc, /import \{ runFilter4 \} from "\.\/filters\/filter4TechShif
 
 assert.match(formSrc, /data-f4-state=\{rated\.length === TECH_SHIFT_DIMENSIONS\.length \? "scored" : "editable"\}/);
 assert.match(formSrc, /className="f4-dimension-editor"/);
-assert.match(formSrc, /Select risk/);
+assert.doesNotMatch(formSrc, /Select risk/);
 assert.match(formSrc, /className="f4-dimension-editor"/);
 assert.match(formSrc, /AI fills this/);
 assert.match(formSrc, /data-f4-risk="tech-shift"/);

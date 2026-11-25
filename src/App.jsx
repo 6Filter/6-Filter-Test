@@ -1997,18 +1997,13 @@ function CategoryIntelPanel({ filter, kind }) {
 
       {kind === "filter4" && (
         <>
-          <p className="ci-archetype">
-            Structural risk: <strong>{filter.overallRisk || filter.techShiftRisk?.overallRisk || "unassessed"}</strong>
-          </p>
           {filter.obsolescenceVerdict && <p>{filter.obsolescenceVerdict}</p>}
           {f4Dims.length > 0 && (
             <ul className="ci-dims">
               {f4Dims.map((d) => (
                 <li key={d.key}>
-                  <strong>{d.label}: {d.effectiveRisk || d.risk}</strong> — {d.reassessedReason || d.reason}
-                  {d.reassessedRisk ? (
-                    <span className="ci-dim-original"> (original {d.risk}: {d.reason})</span>
-                  ) : null}
+                  <strong>{d.label}</strong>
+                  {d.reassessedReason || d.reason ? ` — ${d.reassessedReason || d.reason}` : ""}
                 </li>
               ))}
             </ul>

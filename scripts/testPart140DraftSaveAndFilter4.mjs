@@ -351,10 +351,12 @@ await check("PropositionForm: Submit bar error, Why can't I submit?, button stay
 });
 
 await check("PropositionForm: one box per Filter 4 point, web-check suggestion beside it, no second response list", () => {
-  assert.match(form, /Your rating and view/);
+  assert.match(form, /Your view/);
+  assert.doesNotMatch(form, /Your rating and view/);
   assert.match(form, /data-f4-block="your-view"/);
   assert.match(form, /data-f4-block="web-check"/);
-  assert.match(form, /Web check rating/);
+  assert.doesNotMatch(form, /Web check rating/);
+  assert.doesNotMatch(form, /Select risk/);
   assert.doesNotMatch(form, /Respond on Medium/);
   assert.match(form, /onUserInputChange/);
   assert.match(form, /ideaDoc\?\.f4\?\.userInputs/);
@@ -363,7 +365,7 @@ await check("PropositionForm: one box per Filter 4 point, web-check suggestion b
   assert.doesNotMatch(form, /patchDimension\(key, \{ risk:/);
   assert.doesNotMatch(form, /patchDimension\(key, \{ reason:/);
   assert.match(form, /className="f4-dimension-editor"/);
-  assert.match(form, /Select risk/);
+  assert.doesNotMatch(form, /option value="Low"/);
   assert.match(form, /onMitigationChange\(key, patch\.pov\)/);
 });
 

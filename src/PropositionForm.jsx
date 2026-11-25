@@ -70,7 +70,11 @@ import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult }
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
 import { withScreeningDifficulty } from "../lib/difficultyLevel.js";
-import { easeScreeningChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
+import {
+  easeScreeningChecks,
+  f4SuggestionText,
+  scoringDocForEnteredCredit,
+} from "../lib/enteredFieldCredit.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
@@ -109,9 +113,6 @@ import {
   isTechShiftRiskUnfilled,
   normalizeRiskLevel,
   normalizeTechShiftRisk,
-  aggregateTechShiftRisk,
-  aggregateTechShiftRiskWithResponses,
-  hasReassessedDimension,
   normalizeF4UserInputs,
   patchF4UserInput,
   userInputFor,
@@ -691,12 +692,6 @@ function FieldControl({
       risk.dimensions && typeof risk.dimensions === "object" ? risk.dimensions : blankTechShiftRisk().dimensions;
     const dimensions = { ...blankTechShiftRisk().dimensions, ...baseDims };
     const rated = TECH_SHIFT_DIMENSIONS.filter((k) => normalizeRiskLevel(dimensions[k]?.risk));
-    const overall =
-      rated.length === TECH_SHIFT_DIMENSIONS.length
-        ? hasReassessedDimension(dimensions)
-          ? aggregateTechShiftRiskWithResponses(dimensions)
-          : aggregateTechShiftRisk(dimensions) || effectiveOverallRisk(risk)
-        : "";
     // One box per point. The view is also the mitigation, so the same point is not asked again below.
     const storedUserInputs = ideaDoc?.f4?.userInputs;
     const patchUserInput = (key, patch) => {
@@ -720,7 +715,6 @@ function FieldControl({
           <FieldRefreshControl onRefresh={onRefresh} refreshing={refreshing} locked={locked} />
           <FieldRoleBadge path={fieldPath} doc={ideaDoc} />
         </div>
-        {overall ? <p className="autofill-status" data-tone="ai">Current overall: {overall}</p> : null}
         <div className="f4-dimension-editor">
           <div className="f4-grid">
           {TECH_SHIFT_DIMENSIONS.map((key) => {
@@ -730,35 +724,20 @@ function FieldControl({
               String(mine.pov || "").trim() ||
               String((mitigationResponses && mitigationResponses[key]) || d.userResponse || "").trim();
             const assessment = ideaDoc?.researchFindings?.f4?.assessments?.[key] || null;
-            const aiRating = normalizeRiskLevel(d.risk) || "";
-            const checkedRating = normalizeRiskLevel(assessment?.raw?.rating) || "";
-            const webRating = checkedRating || aiRating;
-            const finding = String(assessment?.raw?.quote || assessment?.raw?.reason || d.reason || "").trim();
+            // Same filtered finding the scorer uses — never show Low/Medium/High to the person.
+            const finding = f4SuggestionText(ideaDoc, key);
             const sourceUrl = String(assessment?.raw?.source_url || "").trim();
-            const showWebCheck = Boolean(verifyingDimension === key || webRating || finding || sourceUrl);
+            const showWebCheck = Boolean(verifyingDimension === key || finding || sourceUrl);
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
                 <div className="dimension-response-label">{DIMENSION_LABELS[key] || key}</div>
                 <div className="f4c-body" data-web-check={showWebCheck ? "yes" : "no"}>
                 <div className="f4-dimension-block f4-your-view" data-f4-block="your-view">
-                  <div className="f4-block-title">Your rating and view</div>
-                  <select
-                    data-field={fieldPath || undefined}
-                    value={mine.rating}
-                    disabled={locked || reassessing}
-                    title={lockTitle}
-                    aria-label={`Your rating for ${DIMENSION_LABELS[key] || key}`}
-                    onChange={(e) => patchUserInput(key, { rating: e.target.value })}
-                  >
-                    <option value="">Select risk</option>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
+                  <div className="f4-block-title">Your view</div>
                   <textarea
                     data-field={fieldPath || undefined}
                     rows={2}
-                    placeholder="Your view: why this rating (optional for Low; required evidence for Medium/High mitigation below)"
+                    placeholder="Your view on this point. Paste the finding beside it to clear the point."
                     value={typed}
                     disabled={locked || reassessing}
                     title={lockTitle}
@@ -770,15 +749,10 @@ function FieldControl({
                 <div className="f4-dimension-block f4-web-check" data-f4-block="web-check">
                   <div className="f4-block-title">Web check</div>
                   {verifyingDimension === key ? (
-                    <div className="dimension-finding original">Web-checking your rating…</div>
+                    <div className="dimension-finding original">Checking this point…</div>
                   ) : (
                     <>
-                      {webRating ? (
-                        <div className="dimension-finding original" data-f4-web-rating={webRating}>
-                          Web check rating: {webRating}
-                        </div>
-                      ) : null}
-                      {finding ? <div className="dimension-finding original">{finding}</div> : null}
+                      {finding ? <div className="dimension-finding original" data-f4-finding>{finding}</div> : null}
                       {sourceUrl ? (
                         <div className="dimension-finding original">
                           Source:{" "}
@@ -5031,8 +5005,7 @@ export default function PropositionForm({
                       }
                       onRefresh={
                         (spec.key === "f2" && field.key === "cogsAtScale") ||
-                        (spec.key === "f3" && field.key === "marginElasticity") ||
-                        (spec.key === "f4" && field.key === "techShiftRisk")
+                        (spec.key === "f3" && field.key === "marginElasticity")
                           ? () => handleRefreshField(field.key)
                           : undefined
                       }
