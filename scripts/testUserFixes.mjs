@@ -96,9 +96,12 @@ assert.equal(stepFp("f4", before.f4), stepFp("f4", after.f4));
 
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 const keyFn = form.slice(form.indexOf("function researchInputKey"), form.indexOf("function preferOutputView"));
-for (const field of ["gapDerivation", "parityExceptions", "growthRoute", "growthArgument", "grammage", "mrpInr"]) {
+for (const field of ["gapDerivation", "parityExceptions", "growthRoute", "growthArgument", "grammage"]) {
   assert.match(keyFn, new RegExp(field));
 }
+// Derived GST/MRP must stay out of the forceResearch key so Filter 4 does not re-roll.
+assert.doesNotMatch(keyFn, /\bmrpInr\b/);
+assert.doesNotMatch(keyFn, /\bgstRatePct\b/);
 assert.doesNotMatch(form, /AI analysis/);
 assert.match(form, /How the 10% volume-loss rule is met/);
 assert.match(form, /data-f4-block="web-check"/);

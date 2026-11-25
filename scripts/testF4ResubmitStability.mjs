@@ -1,0 +1,130 @@
+/**
+ * Same typed inputs must keep Filter 4 points, score and verdict stable across
+ * resubmits — a failed F4 must not lock forever, and a hard-locked seal must
+ * not rebuild Closest-path rows from a fresh advisory pass.
+ */
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { checkF4 } from "../lib/filterChecks.js";
+import { finishResearchForSeal } from "../lib/finishResearchForSeal.js";
+import {
+  preferExistingResearchFindings,
+  preserveSuccessfulF4,
+} from "../lib/researchCacheable.js";
+import { resolveHardLockedGoNoGo } from "../lib/analysisStability.js";
+import { sealGoNoGoOutput } from "../lib/sealOutput.js";
+
+const dims = {
+  functionalCoreStability: { risk: "Low", reason: "stable format" },
+  consumptionContextStability: { risk: "Low", reason: "stable use" },
+  manufacturingDisruptionRisk: { risk: "Low", reason: "stable make" },
+  userHabitShiftPotential: { risk: "Low", reason: "stable habit" },
+  adjacentSubstitutionThreat: { risk: "Low", reason: "stable sub" },
+  purchaseFrequencyShift: { risk: "Low", reason: "stable freq" },
+  regulatoryDisruptionRisk: { risk: "Low", reason: "stable reg" },
+};
+
+const rated = {
+  techShiftRisk: { dimensions: dims, overallRisk: "Low" },
+};
+
+// finishResearchForSeal clears stale F4 failed before scoring, so checkF4 sees ratings.
+const finished = finishResearchForSeal({
+  f4: rated,
+  researchFindings: {
+    stepsExpected: ["F4"],
+    stepsDone: [],
+    stepsFailed: ["F4"],
+    f4: { researchFailed: true, error: "timeout" },
+  },
+  researchRunAt: "2026-11-25T00:00:00.000Z",
+});
+assert.equal(finished.changed, true);
+assert.equal(finished.doc.researchFindings.f4.researchFailed, false);
+const afterFinish = checkF4(rated, finished.doc.researchFindings.f4 || {});
+assert.equal((afterFinish.items || []).length, 7);
+assert.equal(
+  (afterFinish.items || []).some((it) => it.code === "F4_RESEARCH_FAILED"),
+  false
+);
+
+const okF4 = {
+  researchFindings: {
+    f4: {
+      techShiftFound: true,
+      overallRisk: "Low",
+      assessments: {
+        functionalCoreStability: { status: "ok", searchUsed: true, raw: { rating: "Low", supported: true } },
+      },
+    },
+  },
+};
+const failedF4 = {
+  researchFindings: {
+    f4: { researchFailed: true, error: "provider error", techShiftFound: false },
+  },
+};
+
+assert.equal(
+  preferExistingResearchFindings(failedF4, okF4).researchFindings.f4.techShiftFound,
+  true,
+  "successful F4 must replace a failed first-writer cache"
+);
+assert.equal(
+  preferExistingResearchFindings(okF4, failedF4).researchFindings.f4.techShiftFound,
+  true,
+  "successful F4 must survive a later failed save"
+);
+assert.equal(
+  preserveSuccessfulF4(okF4.researchFindings, failedF4.researchFindings).f4.techShiftFound,
+  true
+);
+
+const sealedPrev = {
+  classification: "WATCH",
+  score: { pct: 61, total: 18, points: 11, scoreInputKey: "abc" },
+  scoreInputKey: "abc",
+  hardLocked: true,
+  output: {
+    sealedAt: "2026-11-25T00:00:00.000Z",
+    scoreInputKey: "abc",
+    classification: "WATCH",
+    score: { pct: 61 },
+    filters: {
+      f4: {
+        label: "Cleared",
+        narrative: "stable",
+        items: [{ text: "Functional core stability: Low", credit: 1 }],
+      },
+    },
+  },
+  filterNarratives: { f4: "stable" },
+  checkLabels: { f4: "Cleared" },
+};
+const liveChecks = {
+  f4: {
+    checkLabel: "Evidence missing",
+    items: [{ text: "Research failed", credit: 0 }],
+  },
+};
+const rebuilt = sealGoNoGoOutput(
+  { ...sealedPrev, hardLocked: true },
+  { advisoryChecks: liveChecks, doc: { f4: rated } }
+);
+assert.notEqual(rebuilt.output.filters.f4.label, "Cleared");
+
+// Source lock: hardLocked path must reuse prev.output instead of sealGoNoGoOutput.
+const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
+assert.match(apiSrc, /goNoGo\.hardLocked && prev\?\.output\?\.sealedAt/);
+assert.match(apiSrc, /output: prev\.output/);
+assert.match(apiSrc, /preserveSuccessfulF4/);
+
+const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
+assert.match(formSrc, /Omit derived\/AI-filled GST and MRP/);
+assert.doesNotMatch(
+  formSrc,
+  /f2\.grammage,\s*\r?\n\s*f2\.gstRatePct,\s*\r?\n\s*f2\.mrpInr/
+);
+
+void resolveHardLockedGoNoGo;
+console.log("PASS testF4ResubmitStability");

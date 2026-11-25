@@ -25,6 +25,7 @@
     "lib/fieldOwnership.js",
     "lib/filterUnlock.js",
     "lib/finishResearchForSeal.js",
+    "lib/researchCacheable.js",
     "lib/logExport.js",
     "lib/logStatus.js",
     "lib/managerReview.js",

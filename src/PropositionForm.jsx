@@ -2757,8 +2757,8 @@ function researchInputKey(doc) {
     f1.growthRoute,
     f1.growthArgument,
     f2.grammage,
-    f2.gstRatePct,
-    f2.mrpInr,
+    // Omit derived/AI-filled GST and MRP — they flip after open and falsely forceResearch,
+    // which re-rolls Filter 4 and makes score/verdict change for the same typed inputs.
     attachSig,
   ].map((v) => String(v || "").trim().toLowerCase());
   return bits.join("|");
