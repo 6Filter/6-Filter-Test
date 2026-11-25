@@ -12,6 +12,7 @@
     "lib/db.js",
     "lib/difficultyLevel.js",
     "lib/displayCopy.js",
+    "lib/securityHeaders.js",
     "lib/enteredFieldCredit.js",
     "lib/displayTitle.js",
     "lib/ideaWorkAnalysis.js",
