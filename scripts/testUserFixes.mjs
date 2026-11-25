@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { displayCopy } from "../lib/displayCopy.js";
 import { checkF2Sync } from "../lib/filter2Check.js";
 import { checkF4 } from "../lib/filterChecks.js";
-import { previewAdvisoryChecks } from "../lib/goNoGo.js";
+import { computeGoNoGo, previewAdvisoryChecks, scoreAdvisoryChecks } from "../lib/goNoGo.js";
 import { lockedFloorForProposition } from "../lib/divisionMargin.js";
 import { easeScreeningChecks, f4Improvement, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 import { researchHashFor } from "../lib/researchCache.js";
@@ -423,5 +423,75 @@ const lossStill = easeScreeningChecks(
 ).checks;
 assert.equal(lossStill.f3.items[0].credit, 0);
 assert.equal(lossStill.f3.markedDown, true);
+
+// One real mark-down, and the other slots only at partial credit, must not stay near 40% NO-GO.
+const partialSlot = (slot, credit) => ({
+  slot,
+  status: "done",
+  credit,
+  level: "adequate",
+  text: `${slot} entered`,
+  reasons: [],
+});
+const aligned = easeScreeningChecks(
+  {
+    f1: {
+      checkLabel: "Marked down",
+      markedDown: true,
+      items: [
+        partialSlot("benchmark", 2 / 3),
+        {
+          slot: "gap",
+          status: "pending",
+          credit: 0,
+          level: "none",
+          text: "Declared gap 1 is marked down",
+          reasons: ["BELOW_FLOOR", "MARKED_DOWN"],
+        },
+        partialSlot("attributes", 1 / 3),
+        partialSlot("derivation", 2 / 3),
+        partialSlot("parity", 2 / 3),
+        partialSlot("route", 2 / 3),
+        partialSlot("argument", 2 / 3),
+      ],
+    },
+    f2: {
+      checkLabel: "Cleared",
+      items: [partialSlot("margin", 1), partialSlot("packSize", 1), partialSlot("gst", 1)],
+    },
+    f3: { checkLabel: "Cleared", items: [partialSlot("resilience", 1)] },
+    f4: {
+      checkLabel: "Cleared",
+      items: [
+        "Functional core stability",
+        "Consumption context stability",
+        "Manufacturing disruption risk",
+        "User habit shift potential",
+        "Adjacent substitution threat",
+        "Purchase frequency shift",
+        "Regulatory disruption risk",
+      ].map((label) => ({ status: "done", credit: 1, level: "strong", text: `${label}: low risk` })),
+    },
+  },
+  {
+    division: "Personal Care",
+    f1: {
+      declaredGap: 1,
+      benchmark: "Dove",
+      declaredAttribute: "soft hair",
+      gapDerivation: "stays cold longer than the bottle",
+      parityExceptions: "no added sugar versus the named drink",
+      growthRoute: "penetration",
+      growthArgument: "buyers add a second pack each month",
+    },
+  }
+).checks;
+assert.equal(aligned.f1.items.find((it) => it.slot === "gap").credit, 0);
+assert.equal(aligned.f1.items.filter((it) => it.slot !== "gap").every((it) => it.credit === 1), true);
+const alignedScore = scoreAdvisoryChecks(aligned);
+assert.equal(alignedScore.pct, 94);
+assert.equal(alignedScore.points, 17);
+assert.equal(computeGoNoGo(aligned), "WATCH");
+assert.equal(computeGoNoGo(aligned) === "NO-GO", false);
 
 console.log("user fixes ok");

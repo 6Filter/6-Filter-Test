@@ -1987,28 +1987,46 @@ export function GoNoGoResultPage({
   // A filled claim or a clearing margin raises the shown score by the slots it just passed.
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const sealedPct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
-  const liftedScore = lifted.creditRaised ? scoreAdvisoryChecks(checks) : null;
-  const liftedPct = liftedScore && Number.isFinite(Number(liftedScore.pct)) ? Number(liftedScore.pct) : sealedPct;
+  // The headline follows the same checks as the mark-down list. A stored 40% must not
+  // stay on screen when only the remaining mark-down points are still open.
+  const liftedScore = scoreAdvisoryChecks(checks);
+  const liftedPct = Number.isFinite(Number(liftedScore?.pct)) ? Number(liftedScore.pct) : sealedPct;
   const scorePct = liftedPct > sealedPct ? liftedPct : sealedPct;
   const sealedClassification = result.classification;
-  const liftedBand =
-    scorePct > sealedPct && !goNoGoIsFloorFailure(checks) ? computeGoNoGo(checks) : "";
+  const headOverride = String(
+    doc?.managerApproval?.overrideClassification || doc?.managerReview?.overrideClassification || ""
+  )
+    .trim()
+    .toUpperCase();
+  const liftedBand = scorePct > sealedPct ? computeGoNoGo(checks) : "";
   const classification =
-    liftedBand === "GO" || liftedBand === "WATCH" || liftedBand === "NO-GO"
-      ? liftedBand
-      : classificationOf({
-          ...(doc || {}),
-          goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
-          classification: sealedClassification,
-        }) || sealedClassification;
+    headOverride === "GO" || headOverride === "NO-GO"
+      ? headOverride
+      : liftedBand === "GO" || liftedBand === "WATCH" || liftedBand === "NO-GO"
+        ? liftedBand
+        : classificationOf({
+            ...(doc || {}),
+            goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
+            classification: sealedClassification,
+          }) || sealedClassification;
   const overrideNote =
-    classification !== sealedClassification && (classification === "GO" || classification === "NO-GO")
+    (headOverride === "GO" || headOverride === "NO-GO") &&
+    classification !== sealedClassification &&
+    (classification === "GO" || classification === "NO-GO")
       ? `Business head overrode WATCH to ${classification}. Sealed score stays ${scorePct}%.`
       : "";
   // Part 141 D72 — path panel follows the sealed verdict, not a live recompute.
   const score = {
     ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}),
-    pct: scorePct,
+    ...(scorePct > sealedPct
+      ? {
+          pct: scorePct,
+          points: liftedScore.points,
+          done: liftedScore.done,
+          total: liftedScore.total,
+          byFilter: liftedScore.byFilter,
+        }
+      : { pct: scorePct }),
     classification,
   };
   const tone = goNoGoTone(classification);
