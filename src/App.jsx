@@ -1662,7 +1662,7 @@ export default function App() {
             <ArrowLeft size={15} /> {backLabel}
           </button>
           {view === "form" ? (
-            <p className="difficulty-level" data-testid="difficulty-level">Difficulty Level1 - Rookie</p>
+            <p className="difficulty-level" data-testid="difficulty-level">Level 1 - Rookie</p>
           ) : null}
         </div>
       )}
