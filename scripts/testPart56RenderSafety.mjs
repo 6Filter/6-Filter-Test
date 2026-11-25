@@ -88,8 +88,9 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 assert.match(formSrc, /formatRupeeInr\(range\?\.minMrpInr\)/);
 assert.match(formSrc, /formatRupeeInr\(range\?\.maxMrpInr\)/);
 assert.match(formSrc, /blankTechShiftRisk\(\)/);
-assert.match(formSrc, /effectiveOverallRisk\(risk\)/);
+assert.match(formSrc, /f4SuggestionText/);
 assert.match(formSrc, /f4-dimension-editor/);
+assert.doesNotMatch(formSrc, /Select risk/);
 assert.doesNotMatch(formSrc, /\.maxMrpInr\.toFixed/);
 assert.doesNotMatch(formSrc, /\.minMrpInr\.toFixed/);
 
