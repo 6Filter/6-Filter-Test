@@ -46,12 +46,12 @@ check("form-wrap is the container with width:100%; form-layout is the grid insid
 check("D129 placement", () => {
   const c = compact(css);
   assert.match(c, /\[data-card="start"\]\{grid-column:1;grid-row:1;\}/);
-  assert.match(c, /\[data-card="f1"\]\{grid-column:2;grid-row:1 \/ span 3;\}/);
+  assert.match(c, /\[data-card="f1"\]\{grid-column:2;grid-row:1;\}/);
   assert.match(c, /\[data-card="f2"\]\{grid-column:1;grid-row:2;\}/);
-  assert.match(c, /\[data-card="f3"\]\{grid-column:1;grid-row:3;\}/);
-  assert.match(c, /\[data-card="f4"\]\{grid-column:1 \/ -1;grid-row:4;\}/);
-  assert.match(c, /\[data-card="f5"\]\{grid-column:1;grid-row:5;\}/);
-  assert.match(c, /\[data-card="f6"\]\{grid-column:2;grid-row:5;\}/);
+  assert.match(c, /\[data-card="f3"\]\{grid-column:2;grid-row:2;\}/);
+  assert.match(c, /\[data-card="f4"\]\{grid-column:1 \/ -1;grid-row:3;\}/);
+  assert.match(c, /\[data-card="f5"\]\{grid-column:1;grid-row:4;\}/);
+  assert.match(c, /\[data-card="f6"\]\{grid-column:2;grid-row:4;\}/);
 });
 
 check("D130 short boxes pair up at 460px (card container); old viewport rule is gone", () => {
@@ -61,7 +61,7 @@ check("D130 short boxes pair up at 460px (card container); old viewport rule is 
 
 check("D131 Filter 4: 4+3 at 900px, body two columns at 460px, 84px view box", () => {
   const c = compact(css);
-  assert.match(c, /@container card \(min-width:900px\)\{ \.f4-grid\{[^}]*grid-template-rows:repeat\(4,auto\);grid-auto-flow:column/);
+  assert.match(c, /@container card \(min-width:900px\)\{ \.f4-grid\{[^}]*grid-auto-flow:row/);
   assert.match(c, /\[data-f4-card\]\{container-type:inline-size;container-name:f4c/);
   assert.match(c, /@container f4c \(min-width:460px\)\{ \.f4c-body\{grid-template-columns:repeat\(2,/);
   assert.match(c, /\.f4-your-view textarea\{height:84px;min-height:84px;resize:vertical;\}/);

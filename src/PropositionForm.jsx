@@ -32,7 +32,6 @@ import { isNamedBenchmark } from "../lib/benchmarkName.js";
 import {
   applyLocalGate,
   buildGateRationale,
-  computeGoNoGo,
   goNoGoIsFloorFailure,
   goNoGoTone,
   scoreAdvisoryChecks,
@@ -70,7 +69,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
-import { easeScreeningChecks, liftSealedChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
+import { easeScreeningChecks, scoringDocForEnteredCredit } from "../lib/enteredFieldCredit.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
@@ -1981,52 +1980,27 @@ export function GoNoGoResultPage({
       : advisoryChecks && typeof advisoryChecks === "object"
         ? advisoryChecks
         : {};
-  const lifted = liftSealedChecks(sealedChecks, doc);
-  const checks = lifted.checks;
-  // Single resolver: screened ideas always show the sealed snapshot (Part 128).
-  // A filled claim or a clearing margin raises the shown score by the slots it just passed.
+  // The score and verdict stay on the sealed snapshot. Opening the idea does not recompute them.
+  // A new number is stored only when a changed input is submitted.
+  const checks = sealedChecks;
   const scoreBase = resolveOutputScore(checks, result.score, doc, result.scoreInputKey);
   const sealedPct = Number.isFinite(Number(scoreBase?.pct)) ? Number(scoreBase.pct) : 0;
-  // The headline follows the same checks as the mark-down list. A stored 40% must not
-  // stay on screen when only the remaining mark-down points are still open.
-  const liftedScore = scoreAdvisoryChecks(checks);
-  const liftedPct = Number.isFinite(Number(liftedScore?.pct)) ? Number(liftedScore.pct) : sealedPct;
-  const scorePct = liftedPct > sealedPct ? liftedPct : sealedPct;
+  const scorePct = sealedPct;
   const sealedClassification = result.classification;
-  const headOverride = String(
-    doc?.managerApproval?.overrideClassification || doc?.managerReview?.overrideClassification || ""
-  )
-    .trim()
-    .toUpperCase();
-  const liftedBand = scorePct > sealedPct ? computeGoNoGo(checks) : "";
   const classification =
-    headOverride === "GO" || headOverride === "NO-GO"
-      ? headOverride
-      : liftedBand === "GO" || liftedBand === "WATCH" || liftedBand === "NO-GO"
-        ? liftedBand
-        : classificationOf({
-            ...(doc || {}),
-            goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
-            classification: sealedClassification,
-          }) || sealedClassification;
+    classificationOf({
+      ...(doc || {}),
+      goNoGo: { ...(doc?.goNoGo || {}), classification: sealedClassification },
+      classification: sealedClassification,
+    }) || sealedClassification;
   const overrideNote =
-    (headOverride === "GO" || headOverride === "NO-GO") &&
-    classification !== sealedClassification &&
-    (classification === "GO" || classification === "NO-GO")
+    classification !== sealedClassification && (classification === "GO" || classification === "NO-GO")
       ? `Business head overrode WATCH to ${classification}. Sealed score stays ${scorePct}%.`
       : "";
   // Part 141 D72 — path panel follows the sealed verdict, not a live recompute.
   const score = {
     ...(scoreBase && typeof scoreBase === "object" ? scoreBase : {}),
-    ...(scorePct > sealedPct
-      ? {
-          pct: scorePct,
-          points: liftedScore.points,
-          done: liftedScore.done,
-          total: liftedScore.total,
-          byFilter: liftedScore.byFilter,
-        }
-      : { pct: scorePct }),
+    pct: scorePct,
     classification,
   };
   const tone = goNoGoTone(classification);
@@ -5939,22 +5913,22 @@ ${FIELD_ROLE_CSS}
 @container formwrap (min-width:940px){
   .form-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;row-gap:var(--gap-field,16px);align-items:start;}
   .form-layout > [data-card="start"]{grid-column:1;grid-row:1;}
-  .form-layout > [data-card="f1"]{grid-column:2;grid-row:1 / span 3;}
+  .form-layout > [data-card="f1"]{grid-column:2;grid-row:1;}
   .form-layout > [data-card="f2"]{grid-column:1;grid-row:2;}
-  .form-layout > [data-card="f3"]{grid-column:1;grid-row:3;}
-  .form-layout > [data-card="f4"]{grid-column:1 / -1;grid-row:4;}
-  .form-layout > [data-card="f5"]{grid-column:1;grid-row:5;}
-  .form-layout > [data-card="f6"]{grid-column:2;grid-row:5;}
+  .form-layout > [data-card="f3"]{grid-column:2;grid-row:2;}
+  .form-layout > [data-card="f4"]{grid-column:1 / -1;grid-row:3;}
+  .form-layout > [data-card="f5"]{grid-column:1;grid-row:4;}
+  .form-layout > [data-card="f6"]{grid-column:2;grid-row:4;}
 }
 /* Short boxes go two to a row when the card's own width allows it; long boxes (.span-2) keep the full width. */
 .prop-form-page .card-grid{grid-template-columns:minmax(0,1fr);}
 @container card (min-width:460px){
   .prop-form-page .card-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
-/* Filter 4: seven dimension cards flow left and right (4 + 3) when the card is at least 900px wide. */
+/* Filter 4: dimension cards fill left to right, two per row, with no empty column under the last card. */
 .f4-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px 12px;align-items:start;}
 @container card (min-width:900px){
-  .f4-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;}
+  .f4-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;}
 }
 [data-f4-card]{container-type:inline-size;container-name:f4c;display:block;min-width:0;}
 .f4c-body{display:grid;grid-template-columns:minmax(0,1fr);gap:8px 12px;align-items:start;}
