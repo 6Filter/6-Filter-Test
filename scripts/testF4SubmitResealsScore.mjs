@@ -8,11 +8,13 @@ import {
   easeScreeningChecks,
   syncF4ViewsForScore,
   f4AnswerPasses,
+  sealedF4OpenClearedByViews,
 } from "../lib/enteredFieldCredit.js";
 import { checkF4 } from "../lib/filterChecks.js";
 import { scoreAdvisoryChecks, computeGoNoGo } from "../lib/goNoGo.js";
 import { advisoryChecksFromOutput, sealGoNoGoOutput } from "../lib/sealOutput.js";
 import { buildPathToGo } from "../lib/improvementPoints.js";
+import { liftHumanFilterKeys, liftStoredMitigations } from "../lib/filterOwnershipLift.js";
 import { DIMENSION_LABELS, TECH_SHIFT_DIMENSIONS } from "../lib/techShiftRisk.js";
 
 const assessed = TECH_SHIFT_DIMENSIONS.filter(
@@ -160,4 +162,33 @@ assert.ok(
   afterScore.pct > beforeScore.pct && resealed.output.score.pct === afterScore.pct,
   "sealed percent must match the raised score"
 );
+
+// Same fingerprint as the seal (mitigations already mirrored) must still reseal when
+ // Your view clears sealed-open Filter 4 rows — the reopen-and-paste bug.
+assert.equal(
+  sealedF4OpenClearedByViews(synced, sealed.output.filters.f4),
+  true,
+  "cleared views must beat a sealed-open Filter 4 snapshot"
+);
+const lifted = liftHumanFilterKeys(
+  "f4",
+  {
+    techShiftRisk: base.f4.techShiftRisk,
+    userInputs: pasted.f4.userInputs,
+    f4MitigationResponses: {},
+  },
+  { userInputs: pasted.f4.userInputs, f4MitigationResponses: {} },
+  { writer: "client", previous: base.f4 }
+);
+assert.ok(
+  assessed.every((k) => String(lifted.f4MitigationResponses?.[k] || "").includes("Finding about")),
+  "save must lift Your view into mitigations even when the client sent an empty map"
+);
+assert.ok(
+  assessed.every(
+    (k) => String(liftStoredMitigations(lifted).f4MitigationResponses?.[k] || "").length > 0
+  ),
+  "stored lift must keep mirrored views"
+);
+
 console.log("PASS testF4SubmitResealsScore", { before: beforeScore.pct, after: afterScore.pct });

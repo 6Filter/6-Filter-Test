@@ -8,6 +8,7 @@ import {
 import { revenueDisplayFor, scoreToFive, toneOf } from "./scoringUi.js";
 import { deductionsFor, mistakesFor, overallPassFail } from "./verdictSequence.js";
 import { omitServerOwnedForSave, plainDraftSaveError } from "../lib/clientSavePayload.js";
+import { syncF4ViewsForScore } from "../lib/enteredFieldCredit.js";
 import { buildInvestmentGrid } from "../lib/investmentGrid.js";
 import { DEFAULT_LLM_PROVIDER, normalizeProvider, providerLabel } from "../lib/llmCatalog.js";
 import { sanitizeImageBase64, sniffImageMediaType } from "../lib/mediaType.js";
@@ -157,7 +158,8 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         proposition: {
-          ...omitServerOwnedForSave(payload),
+          // Mirror Your view into mitigations before strip so the score lock key moves with the paste.
+          ...omitServerOwnedForSave(syncF4ViewsForScore(payload)),
           baseVersion: payload?.baseVersion ?? payload?.version,
         },
         provider,
@@ -208,7 +210,7 @@ async function saveDraftSilently(id, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       proposition: {
-        ...omitServerOwnedForSave(payload),
+        ...omitServerOwnedForSave(syncF4ViewsForScore(payload)),
         baseVersion: payload?.baseVersion ?? payload?.version,
       },
     }),

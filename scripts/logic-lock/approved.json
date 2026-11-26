@@ -14,6 +14,7 @@
     "lib/displayCopy.js",
     "lib/securityHeaders.js",
     "lib/enteredFieldCredit.js",
+    "lib/filterOwnershipLift.js",
     "lib/displayTitle.js",
     "lib/ideaWorkAnalysis.js",
     "lib/researchCache.js",
