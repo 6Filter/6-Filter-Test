@@ -71,8 +71,8 @@ import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
 import { withScreeningDifficulty } from "../lib/difficultyLevel.js";
 import {
+  dropClearedF4PathActions,
   easeScreeningChecks,
-  f4AnswerPasses,
   f4SuggestionText,
   scoringDocForEnteredCredit,
 } from "../lib/enteredFieldCredit.js";
@@ -2073,23 +2073,11 @@ export function GoNoGoResultPage({
   );
   const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
   const pathActions = annotatePathActions(
-    (Array.isArray(pathPlan?.actions) ? pathPlan.actions : [])
-      .filter((a) => {
-        // Matching Filter 4 views are already credited — keep them off Closest path.
-        const filterKey = String(a?.filter || "").trim().toLowerCase();
-        if (filterKey !== "f" + "4" || !doc) return true;
-        const line = String(a?.instruction || a?.text || "").toLowerCase();
-        const dim = TECH_SHIFT_DIMENSIONS.find((key) => {
-          const label = String(DIMENSION_LABELS[key] || key).toLowerCase();
-          return label && line.includes(label);
-        });
-        return !(dim && f4AnswerPasses(doc, dim));
-      })
-      .map((a) => ({
-        ...a,
-        instruction: displayCopy(a?.instruction, doc),
-        text: displayCopy(a?.text, doc),
-      })),
+    dropClearedF4PathActions(pathPlan?.actions, doc).map((a) => ({
+      ...a,
+      instruction: displayCopy(a?.instruction, doc),
+      text: displayCopy(a?.text, doc),
+    })),
     doc
   );
   const pathKind = String(pathPlan?.kind || "path");
