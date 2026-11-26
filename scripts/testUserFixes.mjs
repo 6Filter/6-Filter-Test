@@ -290,6 +290,10 @@ assert.equal(f4Item.status, "done");
 assert.doesNotMatch(f4Item.text, /Still open/);
 assert.match(
   displayCopy(`Clear the open Filter 4 dimension "Functional core stability" with a mitigation response`, f4Doc),
+  /Screen again to update the score/i
+);
+assert.match(
+  displayCopy(`Functional core stability: cleared.`, f4Doc),
   /cleared/i
 );
 const other = {

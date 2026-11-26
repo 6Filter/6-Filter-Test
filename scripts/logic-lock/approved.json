@@ -12,8 +12,6 @@
     "lib/db.js",
     "lib/difficultyLevel.js",
     "lib/displayCopy.js",
-    "lib/improvementPoints.js",
-    "lib/sealOutput.js",
     "lib/securityHeaders.js",
     "lib/enteredFieldCredit.js",
     "lib/filterOwnershipLift.js",
