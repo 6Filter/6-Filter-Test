@@ -71,7 +71,6 @@ import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
 import { withScreeningDifficulty } from "../lib/difficultyLevel.js";
 import {
-  dropClearedF4PathActions,
   easeScreeningChecks,
   f4SuggestionText,
   scoringDocForEnteredCredit,
@@ -2072,8 +2071,10 @@ export function GoNoGoResultPage({
     []
   );
   const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
+  // Path follows the sealed checks only — never hide open F4 rows from live edits
+  // while the sealed score/verdict stay unchanged. Submit reseals both together.
   const pathActions = annotatePathActions(
-    dropClearedF4PathActions(pathPlan?.actions, doc).map((a) => ({
+    (Array.isArray(pathPlan?.actions) ? pathPlan.actions : []).map((a) => ({
       ...a,
       instruction: displayCopy(a?.instruction, doc),
       text: displayCopy(a?.text, doc),
