@@ -69,7 +69,11 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
-import { difficultyFromDoc, withScreeningDifficulty } from "../lib/difficultyLevel.js";
+import {
+  difficultyFromDoc,
+  normalizeDifficulty,
+  withScreeningDifficulty,
+} from "../lib/difficultyLevel.js";
 import {
   easeScreeningChecks,
   f4SuggestionText,
@@ -3001,6 +3005,15 @@ export default function PropositionForm({
     aiSourcedRef.current = aiSourced;
   }, [aiSourced]);
 
+  // Keep the masthead Level 1/2/3 choice on the form doc so Screen again seals with it.
+  useEffect(() => {
+    setDoc((prev) => {
+      if (!prev || typeof prev !== "object") return prev;
+      if (difficultyFromDoc(prev) === normalizeDifficulty(screeningDifficulty)) return prev;
+      return withScreeningDifficulty(prev, screeningDifficulty);
+    });
+  }, [screeningDifficulty]);
+
   useEffect(() => {
     const merged = mergeProposition(initial);
     const accountName = accountDisplayName(currentUser);
@@ -3011,7 +3024,7 @@ export default function PropositionForm({
       initial?.suggestions && !initial?.researchRunAt
         ? mergeSuggestionsIntoDoc(merged, initial.suggestions)
         : { doc: merged, sourced: {} };
-    setDoc(filled.doc);
+    setDoc(withScreeningDifficulty(filled.doc, screeningDifficulty));
     setAiSourced(filled.sourced);
     setAiSuggestions(initial?.suggestions || null);
     if (initial?.advisoryChecks) setAdvisoryChecks(initial.advisoryChecks);
@@ -4224,17 +4237,20 @@ export default function PropositionForm({
     let savedOk = false;
     let result = null;
     try {
+    // Stamp the masthead Level 1/2/3 onto the payload so Screen again / Submit seals
+    // with the rules the person selected (not a stale level left on the form doc).
+    const submitDoc = withScreeningDifficulty(doc, screeningDifficulty);
     // Every Submit / Screen again / Evaluate reseals score + verdict from current inputs.
     // Opening from Log, editing, and Submit was keeping the old sealed band when the
     // fingerprint did not move (e.g. Filter 4 views already mirrored into mitigations).
-    result = await onSave(doc, provider, {
+    result = await onSave(submitDoc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
       forceReseal: true,
       asNew,
       confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && fromPending) {
-      result = await onSave(doc, provider, {
+      result = await onSave(submitDoc, provider, {
         forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
         forceReseal: true,
         asNew,
@@ -4283,13 +4299,29 @@ export default function PropositionForm({
       ? { ...filled, suggestions: result.suggestions }
       : filled;
     if (nextDoc.researchRunAt) setResearchKeyAtRun(researchInputKey(nextDoc));
+    const savedGoNoGo =
+      result.proposition.goNoGo && typeof result.proposition.goNoGo === "object"
+        ? result.proposition.goNoGo
+        : null;
+    // Prefer the newly sealed snapshot. Falling back to nextDoc.output kept a stale
+    // 61% WATCH on screen after Screen again when evaluationState briefly lagged.
+    const freshOutput =
+      result.proposition.output ||
+      result.output ||
+      savedGoNoGo?.output ||
+      null;
     const mergedProp = {
       ...nextDoc,
+      screeningDifficulty: submitDoc.screeningDifficulty ?? nextDoc.screeningDifficulty,
       evaluationState: result.proposition.evaluationState,
       evaluationMissing: result.proposition.evaluationMissing,
-      output: result.proposition.output ?? result.output ?? nextDoc.output,
-      sealedChecks: result.proposition.sealedChecks ?? result.sealedChecks ?? nextDoc.sealedChecks,
-      goNoGo: result.proposition.goNoGo ?? null,
+      output: freshOutput || nextDoc.output,
+      sealedChecks:
+        result.proposition.sealedChecks ??
+        result.sealedChecks ??
+        (freshOutput ? advisoryChecksFromOutput(freshOutput) : null) ??
+        nextDoc.sealedChecks,
+      goNoGo: savedGoNoGo,
     };
     setDoc(mergedProp);
     const checks =
