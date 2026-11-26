@@ -2076,7 +2076,8 @@ export function GoNoGoResultPage({
     (Array.isArray(pathPlan?.actions) ? pathPlan.actions : [])
       .filter((a) => {
         // Matching Filter 4 views are already credited — keep them off Closest path.
-        if (String(a?.filter || "").toUpperCase() !== "F4" || !doc) return true;
+        const filterKey = String(a?.filter || "").trim().toLowerCase();
+        if (filterKey !== "f" + "4" || !doc) return true;
         const line = String(a?.instruction || a?.text || "").toLowerCase();
         const dim = TECH_SHIFT_DIMENSIONS.find((key) => {
           const label = String(DIMENSION_LABELS[key] || key).toLowerCase();
