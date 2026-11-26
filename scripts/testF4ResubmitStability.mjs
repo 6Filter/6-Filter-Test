@@ -203,6 +203,42 @@ const l1 = easeScreeningChecks(
   pasteDoc
 ).checks;
 assert.equal(l1.f4.items[0].credit, 1, "Level 1 paste of the AI finding must clear the point");
+assert.match(l1.f4.items[0].text, /cleared/i, "matching Level 1 view stays quiet on the output");
+assert.doesNotMatch(l1.f4.items[0].text, /contradict/i);
+
+const contradictDoc = {
+  ...pasteDoc,
+  f4: {
+    ...pasteDoc.f4,
+    userInputs: {
+      functionalCoreStability: {
+        pov: "Glass bottles will replace this pack in every store within a year.",
+      },
+    },
+  },
+};
+const l1Contradict = easeScreeningChecks(
+  {
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "pending",
+          credit: 0,
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  contradictDoc
+).checks;
+assert.equal(l1Contradict.f4.items[0].credit, 1, "Level 1 contradiction is not marked down");
+assert.match(
+  l1Contradict.f4.items[0].text,
+  /contradicts what was found online/i,
+  "Level 1 contradiction is noted on the output"
+);
+
 const l2Doc = { ...pasteDoc, screeningDifficulty: 2 };
 const l2 = easeScreeningChecks(
   {
@@ -220,6 +256,27 @@ const l2 = easeScreeningChecks(
   l2Doc
 ).checks;
 assert.equal(l2.f4.items[0].credit, 1, "same paste clears at Level 2 too");
+
+const l2Contradict = easeScreeningChecks(
+  {
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "pending",
+          credit: 0,
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  { ...contradictDoc, screeningDifficulty: 2 }
+).checks;
+assert.equal(
+  Number(l2Contradict.f4.items[0].credit) || 0,
+  0,
+  "Level 2 contradiction stays open until the finding is matched"
+);
 
 void resolveHardLockedGoNoGo;
 console.log("PASS testF4ResubmitStability");

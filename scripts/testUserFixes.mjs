@@ -288,7 +288,10 @@ const f4Check = checkF4(f4Credited.f4, f4Credited.researchFindings.f4);
 const f4Item = f4Check.items.find((it) => /functional core stability/i.test(it.text));
 assert.equal(f4Item.status, "done");
 assert.doesNotMatch(f4Item.text, /Still open/);
-assert.match(displayCopy(`Clear the open Filter 4 dimension "Functional core stability" with a mitigation response`, f4Doc), /not marked down/);
+assert.match(
+  displayCopy(`Clear the open Filter 4 dimension "Functional core stability" with a mitigation response`, f4Doc),
+  /cleared/i
+);
 const other = {
   ...f4Doc,
   f4: {
@@ -296,8 +299,23 @@ const other = {
     userInputs: { functionalCoreStability: { rating: "Medium", pov: "We already signed a pack contract for the year." } },
   },
 };
-assert.match(f4Improvement(other, "functionalCoreStability"), /Put that finding in this box/);
+assert.equal(f4Improvement(other, "functionalCoreStability"), "", "Level 1 does not ask to re-paste after a mismatch");
+assert.match(
+  f4Improvement({ ...other, screeningDifficulty: 2 }, "functionalCoreStability"),
+  /Put that finding in this box/
+);
 assert.equal(f4Improvement(f4Doc, "functionalCoreStability"), "");
+const otherEased = easeScreeningChecks(
+  {
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [{ status: "pending", credit: 0, text: "Functional core stability: Medium risk — open" }],
+    },
+  },
+  other
+).checks;
+assert.equal(otherEased.f4.items[0].credit, 1, "Level 1 contradiction is not marked down");
+assert.match(otherEased.f4.items[0].text, /contradicts what was found online/i);
 
 const easy = {
   division: "Personal Care",
