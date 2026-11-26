@@ -130,10 +130,12 @@ assert.notEqual(withFlag.classification, prior.classification);
 
 const api = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(api, /allowRulesetRescore:\s*true/);
-assert.match(api, /const forceReseal = true/);
+assert.match(api, /levelChangedOnPut/);
+assert.match(api, /body\?\.forceReseal \|\| payload\?\.forceReseal/);
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(form, /withScreeningDifficulty\(doc, screeningDifficulty\)/);
 assert.match(form, /forceReseal:\s*true/);
+assert.match(form, /levelChanged/);
 
 console.log("PASS testForceResealBeatsDbHardLock", {
   before: openScore.pct,

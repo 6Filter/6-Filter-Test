@@ -22,9 +22,11 @@ const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.u
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
 assert.match(formSrc, /forceReseal:\s*true/);
 assert.match(formSrc, /forceResearch:\s*true/);
+assert.match(formSrc, /levelChanged/);
 assert.match(apiSrc, /forceReseal/);
-// Submit path must always reseal (not only when the client sends forceReseal).
-assert.match(apiSrc, /const forceReseal = true/);
+// Form Submit / Screen again send forceReseal; Level switch alone also reseals on the server.
+assert.match(apiSrc, /levelChangedOnPut/);
+assert.match(apiSrc, /body\?\.forceReseal \|\| payload\?\.forceReseal/);
 
 const finding =
   "Whey protein isolate remains the dominant functional core for RTD protein drinks in India with enough words here to pass.";

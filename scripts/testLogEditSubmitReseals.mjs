@@ -118,10 +118,11 @@ assert.equal(resealed.output.score.pct, liveScore.pct);
 assert.notEqual(resealed.output.score.pct, beforeScore.pct);
 assert.ok(resealed.output.score.pct >= 80, `expected GO-band after forceReseal, got ${resealed.output.score.pct}`);
 
-// Form Submit wiring must always send forceReseal
+// Form Submit wiring must always send forceReseal; server honors it (and Level changes).
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
 assert.match(form, /forceReseal:\s*true/);
 const api = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
-assert.match(api, /const forceReseal = true/);
+assert.match(api, /body\?\.forceReseal \|\| payload\?\.forceReseal/);
+assert.match(api, /levelChangedOnPut/);
 
 console.log("PASS log-edit-submit reseal", { before: beforeScore.pct, after: resealed.output.score.pct });
