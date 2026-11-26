@@ -69,7 +69,7 @@ import {
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
 import { displayCopy } from "../lib/displayCopy.js";
-import { withScreeningDifficulty } from "../lib/difficultyLevel.js";
+import { difficultyFromDoc, withScreeningDifficulty } from "../lib/difficultyLevel.js";
 import {
   easeScreeningChecks,
   f4SuggestionText,
@@ -724,9 +724,10 @@ function FieldControl({
               String(mine.pov || "").trim() ||
               String((mitigationResponses && mitigationResponses[key]) || d.userResponse || "").trim();
             const assessment = ideaDoc?.researchFindings?.f4?.assessments?.[key] || null;
-            // Same filtered finding the scorer uses — never show Low/Medium/High to the person.
-            const finding = f4SuggestionText(ideaDoc, key);
-            const sourceUrl = String(assessment?.raw?.source_url || "").trim();
+            // Level 3 Professional: do not show the AI/web finding to paste from.
+            const hideFinding = difficultyFromDoc(ideaDoc || {}) >= 3;
+            const finding = hideFinding ? "" : f4SuggestionText(ideaDoc, key);
+            const sourceUrl = hideFinding ? "" : String(assessment?.raw?.source_url || "").trim();
             const showWebCheck = Boolean(verifyingDimension === key || finding || sourceUrl);
             return (
               <div key={key} className="f4-dimension-row" data-dimension={key} data-f4-card>
@@ -737,7 +738,11 @@ function FieldControl({
                   <textarea
                     data-field={fieldPath || undefined}
                     rows={2}
-                    placeholder="Your view on this point. Paste the finding beside it to clear the point."
+                    placeholder={
+                      hideFinding
+                        ? "Your view on this point."
+                        : "Your view on this point. Paste the finding beside it to clear the point."
+                    }
                     value={typed}
                     disabled={locked || reassessing}
                     title={lockTitle}
@@ -3871,7 +3876,7 @@ export default function PropositionForm({
     const missingRequired =
       pressedBlocked && requiredEmpty(doc).some((item) => item.path === path);
     return {
-      ideaDoc: doc,
+      ideaDoc: liveDoc,
       editedName,
       canRestoreAi: canRestore,
       onRestoreAi: canRestore ? () => restoreAiValue(filterKey, field.key) : undefined,

@@ -39,11 +39,15 @@ import {
   stashReturnIdea,
 } from "../lib/appRoutes.js";
 import {
+  DIFFICULTY_CHOICES,
   difficultyMeta,
+  normalizeDifficulty,
   readLevel2PromptDismissed,
+  readLevel3PromptDismissed,
   readStoredDifficulty,
   withScreeningDifficulty,
   writeLevel2PromptDismissed,
+  writeLevel3PromptDismissed,
   writeStoredDifficulty,
 } from "../lib/difficultyLevel.js";
 
@@ -624,6 +628,7 @@ export default function App() {
   const [sessionUser, setSessionUser] = useState(null);
   const [screeningDifficulty, setScreeningDifficulty] = useState(1);
   const [level2PromptOpen, setLevel2PromptOpen] = useState(true);
+  const [level3PromptOpen, setLevel3PromptOpen] = useState(false);
   const [changingOwnTeam, setChangingOwnTeam] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -767,9 +772,33 @@ export default function App() {
 
   useEffect(() => {
     const email = sessionUser?.email || "";
-    setScreeningDifficulty(readStoredDifficulty(email));
-    setLevel2PromptOpen(!readLevel2PromptDismissed(email) && readStoredDifficulty(email) < 2);
+    const level = readStoredDifficulty(email);
+    setScreeningDifficulty(level);
+    setLevel2PromptOpen(!readLevel2PromptDismissed(email) && level < 2);
+    setLevel3PromptOpen(!readLevel3PromptDismissed(email) && level === 2);
   }, [sessionUser?.email]);
+
+  function setDifficultyLevel(next) {
+    const level = normalizeDifficulty(next);
+    const email = sessionUser?.email || "";
+    setScreeningDifficulty(level);
+    writeStoredDifficulty(level, email);
+    if (level >= 2) {
+      writeLevel2PromptDismissed(true, email);
+      setLevel2PromptOpen(false);
+    } else {
+      setLevel2PromptOpen(!readLevel2PromptDismissed(email));
+    }
+    if (level >= 3) {
+      writeLevel3PromptDismissed(true, email);
+      setLevel3PromptOpen(false);
+    } else if (level === 2) {
+      setLevel3PromptOpen(!readLevel3PromptDismissed(email));
+    } else {
+      setLevel3PromptOpen(false);
+    }
+    setProposition((prev) => (prev ? withScreeningDifficulty(prev, level) : prev));
+  }
 
   useEffect(() => {
     function onPopState() {
@@ -1681,9 +1710,22 @@ export default function App() {
           </button>
           {view === "form" || view === "result" ? (
             <div className="difficulty-cluster" data-testid="difficulty-cluster">
-              <p className="difficulty-level" data-testid="difficulty-level">
-                {difficultyMeta(screeningDifficulty).label}
-              </p>
+              <label className="difficulty-switcher">
+                <span className="sr-only">Difficulty level</span>
+                <select
+                  className="difficulty-level"
+                  data-testid="difficulty-level"
+                  aria-label="Difficulty level"
+                  value={screeningDifficulty}
+                  onChange={(e) => setDifficultyLevel(e.target.value)}
+                >
+                  {DIFFICULTY_CHOICES.map((level) => (
+                    <option key={level} value={level}>
+                      {difficultyMeta(level).label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {view === "form" && level2PromptOpen && screeningDifficulty < 2 ? (
                 <div className="difficulty-prompt" data-testid="ready-for-level-2" role="dialog" aria-label="Ready for Level 2?">
                   <p className="difficulty-prompt-copy">Ready for Level 2?</p>
@@ -1691,14 +1733,7 @@ export default function App() {
                     <button
                       type="button"
                       className="difficulty-yes"
-                      onClick={() => {
-                        const email = sessionUser?.email || "";
-                        setScreeningDifficulty(2);
-                        writeStoredDifficulty(2, email);
-                        writeLevel2PromptDismissed(true, email);
-                        setLevel2PromptOpen(false);
-                        setProposition((prev) => (prev ? withScreeningDifficulty(prev, 2) : prev));
-                      }}
+                      onClick={() => setDifficultyLevel(2)}
                     >
                       Yes
                     </button>
@@ -1709,6 +1744,31 @@ export default function App() {
                         const email = sessionUser?.email || "";
                         writeLevel2PromptDismissed(true, email);
                         setLevel2PromptOpen(false);
+                      }}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {view === "form" && level3PromptOpen && screeningDifficulty === 2 ? (
+                <div className="difficulty-prompt" data-testid="ready-for-level-3" role="dialog" aria-label="Ready for Level 3?">
+                  <p className="difficulty-prompt-copy">Ready for Level 3?</p>
+                  <div className="difficulty-prompt-actions">
+                    <button
+                      type="button"
+                      className="difficulty-yes"
+                      onClick={() => setDifficultyLevel(3)}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className="difficulty-no"
+                      onClick={() => {
+                        const email = sessionUser?.email || "";
+                        writeLevel3PromptDismissed(true, email);
+                        setLevel3PromptOpen(false);
                       }}
                     >
                       Not yet
@@ -2643,15 +2703,17 @@ html:has(.output-page), body:has(.output-page) { background:#faf3e8; }
 .masthead{display:flex;align-items:center;gap:14px;max-width:1280px;margin:0 auto 24px;}
 .page-back-bar{max-width:1280px;margin:-10px auto 18px;padding:0 2px;display:flex;align-items:flex-start;flex-wrap:wrap;gap:12px 16px;}
 .difficulty-cluster{flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px;}
-.difficulty-level{margin:0;min-height:42px;display:flex;align-items:center;justify-content:center;padding:8px 18px;border-radius:14px;background:#fffaf3;border:1px solid #9a5a32;color:#3b2a1e;font-family:'Sora',system-ui,sans-serif;font-size:15px;font-weight:700;letter-spacing:.01em;box-shadow:0 1px 2px rgba(80,57,46,.08);}
+.difficulty-switcher{display:block;width:100%;}
+.difficulty-level{appearance:none;-webkit-appearance:none;margin:0;width:100%;min-height:42px;display:flex;align-items:center;justify-content:center;padding:8px 36px 8px 18px;border-radius:14px;background:#fffaf3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%233b2a1e' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 14px center;border:1px solid #9a5a32;color:#3b2a1e;font-family:'Sora',system-ui,sans-serif;font-size:15px;font-weight:700;letter-spacing:.01em;box-shadow:0 1px 2px rgba(80,57,46,.08);cursor:pointer;}
 .difficulty-prompt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;padding:10px 14px;border-radius:14px;background:#fff6e8;border:1px solid #d4b896;color:#3b2a1e;font-family:'Sora',system-ui,sans-serif;}
 .difficulty-prompt-copy{margin:0;font-size:14px;font-weight:700;}
 .difficulty-prompt-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .difficulty-yes,.difficulty-no{border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',system-ui,sans-serif;}
 .difficulty-yes{border:none;background:#9a5a32;color:#fffaf3;}
 .difficulty-no{border:1px solid #d4b896;background:#fffaf3;color:#3b2a1e;}
-:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .difficulty-level{background:#fffaf3;border-color:#9a5a32;color:#3b2a1e;}
-.screen-spec .difficulty-level{background:#fffaf3;border-color:#9a5a32;color:#3b2a1e;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+:is(.screen-spec:has(.prop-form-page),.screen-spec:has(.output-page)) .difficulty-level{background-color:#fffaf3;border-color:#9a5a32;color:#3b2a1e;}
+.screen-spec .difficulty-level{background-color:#fffaf3;border-color:#9a5a32;color:#3b2a1e;}
 .screen-spec .page-back-bar,
 .screen-log .page-back-bar{max-width:none;width:100%;margin:0;padding:8px 28px 0;}
 .screen-log .masthead{

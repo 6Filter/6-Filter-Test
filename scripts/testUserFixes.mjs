@@ -611,4 +611,77 @@ assert.equal(apprenticePass.f2.items.find((it) => it.slot === "packSize").credit
 assert.equal(apprenticePass.f2.items.find((it) => it.slot === "gst").credit, 1);
 assert.equal(apprenticePass.f3.items.find((it) => it.slot === "resilience").credit, 1);
 
+// Level 3 — Professional: no Rookie soft credit; F4 match still clears; mismatch stays open with no paste tip.
+const professionalBase = {
+  screeningDifficulty: 3,
+  division: "Personal Care",
+  f1: {
+    declaredAttribute: "soft hair",
+    benchmark: "Dove",
+    declaredGap: 2,
+    gapDerivation: "stays cold longer than the bottle",
+    parityExceptions: "no added sugar versus the named drink",
+    growthRoute: "penetration",
+    growthArgument: "buyers add a second pack each month from the summer lift",
+  },
+  f2: { cogsAtScale: 30, netMarginAtScale: 55, gstRatePct: 18, grammage: "100 ml" },
+  f3: {
+    volumeLossJustification:
+      "Shelf price is held flat for five years including inflation so volume loss stays inside 10%.",
+  },
+  f4: {
+    userInputs: {
+      functionalCoreStability: { rating: "Medium", pov: "Pack format may shift" },
+    },
+    techShiftRisk: {
+      dimensions: {
+        functionalCoreStability: { risk: "Medium", reason: "Pack format may shift" },
+      },
+    },
+  },
+};
+const professional = easeScreeningChecks(
+  {
+    ...previewAdvisoryChecks(scoringDocForEnteredCredit(professionalBase)),
+    f4: {
+      checkLabel: "Evidence missing",
+      items: [
+        {
+          status: "pending",
+          credit: 0,
+          level: "none",
+          text: "Functional core stability: Medium risk — Pack format may shift",
+        },
+      ],
+    },
+  },
+  professionalBase
+).checks;
+assert.equal(professional.f1.items.find((it) => it.slot === "attributes").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "benchmark").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "derivation").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "parity").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "route").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "argument").credit, 0);
+assert.equal(professional.f1.items.find((it) => it.slot === "gap").credit, 1, "gap floor stays a local rule");
+assert.equal(professional.f2.items.find((it) => it.slot === "packSize").credit, 1, "pack unit stays a local rule");
+assert.equal(professional.f2.items.find((it) => it.slot === "gst").credit, 0, "GST waits for the web check");
+assert.equal(professional.f4.items[0].credit, 1);
+assert.equal(
+  f4Improvement(
+    {
+      ...professionalBase,
+      f4: {
+        ...professionalBase.f4,
+        userInputs: {
+          functionalCoreStability: { rating: "Medium", pov: "Something else entirely" },
+        },
+      },
+    },
+    "functionalCoreStability"
+  ),
+  "",
+  "Level 3 does not tip the person to paste a hidden finding"
+);
+
 console.log("user fixes ok");
