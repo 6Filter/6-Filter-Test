@@ -23,7 +23,8 @@ const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url
 assert.match(formSrc, /forceReseal:\s*true/);
 assert.match(formSrc, /forceResearch:\s*true/);
 assert.match(apiSrc, /forceReseal/);
-assert.match(apiSrc, /Boolean\(forceReseal\)/);
+// Submit path must always reseal (not only when the client sends forceReseal).
+assert.match(apiSrc, /const forceReseal = true/);
 
 const finding =
   "Whey protein isolate remains the dominant functional core for RTD protein drinks in India with enough words here to pass.";

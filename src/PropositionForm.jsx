@@ -4224,16 +4224,19 @@ export default function PropositionForm({
     let savedOk = false;
     let result = null;
     try {
+    // Every Submit / Screen again / Evaluate reseals score + verdict from current inputs.
+    // Opening from Log, editing, and Submit was keeping the old sealed band when the
+    // fingerprint did not move (e.g. Filter 4 views already mirrored into mitigations).
     result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
-      forceReseal: Boolean(submitOpts.forceReseal) || Boolean(submitOpts.forceResearch) || ideaChanged,
+      forceReseal: true,
       asNew,
       confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && fromPending) {
       result = await onSave(doc, provider, {
         forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
-        forceReseal: Boolean(submitOpts.forceReseal) || Boolean(submitOpts.forceResearch) || ideaChanged,
+        forceReseal: true,
         asNew,
         confirmMissingSteps: true,
       });
