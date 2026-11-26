@@ -113,10 +113,10 @@ const rebuilt = sealGoNoGoOutput(
 );
 assert.notEqual(rebuilt.output.filters.f4.label, "Cleared");
 
-// Source lock: hardLocked path must reuse prev.output instead of sealGoNoGoOutput.
+// Source lock: sealed snapshot must reuse prev.output unless forceReseal / Screen again.
 const apiSrc = readFileSync(new URL("../lib/propositionsApi.js", import.meta.url), "utf8");
-assert.match(apiSrc, /goNoGo\.hardLocked && prev\?\.output\?\.sealedAt/);
-assert.match(apiSrc, /output: prev\.output/);
+assert.match(apiSrc, /sealedSnapshot/);
+assert.match(apiSrc, /output: prev\?\.output\?\.sealedAt \? prev\.output : goNoGo\.output/);
 assert.match(apiSrc, /preserveSuccessfulF4/);
 
 const formSrc = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
