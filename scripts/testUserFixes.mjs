@@ -109,7 +109,9 @@ assert.doesNotMatch(form, /Select risk/);
 assert.doesNotMatch(form, /Web check rating/);
 assert.match(form, /Your view/);
 assert.doesNotMatch(form, /Respond on Medium/);
-assert.match(form, /forceResearch: Boolean\(submitOpts\.forceResearch\) \|\| ideaChanged/);
+assert.match(form, /forceResearch: runFresh/);
+assert.match(form, /levelChanged/);
+assert.match(form, /forceReseal:\s*true/);
 
 const parsed = parseIdeaAnalysis(
   'Here you go {"summary":"Name a drink people already buy.","suggestions":["Write the gap as a shopper-visible difference.","Pick new market if the buyer is not an athlete.",""]}'

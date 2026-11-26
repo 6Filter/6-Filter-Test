@@ -4214,12 +4214,19 @@ export default function PropositionForm({
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
+    const levelChanged =
+      normalizeDifficulty(screeningDifficulty) !== difficultyFromDoc(doc) ||
+      normalizeDifficulty(screeningDifficulty) !== difficultyFromDoc(sourceDocRef.current || {});
     // A changed scored idea is submitted again on this same log row. It does not open a second entry.
     const asNew = shouldForkLogResubmit(sourceDocRef.current, doc) && false;
     const hadResearchRunAt = Boolean(doc.researchRunAt);
     const repairPlan = planResearch(doc);
     const repairing =
-      repairPlan.researchState === "incomplete" && !ideaChanged && !asNew && !submitOpts.forceResearch;
+      repairPlan.researchState === "incomplete" &&
+      !ideaChanged &&
+      !levelChanged &&
+      !asNew &&
+      !submitOpts.forceResearch;
     // Evaluate on the pending page is the confirmation. A native confirm here looked like a no-op when cancelled or blocked.
     if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
     setJustSubmitted(true);
@@ -4240,18 +4247,18 @@ export default function PropositionForm({
     // Stamp the masthead Level 1/2/3 onto the payload so Screen again / Submit seals
     // with the rules the person selected (not a stale level left on the form doc).
     const submitDoc = withScreeningDifficulty(doc, screeningDifficulty);
-    // Every Submit / Screen again / Evaluate reseals score + verdict from current inputs.
-    // Opening from Log, editing, and Submit was keeping the old sealed band when the
-    // fingerprint did not move (e.g. Filter 4 views already mirrored into mitigations).
+    // Screen again / level change / idea-text change → fresh research under that level's rules.
+    // Every Submit still reseals score + verdict from current inputs (forceReseal).
+    const runFresh = Boolean(submitOpts.forceResearch) || ideaChanged || levelChanged;
     result = await onSave(submitDoc, provider, {
-      forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
+      forceResearch: runFresh,
       forceReseal: true,
       asNew,
       confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && fromPending) {
       result = await onSave(submitDoc, provider, {
-        forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
+        forceResearch: runFresh,
         forceReseal: true,
         asNew,
         confirmMissingSteps: true,
