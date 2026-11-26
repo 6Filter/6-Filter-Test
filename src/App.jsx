@@ -150,6 +150,8 @@ async function fetchPropositionById(id, { signal } = {}) {
 const PROPOSITION_SAVE_TIMEOUT_MS = 600000;
 
 async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false, confirmMissingSteps = false } = {}) {
+  // Mirror Your view into mitigations so the score lock key moves with the paste.
+  payload = syncF4ViewsForScore(payload || {});
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROPOSITION_SAVE_TIMEOUT_MS);
   try {
@@ -158,8 +160,7 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         proposition: {
-          // Mirror Your view into mitigations before strip so the score lock key moves with the paste.
-          ...omitServerOwnedForSave(syncF4ViewsForScore(payload)),
+          ...omitServerOwnedForSave(payload),
           baseVersion: payload?.baseVersion ?? payload?.version,
         },
         provider,
@@ -205,12 +206,13 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
 }
 
 async function saveDraftSilently(id, payload) {
+  payload = syncF4ViewsForScore(payload || {});
   const res = await apiFetch(`/api/propositions/${encodeURIComponent(id)}/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       proposition: {
-        ...omitServerOwnedForSave(syncF4ViewsForScore(payload)),
+        ...omitServerOwnedForSave(payload),
         baseVersion: payload?.baseVersion ?? payload?.version,
       },
     }),
