@@ -129,9 +129,9 @@ assert.doesNotMatch(formSrc, /Select risk/);
 assert.doesNotMatch(formSrc, /Web check rating/);
 assert.match(formSrc, /Your view/);
 
-const { f4AnswerPasses, easeScreeningChecks, scoringDocForEnteredCredit } = await import(
-  "../lib/enteredFieldCredit.js"
-);
+const { f4AnswerPasses, easeScreeningChecks, scoringDocForEnteredCredit, syncF4ViewsForScore } =
+  await import("../lib/enteredFieldCredit.js");
+const { scoreInputKey, lockedScoreFromPrior } = await import("../lib/analysisStability.js");
 const { previewAdvisoryChecks } = await import("../lib/goNoGo.js");
 const finding = "Pack format stays on shelf with no substitute format growing in search.";
 const pasteDoc = {
@@ -159,6 +159,33 @@ const pasteDoc = {
   },
 };
 assert.equal(f4AnswerPasses(pasteDoc, "functionalCoreStability"), true);
+const beforePasteKey = scoreInputKey({
+  ...pasteDoc,
+  f4: { techShiftRisk: pasteDoc.f4.techShiftRisk },
+});
+const syncedPaste = syncF4ViewsForScore(pasteDoc);
+assert.equal(
+  syncedPaste.f4.f4MitigationResponses.functionalCoreStability,
+  finding,
+  "typed view must mirror into mitigations for the score lock key"
+);
+assert.notEqual(
+  beforePasteKey,
+  scoreInputKey(syncedPaste),
+  "pasting the AI finding into Your view must change the score lock key"
+);
+const priorWatch = {
+  classification: "WATCH",
+  score: { done: 11, total: 18, pct: 61, scoreInputKey: beforePasteKey },
+  scoreInputKey: beforePasteKey,
+  rationale: "prior",
+  at: "2026-11-26T00:00:00.000Z",
+};
+assert.equal(
+  Boolean(lockedScoreFromPrior(syncedPaste, priorWatch)),
+  false,
+  "pasted Filter 4 view must unlock the sealed score so Submit updates verdict and path"
+);
 const l1 = easeScreeningChecks(
   {
     ...previewAdvisoryChecks(scoringDocForEnteredCredit(pasteDoc)),
