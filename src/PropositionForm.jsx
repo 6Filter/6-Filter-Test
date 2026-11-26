@@ -2416,7 +2416,9 @@ export function GoNoGoResultPage({
                 ))}
               </ul>
               <p className="path-if">
-                All {pathActions.length || improvementItems.length} cleared:{" "}
+                {pathActions.length
+                  ? `If these ${pathActions.length} clear: `
+                  : "All cleared: "}
                 {Number.isFinite(Number(pathPlan.allDonePct))
                   ? pathPlan.allDonePct
                   : 100}
@@ -4224,12 +4226,14 @@ export default function PropositionForm({
     try {
     result = await onSave(doc, provider, {
       forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
+      forceReseal: Boolean(submitOpts.forceReseal) || Boolean(submitOpts.forceResearch) || ideaChanged,
       asNew,
       confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && fromPending) {
       result = await onSave(doc, provider, {
         forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
+        forceReseal: Boolean(submitOpts.forceReseal) || Boolean(submitOpts.forceResearch) || ideaChanged,
         asNew,
         confirmMissingSteps: true,
       });
@@ -4417,7 +4421,14 @@ export default function PropositionForm({
             saving={saving || readingGoNoGo}
             onBack={() => setCurrentView("propositionForm")}
             onSubmit={() =>
-              handleSubmit(undefined, { fromPending: true, skipConfirm: true, forceResearch: true })
+              handleSubmit(undefined, {
+                fromPending: true,
+                skipConfirm: true,
+                // Reseal score + verdict from current inputs. Keep forceResearch so unfinished
+                // research can finish; forceReseal always refreshes the sealed band.
+                forceResearch: true,
+                forceReseal: true,
+              })
             }
             submitLabel={outputEvalState === "legacy" ? "Evaluate" : "Screen again"}
             legacyView={outputEvalState === "legacy"}

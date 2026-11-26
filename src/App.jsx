@@ -149,7 +149,12 @@ async function fetchPropositionById(id, { signal } = {}) {
 /** Submit/Evaluate must outlast the model queue (240s) plus Filter 3 research. */
 const PROPOSITION_SAVE_TIMEOUT_MS = 600000;
 
-async function putProposition(id, payload, provider = "claude", { forceResearch = false, asNew = false, confirmMissingSteps = false } = {}) {
+async function putProposition(
+  id,
+  payload,
+  provider = "claude",
+  { forceResearch = false, forceReseal = false, asNew = false, confirmMissingSteps = false } = {}
+) {
   // Mirror Your view into mitigations so the score lock key moves with the paste.
   payload = syncF4ViewsForScore(payload || {});
   const ctrl = new AbortController();
@@ -165,6 +170,7 @@ async function putProposition(id, payload, provider = "claude", { forceResearch 
         },
         provider,
         forceResearch: Boolean(forceResearch),
+        forceReseal: Boolean(forceReseal) || Boolean(forceResearch),
         asNew: Boolean(asNew),
         confirmMissingSteps: Boolean(confirmMissingSteps),
       }),
@@ -1157,6 +1163,7 @@ export default function App() {
       const stamped = withScreeningDifficulty(doc, screeningDifficulty);
       const result = await putProposition(stamped.id, stamped, provider, {
         forceResearch: Boolean(saveOpts?.forceResearch),
+        forceReseal: Boolean(saveOpts?.forceReseal) || Boolean(saveOpts?.forceResearch),
         asNew: Boolean(saveOpts?.asNew),
         confirmMissingSteps: Boolean(saveOpts?.confirmMissingSteps),
       });
