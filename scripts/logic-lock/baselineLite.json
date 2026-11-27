@@ -261,7 +261,9 @@
   "api/propositions/import.js": "4bfa40e42d572b2377e6fa5857036c22e2d35a87ebc829777071a47afaf60079",
   "api/propositions.js": "14696654250a0988fdc04f9b96cee8d7de6b86363df0327e382b5e5396f2f755",
   "api/providers.js": "50789dfbf63a88dba210d6a49bbd5f352e64fa2c25c63ab675df45277b66adb4",
-  "server.js": "795d7266618ee17a7f88fe038fd3d1cf46ff3a21aa2b084118c69f61b068e5c4"
+  "server.js": "795d7266618ee17a7f88fe038fd3d1cf46ff3a21aa2b084118c69f61b068e5c4",
+  "lib/researchInputKey.js": "4dfbca58e711ea3d16dbdab307093cd82132e1e263479d2a4a38037aba0b5a77",
+  "lib/verdictLevelLabel.js": "fecff89bfa479154a767a0d2401af0774f7425be2ae9d6188b8479d6be703301"
  },
  "words": [
   "src/AdminUsersPage.jsx\t${}-${}",
@@ -2956,7 +2958,6 @@
   "src/PropositionForm.jsx\tname",
   "src/PropositionForm.jsx\tname",
   "src/PropositionForm.jsx\tname",
-  "src/PropositionForm.jsx\tname:${}",
   "src/PropositionForm.jsx\tneeds-confirmation",
   "src/PropositionForm.jsx\tneeds-confirmation",
   "src/PropositionForm.jsx\tnetMarginAtScale",
@@ -3138,7 +3139,6 @@
   "src/PropositionForm.jsx\tyou",
   "src/PropositionForm.jsx\tyou",
   "src/PropositionForm.jsx\t{}",
-  "src/PropositionForm.jsx\t|",
   "src/PropositionForm.jsx\t·",
   "src/PropositionForm.jsx\t·",
   "src/PropositionForm.jsx\t·",
