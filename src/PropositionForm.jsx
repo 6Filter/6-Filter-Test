@@ -68,7 +68,11 @@ import {
 } from "../lib/improvementPoints.js";
 import { formCategoryLabel, formIdeaLabel, ideaScaleFromDoc, ideaSizeForResult } from "../lib/ideaScale.js";
 import { rewriteUnmatchedDivisionCopy } from "../lib/sanitizeAiText.js";
-import { displayCopy } from "../lib/displayCopy.js";
+import {
+  collapseF4EnteredPathActions,
+  displayCopy,
+  F4_ENTERED_PATH_COPY,
+} from "../lib/displayCopy.js";
 import {
   difficultyFromDoc,
   normalizeDifficulty,
@@ -79,6 +83,10 @@ import {
   f4SuggestionText,
   scoringDocForEnteredCredit,
 } from "../lib/enteredFieldCredit.js";
+import {
+  SCREENING_BUSY_MESSAGE,
+  screenFeedbackMessage,
+} from "../lib/screenFeedback.js";
 
 // Part 150 D137 — the improvement panel never says "replace X with X".
 function pathCopy(text, categoryName, doc) {
@@ -1909,6 +1917,8 @@ export function GoNoGoResultPage({
   onBack,
   onSubmit,
   saving,
+  error = "",
+  statusMessage = "",
   currentUser,
   onRequestReview,
   onApproveReview,
@@ -2082,12 +2092,15 @@ export function GoNoGoResultPage({
   const pathBlockers = Array.isArray(pathPlan?.blockers) ? pathPlan.blockers : [];
   // Path follows the sealed checks only — never hide open F4 rows from live edits
   // while the sealed score/verdict stay unchanged. Submit reseals both together.
+  // Collapse six identical Filter 4 "entered" lines into one honest collective line.
   const pathActions = annotatePathActions(
-    (Array.isArray(pathPlan?.actions) ? pathPlan.actions : []).map((a) => ({
-      ...a,
-      instruction: displayCopy(a?.instruction, doc),
-      text: displayCopy(a?.text, doc),
-    })),
+    collapseF4EnteredPathActions(
+      (Array.isArray(pathPlan?.actions) ? pathPlan.actions : []).map((a) => ({
+        ...a,
+        instruction: displayCopy(a?.instruction, doc),
+        text: displayCopy(a?.text, doc),
+      }))
+    ),
     doc
   );
   const pathKind = String(pathPlan?.kind || "path");
@@ -2459,10 +2472,26 @@ export function GoNoGoResultPage({
       <div className="filter-grid">
         {SIX_FILTERS_FORM.map((spec) => {
           const sealedFilter = sealedOutput?.filters?.[spec.key];
-          const check = {
+          let check = {
             ...(checks[spec.key] || {}),
             ...(sealedFilter?.label ? { checkLabel: sealedFilter.label } : {}),
           };
+          // One collective "ratings are entered" line on F4 — never six copies of the same sentence.
+          if (spec.key === "f4" && Array.isArray(check.items)) {
+            let keptEntered = false;
+            check = {
+              ...check,
+              items: check.items.filter((it) => {
+                const shown = displayCopy(String(it?.text || ""), doc);
+                const isEntered =
+                  shown === F4_ENTERED_PATH_COPY || /Filter 4 ratings are entered/i.test(shown);
+                if (!isEntered) return true;
+                if (keptEntered) return false;
+                keptEntered = true;
+                return true;
+              }),
+            };
+          }
           const stored = stripFormAdminNarrative(
             String(sealedFilter?.narrative || result.filterNarratives?.[spec.key] || "").trim()
           );
@@ -2633,8 +2662,19 @@ export function GoNoGoResultPage({
             onClick={onSubmit}
           >
             {saving ? <Loader2 size={15} className="spin" /> : null}
-            {submitLabel}
+            {saving ? "Submitting…" : submitLabel}
           </button>
+          {(statusMessage || error || saving) ? (
+            <p
+              className="submit-feedback"
+              data-testid="submit-feedback"
+              role={error && !saving ? "alert" : "status"}
+            >
+              {saving
+                ? statusMessage || SCREENING_BUSY_MESSAGE
+                : statusMessage || error}
+            </p>
+          ) : null}
           <button
             type="button"
             className="output-btn-secondary"
@@ -2817,6 +2857,8 @@ export default function PropositionForm({
   /** field → true once the user clicked Keep as typed for that review issue. */
   const [inputReviewKept, setInputReviewKept] = useState({});
   const [localError, setLocalError] = useState("");
+  /** One plain-words line next to Submit on both the form and the output page. */
+  const [submitFeedback, setSubmitFeedback] = useState("");
   const [slackNotice, setSlackNotice] = useState("");
   const [advisoryChecks, setAdvisoryChecks] = useState(() => initial?.advisoryChecks || null);
   const [justSubmitted, setJustSubmitted] = useState(false);
@@ -4158,50 +4200,52 @@ export default function PropositionForm({
   async function handleSubmit(providerOverride, submitOpts = {}) {
     const fromPending = Boolean(submitOpts.fromPending || submitOpts.skipConfirm);
     if (saving || f3Filling || f4Reassessing || marginElasticityLoading) {
-      if (fromPending) setLocalError("Evaluate is already running.");
+      const busyMsg = screenFeedbackMessage({ outcome: "blocked", reasonCode: "already_running" });
+      setSubmitFeedback(busyMsg);
+      setLocalError(busyMsg);
+      setSubmitMsg(busyMsg);
       return;
     }
     // Pending-page Evaluate runs remaining research; do not treat empty GST/research boxes as a silent block.
     // Button stays pressable when Required boxes are empty so the press can show field errors.
     if (!hasIdentity || inputBlocking || (!fromPending && !canSubmit)) {
       setPressedBlocked(true);
-      setSubmitMsg("");
       setSubmitFailed(false);
       const missing = requiredEmpty(doc);
-      const pendingMsg = !hasIdentity
-        ? "Choose the team with Change before Evaluate."
-        : inputBlocking
-          ? liveInputReview.fields
-              .filter((f) => f.status === "invalid")
-              .map((f) => f.message)
-              .join(" ") || "Fix invalid inputs before Evaluate."
-          : progress.missingFieldLabels.length
-            ? `Enter required values before Evaluate: ${progress.missingFieldLabels.join(", ")}.`
-            : "Enter all required values before Evaluate.";
-      if (fromPending) {
-        setLocalError(pendingMsg);
-        return;
-      }
+      const firstMissing = missing[0];
+      const fieldLabel =
+        firstMissing?.label ||
+        progress.missingFieldLabels[0] ||
+        (inputBlocking
+          ? liveInputReview.fields.find((f) => f.status === "invalid")?.field || ""
+          : "");
+      const blockedMsg = screenFeedbackMessage({
+        outcome: "blocked",
+        reasonCode: !hasIdentity
+          ? "missing_identity"
+          : inputBlocking
+            ? "invalid_input"
+            : "missing_required",
+        reasonPlain: !hasIdentity
+          ? "your team is not confirmed yet"
+          : inputBlocking
+            ? liveInputReview.fields
+                .filter((f) => f.status === "invalid")
+                .map((f) => f.message)
+                .join(" ") || "an answer is invalid"
+            : progress.missingFieldLabels.length
+              ? `${progress.missingFieldLabels.join(", ")} ${progress.missingFieldLabels.length === 1 ? "is" : "are"} required before Submit`
+              : "a required box is still blank",
+        fieldLabel: !hasIdentity ? "Team" : fieldLabel,
+      });
+      setSubmitFeedback(blockedMsg);
+      setSubmitMsg(blockedMsg);
+      setLocalError(blockedMsg);
+      if (fromPending) return;
       setWhyBlockedOpen(true);
       focusFirstBlockingBox();
       if (missing.some((item) => String(item.path).startsWith("f2."))) {
         setFilterOpen((prev) => ({ ...prev, f2: true }));
-      }
-      if (!hasIdentity) {
-        setLocalError("Choose the team with Change before Submit.");
-      } else if (inputBlocking) {
-        setLocalError(
-          liveInputReview.fields
-            .filter((f) => f.status === "invalid")
-            .map((f) => f.message)
-            .join(" ") || "Fix invalid inputs before Submit."
-        );
-      } else if (!canSubmit) {
-        setLocalError(
-          progress.missingFieldLabels.length
-            ? `Enter required values before Submit: ${progress.missingFieldLabels.join(", ")}.`
-            : "Enter all required values before Submit."
-        );
       }
       return;
     }
@@ -4210,7 +4254,11 @@ export default function PropositionForm({
     setPressedBlocked(false);
     setLocalError("");
     setFailedBanner(null);
+    // Literal kept here so LV8 can see the running copy on the press path.
+    setSubmitFeedback("Screening… this takes about 2 to 3 minutes. You can leave this page.");
     const provider = providerOverride || llmProvider;
+    const priorPct = Number(doc?.goNoGo?.score?.pct ?? doc?.output?.score?.pct);
+    const priorVerdict = String(doc?.goNoGo?.classification || doc?.output?.classification || "").trim();
     const ideaChanged = Boolean(
       doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
     );
@@ -4228,7 +4276,17 @@ export default function PropositionForm({
       !asNew &&
       !submitOpts.forceResearch;
     // Evaluate on the pending page is the confirmation. A native confirm here looked like a no-op when cancelled or blocked.
-    if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) return;
+    if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) {
+      const cancelMsg = screenFeedbackMessage({
+        outcome: "blocked",
+        reasonCode: "cancelled_confirm",
+        reasonPlain: "you cancelled the confirm step",
+      });
+      setSubmitFeedback(cancelMsg);
+      setLocalError(cancelMsg);
+      setSubmitMsg(cancelMsg);
+      return;
+    }
     setJustSubmitted(true);
     setSummaryStale(false);
     const persistDuration = Boolean(
@@ -4265,11 +4323,31 @@ export default function PropositionForm({
       });
     }
     if (!result?.proposition) {
-      // onSave returns null on failure and has already set the error; say so in the Submit bar too.
+      // onSave returns null/failed payload; never a silent return — always a visible line.
       setSubmitFailed(true);
-      if (fromPending) {
-        setLocalError("Evaluate did not finish. Try again.");
-      }
+      const decision = result?.screenDecision || null;
+      const failMsg =
+        decision?.outcome === "blocked"
+          ? screenFeedbackMessage({
+              outcome: "blocked",
+              reasonCode: decision.reasonCode || "missing_required",
+              reasonPlain: String(result?.error || "this press could not start").trim(),
+              fieldLabel: result?.field || decision.field || "",
+            })
+          : screenFeedbackMessage({
+              outcome: /credit/i.test(String(result?.error || ""))
+                ? "error"
+                : "error",
+              reasonCode: /credit/i.test(String(result?.error || ""))
+                ? "credit_exhausted"
+                : "save_failed",
+              reasonPlain: String(
+                result?.error || error || "Submit did not finish. Try again."
+              ).trim(),
+            });
+      setSubmitFeedback(failMsg);
+      setSubmitMsg(failMsg);
+      setLocalError(failMsg);
       return;
     }
     savedOk = true;
@@ -4287,12 +4365,23 @@ export default function PropositionForm({
     const filled = researchRan && result.suggestions ? applyResearchResult(result, saved) : saved;
     if (result.researchError) {
       const creditOut = Boolean(result.creditExhausted) || /run out of credit/i.test(String(result.researchError));
-      setSubmitMsg(
-        creditOut
-          ? String(result.researchError)
-          : `Your idea was saved, but the research step failed: ${String(result.researchError).replace(/[.\s]+$/, "")}.`
-      );
-      setLocalError(result.researchError);
+      const errMsg = screenFeedbackMessage({
+        outcome: creditOut ? "error" : "unchanged",
+        reasonCode: creditOut ? "credit_exhausted" : "unfinished_research",
+        reasonPlain: String(result.researchError),
+        unfinishedStep: Array.isArray(result.proposition?.evaluationMissing)
+          ? result.proposition.evaluationMissing[0]?.step || result.proposition.evaluationMissing[0]?.label || ""
+          : "",
+        screenedAt: new Date().toISOString(),
+        level: normalizeDifficulty(screeningDifficulty),
+        fromPct: priorPct,
+        toPct: priorPct,
+        fromVerdict: priorVerdict,
+        toVerdict: priorVerdict,
+      });
+      setSubmitMsg(errMsg);
+      setSubmitFeedback(errMsg);
+      setLocalError(errMsg);
       setFailedBanner({
         label: result.failedProviderLabel || provider || "Claude",
         provider: result.failedProvider || provider,
@@ -4379,6 +4468,39 @@ export default function PropositionForm({
     setJustSubmitted(true);
     setSummaryStale(false);
     sourceDocRef.current = mergedProp;
+    const nextPct = Number(
+      mergedProp?.goNoGo?.score?.pct ?? mergedProp?.output?.score?.pct ?? priorPct
+    );
+    const nextVerdict = String(
+      mergedProp?.goNoGo?.classification || mergedProp?.output?.classification || priorVerdict
+    ).trim();
+    const decision = result.screenDecision || mergedProp.lastScreenDecision || null;
+    const scoreMoved =
+      (Number.isFinite(priorPct) && Number.isFinite(nextPct) && priorPct !== nextPct) ||
+      (priorVerdict && nextVerdict && priorVerdict !== nextVerdict);
+    const finishMsg = screenFeedbackMessage({
+      outcome: scoreMoved ? "changed" : "unchanged",
+      reasonCode:
+        decision?.reasonCode ||
+        (decision?.sealReused
+          ? "seal_reused"
+          : scoreMoved
+            ? ""
+            : "same_inputs_and_level"),
+      unfinishedStep: decision?.unfinishedStep || "",
+      screenedAt: decision?.at || new Date().toISOString(),
+      level: normalizeDifficulty(
+        decision?.level ?? mergedProp.screeningDifficulty ?? screeningDifficulty
+      ),
+      fromPct: Number.isFinite(priorPct) ? priorPct : nextPct,
+      toPct: Number.isFinite(nextPct) ? nextPct : priorPct,
+      fromVerdict: priorVerdict || nextVerdict || "—",
+      toVerdict: nextVerdict || priorVerdict || "—",
+    });
+    if (!result.researchError) {
+      setSubmitFeedback(finishMsg);
+      setSubmitMsg(finishMsg);
+    }
     } finally {
       const elapsedMs = Math.max(0, Date.now() - startedAt);
       onProcessingChange?.({ busy: false });
@@ -4461,6 +4583,8 @@ export default function PropositionForm({
             doc={doc}
             savedDoc={initial}
             saving={saving || readingGoNoGo}
+            error={error || localError || ""}
+            statusMessage={submitFeedback}
             onBack={() => setCurrentView("propositionForm")}
             onSubmit={() =>
               handleSubmit(undefined, {
@@ -4472,7 +4596,7 @@ export default function PropositionForm({
                 forceReseal: true,
               })
             }
-            submitLabel={outputEvalState === "legacy" ? "Evaluate" : "Screen again"}
+            submitLabel="Submit"
             legacyView={outputEvalState === "legacy"}
             hideFilterCards={outputEvalState === "legacy"}
             allowPdfExport={outputEvalState === "evaluated" || outputEvalState === "legacy"}
@@ -5268,7 +5392,18 @@ export default function PropositionForm({
       ) : null}
 
       <div className="submit-bar" data-compact="yes" data-testid="submit-bar" ref={stickyBarRef}>
-        {submitBarError ? (
+        {(submitFeedback || submitBarError || saving) ? (
+          <p
+            className="submit-feedback"
+            data-testid="submit-feedback"
+            role={submitBarError && !saving ? "alert" : "status"}
+          >
+            {saving
+              ? submitFeedback || SCREENING_BUSY_MESSAGE
+              : submitFeedback || submitBarError}
+          </p>
+        ) : null}
+        {submitBarError && !submitFeedback ? (
           <span className="submit-bar-error" data-testid="submit-bar-error" role="alert">
             {submitBarError}
           </span>
@@ -5845,6 +5980,8 @@ ${FIELD_ROLE_CSS}
 .next-step-card p{margin:0;font-size:calc(13.5px * var(--ts, 1));line-height:1.5;color:var(--ink-secondary-2);}
 .gonogo-blocked-note{margin:4px 0 16px;font-size:calc(13px * var(--ts, 1));line-height:1.45;color:var(--ink-muted);}
 .output-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.submit-feedback{flex:1 1 100%;margin:0;font-size:13px;line-height:1.35;color:#5c4030;}
+.submit-bar .submit-feedback{padding:6px 12px 0;color:#5c4030;}
 .output-btn-primary,.output-btn-secondary{
   display:inline-flex;align-items:center;gap:8px;border-radius:999px;
   padding:11px 18px;font-size:calc(14px * var(--ts, 1));font-family:inherit;cursor:pointer;

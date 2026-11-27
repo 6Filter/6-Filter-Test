@@ -181,6 +181,8 @@ async function putProposition(
       const err = new Error(data.error || "Could not save proposition.");
       if (res.status === 422 && data.inputReview) err.inputReview = data.inputReview;
       err.status = res.status;
+      err.screenDecision = data.screenDecision || null;
+      err.field = data.field || "";
       throw err;
     }
     return {
@@ -198,6 +200,8 @@ async function putProposition(
       needsConfirm: Boolean(data.needsConfirm),
       forked: Boolean(data.forked),
       forkedFrom: data.forkedFrom || null,
+      screenDecision: data.screenDecision || null,
+      creditExhausted: Boolean(data.creditExhausted),
     };
   } catch (e) {
     if (e?.name === "AbortError") {
@@ -1204,12 +1208,16 @@ export default function App() {
             .map((f) => f.message)
             .filter(Boolean)
         : [];
-      setError(
-        reviewMsgs.length
-          ? `${e.message || "Fix the invalid inputs before Submit."} ${reviewMsgs.join(" ")}`.trim()
-          : e.message || "Could not save this proposition."
-      );
-      return null;
+      const message = reviewMsgs.length
+        ? `${e.message || "Fix the invalid inputs before Submit."} ${reviewMsgs.join(" ")}`.trim()
+        : e.message || "Could not save this proposition.";
+      setError(message);
+      return {
+        proposition: null,
+        error: message,
+        screenDecision: e?.screenDecision || null,
+        field: e?.field || "",
+      };
     } finally {
       setSavingProp(false);
     }
