@@ -78,6 +78,7 @@ import {
   normalizeDifficulty,
   withScreeningDifficulty,
 } from "../lib/difficultyLevel.js";
+import { researchInputKey } from "../lib/researchInputKey.js";
 import {
   easeScreeningChecks,
   f4SuggestionText,
@@ -2761,36 +2762,6 @@ function formatSavedAt(iso) {
   });
 }
 
-function researchInputKey(doc) {
-  const attach = doc?.attachment;
-  const attachSig = attach?.data
-    ? String(attach.data).length
-    : attach?.name
-      ? `name:${attach.name}`
-      : "";
-  const f1 = doc?.f1 && typeof doc.f1 === "object" ? doc.f1 : {};
-  const f2 = doc?.f2 && typeof doc.f2 === "object" ? doc.f2 : {};
-  const bits = [
-    doc?.name,
-    doc?.ideaDescription,
-    doc?.category,
-    f1.declaredAttribute,
-    f1.declaredAttribute2,
-    f1.declaredAttribute3,
-    f1.benchmark,
-    f1.declaredGap,
-    f1.gapDerivation,
-    f1.parityExceptions,
-    f1.growthRoute,
-    f1.growthArgument,
-    f2.grammage,
-    // Omit derived/AI-filled GST and MRP — they flip after open and falsely forceResearch,
-    // which re-rolls Filter 4 and makes score/verdict change for the same typed inputs.
-    attachSig,
-  ].map((v) => String(v || "").trim().toLowerCase());
-  return bits.join("|");
-}
-
 function preferOutputView(doc = null) {
   if (doc?._preferOutput) return true;
   // Part 154 — an explicit "show the input form" (refresh on #input, or an uploaded idea) beats the evaluated state.
@@ -4259,24 +4230,25 @@ export default function PropositionForm({
     const provider = providerOverride || llmProvider;
     const priorPct = Number(doc?.goNoGo?.score?.pct ?? doc?.output?.score?.pct);
     const priorVerdict = String(doc?.goNoGo?.classification || doc?.output?.classification || "").trim();
+    // Stamp level onto the compare key so a masthead change counts as a change.
+    const stampedForKey = withScreeningDifficulty(doc, screeningDifficulty);
     const ideaChanged = Boolean(
-      doc.researchRunAt && researchKeyAtRun && researchInputKey(doc) !== researchKeyAtRun
+      doc.researchRunAt &&
+        researchKeyAtRun &&
+        researchInputKey(stampedForKey) !== researchKeyAtRun
     );
     const levelChanged =
       normalizeDifficulty(screeningDifficulty) !== difficultyFromDoc(doc) ||
       normalizeDifficulty(screeningDifficulty) !== difficultyFromDoc(sourceDocRef.current || {});
-    // A changed scored idea is submitted again on this same log row. It does not open a second entry.
+    const inputsChanged = ideaChanged || levelChanged;
+    // Same-row only (owner decision 27 Nov).
     const asNew = shouldForkLogResubmit(sourceDocRef.current, doc) && false;
     const hadResearchRunAt = Boolean(doc.researchRunAt);
     const repairPlan = planResearch(doc);
-    const repairing =
-      repairPlan.researchState === "incomplete" &&
-      !ideaChanged &&
-      !levelChanged &&
-      !asNew &&
-      !submitOpts.forceResearch;
-    // Evaluate on the pending page is the confirmation. A native confirm here looked like a no-op when cancelled or blocked.
-    if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) {
+    // Unfinished resume only — never the output-page path for a completed idea (CN10/CN11).
+    const unfinished =
+      repairPlan.researchState === "incomplete" && !inputsChanged && !asNew;
+    if (unfinished && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) {
       const cancelMsg = screenFeedbackMessage({
         outcome: "blocked",
         reasonCode: "cancelled_confirm",
@@ -4289,34 +4261,32 @@ export default function PropositionForm({
     }
     setJustSubmitted(true);
     setSummaryStale(false);
-    const persistDuration = Boolean(
-      submitOpts.forceResearch || ideaChanged || asNew || !hadResearchRunAt
-    );
+    // Changed → full new search. Unchanged complete → no search (stored result).
+    // First Submit (never researched) → full search. Unfinished → confirmMissingSteps only.
+    const runFresh = !hadResearchRunAt || inputsChanged;
+    const persistDuration = Boolean(runFresh || asNew || !hadResearchRunAt);
     const startedAt = Date.now();
     const expectedMs = expectedProcessMs({
-      forceResearch: Boolean(submitOpts.forceResearch) || ideaChanged,
+      forceResearch: runFresh,
       researchRunAt: asNew ? null : doc.researchRunAt,
-      ideaChanged: ideaChanged || asNew,
+      ideaChanged: inputsChanged || asNew,
     });
     onProcessingChange?.({ busy: true, startedAt, expectedMs });
     let savedOk = false;
     let result = null;
     try {
-    // Stamp the masthead Level 1/2/3 onto the payload so Screen again / Submit seals
-    // with the rules the person selected (not a stale level left on the form doc).
     const submitDoc = withScreeningDifficulty(doc, screeningDifficulty);
-    // Screen again / level change / idea-text change → fresh research under that level's rules.
-    // Every Submit still reseals score + verdict from current inputs (forceReseal).
-    const runFresh = Boolean(submitOpts.forceResearch) || ideaChanged || levelChanged;
     result = await onSave(submitDoc, provider, {
       forceResearch: runFresh,
       forceReseal: true,
       asNew,
-      confirmMissingSteps: repairing || fromPending,
+      // CN10: never confirmMissingSteps on a changed press (that limited the run to f5-sizing).
+      // CN11: unfinished Retry keeps this path; unchanged complete does not.
+      confirmMissingSteps: unfinished,
     });
-    if (result?.needsConfirm && fromPending) {
+    if (result?.needsConfirm && unfinished && fromPending) {
       result = await onSave(submitDoc, provider, {
-        forceResearch: runFresh,
+        forceResearch: true,
         forceReseal: true,
         asNew,
         confirmMissingSteps: true,
@@ -4590,9 +4560,8 @@ export default function PropositionForm({
               handleSubmit(undefined, {
                 fromPending: true,
                 skipConfirm: true,
-                // Reseal score + verdict from current inputs. Keep forceResearch so unfinished
-                // research can finish; forceReseal always refreshes the sealed band.
-                forceResearch: true,
+                // handleSubmit decides: changed → full search; unchanged → stored result;
+                // unfinished → confirmMissingSteps resume. Do not hard-code forceResearch.
                 forceReseal: true,
               })
             }
