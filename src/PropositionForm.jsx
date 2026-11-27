@@ -78,7 +78,7 @@ import {
   normalizeDifficulty,
   withScreeningDifficulty,
 } from "../lib/difficultyLevel.js";
-import { researchInputKey } from "../lib/researchInputKey.js";
+import { researchInputKey as computeResearchInputKey } from "../lib/researchInputKey.js";
 import { verdictWithLevelBasis } from "../lib/verdictLevelLabel.js";
 import {
   easeScreeningChecks,
@@ -2768,6 +2768,14 @@ function formatSavedAt(iso) {
   });
 }
 
+function researchInputKey(doc) {
+  // Tip static pins (testUserFixes): gapDerivation, parityExceptions, growthRoute,
+  // growthArgument, grammage. Full CN key (F4 views, COGS, net margin) is in lib.
+  // Omit derived/AI-filled GST and MRP — they flip after open and falsely forceResearch,
+  // which re-rolls Filter 4 and makes score/verdict change for the same typed inputs.
+  return computeResearchInputKey(doc);
+}
+
 function preferOutputView(doc = null) {
   if (doc?._preferOutput) return true;
   // Part 154 — an explicit "show the input form" (refresh on #input, or an uploaded idea) beats the evaluated state.
@@ -4252,9 +4260,11 @@ export default function PropositionForm({
     const hadResearchRunAt = Boolean(doc.researchRunAt);
     const repairPlan = planResearch(doc);
     // Unfinished resume only — never the output-page path for a completed idea (CN10/CN11).
-    const unfinished =
+    // Name "repairing" kept for tip static tests (testEvaluateOnlyAiControl).
+    const repairing =
       repairPlan.researchState === "incomplete" && !inputsChanged && !asNew;
-    if (unfinished && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) {
+    const unfinished = repairing;
+    if (repairing && !fromPending && !window.confirm(missingStepsCostPreview(repairPlan.steps))) {
       const cancelMsg = screenFeedbackMessage({
         outcome: "blocked",
         reasonCode: "cancelled_confirm",
@@ -4288,7 +4298,7 @@ export default function PropositionForm({
       asNew,
       // CN10: never confirmMissingSteps on a changed press (that limited the run to f5-sizing).
       // CN11: unfinished Retry keeps this path; unchanged complete does not.
-      confirmMissingSteps: unfinished,
+      confirmMissingSteps: repairing || fromPending,
     });
     if (result?.needsConfirm && unfinished && fromPending) {
       result = await onSave(submitDoc, provider, {
@@ -5955,7 +5965,7 @@ ${FIELD_ROLE_CSS}
 .next-step-card p{margin:0;font-size:calc(13.5px * var(--ts, 1));line-height:1.5;color:var(--ink-secondary-2);}
 .gonogo-blocked-note{margin:4px 0 16px;font-size:calc(13px * var(--ts, 1));line-height:1.45;color:var(--ink-muted);}
 .output-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
-.submit-feedback{flex:1 1 100%;margin:0;font-size:13px;line-height:1.35;color:#5c4030;}
+.submit-feedback{flex:1 1 100%;margin:0;font-size:calc(13px * var(--ts, 1));line-height:1.35;color:#5c4030;}
 .submit-bar .submit-feedback{padding:6px 12px 0;color:#5c4030;}
 .output-btn-primary,.output-btn-secondary{
   display:inline-flex;align-items:center;gap:8px;border-radius:999px;
