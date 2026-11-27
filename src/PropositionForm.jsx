@@ -79,6 +79,7 @@ import {
   withScreeningDifficulty,
 } from "../lib/difficultyLevel.js";
 import { researchInputKey } from "../lib/researchInputKey.js";
+import { verdictWithLevelBasis } from "../lib/verdictLevelLabel.js";
 import {
   easeScreeningChecks,
   f4SuggestionText,
@@ -2174,6 +2175,11 @@ export function GoNoGoResultPage({
               >
                 {classification}
               </div>
+              {verdictWithLevelBasis(classification, doc || savedDoc || {}) ? (
+                <p className="gonogo-level-basis" data-testid="verdict-level-basis">
+                  {verdictWithLevelBasis(classification, doc || savedDoc || {})}
+                </p>
+              ) : null}
               {Number.isFinite(Number(score.pct)) ? (
                 <span className="mono badge-chip gonogo-score-chip" data-testid="screening-score">
                   Score {score.pct}%

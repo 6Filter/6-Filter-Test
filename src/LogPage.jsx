@@ -36,6 +36,7 @@ import { formatIdeaWipeLabel } from "../lib/lockedConstants.js";
 import { ideaWipeAt } from "../lib/dbExpiry.js";
 import { ideaSizeForResult } from "../lib/ideaScale.js";
 import { CATEGORY_GROUPS, rowCategoryGroup } from "../lib/categoryGroup.js";
+import { verdictWithLevelBasis } from "../lib/verdictLevelLabel.js";
 import { RESEARCH_DID_NOT_FINISH_COPY, SCREENING_VERDICT_LABEL } from "../lib/researchFailureCopy.js";
 import { SUBMITTER_DEPARTMENTS, teamIsLegacy } from "../lib/propositionFields.js";
 import { reviewDisplayState } from "../lib/managerReview.js";
@@ -966,7 +967,9 @@ export default function LogPage({
                               <span
                                 className={`research-badge log-verdict used tone-${bandVerdict}`}
                                 data-testid="screening-verdict-label"
-                                title={SCREENING_VERDICT_LABEL}
+                                title={
+                                  verdictWithLevelBasis(bandVerdict, h) || SCREENING_VERDICT_LABEL
+                                }
                               >
                                 {bandVerdict}
                               </span>
