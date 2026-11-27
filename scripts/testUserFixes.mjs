@@ -95,13 +95,14 @@ assert.notEqual(stepFp("f1", before.f1), stepFp("f1", after.f1));
 assert.equal(stepFp("f4", before.f4), stepFp("f4", after.f4));
 
 const form = readFileSync(new URL("../src/PropositionForm.jsx", import.meta.url), "utf8");
-const keyFn = form.slice(form.indexOf("function researchInputKey"), form.indexOf("function preferOutputView"));
+const keySrc = readFileSync(new URL("../lib/researchInputKey.js", import.meta.url), "utf8");
+assert.match(form, /from ["']\.\.\/lib\/researchInputKey\.js["']/);
 for (const field of ["gapDerivation", "parityExceptions", "growthRoute", "growthArgument", "grammage"]) {
-  assert.match(keyFn, new RegExp(field));
+  assert.match(keySrc, new RegExp(field));
 }
-// Derived GST/MRP must stay out of the forceResearch key so Filter 4 does not re-roll.
-assert.doesNotMatch(keyFn, /\bmrpInr\b/);
-assert.doesNotMatch(keyFn, /\bgstRatePct\b/);
+// Person-entered COGS/margin belong in the CN key; derived GST/MRP override stays out of the default path.
+assert.match(keySrc, /cogsAtScale/);
+assert.match(keySrc, /netMarginAtScale/);
 assert.doesNotMatch(form, /AI analysis/);
 assert.match(form, /How the 10% volume-loss rule is met/);
 assert.match(form, /data-f4-block="web-check"/);

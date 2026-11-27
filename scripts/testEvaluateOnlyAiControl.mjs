@@ -34,7 +34,10 @@ check("Evaluate from pending skips the native confirm and sends confirmMissingSt
     formSrc,
     /if \(repairing && !fromPending && !window\.confirm\(missingStepsCostPreview/
   );
-  assert.match(formSrc, /confirmMissingSteps: repairing \|\| fromPending/);
+  // CN10: confirmMissingSteps only for unfinished repair — not repairing||fromPending
+  // (that caused a Filter-5-only 1s press on a changed idea).
+  assert.match(formSrc, /confirmMissingSteps:\s*repairing\b/);
+  assert.doesNotMatch(formSrc, /confirmMissingSteps:\s*repairing\s*\|\|\s*fromPending/);
 });
 
 check("Pending Evaluate shows save/research errors", () => {

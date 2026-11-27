@@ -78,7 +78,10 @@ import {
   normalizeDifficulty,
   withScreeningDifficulty,
 } from "../lib/difficultyLevel.js";
-import { researchInputKey as computeResearchInputKey } from "../lib/researchInputKey.js";
+// Omit derived/AI-filled GST and MRP — they flip after open and falsely forceResearch,
+// which re-rolls Filter 4 and makes score/verdict change for the same typed inputs.
+// (Full CN key is lib/researchInputKey.js; person-entered COGS/margin/F4 views are included.)
+import { researchInputKey } from "../lib/researchInputKey.js";
 import { verdictWithLevelBasis } from "../lib/verdictLevelLabel.js";
 import {
   easeScreeningChecks,
@@ -2768,14 +2771,6 @@ function formatSavedAt(iso) {
   });
 }
 
-function researchInputKey(doc) {
-  // Tip static pins (testUserFixes): gapDerivation, parityExceptions, growthRoute,
-  // growthArgument, grammage. Full CN key (F4 views, COGS, net margin) is in lib.
-  // Omit derived/AI-filled GST and MRP — they flip after open and falsely forceResearch,
-  // which re-rolls Filter 4 and makes score/verdict change for the same typed inputs.
-  return computeResearchInputKey(doc);
-}
-
 function preferOutputView(doc = null) {
   if (doc?._preferOutput) return true;
   // Part 154 — an explicit "show the input form" (refresh on #input, or an uploaded idea) beats the evaluated state.
@@ -4298,7 +4293,7 @@ export default function PropositionForm({
       asNew,
       // CN10: never confirmMissingSteps on a changed press (that limited the run to f5-sizing).
       // CN11: unfinished Retry keeps this path; unchanged complete does not.
-      confirmMissingSteps: repairing || fromPending,
+      confirmMissingSteps: repairing,
     });
     if (result?.needsConfirm && unfinished && fromPending) {
       result = await onSave(submitDoc, provider, {
